@@ -16,6 +16,8 @@ use tokio::sync::{mpsc, oneshot};
 use super::request::{Request, RequestBuilder};
 use super::response::Response;
 use super::wait;
+#[cfg(feature = "__chrome")]
+use crate::browser::ChromeVersion;
 #[cfg(feature = "__tls")]
 use crate::tls;
 #[cfg(feature = "__tls")]
@@ -86,6 +88,12 @@ impl ClientBuilder {
             inner: async_impl::ClientBuilder::new(),
             timeout: Timeout::default(),
         }
+    }
+
+    /// Sets the necessary values to mimic the specified Chrome version.
+    #[cfg(feature = "__chrome")]
+    pub fn chrome_builder(self, ver: ChromeVersion) -> ClientBuilder {
+        self.with_inner(move |inner| inner.chrome_builder(ver))
     }
 
     /// Returns a `Client` that uses this `ClientBuilder` configuration.
@@ -464,6 +472,35 @@ impl ClientBuilder {
         self.with_inner(|inner| inner.http2_max_frame_size(sz))
     }
 
+    /// Sets the maximum concurrent streams to use for HTTP2.
+    ///
+    /// Passing `None` will do nothing.
+    pub fn http2_max_concurrent_streams(self, sz: impl Into<Option<u32>>) -> ClientBuilder {
+        self.with_inner(|inner| inner.http2_max_concurrent_streams(sz))
+    }
+
+    /// Sets the max header list size to use for HTTP2.
+    ///
+    /// Passing `None` will do nothing.
+    pub fn http2_max_header_list_size(self, sz: impl Into<Option<u32>>) -> ClientBuilder {
+        self.with_inner(|inner| inner.http2_max_header_list_size(sz))
+    }
+
+    /// Enables and disables the push feature for HTTP2.
+    ///
+    /// Passing `None` will do nothing.
+    pub fn http2_enable_push(self, sz: impl Into<Option<bool>>) -> ClientBuilder {
+        self.with_inner(|inner| inner.http2_enable_push(sz))
+    }
+
+    /// Sets the header table size to use for HTTP2.
+    ///
+    /// Passing `None` will do nothing.
+
+    pub fn http2_header_table_size(self, sz: impl Into<Option<u32>>) -> ClientBuilder {
+        self.with_inner(|inner| inner.http2_header_table_size(sz))
+    }
+
     // TCP options
 
     /// Set whether sockets have `TCP_NODELAY` enabled.
@@ -722,6 +759,23 @@ impl ClientBuilder {
     #[cfg_attr(docsrs, doc(cfg(feature = "rustls-tls")))]
     pub fn use_rustls_tls(self) -> ClientBuilder {
         self.with_inner(move |inner| inner.use_rustls_tls())
+    }
+
+    /// Force using the Boring TLS backend.
+    ///
+    /// Since multiple TLS backends can be optionally enabled, this option will
+    /// force the `boring` backend to be used for this `Client`.
+    ///
+    /// # Optional
+    ///
+    /// This requires the optional `boring-tls(-...)` feature to be enabled.
+    #[cfg(feature = "__boring")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    pub fn use_boring_tls(
+        self,
+        builder_func: Arc<dyn Fn() -> boring::ssl::SslConnectorBuilder + Send + Sync>,
+    ) -> ClientBuilder {
+        self.with_inner(move |inner| inner.use_boring_tls(builder_func))
     }
 
     /// Use a preconfigured TLS backend.

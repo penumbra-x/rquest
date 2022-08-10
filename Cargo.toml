@@ -1,7 +1,7 @@
 [package]
-name = "reqwest"
-version = "0.11.13" # remember to update html_root_url
-description = "higher level HTTP client library"
+name = "reqwest-impersonate"
+version = "0.11.13"                                                 # remember to update html_root_url
+description = "A reqwest fork that impersonates the Chrome browser"
 keywords = ["http", "request", "client"]
 categories = ["web-programming::http-client", "wasm"]
 repository = "https://github.com/seanmonstar/reqwest"
@@ -18,12 +18,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [package.metadata.playground]
-features = [
-    "blocking",
-    "cookies",
-    "json",
-    "multipart",
-]
+features = ["blocking", "cookies", "json", "multipart"]
 
 [features]
 default = ["default-tls"]
@@ -42,7 +37,12 @@ rustls-tls-manual-roots = ["__rustls"]
 rustls-tls-webpki-roots = ["webpki-roots", "__rustls"]
 rustls-tls-native-roots = ["rustls-native-certs", "__rustls"]
 
+boring-tls = ["__boring"]
+
+
 blocking = ["futures-util/io", "tokio/rt-multi-thread", "tokio/sync"]
+chrome = ["__chrome"]
+
 
 cookies = ["cookie_crate", "cookie_store"]
 
@@ -72,6 +72,19 @@ __tls = []
 # Equivalent to rustls-tls-manual-roots but shorter :)
 __rustls = ["hyper-rustls", "tokio-rustls", "rustls", "__tls", "rustls-pemfile"]
 
+__boring = [
+    "boring",
+    "tokio-boring",
+    "hyper-boring",
+    "__tls",
+    "boring-sys",
+    "foreign-types",
+]
+
+__chrome = ["__boring", "__browser_common"]
+
+__browser_common = ["brotli", "gzip"]
+
 # When enabled, disable using the cached SYS_PROXIES.
 __internal_proxy_sys_no_cache = []
 
@@ -96,13 +109,22 @@ encoding_rs = "0.8"
 futures-core = { version = "0.3.0", default-features = false }
 futures-util = { version = "0.3.0", default-features = false }
 http-body = "0.4.0"
-hyper = { version = "0.14.18", default-features = false, features = ["tcp", "http1", "http2", "client", "runtime"] }
+hyper = { version = "0.14.18", default-features = false, features = [
+    "tcp",
+    "http1",
+    "http2",
+    "client",
+    "runtime",
+] }
 h2 = "0.3.10"
 once_cell = "1"
 log = "0.4"
 mime = "0.3.16"
 percent-encoding = "2.1"
-tokio = { version = "1.0", default-features = false, features = ["net", "time"] }
+tokio = { version = "1.0", default-features = false, features = [
+    "net",
+    "time",
+] }
 pin-project-lite = "0.2.0"
 ipnet = "2.3"
 
@@ -115,19 +137,33 @@ tokio-native-tls = { version = "0.3.0", optional = true }
 
 # rustls-tls
 hyper-rustls = { version = "0.23", default-features = false, optional = true }
-rustls = { version = "0.20", features = ["dangerous_configuration"], optional = true }
+rustls = { version = "0.20", features = [
+    "dangerous_configuration",
+], optional = true }
 tokio-rustls = { version = "0.23", optional = true }
 webpki-roots = { version = "0.22", optional = true }
 rustls-native-certs = { version = "0.6", optional = true }
 rustls-pemfile = { version = "1.0", optional = true }
+
+## boring-tls
+hyper-boring = { git = "https://github.com/4JX/boring", rev = "2a7463a", optional = true }
+boring = { git = "https://github.com/4JX/boring", rev = "2a7463a", optional = true }
+tokio-boring = { git = "https://github.com/4JX/boring", rev = "2a7463a", optional = true }
+boring-sys = { git = "https://github.com/4JX/boring", rev = "2a7463a", optional = true }
+foreign-types = { version = "0.5.0", optional = true }
 
 ## cookies
 cookie_crate = { version = "0.16", package = "cookie", optional = true }
 cookie_store = { version = "0.16", optional = true }
 
 ## compression
-async-compression = { version = "0.3.13", default-features = false, features = ["tokio"], optional = true }
-tokio-util = { version = "0.7.1", default-features = false, features = ["codec", "io"], optional = true }
+async-compression = { version = "0.3.13", default-features = false, features = [
+    "tokio",
+], optional = true }
+tokio-util = { version = "0.7.1", default-features = false, features = [
+    "codec",
+    "io",
+], optional = true }
 
 ## socks
 tokio-socks = { version = "0.5.1", optional = true }
@@ -137,12 +173,23 @@ trust-dns-resolver = { version = "0.22", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 env_logger = "0.8"
-hyper = { version = "0.14", default-features = false, features = ["tcp", "stream", "http1", "http2", "client", "server", "runtime"] }
+hyper = { version = "0.14", default-features = false, features = [
+    "tcp",
+    "stream",
+    "http1",
+    "http2",
+    "client",
+    "server",
+    "runtime",
+] }
 serde = { version = "1.0", features = ["derive"] }
 libflate = "1.0"
 brotli_crate = { package = "brotli", version = "3.3.0" }
 doc-comment = "0.3"
-tokio = { version = "1.0", default-features = false, features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.0", default-features = false, features = [
+    "macros",
+    "rt-multi-thread",
+] }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.10"
@@ -169,7 +216,7 @@ features = [
     "BlobPropertyBag",
     "ServiceWorkerGlobalScope",
     "RequestCredentials",
-    "File"
+    "File",
 ]
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
@@ -233,3 +280,7 @@ required-features = ["deflate"]
 name = "multipart"
 path = "tests/multipart.rs"
 required-features = ["multipart"]
+
+[patch.crates-io]
+hyper = { git = "https://github.com/4JX/hyper.git", branch = "0.14.x-patched", ref = "bd25359" }
+h2 = { git = "https://github.com/4JX/h2.git", ref = "b088466" }

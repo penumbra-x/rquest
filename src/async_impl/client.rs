@@ -28,7 +28,9 @@ use super::decoder::Accepts;
 use super::request::{Request, RequestBuilder};
 use super::response::Response;
 use super::Body;
-use crate::connect::Connector;
+#[cfg(feature = "__chrome")]
+use crate::browser::{configure_chrome, ChromeVersion};
+use crate::connect::{Connector};
 #[cfg(feature = "cookies")]
 use crate::cookie;
 #[cfg(feature = "trust-dns")]
@@ -115,6 +117,10 @@ struct Config {
     http2_initial_connection_window_size: Option<u32>,
     http2_adaptive_window: bool,
     http2_max_frame_size: Option<u32>,
+    http2_max_concurrent_streams: Option<u32>,
+    http2_max_header_list_size: Option<u32>,
+    http2_enable_push: Option<bool>,
+    http2_header_table_size: Option<u32>,
     http2_keep_alive_interval: Option<Duration>,
     http2_keep_alive_timeout: Option<Duration>,
     http2_keep_alive_while_idle: bool,
@@ -186,6 +192,10 @@ impl ClientBuilder {
                 http2_initial_connection_window_size: None,
                 http2_adaptive_window: false,
                 http2_max_frame_size: None,
+                http2_max_concurrent_streams: None,
+                http2_max_header_list_size: None,
+                http2_enable_push: None,
+                http2_header_table_size: None,
                 http2_keep_alive_interval: None,
                 http2_keep_alive_timeout: None,
                 http2_keep_alive_while_idle: false,
@@ -201,6 +211,11 @@ impl ClientBuilder {
         }
     }
 
+    /// Sets the necessary values to mimic the specified Chrome version.
+    #[cfg(feature = "__chrome")]
+    pub fn chrome_builder(self, ver: ChromeVersion) -> ClientBuilder {
+        configure_chrome(ver, self)
+    }
     /// Returns a `Client` that uses this `ClientBuilder` configuration.
     ///
     /// # Errors
@@ -246,6 +261,15 @@ impl ClientBuilder {
 
             #[cfg(feature = "__tls")]
             match config.tls {
+                #[cfg(feature = "__boring")]
+                TlsBackend::BoringTls(tls) => Connector::new_boring_tls(
+                    http,
+                    tls,
+                    proxies.clone(),
+                    user_agent(&config.headers),
+                    config.local_address,
+                    config.nodelay,
+                ),
                 #[cfg(feature = "default-tls")]
                 TlsBackend::Default => {
                     let mut tls = TlsConnector::builder();
@@ -459,7 +483,7 @@ impl ClientBuilder {
                         config.nodelay,
                     )
                 }
-                #[cfg(any(feature = "native-tls", feature = "__rustls",))]
+                #[cfg(any(feature = "native-tls", feature = "__rustls"))]
                 TlsBackend::UnknownPreconfigured => {
                     return Err(crate::error::builder(
                         "Unknown TLS backend passed to `use_preconfigured_tls`",
@@ -492,6 +516,18 @@ impl ClientBuilder {
         }
         if let Some(http2_max_frame_size) = config.http2_max_frame_size {
             builder.http2_max_frame_size(http2_max_frame_size);
+        }
+        if let Some(max) = config.http2_max_concurrent_streams {
+            builder.http2_max_concurrent_streams(max);
+        }
+        if let Some(max) = config.http2_max_header_list_size {
+            builder.http2_max_header_list_size(max);
+        }
+        if let Some(opt) = config.http2_enable_push {
+            builder.http2_enable_push(opt);
+        }
+        if let Some(max) = config.http2_header_table_size {
+            builder.http2_header_table_size(max);
         }
         if let Some(http2_keep_alive_interval) = config.http2_keep_alive_interval {
             builder.http2_keep_alive_interval(http2_keep_alive_interval);
@@ -625,6 +661,12 @@ impl ClientBuilder {
         for (key, value) in headers.iter() {
             self.config.headers.insert(key, value.clone());
         }
+        self
+    }
+
+    #[cfg(feature = "__browser_common")]
+    pub(crate) fn replace_default_headers(mut self, headers: HeaderMap) -> ClientBuilder {
+        self.config.headers = headers;
         self
     }
 
@@ -965,6 +1007,39 @@ impl ClientBuilder {
         self
     }
 
+    /// Sets the maximum concurrent streams to use for HTTP2.
+    ///
+    /// Passing `None` will do nothing.
+    pub fn http2_max_concurrent_streams(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
+        self.config.http2_max_concurrent_streams = sz.into();
+        self
+    }
+
+    /// Sets the max header list size to use for HTTP2.
+    ///
+    /// Passing `None` will do nothing.
+    pub fn http2_max_header_list_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
+        self.config.http2_max_header_list_size = sz.into();
+        self
+    }
+
+    /// Enables and disables the push feature for HTTP2.
+    ///
+    /// Passing `None` will do nothing.
+    pub fn http2_enable_push(mut self, sz: impl Into<Option<bool>>) -> ClientBuilder {
+        self.config.http2_enable_push = sz.into();
+        self
+    }
+
+    /// Sets the header table size to use for HTTP2.
+    ///
+    /// Passing `None` will do nothing.
+
+    pub fn http2_header_table_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
+        self.config.http2_header_table_size = sz.into();
+        self
+    }
+
     /// Sets an interval for HTTP2 Ping frames should be sent to keep a connection alive.
     ///
     /// Pass `None` to disable HTTP2 keep-alive.
@@ -1259,6 +1334,24 @@ impl ClientBuilder {
     #[cfg_attr(docsrs, doc(cfg(feature = "rustls-tls")))]
     pub fn use_rustls_tls(mut self) -> ClientBuilder {
         self.config.tls = TlsBackend::Rustls;
+        self
+    }
+
+    /// Force using the Boring TLS backend.
+    ///
+    /// Since multiple TLS backends can be optionally enabled, this option will
+    /// force the `boring` backend to be used for this `Client`.
+    ///
+    /// # Optional
+    ///
+    /// This requires the optional `boring-tls(-...)` feature to be enabled.
+    #[cfg(feature = "__boring")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    pub fn use_boring_tls(
+        mut self,
+        builder_func: Arc<dyn Fn() -> boring::ssl::SslConnectorBuilder + Send + Sync>,
+    ) -> ClientBuilder {
+        self.config.tls = TlsBackend::BoringTls(builder_func);
         self
     }
 
