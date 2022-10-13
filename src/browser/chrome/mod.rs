@@ -24,4 +24,5 @@ pub(crate) fn configure_chrome(ver: ChromeVersion, builder: ClientBuilder) -> Cl
 #[allow(missing_docs)]
 pub enum ChromeVersion {
     V104,
+    V105,
 }
