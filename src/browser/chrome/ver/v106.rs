@@ -19,7 +19,7 @@ pub(super) fn get_settings() -> BrowserSettings {
             max_concurrent_streams: 1000,
             max_header_list_size: 262144,
             header_table_size: 65536,
-            enable_push: None,
+            enable_push: Some(false),
         },
         headers: create_headers(),
         gzip: true,
@@ -91,14 +91,14 @@ fn create_headers() -> HeaderMap {
 
     headers.insert(
         "sec-ch-ua",
-        "\"Google Chrome\";v=\"105\", \"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"105\""
+        "\"Chromium\";v=\"106\", \"Google Chrome\";v=\"106\", \"Not;A=Brand\";v=\"99\""
             .parse()
             .unwrap(),
     );
     headers.insert("sec-ch-ua-mobile", "?0".parse().unwrap());
     headers.insert("sec-ch-ua-platform", "\"Windows\"".parse().unwrap());
     headers.insert(UPGRADE_INSECURE_REQUESTS, "1".parse().unwrap());
-    headers.insert(USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36".parse().unwrap());
+    headers.insert(USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36".parse().unwrap());
     headers.insert(ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9".parse().unwrap());
     headers.insert("sec-fetch-site", "none".parse().unwrap());
     headers.insert("sec-fetch-mode", "navigate".parse().unwrap());

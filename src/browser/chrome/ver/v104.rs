@@ -19,6 +19,7 @@ pub(super) fn get_settings() -> BrowserSettings {
             max_concurrent_streams: 1000,
             max_header_list_size: 262144,
             header_table_size: 65536,
+            enable_push: None,
         },
         headers: create_headers(),
         gzip: true,

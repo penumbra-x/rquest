@@ -28,4 +28,5 @@ struct Http2Data {
     pub max_concurrent_streams: u32,
     pub max_header_list_size: u32,
     pub header_table_size: u32,
+    pub enable_push: Option<bool>,
 }
