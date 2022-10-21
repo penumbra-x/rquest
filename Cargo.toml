@@ -282,5 +282,5 @@ path = "tests/multipart.rs"
 required-features = ["multipart"]
 
 [patch.crates-io]
-hyper = { git = "https://github.com/4JX/hyper.git", branch = "0.14.x-patched", ref = "bd25359" }
+hyper = { git = "https://github.com/4JX/hyper.git", branch = "v0.14.18-patched", ref = "bd25359" }
 h2 = { git = "https://github.com/4JX/h2.git", ref = "b088466" }

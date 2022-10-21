@@ -10,7 +10,7 @@ It is currently missing HTTP/2 `PRIORITY` support. (PRs to [h2](https://github.c
 
 ```toml
 [patch.crates-io]
-hyper = { git = "https://github.com/4JX/hyper.git", branch = "0.14.x-patched" }
+hyper = { git = "https://github.com/4JX/hyper.git", branch = "v0.14.18-patched" }
 h2 = { git = "https://github.com/4JX/h2.git", branch = "imp" }
 ```
 
