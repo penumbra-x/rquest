@@ -30,7 +30,7 @@ use super::response::Response;
 use super::Body;
 #[cfg(feature = "__chrome")]
 use crate::browser::{configure_chrome, ChromeVersion};
-use crate::connect::{Connector};
+use crate::connect::Connector;
 #[cfg(feature = "cookies")]
 use crate::cookie;
 #[cfg(feature = "trust-dns")]

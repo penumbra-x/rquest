@@ -72,7 +72,11 @@ impl Certificate {
     /// # Ok(())
     /// # }
     /// ```
-    #[cfg(any(not(feature = "__boring"), feature = "native-tls-crate", feature = "__rustls"))]
+    #[cfg(any(
+        not(feature = "__boring"),
+        feature = "native-tls-crate",
+        feature = "__rustls"
+    ))]
     pub fn from_der(der: &[u8]) -> crate::Result<Certificate> {
         Ok(Certificate {
             #[cfg(feature = "native-tls-crate")]
@@ -98,7 +102,11 @@ impl Certificate {
     /// # Ok(())
     /// # }
     /// ```
-    #[cfg(any(not(feature = "__boring"), feature = "native-tls-crate", feature = "__rustls"))]
+    #[cfg(any(
+        not(feature = "__boring"),
+        feature = "native-tls-crate",
+        feature = "__rustls"
+    ))]
     pub fn from_pem(pem: &[u8]) -> crate::Result<Certificate> {
         Ok(Certificate {
             #[cfg(feature = "native-tls-crate")]
