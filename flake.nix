@@ -56,7 +56,7 @@
 
         # The main application derivation
         reqwest-impersonate = craneLib.buildPackage
-          ({
+          (rec {
             src = nixLib.cleanSourceWith
               {
                 src = workspaceSrc;
@@ -68,6 +68,7 @@
             buildInputs = with pkgs;
               [
                 openssl
+                boringssl
               ]
               ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
 
@@ -76,6 +77,8 @@
                 clang
                 pkg-config
               ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
+
+            LD_LIBRARY_PATH = nixLib.makeLibraryPath buildInputs;
           } // envVars);
       in
       {

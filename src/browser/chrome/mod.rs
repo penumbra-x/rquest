@@ -27,4 +27,5 @@ pub enum ChromeVersion {
     V104,
     V105,
     V106,
+    V108,
 }
