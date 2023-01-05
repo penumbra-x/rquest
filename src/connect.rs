@@ -2,7 +2,6 @@
 use boring::ssl::{ConnectConfiguration, SslConnectorBuilder};
 #[cfg(feature = "__boring")]
 use foreign_types::ForeignTypeRef;
-use futures_util::future::Either;
 #[cfg(feature = "__tls")]
 use http::header::HeaderValue;
 use http::uri::{Authority, Scheme};
