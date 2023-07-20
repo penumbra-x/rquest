@@ -20,13 +20,13 @@ use std::fmt;
 use std::sync::Arc;
 
 /// Represents a server X509 certificate.
-#[derive(Clone)]
 pub struct Certificate {
     #[cfg(feature = "native-tls-crate")]
     native: native_tls_crate::Certificate,
     #[cfg(feature = "__rustls")]
     original: Cert,
 }
+
 
 #[cfg(feature = "__rustls")]
 #[derive(Clone)]
