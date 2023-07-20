@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use crate::into_url::{IntoUrl, IntoUrlSealed};
 use crate::Url;
+use crate::util::base64;
 use http::{header::HeaderValue, Uri};
 use ipnet::IpNet;
 use once_cell::sync::Lazy;

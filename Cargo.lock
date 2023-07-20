@@ -94,9 +94,9 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "base64"
-version = "0.20.0"
+version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ea22880d78093b0cbe17c89f64a7d457941e65759157ec6cb31a31d652b05e5"
+checksum = "604178f6c5c21f02dc555784810edfb88d34ac2c73b2eae109655649ee73ce3d"
 
 [[package]]
 name = "bindgen"
@@ -126,7 +126,7 @@ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 [[package]]
 name = "boring"
 version = "2.0.0"
-source = "git+https://github.com/4JX/boring?rev=2a7463a#2a7463aac6f09b79628b764b2323ddb0dd5ca2c3"
+source = "git+https://github.com/gngpp/boring?rev=2a7463a#2a7463aac6f09b79628b764b2323ddb0dd5ca2c3"
 dependencies = [
  "bitflags",
  "boring-sys",
@@ -139,7 +139,7 @@ dependencies = [
 [[package]]
 name = "boring-sys"
 version = "2.0.0"
-source = "git+https://github.com/4JX/boring?rev=2a7463a#2a7463aac6f09b79628b764b2323ddb0dd5ca2c3"
+source = "git+https://github.com/gngpp/boring?rev=2a7463a#2a7463aac6f09b79628b764b2323ddb0dd5ca2c3"
 dependencies = [
  "bindgen",
  "cmake",
@@ -590,7 +590,7 @@ dependencies = [
 [[package]]
 name = "hyper-boring"
 version = "2.1.1"
-source = "git+https://github.com/4JX/boring?rev=2a7463a#2a7463aac6f09b79628b764b2323ddb0dd5ca2c3"
+source = "git+https://github.com/gngpp/boring?rev=2a7463a#2a7463aac6f09b79628b764b2323ddb0dd5ca2c3"
 dependencies = [
  "antidote",
  "boring",
@@ -1127,11 +1127,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "reqwest-impersonate"
+name = "reqwest"
 version = "0.11.13"
 dependencies = [
  "async-compression",
- "base64 0.20.0",
+ "base64 0.21.2",
  "boring",
  "boring-sys",
  "brotli",
@@ -1503,7 +1503,7 @@ dependencies = [
 [[package]]
 name = "tokio-boring"
 version = "2.1.4"
-source = "git+https://github.com/4JX/boring?rev=2a7463a#2a7463aac6f09b79628b764b2323ddb0dd5ca2c3"
+source = "git+https://github.com/gngpp/boring?rev=2a7463a#2a7463aac6f09b79628b764b2323ddb0dd5ca2c3"
 dependencies = [
  "boring",
  "boring-sys",

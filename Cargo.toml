@@ -89,7 +89,7 @@ __browser_common = ["brotli", "gzip"]
 __internal_proxy_sys_no_cache = []
 
 [dependencies]
-base64 = "0.20"
+base64 = "0.21.2"
 http = "0.2"
 url = "2.2"
 bytes = "1.0"
@@ -146,10 +146,10 @@ rustls-native-certs = { version = "0.6", optional = true }
 rustls-pemfile = { version = "1.0", optional = true }
 
 ## boring-tls
-hyper-boring = { git = "https://github.com/4JX/boring", rev = "2a7463a", optional = true }
-boring = { git = "https://github.com/4JX/boring", rev = "2a7463a", optional = true }
-tokio-boring = { git = "https://github.com/4JX/boring", rev = "2a7463a", optional = true }
-boring-sys = { git = "https://github.com/4JX/boring", rev = "2a7463a", optional = true }
+hyper-boring = { git = "https://github.com/gngpp/boring", rev = "2a7463a", optional = true }
+boring = { git = "https://github.com/gngpp/boring", rev = "2a7463a", optional = true }
+tokio-boring = { git = "https://github.com/gngpp/boring", rev = "2a7463a", optional = true }
+boring-sys = { git = "https://github.com/gngpp/boring", rev = "2a7463a", optional = true }
 foreign-types = { version = "0.5.0", optional = true }
 
 ## cookies
