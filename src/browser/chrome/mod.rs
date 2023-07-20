@@ -29,4 +29,5 @@ pub enum ChromeVersion {
     V106,
     V108,
     V110,
+    V99Android
 }
