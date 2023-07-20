@@ -10,18 +10,18 @@ It is currently missing HTTP/2 `PRIORITY` support. (PRs to [h2](https://github.c
 
 ```toml
 [patch.crates-io]
-hyper = { git = "https://github.com/4JX/hyper.git", branch = "v0.14.18-patched" }
-h2 = { git = "https://github.com/4JX/h2.git", branch = "imp" }
+hyper = { git = "https://github.com/gngpp/hyper.git", branch = "v0.14.18-patched" }
+h2 = { git = "https://github.com/gngpp/h2.git", branch = "imp" }
 ```
 
-These patches were made specifically for `reqwest-impersonate` to work, but I would appreciate if someone took the time to PR more "proper" versions to the parent projects.
+These patches were made specifically for `reqwest` to work, but I would appreciate if someone took the time to PR more "proper" versions to the parent projects.
 
 ## Example
 
 `Cargo.toml`
 
 ```toml
-reqwest-impersonate = { git = "https://github.com/4JX/reqwest-impersonate.git", default-features = false, features = [
+reqwest = { git = "https://github.com/gngpp/reqwest.git", default-features = false, features = [
     "chrome",
     "blocking",
 ] }
@@ -30,12 +30,12 @@ reqwest-impersonate = { git = "https://github.com/4JX/reqwest-impersonate.git", 
 `main.rs`
 
 ```rs
-use reqwest_impersonate::browser::ChromeVersion;
+use reqwest::browser::ChromeVersion;
 
 fn main() {
-    // Build a client to mimic Chrome 104
-    let client = reqwest_impersonate::blocking::Client::builder()
-        .chrome_builder(ChromeVersion::V104)
+    // Build a client to mimic Chrome 110
+    let client = reqwest::blocking::Client::builder()
+        .chrome_builder(ChromeVersion::V110)
         .build()
         .unwrap();
 
