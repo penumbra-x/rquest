@@ -1,4 +1,4 @@
-# reqwest-impersonate
+# reqwest
 
 A fork of reqwest used to impersonate the Chrome browser. Inspired by [curl-impersonate](https://github.com/lwthiker/curl-impersonate).
 
