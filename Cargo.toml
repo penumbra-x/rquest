@@ -254,7 +254,7 @@ path = "examples/simple.rs"
 [[example]]
 name = "chrome"
 path = "examples/chrome.rs"
-required-features = ["chrome", "blocking"]
+required-features = ["chrome", "blocking", "socks", "cookies"]
 
 [[test]]
 name = "blocking"
@@ -287,5 +287,5 @@ path = "tests/multipart.rs"
 required-features = ["multipart"]
 
 [patch.crates-io]
-h2 = { git = "https://github.com/4JX/h2.git", branch = "imp" }
-hyper = { git = "https://github.com/4JX/hyper.git", branch = "v0.14.18-patched" }
+h2 = { git = "https://github.com/gngpp/h2.git", branch = "imp" }
+hyper = { git = "https://github.com/gngpp/hyper.git", branch = "v0.14.18-patched" }
