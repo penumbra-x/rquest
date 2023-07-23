@@ -7,6 +7,7 @@ mod v105;
 mod v106;
 mod v108;
 mod v110;
+mod v114;
 mod v99_android;
 
 pub(super) fn get_config_from_ver(ver: ChromeVersion) -> BrowserSettings {
@@ -16,6 +17,7 @@ pub(super) fn get_config_from_ver(ver: ChromeVersion) -> BrowserSettings {
         ChromeVersion::V106 => v106::get_settings(),
         ChromeVersion::V108 => v108::get_settings(),
         ChromeVersion::V110 => v110::get_settings(),
+        ChromeVersion::V114 => v114::get_settings(),
         ChromeVersion::V99Android => v99_android::get_settings(),
     }
 }
