@@ -15,7 +15,7 @@ pub(super) fn get_settings() -> BrowserSettings {
         tls_builder_func: Arc::new(create_ssl_connector),
         http2: Http2Data {
             initial_stream_window_size: 6291456,
-            initial_connection_window_size: 15663105,
+            initial_connection_window_size: 15728640,
             max_concurrent_streams: 1000,
             max_header_list_size: 262144,
             header_table_size: 65536,
