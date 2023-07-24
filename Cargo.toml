@@ -1,7 +1,7 @@
 [package]
 name = "reqwest"
 version = "0.11.13"                                                 # remember to update html_root_url
-description = "An easy and powerful Rust HTTP Client (Impersonating Chrome browser)"
+description = "An easy and powerful Rust HTTP Client (Impersonating Chrome/OkHttp)"
 keywords = ["http", "request", "client"]
 categories = ["web-programming::http-client", "wasm"]
 repository = "https://github.com/seanmonstar/reqwest"
