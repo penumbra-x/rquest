@@ -8,22 +8,24 @@ use http::{
 };
 use std::sync::Arc;
 
-use crate::browser::{BrowserSettings, Http2Data};
+use crate::impersonate::profile::ClientProfile;
+use crate::impersonate::{Http2Data, ImpersonateSettings};
 
-pub(super) fn get_settings() -> BrowserSettings {
-    BrowserSettings {
+pub(super) fn get_settings() -> ImpersonateSettings {
+    ImpersonateSettings {
         tls_builder_func: Arc::new(create_ssl_connector),
         http2: Http2Data {
-            initial_stream_window_size: 6291456,
-            initial_connection_window_size: 15728640,
-            max_concurrent_streams: 1000,
-            max_header_list_size: 262144,
-            header_table_size: 65536,
+            initial_stream_window_size: Some(6291456),
+            initial_connection_window_size: Some(15728640),
+            max_concurrent_streams: Some(1000),
+            max_header_list_size: Some(262144),
+            header_table_size: Some(65536),
             enable_push: Some(false),
         },
         headers: create_headers(),
         gzip: true,
         brotli: true,
+        client_profile: ClientProfile::Chrome,
     }
 }
 
@@ -108,6 +110,10 @@ fn create_headers() -> HeaderMap {
     headers.insert("sec-fetch-dest", "document".parse().unwrap());
     headers.insert(ACCEPT_ENCODING, "gzip, deflate, br".parse().unwrap());
     headers.insert(ACCEPT_LANGUAGE, "en-US,en;q=0.9".parse().unwrap());
+    headers.insert(
+        "client_profile",
+        ClientProfile::Chrome.to_string().parse().unwrap(),
+    );
 
     headers
 }

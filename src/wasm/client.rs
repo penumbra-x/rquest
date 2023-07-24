@@ -23,7 +23,7 @@ fn js_fetch(req: &web_sys::Request) -> Promise {
             .unchecked_into::<web_sys::ServiceWorkerGlobalScope>()
             .fetch_with_request(req)
     } else {
-        // browser
+        // impersonate
         fetch_with_request(req)
     }
 }

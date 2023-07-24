@@ -1,30 +1,31 @@
-use std::sync::Arc;
-
 use boring::ssl::{
     CertCompressionAlgorithm, SslConnector, SslConnectorBuilder, SslMethod, SslVerifyMode,
     SslVersion,
 };
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, UPGRADE_INSECURE_REQUESTS, USER_AGENT},
-    HeaderMap,
+    HeaderMap, HeaderValue,
 };
+use std::sync::Arc;
 
-use crate::browser::{BrowserSettings, Http2Data};
+use crate::impersonate::profile::ClientProfile;
+use crate::impersonate::{Http2Data, ImpersonateSettings};
 
-pub(super) fn get_settings() -> BrowserSettings {
-    BrowserSettings {
+pub(super) fn get_settings() -> ImpersonateSettings {
+    ImpersonateSettings {
         tls_builder_func: Arc::new(create_ssl_connector),
         http2: Http2Data {
-            initial_stream_window_size: 6291456,
-            initial_connection_window_size: 15728640,
-            max_concurrent_streams: 1000,
-            max_header_list_size: 262144,
-            header_table_size: 65536,
-            enable_push: None,
+            initial_stream_window_size: Some(6291456),
+            initial_connection_window_size: Some(15728640),
+            max_concurrent_streams: Some(1000),
+            max_header_list_size: Some(262144),
+            header_table_size: Some(65536),
+            enable_push: Some(false),
         },
         headers: create_headers(),
         gzip: true,
         brotli: true,
+        client_profile: ClientProfile::Chrome,
     }
 }
 
@@ -94,14 +95,14 @@ fn create_headers() -> HeaderMap {
 
     headers.insert(
         "sec-ch-ua",
-        "\"Google Chrome\";v=\"105\", \"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"105\""
-            .parse()
-            .unwrap(),
+        HeaderValue::from_static(
+            "\"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"108\", \"Google Chrome\";v=\"108\"",
+        ),
     );
     headers.insert("sec-ch-ua-mobile", "?0".parse().unwrap());
     headers.insert("sec-ch-ua-platform", "\"Windows\"".parse().unwrap());
     headers.insert(UPGRADE_INSECURE_REQUESTS, "1".parse().unwrap());
-    headers.insert(USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36".parse().unwrap());
+    headers.insert(USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36".parse().unwrap());
     headers.insert(ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9".parse().unwrap());
     headers.insert("sec-fetch-site", "none".parse().unwrap());
     headers.insert("sec-fetch-mode", "navigate".parse().unwrap());
@@ -109,6 +110,10 @@ fn create_headers() -> HeaderMap {
     headers.insert("sec-fetch-dest", "document".parse().unwrap());
     headers.insert(ACCEPT_ENCODING, "gzip, deflate, br".parse().unwrap());
     headers.insert(ACCEPT_LANGUAGE, "en-US,en;q=0.9".parse().unwrap());
+    headers.insert(
+        "client_profile",
+        ClientProfile::Chrome.to_string().parse().unwrap(),
+    );
 
     headers
 }

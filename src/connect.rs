@@ -29,6 +29,7 @@ use self::native_tls_conn::NativeTlsConn;
 use self::rustls_tls_conn::RustlsTlsConn;
 use crate::dns::DynResolver;
 use crate::error::BoxError;
+use crate::impersonate::profile::ClientProfile;
 use crate::proxy::{Proxy, ProxyScheme};
 
 pub(crate) type HttpConnector = hyper::client::HttpConnector<DynResolver>;
@@ -43,6 +44,8 @@ pub(crate) struct Connector {
     nodelay: bool,
     #[cfg(feature = "__tls")]
     user_agent: Option<HeaderValue>,
+
+    client_profile: ClientProfile
 }
 
 #[derive(Clone)]
@@ -65,20 +68,24 @@ enum Inner {
 }
 
 #[cfg(feature = "__boring")]
-fn tls_add_application_settings(conf: &mut ConnectConfiguration) {
+fn tls_add_application_settings(conf: &mut ConnectConfiguration, client_profile: &ClientProfile) {
     // curl-impersonate does not know how to set this up, neither do I. Hopefully nothing breaks with these values.
-
-    const ALPN_H2: &str = "h2";
-    const ALPN_H2_LENGTH: usize = 2;
-    unsafe {
-        boring_sys::SSL_add_application_settings(
-            conf.as_ptr(),
-            ALPN_H2.as_ptr(),
-            ALPN_H2_LENGTH,
-            std::ptr::null(),
-            0,
-        )
-    };
+    match client_profile {
+        ClientProfile::Chrome => {
+            const ALPN_H2: &str = "h2";
+            const ALPN_H2_LENGTH: usize = 2;
+            unsafe {
+                boring_sys::SSL_add_application_settings(
+                    conf.as_ptr(),
+                    ALPN_H2.as_ptr(),
+                    ALPN_H2_LENGTH,
+                    std::ptr::null(),
+                    0,
+                )
+            };
+        }
+        ClientProfile::OkHttp => {}
+    }
 }
 
 impl Connector {
@@ -89,8 +96,8 @@ impl Connector {
         local_addr: T,
         nodelay: bool,
     ) -> Connector
-    where
-        T: Into<Option<IpAddr>>,
+        where
+            T: Into<Option<IpAddr>>,
     {
         http.set_local_address(local_addr.into());
         http.set_nodelay(nodelay);
@@ -111,8 +118,8 @@ impl Connector {
         local_addr: T,
         nodelay: bool,
     ) -> crate::Result<Connector>
-    where
-        T: Into<Option<IpAddr>>,
+        where
+            T: Into<Option<IpAddr>>,
     {
         let tls = tls.build().map_err(crate::error::builder)?;
         Ok(Self::from_built_default_tls(
@@ -129,8 +136,8 @@ impl Connector {
         local_addr: T,
         nodelay: bool,
     ) -> Connector
-    where
-        T: Into<Option<IpAddr>>,
+        where
+            T: Into<Option<IpAddr>>,
     {
         http.set_local_address(local_addr.into());
         http.enforce_http(false);
@@ -142,6 +149,7 @@ impl Connector {
             timeout: None,
             nodelay,
             user_agent,
+            client_profile: ClientProfile::Chrome
         }
     }
 
@@ -153,9 +161,10 @@ impl Connector {
         user_agent: Option<HeaderValue>,
         local_addr: T,
         nodelay: bool,
+        client_profile: ClientProfile
     ) -> Connector
-    where
-        T: Into<Option<IpAddr>>,
+        where
+            T: Into<Option<IpAddr>>,
     {
         http.set_local_address(local_addr.into());
         http.enforce_http(false);
@@ -167,6 +176,7 @@ impl Connector {
             timeout: None,
             nodelay,
             user_agent,
+            client_profile,
         }
     }
 
@@ -179,8 +189,8 @@ impl Connector {
         local_addr: T,
         nodelay: bool,
     ) -> Connector
-    where
-        T: Into<Option<IpAddr>>,
+        where
+            T: Into<Option<IpAddr>>,
     {
         http.set_local_address(local_addr.into());
         http.enforce_http(false);
@@ -205,6 +215,7 @@ impl Connector {
             timeout: None,
             nodelay,
             user_agent,
+            client_profile: ClientProfile::Chrome
         }
     }
 
@@ -272,7 +283,7 @@ impl Connector {
                     let tls_connector = tls().build();
                     let mut conf = tls_connector.configure()?;
 
-                    tls_add_application_settings(&mut conf);
+                    tls_add_application_settings(&mut conf, &self.client_profile);
 
                     let io = tokio_boring::connect(conf, &host, conn).await?;
                     return Ok(Conn {
@@ -374,8 +385,10 @@ impl Connector {
 
                 let mut http = hyper_boring::HttpsConnector::with_connector(http, tls())?;
 
-                http.set_callback(|conf, _| {
-                    tls_add_application_settings(conf);
+                let profile = self.client_profile.clone();
+                http.set_callback(move |conf, _| {
+                    let profile = &profile;
+                    tls_add_application_settings(conf, profile);
                     Ok(())
                 });
 
@@ -415,7 +428,7 @@ impl Connector {
         };
 
         #[cfg(feature = "__tls")]
-        let auth = _auth;
+            let auth = _auth;
 
         match &self.inner {
             #[cfg(feature = "default-tls")]
@@ -435,7 +448,7 @@ impl Connector {
                         self.user_agent.clone(),
                         auth,
                     )
-                    .await?;
+                        .await?;
                     let tls_connector = tokio_native_tls::TlsConnector::from(tls.clone());
                     let io = tls_connector
                         .connect(host.ok_or("no host in url")?, tunneled)
@@ -488,12 +501,12 @@ impl Connector {
                     let mut http =
                         hyper_boring::HttpsConnector::with_connector(http, tls_connector)?;
 
-                    http.set_callback(|conf, _| {
-                        tls_add_application_settings(conf);
-
+                    let profile = self.client_profile.clone();
+                    http.set_callback(move |conf, _| {
+                        let profile = &profile;
+                        tls_add_application_settings(conf, profile);
                         Ok(())
                     });
-
                     let conn = http.call(proxy_dst).await?;
                     log::trace!("tunneling HTTPS over proxy");
                     let tunneled = tunnel(
@@ -503,11 +516,10 @@ impl Connector {
                         self.user_agent.clone(),
                         auth,
                     )
-                    .await?;
+                        .await?;
                     let tls_connector = tls().build();
                     let mut conf = tls_connector.configure()?;
-
-                    tls_add_application_settings(&mut conf);
+                    tls_add_application_settings(&mut conf, &self.client_profile);
 
                     let io = tokio_boring::connect(conf, host.ok_or("no host in url")?, tunneled)
                         .await?;
@@ -540,7 +552,7 @@ impl Connector {
 
 fn into_uri(scheme: Scheme, host: Authority) -> Uri {
     // TODO: Should the `http` crate get `From<(Scheme, Authority)> for Uri`?
-    http::Uri::builder()
+    Uri::builder()
         .scheme(scheme)
         .authority(host)
         .path_and_query(http::uri::PathAndQuery::from_static("/"))
@@ -549,8 +561,8 @@ fn into_uri(scheme: Scheme, host: Authority) -> Uri {
 }
 
 async fn with_timeout<T, F>(f: F, timeout: Option<Duration>) -> Result<T, BoxError>
-where
-    F: Future<Output = Result<T, BoxError>>,
+    where
+        F: Future<Output = Result<T, BoxError>>,
 {
     if let Some(to) = timeout {
         match tokio::time::timeout(to, f).await {
@@ -592,7 +604,7 @@ impl Service<Uri> for Connector {
 }
 
 pub(crate) trait AsyncConn:
-    AsyncRead + AsyncWrite + Connection + Send + Sync + Unpin + 'static
+AsyncRead + AsyncWrite + Connection + Send + Sync + Unpin + 'static
 {
 }
 
@@ -673,8 +685,8 @@ async fn tunnel<T>(
     user_agent: Option<HeaderValue>,
     auth: Option<HeaderValue>,
 ) -> Result<T, BoxError>
-where
-    T: AsyncRead + AsyncWrite + Unpin,
+    where
+        T: AsyncRead + AsyncWrite + Unpin,
 {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -685,7 +697,7 @@ where
          ",
         host, port
     )
-    .into_bytes();
+        .into_bytes();
 
     // user-agent
     if let Some(user_agent) = user_agent {
@@ -726,7 +738,7 @@ where
             if pos == buf.len() {
                 return Err("proxy headers too long for tunnel".into());
             }
-        // else read more
+            // else read more
         } else if recvd.starts_with(b"HTTP/1.1 407") {
             return Err("proxy authentication required".into());
         } else {
@@ -1044,8 +1056,8 @@ mod socks {
                 &username,
                 &password,
             )
-            .await
-            .map_err(|e| format!("socks connect error: {}", e))?
+                .await
+                .map_err(|e| format!("socks connect error: {}", e))?
         } else {
             Socks5Stream::connect(socket_addr, (host.as_str(), port))
                 .await
@@ -1171,7 +1183,7 @@ mod verbose {
                     write!(f, "\\{}", c as char)?;
                 } else if c == b'\0' {
                     write!(f, "\\0")?;
-                // ASCII printable
+                    // ASCII printable
                 } else if c >= 0x20 && c < 0x7f {
                     write!(f, "{}", c as char)?;
                 } else {
@@ -1343,7 +1355,7 @@ mod tests {
                 ua(),
                 Some(proxy::encode_basic_auth("Aladdin", "open sesame")),
             )
-            .await
+                .await
         };
 
         rt.block_on(f).unwrap();

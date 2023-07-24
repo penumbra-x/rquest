@@ -41,7 +41,7 @@ boring-tls = ["__boring"]
 
 
 blocking = ["futures-util/io", "tokio/rt-multi-thread", "tokio/sync"]
-chrome = ["__chrome"]
+impersonate = ["__impersonate"]
 
 
 cookies = ["cookie_crate", "cookie_store"]
@@ -81,7 +81,7 @@ __boring = [
     "foreign-types",
 ]
 
-__chrome = ["__boring", "__browser_common"]
+__impersonate = ["__boring", "__browser_common"]
 
 __browser_common = ["brotli", "gzip"]
 
@@ -252,9 +252,9 @@ name = "simple"
 path = "examples/simple.rs"
 
 [[example]]
-name = "chrome"
-path = "examples/chrome.rs"
-required-features = ["chrome", "blocking", "socks", "cookies"]
+name = "impersonate"
+path = "examples/impersonate.rs"
+required-features = ["impersonate", "blocking", "socks", "cookies"]
 
 [[test]]
 name = "blocking"

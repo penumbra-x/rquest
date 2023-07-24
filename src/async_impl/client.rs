@@ -28,8 +28,8 @@ use super::decoder::Accepts;
 use super::request::{Request, RequestBuilder};
 use super::response::Response;
 use super::Body;
-#[cfg(feature = "__chrome")]
-use crate::browser::{configure_chrome, ChromeVersion};
+#[cfg(feature = "__impersonate")]
+use crate::impersonate::{configure_impersonate, Impersonate};
 use crate::connect::Connector;
 #[cfg(feature = "cookies")]
 use crate::cookie;
@@ -46,6 +46,7 @@ use crate::Certificate;
 #[cfg(any(feature = "native-tls", feature = "__rustls"))]
 use crate::Identity;
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
+use crate::impersonate::profile::ClientProfile;
 
 /// An asynchronous `Client` to make Requests with.
 ///
@@ -133,6 +134,7 @@ struct Config {
     https_only: bool,
     dns_overrides: HashMap<String, Vec<SocketAddr>>,
     dns_resolver: Option<Arc<dyn Resolve>>,
+    client_profile: ClientProfile
 }
 
 impl Default for ClientBuilder {
@@ -207,14 +209,15 @@ impl ClientBuilder {
                 https_only: false,
                 dns_overrides: HashMap::new(),
                 dns_resolver: None,
+                client_profile: ClientProfile::Chrome,
             },
         }
     }
 
     /// Sets the necessary values to mimic the specified Chrome version.
-    #[cfg(feature = "__chrome")]
-    pub fn chrome_builder(self, ver: ChromeVersion) -> ClientBuilder {
-        configure_chrome(ver, self)
+    #[cfg(feature = "__impersonate")]
+    pub fn impersonate_builder(self, ver: Impersonate) -> ClientBuilder {
+        configure_impersonate(ver, self)
     }
     /// Returns a `Client` that uses this `ClientBuilder` configuration.
     ///
@@ -269,6 +272,7 @@ impl ClientBuilder {
                     user_agent(&config.headers),
                     config.local_address,
                     config.nodelay,
+                    config.client_profile
                 ),
                 #[cfg(feature = "default-tls")]
                 TlsBackend::Default => {
@@ -731,6 +735,12 @@ impl ClientBuilder {
     #[cfg_attr(docsrs, doc(cfg(feature = "gzip")))]
     pub fn gzip(mut self, enable: bool) -> ClientBuilder {
         self.config.accepts.gzip = enable;
+        self
+    }
+
+    /// impersonate client profile
+    pub fn client_profile(mut self, client_profile: ClientProfile) -> ClientBuilder {
+        self.config.client_profile = client_profile;
         self
     }
 

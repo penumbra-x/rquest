@@ -1,10 +1,10 @@
-//! Settings for impersonating the Chrome browser
+//! Settings for impersonating the Chrome impersonate
 
 use crate::ClientBuilder;
 
 mod ver;
 
-pub(crate) fn configure_chrome(ver: ChromeVersion, builder: ClientBuilder) -> ClientBuilder {
+pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) -> ClientBuilder {
     let settings = ver::get_config_from_ver(ver);
 
     builder
@@ -18,17 +18,37 @@ pub(crate) fn configure_chrome(ver: ChromeVersion, builder: ClientBuilder) -> Cl
         .replace_default_headers(settings.headers)
         .brotli(settings.brotli)
         .gzip(settings.gzip)
+        .client_profile(settings.client_profile)
 }
 
 /// Defines the Chrome version to mimic when setting up a builder
 #[derive(Debug)]
 #[allow(missing_docs)]
-pub enum ChromeVersion {
-    V104,
-    V105,
-    V106,
-    V108,
-    V110,
-    V114,
-    V99Android,
+pub enum Impersonate {
+    Chrome104,
+    Chrome105,
+    Chrome106,
+    Chrome108,
+    Chrome109,
+    Chrome114,
+    Chrome99Android,
+    OkHttpAndroid13,
+}
+
+/// impersonate client profile
+#[derive(Clone, Copy, Debug)]
+pub enum ClientProfile {
+    /// Chrome impersonate client profile
+    Chrome,
+    /// OkHttp impersonate client profile
+    OkHttp,
+}
+
+impl ToString for ClientProfile {
+    fn to_string(&self) -> String {
+        match self {
+            ClientProfile::Chrome => "chrome".to_string(),
+            ClientProfile::OkHttp => "okhttp".to_string(),
+        }
+    }
 }

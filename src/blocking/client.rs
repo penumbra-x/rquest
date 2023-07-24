@@ -16,8 +16,8 @@ use tokio::sync::{mpsc, oneshot};
 use super::request::{Request, RequestBuilder};
 use super::response::Response;
 use super::wait;
-#[cfg(feature = "__chrome")]
-use crate::browser::ChromeVersion;
+#[cfg(feature = "__impersonate")]
+use crate::impersonate::Impersonate;
 #[cfg(feature = "__tls")]
 use crate::tls;
 #[cfg(feature = "__tls")]
@@ -91,9 +91,9 @@ impl ClientBuilder {
     }
 
     /// Sets the necessary values to mimic the specified Chrome version.
-    #[cfg(feature = "__chrome")]
-    pub fn chrome_builder(self, ver: ChromeVersion) -> ClientBuilder {
-        self.with_inner(move |inner| inner.chrome_builder(ver))
+    #[cfg(feature = "__impersonate")]
+    pub fn impersonate_builder(self, ver: Impersonate) -> ClientBuilder {
+        self.with_inner(move |inner| inner.impersonate_builder(ver))
     }
 
     /// Returns a `Client` that uses this `ClientBuilder` configuration.

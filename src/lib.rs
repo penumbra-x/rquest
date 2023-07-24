@@ -231,7 +231,7 @@ pub use url::Url;
 #[macro_use]
 mod error;
 #[cfg(feature = "__browser_common")]
-pub mod browser;
+pub mod impersonate;
 mod into_url;
 mod response;
 
