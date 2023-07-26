@@ -30,24 +30,24 @@ reqwest = { git = "https://github.com/gngpp/reqwest.git", default-features = fal
 `main.rs`
 
 ```rs
-use reqwest::browser::ChromeVersion;
 
 fn main() {
-    // Build a client to mimic Chrome 110
+    // Build a client to mimic OkHttpAndroid13
     let client = reqwest::blocking::Client::builder()
-        .chrome_builder(ChromeVersion::V110)
+        .impersonate_builder(reqwest::impersonate::Impersonate::OkHttpAndroid13)
         .build()
         .unwrap();
 
     // Use the API you're already familiar with
-    match client.get("https://yoururl.com").send() {
+    match client.get("https://chat.openai.com/backend-api/models").send() {
         Ok(res) => {
-            println!("{:?}", res.text().unwrap());
+            println!("{}", res.text().unwrap());
         }
         Err(err) => {
             dbg!(err);
         }
     };
+}
 }
 ```
 

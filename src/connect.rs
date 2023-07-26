@@ -29,6 +29,7 @@ use self::native_tls_conn::NativeTlsConn;
 use self::rustls_tls_conn::RustlsTlsConn;
 use crate::dns::DynResolver;
 use crate::error::BoxError;
+#[cfg(feature = "impersonate")]
 use crate::impersonate::profile::ClientProfile;
 use crate::proxy::{Proxy, ProxyScheme};
 
@@ -44,7 +45,7 @@ pub(crate) struct Connector {
     nodelay: bool,
     #[cfg(feature = "__tls")]
     user_agent: Option<HeaderValue>,
-
+    #[cfg(feature = "impersonate")]
     client_profile: ClientProfile
 }
 
@@ -149,6 +150,7 @@ impl Connector {
             timeout: None,
             nodelay,
             user_agent,
+            #[cfg(feature = "impersonate")]
             client_profile: ClientProfile::Chrome
         }
     }

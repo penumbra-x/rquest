@@ -46,6 +46,7 @@ use crate::Certificate;
 #[cfg(any(feature = "native-tls", feature = "__rustls"))]
 use crate::Identity;
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
+#[cfg(feature = "impersonate")]
 use crate::impersonate::profile::ClientProfile;
 
 /// An asynchronous `Client` to make Requests with.
@@ -134,6 +135,7 @@ struct Config {
     https_only: bool,
     dns_overrides: HashMap<String, Vec<SocketAddr>>,
     dns_resolver: Option<Arc<dyn Resolve>>,
+    #[cfg(feature = "impersonate")]
     client_profile: ClientProfile
 }
 
@@ -209,6 +211,7 @@ impl ClientBuilder {
                 https_only: false,
                 dns_overrides: HashMap::new(),
                 dns_resolver: None,
+                #[cfg(feature = "impersonate")]
                 client_profile: ClientProfile::Chrome,
             },
         }
@@ -738,6 +741,7 @@ impl ClientBuilder {
         self
     }
 
+    #[cfg(feature = "impersonate")]
     /// impersonate client profile
     pub fn client_profile(mut self, client_profile: ClientProfile) -> ClientBuilder {
         self.config.client_profile = client_profile;
