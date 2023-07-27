@@ -6,13 +6,6 @@ This crate was intended to be an experiment to learn more about TLS and HTTP2 fi
 
 It is currently missing HTTP/2 `PRIORITY` support. (PRs to [h2](https://github.com/hyperium/h2) are welcome)
 
-**Notice:** This crate depends on patched dependencies. To use it, please add the following to your `Cargo.toml`.
-
-```toml
-[patch.crates-io]
-hyper = { git = "https://github.com/gngpp/hyper.git", branch = "v0.14.18-patched" }
-h2 = { git = "https://github.com/gngpp/h2.git", branch = "imp" }
-```
 
 These patches were made specifically for `reqwest` to work, but I would appreciate if someone took the time to PR more "proper" versions to the parent projects.
 
@@ -22,6 +15,7 @@ These patches were made specifically for `reqwest` to work, but I would apprecia
 
 ```toml
 reqwest = { git = "https://github.com/gngpp/reqwest.git", default-features = false, features = [
+    "boring-tls"
     "impersonate",
     "blocking",
 ] }
