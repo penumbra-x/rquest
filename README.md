@@ -15,7 +15,7 @@ These patches were made specifically for `reqwest` to work, but I would apprecia
 
 ```toml
 reqwest = { git = "https://github.com/gngpp/reqwest.git", default-features = false, features = [
-    "boring-tls"
+    "boring-tls",
     "impersonate",
     "blocking",
 ] }
