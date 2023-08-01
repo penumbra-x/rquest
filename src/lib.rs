@@ -294,7 +294,7 @@ fn _assert_impls() {
 if_hyper! {
 
     #[cfg(test)]
-    doctest!("../README.md");
+    doc_comment::doctest!("../README.md");
 
     pub use self::async_impl::{
         Body, Client, ClientBuilder, Request, RequestBuilder, Response, Upgraded,
