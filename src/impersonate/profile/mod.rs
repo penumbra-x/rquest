@@ -6,7 +6,6 @@ mod ver;
 
 pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) -> ClientBuilder {
     let settings = ver::get_config_from_ver(ver);
-
     builder
         .use_boring_tls(settings.tls_builder_func)
         .http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
@@ -18,7 +17,6 @@ pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) ->
         .replace_default_headers(settings.headers)
         .brotli(settings.brotli)
         .gzip(settings.gzip)
-        .client_profile(settings.client_profile)
 }
 
 /// Defines the Chrome version to mimic when setting up a builder
@@ -29,10 +27,28 @@ pub enum Impersonate {
     Chrome105,
     Chrome106,
     Chrome108,
+    Chrome107,
     Chrome109,
     Chrome114,
     Chrome99Android,
     OkHttpAndroid13,
+}
+
+impl Impersonate {
+    /// Get the client profile for the given impersonate version
+    pub fn profile(&self) -> ClientProfile {
+        match self {
+            Impersonate::Chrome104
+            | Impersonate::Chrome105
+            | Impersonate::Chrome106
+            | Impersonate::Chrome108
+            | Impersonate::Chrome107
+            | Impersonate::Chrome109
+            | Impersonate::Chrome114
+            | Impersonate::Chrome99Android => ClientProfile::Chrome,
+            Impersonate::OkHttpAndroid13 => ClientProfile::OkHttp,
+        }
+    }
 }
 
 /// impersonate client profile

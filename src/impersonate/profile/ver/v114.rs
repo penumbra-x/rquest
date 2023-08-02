@@ -11,7 +11,7 @@ use std::sync::Arc;
 use crate::impersonate::profile::ClientProfile;
 use crate::impersonate::{Http2Data, ImpersonateSettings};
 
-pub(super) fn get_settings() -> ImpersonateSettings {
+pub(super) fn get_settings(profile: ClientProfile) -> ImpersonateSettings {
     ImpersonateSettings {
         tls_builder_func: Arc::new(create_ssl_connector),
         http2: Http2Data {
@@ -22,10 +22,9 @@ pub(super) fn get_settings() -> ImpersonateSettings {
             header_table_size: Some(65536),
             enable_push: Some(false),
         },
-        headers: create_headers(),
+        headers: create_headers(profile),
         gzip: true,
         brotli: true,
-        client_profile: ClientProfile::Chrome,
     }
 }
 
@@ -90,7 +89,7 @@ fn create_ssl_connector() -> SslConnectorBuilder {
     builder
 }
 
-fn create_headers() -> HeaderMap {
+fn create_headers(profile: ClientProfile) -> HeaderMap {
     let mut headers = HeaderMap::new();
 
     headers.insert(
@@ -110,10 +109,7 @@ fn create_headers() -> HeaderMap {
     headers.insert("sec-fetch-dest", "document".parse().unwrap());
     headers.insert(ACCEPT_ENCODING, "gzip, deflate, br".parse().unwrap());
     headers.insert(ACCEPT_LANGUAGE, "en-US,en;q=0.9".parse().unwrap());
-    headers.insert(
-        "client_profile",
-        ClientProfile::Chrome.to_string().parse().unwrap(),
-    );
+    headers.insert("client_profile", profile.to_string().parse().unwrap());
 
     headers
 }

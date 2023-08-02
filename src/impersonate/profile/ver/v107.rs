@@ -1,11 +1,13 @@
+use std::sync::Arc;
+
 use boring::ssl::{
-    SslConnector, SslConnectorBuilder, SslCurve, SslMethod, SslVerifyMode, SslVersion,
+    CertCompressionAlgorithm, SslConnector, SslConnectorBuilder, SslMethod, SslVerifyMode,
+    SslVersion,
 };
 use http::{
-    header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
+    header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, UPGRADE_INSECURE_REQUESTS, USER_AGENT},
     HeaderMap,
 };
-use std::sync::Arc;
 
 use crate::impersonate::profile::ClientProfile;
 use crate::impersonate::{Http2Data, ImpersonateSettings};
@@ -14,12 +16,12 @@ pub(super) fn get_settings(profile: ClientProfile) -> ImpersonateSettings {
     ImpersonateSettings {
         tls_builder_func: Arc::new(create_ssl_connector),
         http2: Http2Data {
-            initial_stream_window_size: Some(16777216),
-            initial_connection_window_size: Some(16777216),
-            max_concurrent_streams: None,
-            max_header_list_size: None,
-            header_table_size: None,
-            enable_push: None,
+            initial_stream_window_size: Some(6291456),
+            initial_connection_window_size: Some(15728640),
+            max_concurrent_streams: Some(1000),
+            max_header_list_size: Some(262144),
+            header_table_size: Some(65536),
+            enable_push: Some(false),
         },
         headers: create_headers(profile),
         gzip: true,
@@ -30,23 +32,21 @@ pub(super) fn get_settings(profile: ClientProfile) -> ImpersonateSettings {
 fn create_ssl_connector() -> SslConnectorBuilder {
     let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
 
+    builder.set_grease_enabled(true);
+
     builder.enable_ocsp_stapling();
 
     builder.set_verify(SslVerifyMode::NONE);
-
-    builder
-        .set_curves(&[SslCurve::X25519, SslCurve::SECP256R1, SslCurve::SECP384R1])
-        .unwrap();
 
     let cipher_list = [
         "TLS_AES_128_GCM_SHA256",
         "TLS_AES_256_GCM_SHA384",
         "TLS_CHACHA20_POLY1305_SHA256",
         "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-        "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-        "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
         "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
         "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
         "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
         "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
         "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
@@ -67,12 +67,17 @@ fn create_ssl_connector() -> SslConnectorBuilder {
         "rsa_pkcs1_sha384",
         "rsa_pss_rsae_sha512",
         "rsa_pkcs1_sha512",
-        "rsa_pkcs1_sha1",
     ];
 
     builder.set_sigalgs_list(&sigalgs_list.join(":")).unwrap();
 
+    builder.enable_signed_cert_timestamps();
+
     builder.set_alpn_protos(b"\x02h2\x08http/1.1").unwrap();
+
+    builder
+        .add_cert_compression_alg(CertCompressionAlgorithm::Brotli)
+        .unwrap();
 
     builder
         .set_min_proto_version(Some(SslVersion::TLS1_2))
@@ -88,13 +93,24 @@ fn create_ssl_connector() -> SslConnectorBuilder {
 fn create_headers(profile: ClientProfile) -> HeaderMap {
     let mut headers = HeaderMap::new();
 
-    headers.insert(ACCEPT, "*/*".parse().unwrap());
     headers.insert(
-        ACCEPT_LANGUAGE,
-        "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7".parse().unwrap(),
+        "sec-ch-ua",
+        "\"Chromium\";v=\"107\", \"Google Chrome\";v=\"107\", \"Not;A=Brand\";v=\"99\""
+            .parse()
+            .unwrap(),
     );
-    headers.insert(USER_AGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36".parse().unwrap());
+    headers.insert("sec-ch-ua-mobile", "?0".parse().unwrap());
+    headers.insert("sec-ch-ua-platform", "\"Windows\"".parse().unwrap());
+    headers.insert(UPGRADE_INSECURE_REQUESTS, "1".parse().unwrap());
+    headers.insert(USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36".parse().unwrap());
+    headers.insert(ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9".parse().unwrap());
+    headers.insert("sec-fetch-site", "none".parse().unwrap());
+    headers.insert("sec-fetch-mode", "navigate".parse().unwrap());
+    headers.insert("sec-fetch-user", "?1".parse().unwrap());
+    headers.insert("sec-fetch-dest", "document".parse().unwrap());
     headers.insert(ACCEPT_ENCODING, "gzip, deflate, br".parse().unwrap());
+    headers.insert(ACCEPT_LANGUAGE, "en-US,en;q=0.9".parse().unwrap());
     headers.insert("client_profile", profile.to_string().parse().unwrap());
+
     headers
 }
