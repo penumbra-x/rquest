@@ -70,6 +70,9 @@ enum Inner {
 
 #[cfg(feature = "__boring")]
 fn tls_add_application_settings(conf: &mut ConnectConfiguration, client_profile: &ClientProfile) {
+    unsafe {
+        boring_sys::SSL_set_permute_extensions(conf.as_ptr(), 1)
+    }
     // curl-impersonate does not know how to set this up, neither do I. Hopefully nothing breaks with these values.
     match client_profile {
         ClientProfile::Chrome => {
