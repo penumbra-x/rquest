@@ -285,6 +285,3 @@ required-features = ["deflate"]
 name = "multipart"
 path = "tests/multipart.rs"
 required-features = ["multipart"]
-
-# [patch.crates-io]
-# hyper = { git = "https://github.com/gngpp/hyper.git",  branch = "v0.14.18-patched" }
