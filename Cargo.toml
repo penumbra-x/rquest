@@ -146,10 +146,10 @@ rustls-native-certs = { version = "0.6", optional = true }
 rustls-pemfile = { version = "1.0", optional = true }
 
 ## boring-tls
-hyper-boring = { git = "https://github.com/gngpp/boring", rev = "0d52760", optional = true }
-boring = { git = "https://github.com/gngpp/boring", rev = "0d52760", optional = true }
-tokio-boring = { git = "https://github.com/gngpp/boring", rev = "0d52760", optional = true }
-boring-sys = { git = "https://github.com/gngpp/boring", rev = "0d52760", optional = true }
+hyper-boring = { git = "https://github.com/gngpp/boring", rev = "30da191", optional = true }
+boring = { git = "https://github.com/gngpp/boring", rev = "30da191", optional = true }
+tokio-boring = { git = "https://github.com/gngpp/boring", rev = "30da191", optional = true }
+boring-sys = { git = "https://github.com/gngpp/boring", rev = "30da191", optional = true }
 foreign-types = { version = "0.5.0", optional = true }
 
 ## cookies
