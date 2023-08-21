@@ -28,7 +28,7 @@ reqwest = { git = "https://github.com/gngpp/reqwest.git", default-features = fal
 fn main() {
     // Build a client to mimic OkHttpAndroid13
     let client = reqwest::blocking::Client::builder()
-        .impersonate_builder(reqwest::impersonate::Impersonate::OkHttpAndroid13)
+        .impersonate(reqwest::impersonate::Impersonate::OkHttpAndroid13)
         .build()
         .unwrap();
 

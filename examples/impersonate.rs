@@ -1,7 +1,7 @@
 fn main() {
     // Build a client to mimic Chrome 110
     let client = reqwest::blocking::Client::builder()
-        .impersonate_builder(reqwest::impersonate::Impersonate::OkHttpAndroid13)
+        .impersonate(reqwest::impersonate::Impersonate::OkHttpAndroid13)
         .build()
         .unwrap();
 
