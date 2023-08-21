@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::fmt;
 use std::net::SocketAddr;
 use std::pin::Pin;
@@ -184,15 +183,7 @@ impl Response {
 
         let full = self.bytes().await?;
 
-        let (text, _, _) = encoding.decode(&full);
-        if let Cow::Owned(s) = text {
-            return Ok(s);
-        }
-        unsafe {
-            // decoding returned Cow::Borrowed, meaning these bytes
-            // are already valid utf8
-            Ok(String::from_utf8_unchecked(full.to_vec()))
-        }
+        Ok(text.into_owned())
     }
 
     /// Try to deserialize the response body as JSON.
