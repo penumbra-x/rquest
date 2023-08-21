@@ -183,6 +183,7 @@ impl Response {
 
         let full = self.bytes().await?;
 
+        let (text, _, _) = encoding.decode(&full);
         Ok(text.into_owned())
     }
 
