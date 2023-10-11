@@ -1,4 +1,5 @@
 mod support;
+use reqwest_impersonate as reqwest;
 use std::io::Read;
 use support::*;
 

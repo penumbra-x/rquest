@@ -1,6 +1,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 mod support;
 use futures_util::stream::StreamExt;
+use reqwest_impersonate as reqwest;
 use support::*;
 
 #[tokio::test]

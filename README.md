@@ -14,7 +14,7 @@ These patches were made specifically for `reqwest` to work, but I would apprecia
 `Cargo.toml`
 
 ```toml
-reqwest = { git = "https://github.com/gngpp/reqwest.git", default-features = false, features = [
+reqwest = { package = "reqwest-impersonate", version = "0.11.13", default-features = false, features = [
     "boring-tls",
     "impersonate",
     "blocking",

@@ -5,6 +5,7 @@
 //! more code.
 
 // These require the `serde` dependency.
+use reqwest_impersonate as reqwest;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

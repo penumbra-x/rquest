@@ -1,6 +1,8 @@
 //! `cargo run --example blocking --features=blocking`
 #![deny(warnings)]
 
+use reqwest_impersonate as reqwest;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
 

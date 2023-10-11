@@ -1,5 +1,6 @@
 #![cfg(not(target_arch = "wasm32"))]
 mod support;
+use reqwest_impersonate as reqwest;
 use support::*;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
