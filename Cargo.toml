@@ -8,13 +8,14 @@ repository = "https://github.com/seanmonstar/reqwest"
 documentation = "https://docs.rs/reqwest"
 authors = ["Sean McArthur <sean@seanmonstar.com>"]
 readme = "README.md"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 edition = "2018"
+rust-version = "1.63.0"
 autotests = true
 
 [package.metadata.docs.rs]
 all-features = true
-rustdoc-args = ["--cfg", "docsrs"]
+rustdoc-args = ["--cfg", "docsrs", "--cfg", "reqwest_unstable"]
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [package.metadata.playground]
@@ -58,9 +59,12 @@ multipart = ["mime_guess"]
 
 trust-dns = ["trust-dns-resolver"]
 
-stream = ["tokio/fs", "tokio-util"]
+stream = ["tokio/fs", "tokio-util", "wasm-streams"]
 
 socks = ["tokio-socks"]
+
+# Experimental HTTP/3 client.
+http3 = ["rustls-tls-manual-roots", "h3", "h3-quinn", "quinn", "futures-channel"]
 
 # Internal (PRIVATE!) features used to aid testing.
 # Don't rely on these whatsoever. They may disappear at anytime.
@@ -89,13 +93,15 @@ __browser_common = ["brotli", "gzip"]
 __internal_proxy_sys_no_cache = []
 
 [dependencies]
-base64 = "0.21.2"
+base64 = "0.21"
 http = "0.2"
 url = "2.2"
 bytes = "1.0"
 serde = "1.0"
 serde_urlencoded = "0.7.1"
 tower-service = "0.3"
+futures-core = { version = "0.3.0", default-features = false }
+futures-util = { version = "0.3.0", default-features = false }
 
 # Optional deps...
 
@@ -106,8 +112,6 @@ mime_guess = { version = "2.0", default-features = false, optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 encoding_rs = "0.8"
-futures-core = { version = "0.3.0", default-features = false }
-futures-util = { version = "0.3.0", default-features = false }
 http-body = "0.4.0"
 hyper = { package = "hyper_imp", version = "0.14.27", default-features = false, features = [
     "tcp",
@@ -136,12 +140,10 @@ native-tls-crate = { version = "0.2.10", optional = true, package = "native-tls"
 tokio-native-tls = { version = "0.3.0", optional = true }
 
 # rustls-tls
-hyper-rustls = { version = "0.24.1", default-features = false, optional = true }
-rustls = { version = "0.21.5", features = [
-    "dangerous_configuration",
-], optional = true }
-tokio-rustls = { version = "0.24.1", optional = true }
-webpki-roots = { version = "0.25.1", optional = true }
+hyper-rustls = { version = "0.24.0", default-features = false, optional = true }
+rustls = { version = "0.21.6", features = ["dangerous_configuration"], optional = true }
+tokio-rustls = { version = "0.24", optional = true }
+webpki-roots = { version = "0.25", optional = true }
 rustls-native-certs = { version = "0.6", optional = true }
 rustls-pemfile = { version = "1.0", optional = true }
 
@@ -157,19 +159,21 @@ cookie_crate = { version = "0.17.0", package = "cookie", optional = true }
 cookie_store = { version = "0.20.0", optional = true }
 
 ## compression
-async-compression = { version = "0.4.1", default-features = false, features = [
-    "tokio",
-], optional = true }
-tokio-util = { version = "0.7.1", default-features = false, features = [
-    "codec",
-    "io",
-], optional = true }
+async-compression = { version = "0.4.0", default-features = false, features = ["tokio"], optional = true }
+tokio-util = { version = "0.7.1", default-features = false, features = ["codec", "io"], optional = true }
 
 ## socks
 tokio-socks = { version = "0.5.1", optional = true }
 
 ## trust-dns
-trust-dns-resolver = { version = "0.22", optional = true }
+trust-dns-resolver = { version = "0.23", optional = true, features = ["tokio-runtime"] }
+
+# HTTP/3 experimental support
+h3 = { version="0.0.2", optional = true }
+h3-quinn = { version="0.0.3", optional = true }
+quinn = { version = "0.10", default-features = false, features = ["tls-rustls", "ring", "runtime-tokio"], optional = true  }
+futures-channel = { version="0.3", optional = true}
+
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 env_logger = "0.10.0"
@@ -194,6 +198,9 @@ tokio = { version = "1.0", default-features = false, features = [
 [target.'cfg(windows)'.dependencies]
 winreg = "0.50.0"
 
+[target.'cfg(target_os = "macos")'.dependencies]
+system-configuration = "0.5.1"
+
 # wasm
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
@@ -201,10 +208,13 @@ js-sys = "0.3.45"
 serde_json = "1.0"
 wasm-bindgen = "0.2.68"
 wasm-bindgen-futures = "0.4.18"
+wasm-streams = { version = "0.3", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
 version = "0.3.25"
 features = [
+    "AbortController",
+    "AbortSignal",
     "Headers",
     "Request",
     "RequestInit",
@@ -217,6 +227,7 @@ features = [
     "ServiceWorkerGlobalScope",
     "RequestCredentials",
     "File",
+    "ReadableStream"
 ]
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]

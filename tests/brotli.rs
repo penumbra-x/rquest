@@ -1,7 +1,7 @@
 mod support;
 use reqwest_impersonate as reqwest;
 use std::io::Read;
-use support::*;
+use support::server;
 
 #[tokio::test]
 async fn brotli_response() {

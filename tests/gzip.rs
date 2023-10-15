@@ -1,6 +1,6 @@
-mod support;
 use reqwest_impersonate as reqwest;
-use support::*;
+mod support;
+use support::server;
 
 use std::io::Write;
 

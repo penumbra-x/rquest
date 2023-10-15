@@ -1,7 +1,6 @@
 use std::convert::TryFrom;
 use std::fmt;
 use std::future::Future;
-use std::io::Write;
 use std::time::Duration;
 
 use serde::Serialize;
@@ -16,7 +15,6 @@ use super::response::Response;
 #[cfg(feature = "multipart")]
 use crate::header::CONTENT_LENGTH;
 use crate::header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE};
-use crate::util::base64;
 use crate::{Method, Url};
 use http::{request::Parts, Request as HttpRequest, Version};
 
@@ -134,7 +132,7 @@ impl Request {
             None => None,
         };
         let mut req = Request::new(self.method().clone(), self.url().clone());
-        *req.timeout_mut() = self.timeout().cloned();
+        *req.timeout_mut() = self.timeout().copied();
         *req.headers_mut() = self.headers().clone();
         *req.version_mut() = self.version();
         req.body = body;
@@ -179,6 +177,14 @@ impl RequestBuilder {
         }
     }
 
+    /// Assemble a builder starting from an existing `Client` and a `Request`.
+    pub fn from_parts(client: Client, request: Request) -> RequestBuilder {
+        RequestBuilder {
+            client,
+            request: crate::Result::Ok(request),
+        }
+    }
+
     /// Add a `Header` to this Request.
     pub fn header<K, V>(self, key: K, value: V) -> RequestBuilder
     where
@@ -190,7 +196,7 @@ impl RequestBuilder {
         self.header_sensitive(key, value, false)
     }
 
-    /// Add a `Header` to this Request with ability to define if header_value is sensitive.
+    /// Add a `Header` to this Request with ability to define if `header_value` is sensitive.
     fn header_sensitive<K, V>(mut self, key: K, value: V, sensitive: bool) -> RequestBuilder
     where
         HeaderName: TryFrom<K>,
@@ -251,16 +257,7 @@ impl RequestBuilder {
         U: fmt::Display,
         P: fmt::Display,
     {
-        let mut header_value = b"Basic ".to_vec();
-        {
-            let mut encoder = base64::encoder(&mut header_value);
-            // The unwraps here are fine because Vec::write* is infallible.
-            write!(encoder, "{}:", username).unwrap();
-            if let Some(password) = password {
-                write!(encoder, "{}", password).unwrap();
-            }
-        }
-
+        let header_value = crate::util::basic_auth(username, password);
         self.header_sensitive(crate::header::AUTHORIZATION, header_value, true)
     }
 
@@ -477,6 +474,15 @@ impl RequestBuilder {
         self.request
     }
 
+    /// Build a `Request`, which can be inspected, modified and executed with
+    /// `Client::execute()`.
+    ///
+    /// This is similar to [`RequestBuilder::build()`], but also returns the
+    /// embedded `Client`.
+    pub fn build_split(self) -> (Client, crate::Result<Request>) {
+        (self.client, self.request)
+    }
+
     /// Constructs the Request and sends it to the target URL, returning a
     /// future Response.
     ///
@@ -643,7 +649,7 @@ impl TryFrom<Request> for HttpRequest<Body> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Client, HttpRequest, Request, Version};
+    use super::{Client, HttpRequest, Request, RequestBuilder, Version};
     use crate::Method;
     use serde::Serialize;
     use std::collections::BTreeMap;
@@ -902,6 +908,18 @@ mod tests {
         assert_eq!(req.method(), Method::GET);
         assert_eq!(req.url().as_str(), "http://localhost/");
         assert_eq!(req.version(), Version::HTTP_11);
+    }
+
+    #[test]
+    fn builder_split_reassemble() {
+        let builder = {
+            let client = Client::new();
+            client.get("http://example.com")
+        };
+        let (client, inner) = builder.build_split();
+        let request = inner.unwrap();
+        let builder = RequestBuilder::from_parts(client, request);
+        builder.build().unwrap();
     }
 
     /*

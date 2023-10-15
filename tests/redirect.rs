@@ -1,6 +1,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 mod support;
 use futures_util::stream::StreamExt;
+use hyper::Body;
 use reqwest_impersonate as reqwest;
 use support::*;
 
@@ -9,7 +10,7 @@ async fn test_redirect_301_and_302_and_303_changes_post_to_get() {
     let client = reqwest::Client::new();
     let codes = [301u16, 302, 303];
 
-    for &code in codes.iter() {
+    for &code in &codes {
         let redirect = server::http(move |req| async move {
             if req.method() == "POST" {
                 assert_eq!(req.uri(), &*format!("/{}", code));
@@ -17,14 +18,14 @@ async fn test_redirect_301_and_302_and_303_changes_post_to_get() {
                     .status(code)
                     .header("location", "/dst")
                     .header("server", "test-redirect")
-                    .body(Default::default())
+                    .body(Body::default())
                     .unwrap()
             } else {
                 assert_eq!(req.method(), "GET");
 
                 http::Response::builder()
                     .header("server", "test-dst")
-                    .body(Default::default())
+                    .body(Body::default())
                     .unwrap()
             }
         });
@@ -45,7 +46,7 @@ async fn test_redirect_301_and_302_and_303_changes_post_to_get() {
 async fn test_redirect_307_and_308_tries_to_get_again() {
     let client = reqwest::Client::new();
     let codes = [307u16, 308];
-    for &code in codes.iter() {
+    for &code in &codes {
         let redirect = server::http(move |req| async move {
             assert_eq!(req.method(), "GET");
             if req.uri() == &*format!("/{}", code) {
@@ -53,14 +54,14 @@ async fn test_redirect_307_and_308_tries_to_get_again() {
                     .status(code)
                     .header("location", "/dst")
                     .header("server", "test-redirect")
-                    .body(Default::default())
+                    .body(Body::default())
                     .unwrap()
             } else {
                 assert_eq!(req.uri(), "/dst");
 
                 http::Response::builder()
                     .header("server", "test-dst")
-                    .body(Default::default())
+                    .body(Body::default())
                     .unwrap()
             }
         });
@@ -82,7 +83,7 @@ async fn test_redirect_307_and_308_tries_to_post_again() {
     let _ = env_logger::try_init();
     let client = reqwest::Client::new();
     let codes = [307u16, 308];
-    for &code in codes.iter() {
+    for &code in &codes {
         let redirect = server::http(move |mut req| async move {
             assert_eq!(req.method(), "POST");
             assert_eq!(req.headers()["content-length"], "5");
@@ -95,14 +96,14 @@ async fn test_redirect_307_and_308_tries_to_post_again() {
                     .status(code)
                     .header("location", "/dst")
                     .header("server", "test-redirect")
-                    .body(Default::default())
+                    .body(Body::default())
                     .unwrap()
             } else {
                 assert_eq!(req.uri(), "/dst");
 
                 http::Response::builder()
                     .header("server", "test-dst")
-                    .body(Default::default())
+                    .body(Body::default())
                     .unwrap()
             }
         });
@@ -124,7 +125,7 @@ async fn test_redirect_307_and_308_tries_to_post_again() {
 fn test_redirect_307_does_not_try_if_reader_cannot_reset() {
     let client = reqwest::blocking::Client::new();
     let codes = [307u16, 308];
-    for &code in codes.iter() {
+    for &code in &codes {
         let redirect = server::http(move |mut req| async move {
             assert_eq!(req.method(), "POST");
             assert_eq!(req.uri(), &*format!("/{}", code));
@@ -137,7 +138,7 @@ fn test_redirect_307_does_not_try_if_reader_cannot_reset() {
                 .status(code)
                 .header("location", "/dst")
                 .header("server", "test-redirect")
-                .body(Default::default())
+                .body(Body::default())
                 .unwrap()
         });
 
@@ -180,7 +181,7 @@ async fn test_redirect_removes_sensitive_headers() {
         http::Response::builder()
             .status(302)
             .header("location", format!("http://{}/end", end_addr))
-            .body(Default::default())
+            .body(Body::default())
             .unwrap()
     });
 
@@ -206,7 +207,7 @@ async fn test_redirect_policy_can_return_errors() {
         http::Response::builder()
             .status(302)
             .header("location", "/loop")
-            .body(Default::default())
+            .body(Body::default())
             .unwrap()
     });
 
@@ -222,7 +223,7 @@ async fn test_redirect_policy_can_stop_redirects_without_an_error() {
         http::Response::builder()
             .status(302)
             .header("location", "/dont")
-            .body(Default::default())
+            .body(Body::default())
             .unwrap()
     });
 
@@ -248,7 +249,7 @@ async fn test_referer_is_not_set_if_disabled() {
             http::Response::builder()
                 .status(302)
                 .header("location", "/dst")
-                .body(Default::default())
+                .body(Body::default())
                 .unwrap()
         } else {
             assert_eq!(req.uri(), "/dst");
@@ -274,7 +275,7 @@ async fn test_invalid_location_stops_redirect_gh484() {
         http::Response::builder()
             .status(302)
             .header("location", "http://www.yikes{KABOOM}")
-            .body(Default::default())
+            .body(Body::default())
             .unwrap()
     });
 
@@ -296,7 +297,7 @@ async fn test_redirect_302_with_set_cookies() {
                 .status(302)
                 .header("location", "/dst")
                 .header("set-cookie", "key=value")
-                .body(Default::default())
+                .body(Body::default())
                 .unwrap()
         } else {
             assert_eq!(req.uri(), "/dst");
@@ -326,7 +327,7 @@ async fn test_redirect_https_only_enforced_gh1312() {
         http::Response::builder()
             .status(302)
             .header("location", "http://insecure")
-            .body(Default::default())
+            .body(Body::default())
             .unwrap()
     });
 

@@ -129,6 +129,8 @@ impl Response {
     /// Encoding is determined from the `charset` parameter of `Content-Type` header,
     /// and defaults to `utf-8` if not presented.
     ///
+    /// Note that the BOM is stripped from the returned String.
+    ///
     /// # Example
     ///
     /// ```
@@ -153,6 +155,8 @@ impl Response {
     /// You can provide a default encoding for decoding the raw message, while the
     /// `charset` parameter of `Content-Type` header is still prioritized. For more information
     /// about the possible encoding name, please go to [`encoding_rs`] docs.
+    ///
+    /// Note that the BOM is stripped from the returned String.
     ///
     /// [`encoding_rs`]: https://docs.rs/encoding_rs/0.8/encoding_rs/#relationship-with-windows-code-pages
     ///

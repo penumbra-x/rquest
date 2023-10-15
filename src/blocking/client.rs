@@ -428,6 +428,20 @@ impl ClientBuilder {
         self.with_inner(|inner| inner.http1_allow_obsolete_multiline_headers_in_responses(value))
     }
 
+    /// Sets whether invalid header lines should be silently ignored in HTTP/1 responses.
+    pub fn http1_ignore_invalid_headers_in_responses(self, value: bool) -> ClientBuilder {
+        self.with_inner(|inner| inner.http1_ignore_invalid_headers_in_responses(value))
+    }
+
+    /// Set whether HTTP/1 connections will accept spaces between header
+    /// names and the colon that follow them in responses.
+    ///
+    /// Newline codepoints (\r and \n) will be transformed to spaces when
+    /// parsing.
+    pub fn http1_allow_spaces_after_header_name_in_responses(self, value: bool) -> ClientBuilder {
+        self.with_inner(|inner| inner.http1_allow_spaces_after_header_name_in_responses(value))
+    }
+
     /// Only use HTTP/1.
     pub fn http1_only(self) -> ClientBuilder {
         self.with_inner(|inner| inner.http1_only())
@@ -761,21 +775,23 @@ impl ClientBuilder {
         self.with_inner(move |inner| inner.use_rustls_tls())
     }
 
-    /// Force using the Boring TLS backend.
-    ///
-    /// Since multiple TLS backends can be optionally enabled, this option will
-    /// force the `boring` backend to be used for this `Client`.
+    /// Add TLS information as `TlsInfo` extension to responses.
     ///
     /// # Optional
     ///
-    /// This requires the optional `boring-tls(-...)` feature to be enabled.
-    #[cfg(feature = "__boring")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
-    pub fn use_boring_tls(
-        self,
-        builder_func: Arc<dyn Fn() -> boring::ssl::SslConnectorBuilder + Send + Sync>,
-    ) -> ClientBuilder {
-        self.with_inner(move |inner| inner.use_boring_tls(builder_func))
+    /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
+    /// feature to be enabled.
+    #[cfg(feature = "__tls")]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(any(
+            feature = "default-tls",
+            feature = "native-tls",
+            feature = "rustls-tls"
+        )))
+    )]
+    pub fn tls_info(self, tls_info: bool) -> ClientBuilder {
+        self.with_inner(|inner| inner.tls_info(tls_info))
     }
 
     /// Use a preconfigured TLS backend.

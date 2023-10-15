@@ -5,6 +5,7 @@ fn main() {
     let client = reqwest::blocking::Client::builder()
         .impersonate(reqwest::impersonate::Impersonate::OkHttpAndroid13)
         .cookie_store(true)
+        .tls_info(true)
         .build()
         .unwrap();
 
