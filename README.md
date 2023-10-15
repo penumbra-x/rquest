@@ -24,16 +24,21 @@ reqwest = { package = "reqwest-impersonate", version = "0.11.13", default-featur
 `main.rs`
 
 ```rs
+use reqwest_impersonate as reqwest;
 
 fn main() {
     // Build a client to mimic OkHttpAndroid13
     let client = reqwest::blocking::Client::builder()
         .impersonate(reqwest::impersonate::Impersonate::OkHttpAndroid13)
+        .cookie_store(true)
         .build()
         .unwrap();
 
     // Use the API you're already familiar with
-    match client.get("https://tls.peet.ws/api/all").send() {
+    match client
+        .get("https://chat.openai.com/backend-api/models")
+        .send()
+    {
         Ok(res) => {
             println!("{}", res.text().unwrap());
         }
@@ -42,6 +47,7 @@ fn main() {
         }
     };
 }
+
 ```
 
 ## Original readme
