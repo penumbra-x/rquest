@@ -28,11 +28,11 @@ pub(super) fn get_settings(profile: ClientProfile) -> ImpersonateSettings {
 }
 
 fn create_ssl_connector() -> SslConnectorBuilder {
-    let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
+    let mut builder = SslConnector::builder(SslMethod::tls_client()).unwrap();
 
     builder.enable_ocsp_stapling();
 
-    builder.set_verify(SslVerifyMode::NONE);
+    builder.set_verify(SslVerifyMode::all());
 
     builder
         .set_curves(&[SslCurve::X25519, SslCurve::SECP256R1, SslCurve::SECP384R1])

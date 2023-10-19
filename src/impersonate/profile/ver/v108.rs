@@ -29,13 +29,13 @@ pub(super) fn get_settings(profile: ClientProfile) -> ImpersonateSettings {
 }
 
 fn create_ssl_connector() -> SslConnectorBuilder {
-    let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
+    let mut builder = SslConnector::builder(SslMethod::tls_client()).unwrap();
 
     builder.set_grease_enabled(true);
 
     builder.enable_ocsp_stapling();
 
-    builder.set_verify(SslVerifyMode::NONE);
+    builder.set_verify(SslVerifyMode::all());
 
     let cipher_list = [
         "TLS_AES_128_GCM_SHA256",
