@@ -3,7 +3,7 @@ use std::any::Any;
 use std::convert::TryInto;
 use std::fmt;
 use std::future::Future;
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::thread;
@@ -540,6 +540,12 @@ impl ClientBuilder {
         T: Into<Option<IpAddr>>,
     {
         self.with_inner(move |inner| inner.local_address(addr))
+    }
+
+    /// Set that all sockets are bound to the configured IPv4 or IPv6 address (depending on host's
+    /// preferences) before connection.
+    pub fn local_addresses(self, addr_ipv4: Ipv4Addr, addr_ipv6: Ipv6Addr) -> ClientBuilder {
+        self.with_inner(move |inner| inner.local_addresses(addr_ipv4, addr_ipv6))
     }
 
     /// Set that all sockets have `SO_KEEPALIVE` set with the supplied duration.

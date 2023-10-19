@@ -15,7 +15,7 @@ use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use pin_project_lite::pin_project;
 use std::future::Future;
 use std::io::{self, IoSlice};
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
@@ -96,16 +96,20 @@ fn tls_add_application_settings(conf: &mut ConnectConfiguration, client_profile:
 
 impl Connector {
     #[cfg(not(feature = "__tls"))]
-    pub(crate) fn new<T>(
+    pub(crate) fn new(
         mut http: HttpConnector,
         proxies: Arc<Vec<Proxy>>,
-        local_addr: T,
+        local_addr_v4: Option<Ipv4Addr>,
+        local_addr_v6: Option<Ipv6Addr>,
         nodelay: bool,
     ) -> Connector
-        where
-            T: Into<Option<IpAddr>>,
     {
-        http.set_local_address(local_addr.into());
+        match (local_addr_v4, local_addr_v6) {
+            (Some(v4), Some(v6)) => http.set_local_addresses(v4, v6),
+            (Some(v4), None) => http.set_local_address(Some(IpAddr::from(v4))),
+            (None, Some(v6)) => http.set_local_address(Some(IpAddr::from(v6))),
+            _ => {},
+        }
         http.set_nodelay(nodelay);
         Connector {
             inner: Inner::Http(http),
@@ -116,38 +120,41 @@ impl Connector {
     }
 
     #[cfg(feature = "default-tls")]
-    pub(crate) fn new_default_tls<T>(
+    pub(crate) fn new_default_tls(
         http: HttpConnector,
         tls: TlsConnectorBuilder,
         proxies: Arc<Vec<Proxy>>,
         user_agent: Option<HeaderValue>,
-        local_addr: T,
+        local_addr_v4: Option<Ipv4Addr>,
+        local_addr_v6: Option<Ipv6Addr>,
         nodelay: bool,
         tls_info: bool,
     ) -> crate::Result<Connector>
-        where
-            T: Into<Option<IpAddr>>,
     {
         let tls = tls.build().map_err(crate::error::builder)?;
         Ok(Self::from_built_default_tls(
-            http, tls, proxies, user_agent, local_addr, nodelay, tls_info,
+            http, tls, proxies, user_agent, local_addr_v4, local_addr_v6, nodelay, tls_info,
         ))
     }
 
     #[cfg(feature = "default-tls")]
-    pub(crate) fn from_built_default_tls<T>(
+    pub(crate) fn from_built_default_tls(
         mut http: HttpConnector,
         tls: TlsConnector,
         proxies: Arc<Vec<Proxy>>,
         user_agent: Option<HeaderValue>,
-        local_addr: T,
+        local_addr_v4: Option<Ipv4Addr>,
+        local_addr_v6: Option<Ipv6Addr>,
         nodelay: bool,
         tls_info: bool,
     ) -> Connector
-        where
-            T: Into<Option<IpAddr>>,
     {
-        http.set_local_address(local_addr.into());
+        match (local_addr_v4, local_addr_v6) {
+            (Some(v4), Some(v6)) => http.set_local_addresses(v4, v6),
+            (Some(v4), None) => http.set_local_address(Some(IpAddr::from(v4))),
+            (None, Some(v6)) => http.set_local_address(Some(IpAddr::from(v6))),
+            _ => {},
+        }
         http.enforce_http(false);
 
         Connector {
@@ -164,20 +171,23 @@ impl Connector {
     }
 
     #[cfg(feature = "__boring")]
-    pub(crate) fn new_boring_tls<T>(
+    pub(crate) fn new_boring_tls(
         mut http: HttpConnector,
         tls: Arc<dyn Fn() -> SslConnectorBuilder + Send + Sync>,
         proxies: Arc<Vec<Proxy>>,
         user_agent: Option<HeaderValue>,
-        local_addr: T,
+        local_addr_v4: Option<Ipv4Addr>,
+        local_addr_v6: Option<Ipv6Addr>,
         nodelay: bool,
         tls_info: bool,
         client_profile: ClientProfile
-    ) -> Connector
-        where
-            T: Into<Option<IpAddr>>,
-    {
-        http.set_local_address(local_addr.into());
+    ) -> Connector {
+        match (local_addr_v4, local_addr_v6) {
+            (Some(v4), Some(v6)) => http.set_local_addresses(v4, v6),
+            (Some(v4), None) => http.set_local_address(Some(IpAddr::from(v4))),
+            (None, Some(v6)) => http.set_local_address(Some(IpAddr::from(v6))),
+            _ => {},
+        }
         http.enforce_http(false);
 
         Connector {
@@ -198,14 +208,18 @@ impl Connector {
         tls: rustls::ClientConfig,
         proxies: Arc<Vec<Proxy>>,
         user_agent: Option<HeaderValue>,
-        local_addr: T,
+        local_addr_v4: Option<Ipv4Addr>,
+        local_addr_v6: Option<Ipv6Addr>,
         nodelay: bool,
         tls_info: bool,
     ) -> Connector
-        where
-            T: Into<Option<IpAddr>>,
     {
-        http.set_local_address(local_addr.into());
+        match (local_addr_v4, local_addr_v6) {
+            (Some(v4), Some(v6)) => http.set_local_addresses(v4, v6),
+            (Some(v4), None) => http.set_local_address(Some(IpAddr::from(v4))),
+            (None, Some(v6)) => http.set_local_address(Some(IpAddr::from(v6))),
+            (None, None) => http.set_local_address(None),
+        }
         http.enforce_http(false);
 
         let (tls, tls_proxy) = if proxies.is_empty() {

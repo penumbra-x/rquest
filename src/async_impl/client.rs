@@ -1,6 +1,6 @@
 #[cfg(any(feature = "native-tls", feature = "__rustls",))]
 use std::any::Any;
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::sync::Arc;
 use std::time::Duration;
 use std::{collections::HashMap, convert::TryInto, net::SocketAddr};
@@ -139,7 +139,8 @@ struct Config {
     http2_keep_alive_interval: Option<Duration>,
     http2_keep_alive_timeout: Option<Duration>,
     http2_keep_alive_while_idle: bool,
-    local_address: Option<IpAddr>,
+    local_address_ipv6: Option<Ipv6Addr>,
+    local_address_ipv4: Option<Ipv4Addr>,
     nodelay: bool,
     #[cfg(feature = "cookies")]
     cookie_store: Option<Arc<dyn cookie::CookieStore>>,
@@ -230,7 +231,8 @@ impl ClientBuilder {
                 http2_keep_alive_interval: None,
                 http2_keep_alive_timeout: None,
                 http2_keep_alive_while_idle: false,
-                local_address: None,
+                local_address_ipv6: None,
+                local_address_ipv4: None,
                 nodelay: true,
                 trust_dns: cfg!(feature = "trust-dns"),
                 #[cfg(feature = "cookies")]
@@ -315,7 +317,8 @@ impl ClientBuilder {
                  quic_stream_receive_window,
                  quic_receive_window,
                  quic_send_window,
-                 local_address,
+                 local_address_v4: Option<Ipv4Addr>,
+                 local_address_v6: Option<Ipv6Addr>,
                  http_version_pref: &HttpVersionPref| {
                     let mut transport_config = TransportConfig::default();
 
@@ -336,6 +339,9 @@ impl ClientBuilder {
                     if let Some(send_window) = quic_send_window {
                         transport_config.send_window(send_window);
                     }
+
+                    let local_address = local_address_v6.map(|v| IpAddr::from(v))
+                        .or(local_address_v4.map(|v| IpAddr::from(v)));
 
                     let res = H3Connector::new(
                         DynResolver::new(resolver),
@@ -364,7 +370,8 @@ impl ClientBuilder {
                     tls,
                     proxies.clone(),
                     user_agent(&config.headers),
-                    config.local_address,
+                    config.local_address_ipv4,
+                    config.local_address_ipv6,
                     config.nodelay,
                     config.tls_info,
                     config.client_profile
@@ -443,7 +450,8 @@ impl ClientBuilder {
                         tls,
                         proxies.clone(),
                         user_agent(&config.headers),
-                        config.local_address,
+                        config.local_address_ipv4,
+                        config.local_address_ipv6,
                         config.nodelay,
                         config.tls_info,
                     )?
@@ -454,7 +462,8 @@ impl ClientBuilder {
                     conn,
                     proxies.clone(),
                     user_agent(&config.headers),
-                    config.local_address,
+                    config.local_address_ipv4,
+                    config.local_address_ipv6,
                     config.nodelay,
                     config.tls_info,
                 ),
@@ -469,7 +478,8 @@ impl ClientBuilder {
                             config.quic_stream_receive_window,
                             config.quic_receive_window,
                             config.quic_send_window,
-                            config.local_address,
+                            config.local_address_ipv4,
+                            config.local_address_ipv6,
                             &config.http_version_pref,
                         )?;
                     }
@@ -479,7 +489,8 @@ impl ClientBuilder {
                         conn,
                         proxies.clone(),
                         user_agent(&config.headers),
-                        config.local_address,
+                        config.local_address_ipv4,
+                        config.local_address_ipv6,
                         config.nodelay,
                         config.tls_info,
                     )
@@ -614,7 +625,8 @@ impl ClientBuilder {
                             config.quic_stream_receive_window,
                             config.quic_receive_window,
                             config.quic_send_window,
-                            config.local_address,
+                            config.local_address_ipv4,
+                            config.local_address_ipv6,
                             &config.http_version_pref,
                         )?;
                     }
@@ -624,7 +636,8 @@ impl ClientBuilder {
                         tls,
                         proxies.clone(),
                         user_agent(&config.headers),
-                        config.local_address,
+                        config.local_address_ipv4,
+                        config.local_address_ipv6,
                         config.nodelay,
                         config.tls_info,
                     )
@@ -1286,7 +1299,23 @@ impl ClientBuilder {
     where
         T: Into<Option<IpAddr>>,
     {
-        self.config.local_address = addr.into();
+        match addr.into() {
+            Some(IpAddr::V4(v4)) => {
+                self.config.local_address_ipv4 = Some(v4);
+            },
+            Some(IpAddr::V6(v6)) => {
+                self.config.local_address_ipv6 = Some(v6);
+            },
+            _ => {},
+        }
+        self
+    }
+
+    /// Set that all sockets are bound to the configured IPv4 or IPv6 address (depending on host's
+    /// preferences) before connection.
+    pub fn local_addresses(mut self, addr_ipv4: Ipv4Addr, addr_ipv6: Ipv6Addr) -> ClientBuilder {
+        self.config.local_address_ipv4 = Some(addr_ipv4);
+        self.config.local_address_ipv6 = Some(addr_ipv6);
         self
     }
 
@@ -2087,8 +2116,12 @@ impl Config {
             f.field("timeout", d);
         }
 
-        if let Some(ref v) = self.local_address {
-            f.field("local_address", v);
+        if let Some(ref v) = self.local_address_ipv4 {
+            f.field("local_address_4", v);
+        }
+
+        if let Some(ref v) = self.local_address_ipv6 {
+            f.field("local_address_6", v);
         }
 
         if self.nodelay {
