@@ -36,7 +36,7 @@ fn create_ssl_connector() -> SslConnectorBuilder {
 
     builder.enable_ocsp_stapling();
 
-    builder.set_verify(SslVerifyMode::all());
+    builder.set_verify(SslVerifyMode::NONE);
 
     let cipher_list = [
         "TLS_AES_128_GCM_SHA256",

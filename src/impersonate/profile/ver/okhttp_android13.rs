@@ -32,7 +32,7 @@ fn create_ssl_connector() -> SslConnectorBuilder {
 
     builder.enable_ocsp_stapling();
 
-    builder.set_verify(SslVerifyMode::all());
+    builder.set_verify(SslVerifyMode::NONE);
 
     builder
         .set_curves(&[SslCurve::X25519, SslCurve::SECP256R1, SslCurve::SECP384R1])
