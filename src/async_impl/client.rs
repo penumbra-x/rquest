@@ -374,6 +374,7 @@ impl ClientBuilder {
                     config.local_address_ipv6,
                     config.nodelay,
                     config.tls_info,
+                    config.certs_verification,
                     config.client_profile
                 ),
                 #[cfg(feature = "default-tls")]

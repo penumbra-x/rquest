@@ -48,7 +48,9 @@ pub(crate) struct Connector {
     #[cfg(feature = "__tls")]
     user_agent: Option<HeaderValue>,
     #[cfg(feature = "impersonate")]
-    client_profile: ClientProfile
+    client_profile: ClientProfile,
+    #[cfg(feature = "impersonate")]
+    certs_verification: bool
 }
 
 #[derive(Clone)]
@@ -180,6 +182,7 @@ impl Connector {
         local_addr_v6: Option<Ipv6Addr>,
         nodelay: bool,
         tls_info: bool,
+        certs_verification: bool,
         client_profile: ClientProfile
     ) -> Connector {
         match (local_addr_v4, local_addr_v6) {
@@ -197,8 +200,9 @@ impl Connector {
             timeout: None,
             nodelay,
             user_agent,
-            client_profile,
             tls_info,
+            client_profile,
+            certs_verification,
         }
     }
 
@@ -311,9 +315,12 @@ impl Connector {
                 if dst.scheme() == Some(&Scheme::HTTPS) {
                     let host = dst.host().ok_or("no host in url")?.to_string();
                     let conn = socks::connect(proxy, dst, dns).await?;
-                    let tls_connector = tls().build();
-                    let mut conf = tls_connector.configure()?;
+                    let mut tls_connector = tls();
+                    if !self.certs_verification {
+                        tls_connector.set_verify(boring::ssl::SslVerifyMode::NONE);
+                    }
 
+                    let mut conf = tls_connector.build().configure()?;
                     tls_add_application_settings(&mut conf, &self.client_profile);
 
                     let io = tokio_boring::connect(conf, &host, conn).await?;
@@ -421,7 +428,11 @@ impl Connector {
                     http.set_nodelay(true);
                 }
 
-                let mut http = hyper_boring::HttpsConnector::with_connector(http, tls())?;
+                let mut tls_connector = tls();
+                if !self.certs_verification {
+                    tls_connector.set_verify(boring::ssl::SslVerifyMode::NONE);
+                }
+                let mut http = hyper_boring::HttpsConnector::with_connector(http, tls_connector)?;
 
                 let profile = self.client_profile.clone();
                 http.set_callback(move |conf, _| {
@@ -539,7 +550,11 @@ impl Connector {
                     let host = dst.host().to_owned();
                     let port = dst.port().map(|p| p.as_u16()).unwrap_or(443);
                     let http = http.clone();
-                    let tls_connector = tls();
+                    let mut tls_connector = tls();
+                    if !self.certs_verification {
+                        tls_connector.set_verify(boring::ssl::SslVerifyMode::NONE);
+                    }
+                    
                     let mut http =
                         hyper_boring::HttpsConnector::with_connector(http, tls_connector)?;
 
@@ -559,8 +574,13 @@ impl Connector {
                         auth,
                     )
                         .await?;
-                    let tls_connector = tls().build();
-                    let mut conf = tls_connector.configure()?;
+
+                    let mut tls_connector = tls();
+                    if !self.certs_verification {
+                        tls_connector.set_verify(boring::ssl::SslVerifyMode::NONE);
+                    }
+ 
+                    let mut conf = tls_connector.build().configure()?;
                     tls_add_application_settings(&mut conf, &self.client_profile);
 
                     let io = tokio_boring::connect(conf, host.ok_or("no host in url")?, tunneled)
