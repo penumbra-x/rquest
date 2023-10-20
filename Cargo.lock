@@ -747,9 +747,9 @@ dependencies = [
 
 [[package]]
 name = "hyper-boring-imp"
-version = "2.1.3"
+version = "2.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b85af3165f522654d2a0d5dda918acc8cce38e194d7cbd780c1d9d5dce0aad4"
+checksum = "c9653ad3ba56c0b925e9e427f833148f3c6d7606b865720077440c06556f2b04"
 dependencies = [
  "antidote",
  "boring-imp",
@@ -791,9 +791,9 @@ dependencies = [
 
 [[package]]
 name = "hyper_imp"
-version = "0.14.28"
+version = "0.14.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "259632ba7e531851e8f5018efca68694d704100d5269568a222d074b13adb571"
+checksum = "ca3acf3d0c1ca47943dccb06181e767d3c35cbe9bb149d14c64eef517d1271da"
 dependencies = [
  "bytes",
  "futures-channel",
