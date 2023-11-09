@@ -89,7 +89,7 @@ fn create_headers(profile: ClientProfile) -> HeaderMap {
         ACCEPT_LANGUAGE,
         "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7".parse().unwrap(),
     );
-    headers.insert(USER_AGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36".parse().unwrap());
+    headers.insert(USER_AGENT, "okhttp/4.9.1".parse().unwrap());
     headers.insert(ACCEPT_ENCODING, "gzip, deflate, br".parse().unwrap());
     headers.insert("client_profile", profile.to_string().parse().unwrap());
     headers
