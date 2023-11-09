@@ -1,6 +1,6 @@
 [package]
 name = "reqwest-impersonate"
-version = "0.11.27"                                                 # remember to update html_root_url
+version = "0.11.28"                                                 # remember to update html_root_url
 description = "An easy and powerful Rust HTTP Client (Impersonate Chrome/OkHttp)"
 keywords = ["http", "request", "client"]
 categories = ["web-programming::http-client", "wasm"]
