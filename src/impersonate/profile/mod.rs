@@ -31,7 +31,8 @@ pub enum Impersonate {
     Chrome109,
     Chrome114,
     Chrome99Android,
-    OkHttpAndroid13,
+    OkHttp3,
+    OkHttp4,
 }
 
 impl Impersonate {
@@ -46,7 +47,7 @@ impl Impersonate {
             | Impersonate::Chrome109
             | Impersonate::Chrome114
             | Impersonate::Chrome99Android => ClientProfile::Chrome,
-            Impersonate::OkHttpAndroid13 => ClientProfile::OkHttp,
+            Impersonate::OkHttp4 | Impersonate::OkHttp3 => ClientProfile::OkHttp,
         }
     }
 }

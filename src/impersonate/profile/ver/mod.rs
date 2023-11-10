@@ -2,7 +2,8 @@ use crate::impersonate::ImpersonateSettings;
 
 use super::Impersonate;
 
-mod okhttp_android13;
+mod okhttp3;
+mod okhttp4;
 mod v104;
 mod v105;
 mod v106;
@@ -22,6 +23,7 @@ pub(super) fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
         Impersonate::Chrome109 => v109::get_settings(ver.profile()),
         Impersonate::Chrome114 => v114::get_settings(ver.profile()),
         Impersonate::Chrome99Android => v99_android::get_settings(ver.profile()),
-        Impersonate::OkHttpAndroid13 => okhttp_android13::get_settings(ver.profile()),
+        Impersonate::OkHttp4 => okhttp4::get_settings(ver.profile()),
+        Impersonate::OkHttp3 => okhttp3::get_settings(ver.profile()),
     }
 }
