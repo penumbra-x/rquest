@@ -3,7 +3,7 @@ use reqwest_impersonate as reqwest;
 fn main() {
     // Build a client to mimic OkHttpAndroid13
     let client = reqwest::blocking::Client::builder()
-        .impersonate(reqwest::impersonate::Impersonate::OkHttpAndroid13)
+        .impersonate(reqwest::impersonate::Impersonate::OkHttp5)
         .cookie_store(true)
         .tls_info(true)
         .build()
