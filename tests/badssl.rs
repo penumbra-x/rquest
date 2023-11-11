@@ -45,7 +45,7 @@ async fn test_rustls_badssl_modern() {
 #[tokio::test]
 async fn test_badssl_self_signed() {
     let text = reqwest::Client::builder()
-        .impersonate(reqwest::impersonate::Impersonate::OkHttp4)
+        .impersonate(reqwest::impersonate::Impersonate::OkHttp4_9)
         .danger_accept_invalid_certs(true)
         .no_proxy()
         .build()
