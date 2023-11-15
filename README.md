@@ -6,7 +6,6 @@ This crate was intended to be an experiment to learn more about TLS and HTTP2 fi
 
 It is currently missing HTTP/2 `PRIORITY` support. (PRs to [h2](https://github.com/hyperium/h2) are welcome)
 
-
 These patches were made specifically for `reqwest` to work, but I would appreciate if someone took the time to PR more "proper" versions to the parent projects.
 
 ## Example
@@ -14,7 +13,7 @@ These patches were made specifically for `reqwest` to work, but I would apprecia
 `Cargo.toml`
 
 ```toml
-reqwest = { package = "reqwest-impersonate", version = "0.11.13", default-features = false, features = [
+reqwest = { package = "reqwest-impersonate", version = "0.11.30", default-features = false, features = [
     "boring-tls",
     "impersonate",
     "blocking",
@@ -29,14 +28,15 @@ use reqwest_impersonate as reqwest;
 fn main() {
     // Build a client to mimic OkHttpAndroid13
     let client = reqwest::blocking::Client::builder()
-        .impersonate(reqwest::impersonate::Impersonate::OkHttpAndroid13)
+        .impersonate(reqwest::impersonate::Impersonate::OkHttp5)
         .cookie_store(true)
+        .tls_info(true)
         .build()
         .unwrap();
 
     // Use the API you're already familiar with
     match client
-        .get("https://chat.openai.com/backend-api/models")
+        .get("https://tls.peet.ws/api/all")
         .send()
     {
         Ok(res) => {
