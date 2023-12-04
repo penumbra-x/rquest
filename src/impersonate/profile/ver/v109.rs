@@ -2,7 +2,9 @@ use boring::ssl::{
     CertCompressionAlgorithm, SslConnector, SslConnectorBuilder, SslMethod, SslVersion,
 };
 use http::{
-    header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, UPGRADE_INSECURE_REQUESTS, USER_AGENT, DNT},
+    header::{
+        ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, DNT, UPGRADE_INSECURE_REQUESTS, USER_AGENT,
+    },
     HeaderMap, HeaderValue,
 };
 use std::sync::Arc;
