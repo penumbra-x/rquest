@@ -31,6 +31,7 @@ pub enum Impersonate {
     Chrome107,
     Chrome109,
     Chrome114,
+    Chrome116,
     Chrome118,
     Chrome119,
     Safari12,
@@ -55,6 +56,7 @@ impl Impersonate {
             | Impersonate::Chrome107
             | Impersonate::Chrome109
             | Impersonate::Chrome114
+            | Impersonate::Chrome116
             | Impersonate::Chrome118
             | Impersonate::Chrome119
             | Impersonate::Safari12 => ClientProfile::Chrome,
