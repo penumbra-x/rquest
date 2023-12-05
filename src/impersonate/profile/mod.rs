@@ -1,9 +1,7 @@
 //! Settings for impersonating the Chrome impersonate
 
-use std::str::FromStr;
-
 use crate::ClientBuilder;
-
+use std::str::FromStr;
 mod ver;
 
 pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) -> ClientBuilder {
@@ -22,7 +20,7 @@ pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) ->
 }
 
 /// Defines the Chrome version to mimic when setting up a builder
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 #[allow(missing_docs)]
 pub enum Impersonate {
     Chrome99,
