@@ -23,6 +23,7 @@ pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) ->
 #[derive(Debug)]
 #[allow(missing_docs)]
 pub enum Impersonate {
+    Chrome99,
     Chrome104,
     Chrome105,
     Chrome106,
@@ -32,7 +33,6 @@ pub enum Impersonate {
     Chrome114,
     Chrome118,
     Chrome119,
-    Chrome99Android,
     Safari12,
     OkHttp3_9,
     OkHttp3_11,
@@ -47,7 +47,8 @@ impl Impersonate {
     /// Get the client profile for the given impersonate version
     pub fn profile(&self) -> ClientProfile {
         match self {
-            Impersonate::Chrome104
+            Impersonate::Chrome99
+            | Impersonate::Chrome104
             | Impersonate::Chrome105
             | Impersonate::Chrome106
             | Impersonate::Chrome108
@@ -56,15 +57,14 @@ impl Impersonate {
             | Impersonate::Chrome114
             | Impersonate::Chrome118
             | Impersonate::Chrome119
-            | Impersonate::Chrome99Android => ClientProfile::Chrome,
+            | Impersonate::Safari12 => ClientProfile::Chrome,
             Impersonate::OkHttp3_9
             | Impersonate::OkHttp3_11
             | Impersonate::OkHttp3_13
             | Impersonate::OkHttp3_14
             | Impersonate::OkHttp4_9
             | Impersonate::OkHttp4_10
-            | Impersonate::OkHttp5
-            | Impersonate::Safari12 => ClientProfile::OkHttp,
+            | Impersonate::OkHttp5 => ClientProfile::OkHttp,
         }
     }
 }
