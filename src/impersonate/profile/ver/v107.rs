@@ -33,6 +33,8 @@ pub(super) fn get_settings(profile: ClientProfile) -> ImpersonateSettings {
 fn create_ssl_connector() -> SslConnectorBuilder {
     let mut builder = SslConnector::builder(SslMethod::tls_client()).unwrap();
 
+    builder.set_default_verify_paths().unwrap();
+    
     builder.set_grease_enabled(true);
 
     builder.enable_ocsp_stapling();

@@ -80,6 +80,7 @@ pub(crate) struct ImpersonateContext {
 
 #[cfg(feature = "__boring")]
 fn tls_add_application_settings(conf: &mut ConnectConfiguration, ctx: &ImpersonateContext) {
+    // Enable random TLS extensions
     if ctx.permute_extensions {
         unsafe {
             boring_sys::SSL_set_permute_extensions(conf.as_ptr(), 1);
@@ -88,6 +89,11 @@ fn tls_add_application_settings(conf: &mut ConnectConfiguration, ctx: &Impersona
     // curl-impersonate does not know how to set this up, neither do I. Hopefully nothing breaks with these values.
     match ctx.client_profile {
         ClientProfile::Chrome => {
+            // Enable ECH grease
+            if ctx.enable_ech_grease {
+                unsafe { boring_sys::SSL_set_enable_ech_grease(conf.as_ptr(), 1) }
+            }
+
             const ALPN_H2: &str = "h2";
             const ALPN_H2_LENGTH: usize = 2;
             unsafe {
@@ -98,10 +104,6 @@ fn tls_add_application_settings(conf: &mut ConnectConfiguration, ctx: &Impersona
                     std::ptr::null(),
                     0,
                 );
-            
-                if ctx.enable_ech_grease {
-                    boring_sys::SSL_set_enable_ech_grease(conf.as_ptr(), 1)
-                }
             };
         }
         ClientProfile::OkHttp => {}
