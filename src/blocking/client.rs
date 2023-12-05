@@ -102,6 +102,13 @@ impl ClientBuilder {
         self.with_inner(move |inner| inner.enable_ech_grease(enable))
     }
 
+
+    /// Enable TLS permute_extensions
+    #[cfg(feature = "__impersonate")]
+    pub fn permute_extensions(self, enable: bool) -> ClientBuilder {
+        self.with_inner(move |inner| inner.permute_extensions(enable))
+    }
+
     /// Returns a `Client` that uses this `ClientBuilder` configuration.
     ///
     /// # Errors

@@ -163,6 +163,8 @@ struct Config {
     client_profile: ClientProfile,
     #[cfg(feature = "impersonate")]
     enable_ech_grease: bool,
+    #[cfg(feature = "impersonate")]
+    permute_extensions: bool,
 }
 
 impl Default for ClientBuilder {
@@ -256,6 +258,8 @@ impl ClientBuilder {
                 client_profile: ClientProfile::Chrome,
                 #[cfg(feature = "impersonate")]
                 enable_ech_grease: false,
+                #[cfg(feature = "impersonate")]
+                permute_extensions: false,
             },
         }
     }
@@ -270,6 +274,13 @@ impl ClientBuilder {
     #[cfg(feature = "__impersonate")]
     pub fn enable_ech_grease(mut self, enable: bool) -> ClientBuilder {
         self.config.enable_ech_grease = enable;
+        self
+    }
+
+    /// Enable TLS permute_extensions
+    #[cfg(feature = "__impersonate")]
+    pub fn permute_extensions(mut self, enable: bool) -> ClientBuilder {
+        self.config.permute_extensions = enable;
         self
     }
 
@@ -390,6 +401,7 @@ impl ClientBuilder {
                         client_profile: config.client_profile,
                         certs_verification: config.certs_verification,
                         enable_ech_grease: config.enable_ech_grease,
+                        permute_extensions: config.permute_extensions,
                     },
                 ),
                 #[cfg(feature = "default-tls")]

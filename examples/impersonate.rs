@@ -5,6 +5,7 @@ fn main() {
     let client = reqwest::blocking::Client::builder()
         .impersonate(reqwest::impersonate::Impersonate::Chrome104)
         .enable_ech_grease(true)
+        .permute_extensions(true)
         .cookie_store(true)
         .tls_info(true)
         .build()
