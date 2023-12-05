@@ -1,5 +1,7 @@
 //! Settings for impersonating the Chrome impersonate
 
+use std::str::FromStr;
+
 use crate::ClientBuilder;
 
 mod ver;
@@ -35,6 +37,8 @@ pub enum Impersonate {
     Chrome118,
     Chrome119,
     Safari12,
+    Safari15_3,
+    Safari15_5,
     OkHttp3_9,
     OkHttp3_11,
     OkHttp3_13,
@@ -42,6 +46,38 @@ pub enum Impersonate {
     OkHttp4_9,
     OkHttp4_10,
     OkHttp5,
+}
+
+/// Impersonate version from string
+impl FromStr for Impersonate {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "chrome99" => Ok(Impersonate::Chrome99),
+            "chrome104" => Ok(Impersonate::Chrome104),
+            "chrome105" => Ok(Impersonate::Chrome105),
+            "chrome106" => Ok(Impersonate::Chrome106),
+            "chrome108" => Ok(Impersonate::Chrome108),
+            "chrome107" => Ok(Impersonate::Chrome107),
+            "chrome109" => Ok(Impersonate::Chrome109),
+            "chrome114" => Ok(Impersonate::Chrome114),
+            "chrome116" => Ok(Impersonate::Chrome116),
+            "chrome118" => Ok(Impersonate::Chrome118),
+            "chrome119" => Ok(Impersonate::Chrome119),
+            "safari12" => Ok(Impersonate::Safari12),
+            "safari15_3" => Ok(Impersonate::Safari15_3),
+            "safari15_5" => Ok(Impersonate::Safari15_5),
+            "okhttp3_9" => Ok(Impersonate::OkHttp3_9),
+            "okhttp3_11" => Ok(Impersonate::OkHttp3_11),
+            "okhttp3_13" => Ok(Impersonate::OkHttp3_13),
+            "okhttp3_14" => Ok(Impersonate::OkHttp3_14),
+            "okhttp4_9" => Ok(Impersonate::OkHttp4_9),
+            "okhttp4_10" => Ok(Impersonate::OkHttp4_10),
+            "okhttp5" => Ok(Impersonate::OkHttp5),
+            _ => Err("Invalid Impersonate version"),
+        }
+    }
 }
 
 impl Impersonate {
@@ -58,8 +94,12 @@ impl Impersonate {
             | Impersonate::Chrome114
             | Impersonate::Chrome116
             | Impersonate::Chrome118
-            | Impersonate::Chrome119
-            | Impersonate::Safari12 => ClientProfile::Chrome,
+            | Impersonate::Chrome119 => ClientProfile::Chrome,
+
+            Impersonate::Safari12 | Impersonate::Safari15_3 | Impersonate::Safari15_5 => {
+                ClientProfile::Safari
+            }
+
             Impersonate::OkHttp3_9
             | Impersonate::OkHttp3_11
             | Impersonate::OkHttp3_13
@@ -78,6 +118,8 @@ pub enum ClientProfile {
     Chrome,
     /// OkHttp impersonate client profile
     OkHttp,
+    /// Safari impersonate client profile
+    Safari,
 }
 
 impl ToString for ClientProfile {
@@ -85,6 +127,7 @@ impl ToString for ClientProfile {
         match self {
             ClientProfile::Chrome => "chrome".to_string(),
             ClientProfile::OkHttp => "okhttp".to_string(),
+            ClientProfile::Safari => "safari".to_string(),
         }
     }
 }
