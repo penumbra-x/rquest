@@ -96,6 +96,12 @@ impl ClientBuilder {
         self.with_inner(move |inner| inner.impersonate(ver))
     }
 
+    /// Enable Encrypted Client Hello (Secure SNI)
+    #[cfg(feature = "__impersonate")]
+    pub fn enable_ech_grease(self, enable: bool) -> ClientBuilder {
+        self.with_inner(move |inner| inner.enable_ech_grease(enable))
+    }
+
     /// Returns a `Client` that uses this `ClientBuilder` configuration.
     ///
     /// # Errors

@@ -48,9 +48,7 @@ pub(crate) struct Connector {
     #[cfg(feature = "__tls")]
     user_agent: Option<HeaderValue>,
     #[cfg(feature = "impersonate")]
-    client_profile: ClientProfile,
-    #[cfg(feature = "impersonate")]
-    certs_verification: bool
+    impersonate_context: ImpersonateContext
 }
 
 #[derive(Clone)]
@@ -72,13 +70,20 @@ enum Inner {
     },
 }
 
+#[derive(Clone)]
+pub(crate) struct ImpersonateContext {
+    pub(crate) client_profile: ClientProfile,
+    pub(crate) enable_ech_grease: bool,
+    pub(crate) certs_verification: bool
+}
+
 #[cfg(feature = "__boring")]
-fn tls_add_application_settings(conf: &mut ConnectConfiguration, client_profile: &ClientProfile) {
+fn tls_add_application_settings(conf: &mut ConnectConfiguration, ctx: &ImpersonateContext) {
     unsafe {
         boring_sys::SSL_set_permute_extensions(conf.as_ptr(), 1);
     }
     // curl-impersonate does not know how to set this up, neither do I. Hopefully nothing breaks with these values.
-    match client_profile {
+    match ctx.client_profile {
         ClientProfile::Chrome => {
             const ALPN_H2: &str = "h2";
             const ALPN_H2_LENGTH: usize = 2;
@@ -90,7 +95,10 @@ fn tls_add_application_settings(conf: &mut ConnectConfiguration, client_profile:
                     std::ptr::null(),
                     0,
                 );
-                boring_sys::SSL_set_enable_ech_grease(conf.as_ptr(), 1)
+            
+                if ctx.enable_ech_grease {
+                    boring_sys::SSL_set_enable_ech_grease(conf.as_ptr(), 1)
+                }
             };
         }
         ClientProfile::OkHttp => {}
@@ -183,9 +191,9 @@ impl Connector {
         local_addr_v6: Option<Ipv6Addr>,
         nodelay: bool,
         tls_info: bool,
-        certs_verification: bool,
-        client_profile: ClientProfile
+        impersonate_context: ImpersonateContext,
     ) -> Connector {
+
         match (local_addr_v4, local_addr_v6) {
             (Some(v4), Some(v6)) => http.set_local_addresses(v4, v6),
             (Some(v4), None) => http.set_local_address(Some(IpAddr::from(v4))),
@@ -202,8 +210,7 @@ impl Connector {
             nodelay,
             user_agent,
             tls_info,
-            client_profile,
-            certs_verification,
+            impersonate_context
         }
     }
 
@@ -317,12 +324,12 @@ impl Connector {
                     let host = dst.host().ok_or("no host in url")?.to_string();
                     let conn = socks::connect(proxy, dst, dns).await?;
                     let mut tls_connector = tls();
-                    if !self.certs_verification {
+                    if !self.impersonate_context.certs_verification {
                         tls_connector.set_verify(boring::ssl::SslVerifyMode::NONE);
                     }
 
                     let mut conf = tls_connector.build().configure()?;
-                    tls_add_application_settings(&mut conf, &self.client_profile);
+                    tls_add_application_settings(&mut conf, &self.impersonate_context);
 
                     let io = tokio_boring::connect(conf, &host, conn).await?;
                     return Ok(Conn {
@@ -429,16 +436,18 @@ impl Connector {
                     http.set_nodelay(true);
                 }
 
+
+
                 let mut tls_connector = tls();
-                if !self.certs_verification {
+                if !self.impersonate_context.certs_verification {
                     tls_connector.set_verify(boring::ssl::SslVerifyMode::NONE);
                 }
                 let mut http = hyper_boring::HttpsConnector::with_connector(http, tls_connector)?;
 
-                let profile = self.client_profile.clone();
+                let context = self.impersonate_context.clone();
                 http.set_callback(move |conf, _| {
-                    let profile = &profile;
-                    tls_add_application_settings(conf, profile);
+                    let context = &context;
+                    tls_add_application_settings(conf, context);
                     Ok(())
                 });
 
@@ -552,17 +561,17 @@ impl Connector {
                     let port = dst.port().map(|p| p.as_u16()).unwrap_or(443);
                     let http = http.clone();
                     let mut tls_connector = tls();
-                    if !self.certs_verification {
+                    if !self.impersonate_context.certs_verification {
                         tls_connector.set_verify(boring::ssl::SslVerifyMode::NONE);
                     }
                     
                     let mut http =
                         hyper_boring::HttpsConnector::with_connector(http, tls_connector)?;
 
-                    let profile = self.client_profile.clone();
+                    let context = self.impersonate_context.clone();
                     http.set_callback(move |conf, _| {
-                        let profile = &profile;
-                        tls_add_application_settings(conf, profile);
+                        let context = &context;
+                        tls_add_application_settings(conf, context);
                         Ok(())
                     });
                     let conn = http.call(proxy_dst).await?;
@@ -577,12 +586,12 @@ impl Connector {
                         .await?;
 
                     let mut tls_connector = tls();
-                    if !self.certs_verification {
+                    if !self.impersonate_context.certs_verification {
                         tls_connector.set_verify(boring::ssl::SslVerifyMode::NONE);
                     }
  
                     let mut conf = tls_connector.build().configure()?;
-                    tls_add_application_settings(&mut conf, &self.client_profile);
+                    tls_add_application_settings(&mut conf, &self.impersonate_context);
 
                     let io = tokio_boring::connect(conf, host.ok_or("no host in url")?, tunneled)
                         .await?;

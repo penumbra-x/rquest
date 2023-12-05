@@ -32,7 +32,7 @@ use crate::impersonate::{configure_impersonate, Impersonate};
 use crate::async_impl::h3_client::connect::H3Connector;
 #[cfg(feature = "http3")]
 use crate::async_impl::h3_client::{H3Client, H3ResponseFuture};
-use crate::connect::Connector;
+use crate::connect::{Connector, ImpersonateContext};
 #[cfg(feature = "cookies")]
 use crate::cookie;
 #[cfg(feature = "trust-dns")]
@@ -160,7 +160,9 @@ struct Config {
     dns_overrides: HashMap<String, Vec<SocketAddr>>,
     dns_resolver: Option<Arc<dyn Resolve>>,
     #[cfg(feature = "impersonate")]
-    client_profile: ClientProfile
+    client_profile: ClientProfile,
+    #[cfg(feature = "impersonate")]
+    enable_ech_grease: bool,
 }
 
 impl Default for ClientBuilder {
@@ -252,6 +254,8 @@ impl ClientBuilder {
                 dns_resolver: None,
                 #[cfg(feature = "impersonate")]
                 client_profile: ClientProfile::Chrome,
+                #[cfg(feature = "impersonate")]
+                enable_ech_grease: false,
             },
         }
     }
@@ -261,6 +265,14 @@ impl ClientBuilder {
         self.config.client_profile = ver.profile();
         configure_impersonate(ver, self)
     }
+
+    /// Enable Encrypted Client Hello (Secure SNI)
+    #[cfg(feature = "__impersonate")]
+    pub fn enable_ech_grease(mut self, enable: bool) -> ClientBuilder {
+        self.config.enable_ech_grease = enable;
+        self
+    }
+
     /// Returns a `Client` that uses this `ClientBuilder` configuration.
     ///
     /// # Errors
@@ -374,8 +386,11 @@ impl ClientBuilder {
                     config.local_address_ipv6,
                     config.nodelay,
                     config.tls_info,
-                    config.certs_verification,
-                    config.client_profile
+                    ImpersonateContext {
+                        client_profile: config.client_profile,
+                        certs_verification: config.certs_verification,
+                        enable_ech_grease: config.enable_ech_grease,
+                    },
                 ),
                 #[cfg(feature = "default-tls")]
                 TlsBackend::Default => {
