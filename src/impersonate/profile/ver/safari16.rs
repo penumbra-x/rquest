@@ -90,10 +90,6 @@ fn create_ssl_connector() -> SslConnectorBuilder {
     builder.enable_signed_cert_timestamps();
 
     builder
-        .add_cert_compression_alg(boring::ssl::CertCompressionAlgorithm::Zlib)
-        .unwrap();
-
-    builder
         .set_min_proto_version(Some(SslVersion::TLS1))
         .unwrap();
 
