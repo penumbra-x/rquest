@@ -12,9 +12,9 @@ pub(super) fn get_settings(profile: ClientProfile) -> ImpersonateSettings {
     ImpersonateSettings {
         tls_builder_func: Arc::new(create_ssl_connector),
         http2: Http2Data {
+            initial_stream_window_size: Some(4194304),
             initial_connection_window_size: Some(10551295),
             max_concurrent_streams: Some(100),
-            initial_stream_window_size: Some(4194304),
             max_header_list_size: None,
             header_table_size: None,
             enable_push: None,
@@ -90,6 +90,10 @@ fn create_ssl_connector() -> SslConnectorBuilder {
     builder.enable_signed_cert_timestamps();
 
     builder
+        .add_cert_compression_alg(boring::ssl::CertCompressionAlgorithm::Zlib)
+        .unwrap();
+
+    builder
         .set_min_proto_version(Some(SslVersion::TLS1))
         .unwrap();
 
@@ -99,7 +103,7 @@ fn create_ssl_connector() -> SslConnectorBuilder {
 fn create_headers(_profile: ClientProfile) -> HeaderMap {
     let mut headers = HeaderMap::new();
 
-    headers.insert(USER_AGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6.1 Safari/605.1.15".parse().unwrap());
+    headers.insert(USER_AGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15".parse().unwrap());
     headers.insert(ACCEPT, "*/*".parse().unwrap());
     headers.insert(
         ACCEPT_LANGUAGE,
