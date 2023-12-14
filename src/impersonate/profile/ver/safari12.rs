@@ -1,4 +1,6 @@
-use boring::ssl::{SslConnector, SslConnectorBuilder, SslMethod, SslVersion};
+use boring::ssl::{
+    CertCompressionAlgorithm, SslConnector, SslConnectorBuilder, SslMethod, SslOptions, SslVersion,
+};
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
     HeaderMap,
@@ -12,11 +14,11 @@ pub(super) fn get_settings(profile: ClientProfile) -> ImpersonateSettings {
     ImpersonateSettings {
         tls_builder_func: Arc::new(create_ssl_connector),
         http2: Http2Data {
-            initial_stream_window_size: Some(4194304),
-            initial_connection_window_size: Some(10551295),
-            max_concurrent_streams: Some(100),
-            max_header_list_size: None,
-            header_table_size: None,
+            initial_stream_window_size: Some(6291456),
+            initial_connection_window_size: Some(15728640),
+            max_concurrent_streams: Some(1000),
+            max_header_list_size: Some(262144),
+            header_table_size: Some(65536),
             enable_push: None,
         },
         headers: create_headers(profile),
@@ -29,6 +31,8 @@ fn create_ssl_connector() -> SslConnectorBuilder {
     let mut builder = SslConnector::builder(SslMethod::tls_client()).unwrap();
 
     builder.set_default_verify_paths().unwrap();
+
+    builder.set_options(SslOptions::NO_TICKET);
 
     builder.enable_ocsp_stapling();
 
@@ -68,16 +72,26 @@ fn create_ssl_connector() -> SslConnectorBuilder {
         "rsa_pss_rsae_sha256",
         "rsa_pkcs1_sha256",
         "ecdsa_secp384r1_sha384",
+        "ecdsa_sha1",
         "rsa_pss_rsae_sha384",
         "rsa_pkcs1_sha384",
         "rsa_pss_rsae_sha512",
         "rsa_pkcs1_sha512",
+        "rsa_pkcs1_sha1",
     ];
 
     builder.set_sigalgs_list(&sigalgs_list.join(":")).unwrap();
 
     builder
+        .add_cert_compression_alg(CertCompressionAlgorithm::Zlib)
+        .unwrap();
+
+    builder
         .set_min_proto_version(Some(SslVersion::TLS1))
+        .unwrap();
+
+    builder
+        .set_max_proto_version(Some(SslVersion::TLS1_2))
         .unwrap();
 
     builder
