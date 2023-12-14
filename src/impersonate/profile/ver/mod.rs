@@ -11,6 +11,8 @@ mod okhttp4_9;
 mod okhttp5;
 mod safari12;
 mod safari15_3;
+mod safari15_5;
+mod safari15_6_1;
 mod v104;
 mod v105;
 mod v106;
@@ -38,7 +40,8 @@ pub(super) fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
         Impersonate::Chrome99 => v99::get_settings(ver.profile()),
         Impersonate::Safari12 => safari12::get_settings(ver.profile()),
         Impersonate::Safari15_3 => safari15_3::get_settings(ver.profile()),
-        Impersonate::Safari15_5 => safari15_3::get_settings(ver.profile()),
+        Impersonate::Safari15_5 => safari15_5::get_settings(ver.profile()),
+        Impersonate::Safari15_6_1 => safari15_6_1::get_settings(ver.profile()),
         Impersonate::OkHttp3_9 => okhttp3_9::get_settings(ver.profile()),
         Impersonate::OkHttp3_11 => okhttp3_11::get_settings(ver.profile()),
         Impersonate::OkHttp3_13 => okhttp3_13::get_settings(ver.profile()),
