@@ -24,10 +24,12 @@ mod v114;
 mod v116;
 mod v118;
 mod v119;
+mod v120;
 mod v99;
 
 pub(super) fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
     match ver {
+        Impersonate::Chrome99 => v99::get_settings(ver.profile()),
         Impersonate::Chrome104 => v104::get_settings(ver.profile()),
         Impersonate::Chrome105 => v105::get_settings(ver.profile()),
         Impersonate::Chrome106 => v106::get_settings(ver.profile()),
@@ -35,10 +37,10 @@ pub(super) fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
         Impersonate::Chrome108 => v108::get_settings(ver.profile()),
         Impersonate::Chrome109 => v109::get_settings(ver.profile()),
         Impersonate::Chrome114 => v114::get_settings(ver.profile()),
+        Impersonate::Chrome116 => v116::get_settings(ver.profile()),
         Impersonate::Chrome118 => v118::get_settings(ver.profile()),
         Impersonate::Chrome119 => v119::get_settings(ver.profile()),
-        Impersonate::Chrome116 => v116::get_settings(ver.profile()),
-        Impersonate::Chrome99 => v99::get_settings(ver.profile()),
+        Impersonate::Chrome120 => v120::get_settings(ver.profile()),
         Impersonate::Safari12 => safari12::get_settings(ver.profile()),
         Impersonate::Safari15_3 => safari15_3::get_settings(ver.profile()),
         Impersonate::Safari15_5 => safari15_5::get_settings(ver.profile()),
