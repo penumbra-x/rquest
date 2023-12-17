@@ -24,6 +24,7 @@ pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) ->
 #[allow(missing_docs)]
 pub enum Impersonate {
     Chrome99,
+    Chrome100,
     Chrome104,
     Chrome105,
     Chrome106,
@@ -56,6 +57,7 @@ impl FromStr for Impersonate {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "chrome99" => Ok(Impersonate::Chrome99),
+            "chrome100" => Ok(Impersonate::Chrome100),
             "chrome104" => Ok(Impersonate::Chrome104),
             "chrome105" => Ok(Impersonate::Chrome105),
             "chrome106" => Ok(Impersonate::Chrome106),
@@ -89,6 +91,7 @@ impl Impersonate {
     pub fn profile(&self) -> ClientProfile {
         match self {
             Impersonate::Chrome99
+            | Impersonate::Chrome100
             | Impersonate::Chrome104
             | Impersonate::Chrome105
             | Impersonate::Chrome106
