@@ -113,7 +113,7 @@ mime_guess = { version = "2.0", default-features = false, optional = true }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 encoding_rs = "0.8"
 http-body = "0.4.0"
-hyper = { package = "hyper_imp", version = "0.14.28", default-features = false, features = [
+hyper = { package = "hyper_imp", version = "0.14.30", default-features = false, features = [
     "tcp",
     "http1",
     "http2",
@@ -177,7 +177,7 @@ futures-channel = { version="0.3", optional = true}
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 env_logger = "0.10.0"
-hyper = { package = "hyper_imp", version = "0.14.27", default-features = false, features = [
+hyper = { package = "hyper_imp", version = "0.14.30", default-features = false, features = [
     "tcp",
     "stream",
     "http1",
