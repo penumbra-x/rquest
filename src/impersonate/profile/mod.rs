@@ -25,6 +25,7 @@ pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) ->
 pub enum Impersonate {
     Chrome99,
     Chrome100,
+    Chrome101,
     Chrome104,
     Chrome105,
     Chrome106,
@@ -58,6 +59,7 @@ impl FromStr for Impersonate {
         match s {
             "chrome99" => Ok(Impersonate::Chrome99),
             "chrome100" => Ok(Impersonate::Chrome100),
+            "chrome101" => Ok(Impersonate::Chrome101),
             "chrome104" => Ok(Impersonate::Chrome104),
             "chrome105" => Ok(Impersonate::Chrome105),
             "chrome106" => Ok(Impersonate::Chrome106),
@@ -92,6 +94,7 @@ impl Impersonate {
         match self {
             Impersonate::Chrome99
             | Impersonate::Chrome100
+            | Impersonate::Chrome101
             | Impersonate::Chrome104
             | Impersonate::Chrome105
             | Impersonate::Chrome106
