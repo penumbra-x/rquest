@@ -62,7 +62,7 @@ fn create_ssl_connector() -> SslConnectorBuilder {
         "TLS_RSA_WITH_AES_128_CBC_SHA",
         "TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA",
         "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA",
-        "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+        "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
     ];
 
     builder.set_cipher_list(&cipher_list.join(":")).unwrap();
@@ -102,7 +102,7 @@ fn create_ssl_connector() -> SslConnectorBuilder {
     builder
 }
 
-fn create_headers(_profile: ClientProfile) -> HeaderMap {
+fn create_headers(profile: ClientProfile) -> HeaderMap {
     let mut headers = HeaderMap::new();
 
     headers.insert(USER_AGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Safari/605.1.15".parse().unwrap());
@@ -114,6 +114,7 @@ fn create_headers(_profile: ClientProfile) -> HeaderMap {
     );
     headers.insert(ACCEPT_ENCODING, "gzip, deflate, br".parse().unwrap());
     headers.insert(ACCEPT_LANGUAGE, "en-us".parse().unwrap());
+    headers.insert("client_profile", profile.to_string().parse().unwrap());
 
     headers
 }

@@ -96,7 +96,7 @@ fn create_ssl_connector() -> SslConnectorBuilder {
     builder
 }
 
-fn create_headers(_profile: ClientProfile) -> HeaderMap {
+fn create_headers(profile: ClientProfile) -> HeaderMap {
     let mut headers = HeaderMap::new();
 
     headers.insert(USER_AGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15".parse().unwrap());
@@ -106,6 +106,7 @@ fn create_headers(_profile: ClientProfile) -> HeaderMap {
         "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7".parse().unwrap(),
     );
     headers.insert(ACCEPT_ENCODING, "gzip, deflate, br".parse().unwrap());
+    headers.insert("client_profile", profile.to_string().parse().unwrap());
 
     headers
 }

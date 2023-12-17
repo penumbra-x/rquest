@@ -97,7 +97,7 @@ fn create_ssl_connector() -> SslConnectorBuilder {
     builder
 }
 
-fn create_headers(_profile: ClientProfile) -> HeaderMap {
+fn create_headers(profile: ClientProfile) -> HeaderMap {
     let mut headers = HeaderMap::new();
 
     headers.insert(
@@ -112,6 +112,6 @@ fn create_headers(_profile: ClientProfile) -> HeaderMap {
     headers.insert(USER_AGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_2_2) AppleWebKit/617.25.9 (KHTML, like Gecko) Version/12.1.21 Safari/617.25.9".parse().unwrap());
     headers.insert("sec-fetch-dest", "document".parse().unwrap());
     headers.insert(ACCEPT_LANGUAGE, "en-US,en;q=0.9".parse().unwrap());
-
+    headers.insert("client_profile", profile.to_string().parse().unwrap());
     headers
 }

@@ -165,9 +165,9 @@ dependencies = [
 
 [[package]]
 name = "boring-sys-imp"
-version = "2.0.1"
+version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76ff3eea58f62befdb87efa4d34aafd9917c7bff7f80832641a2005e67196e56"
+checksum = "69fb90aef7f5460fb203a52420a4068c509c2655971081f7cbd6d50d262f48d6"
 dependencies = [
  "bindgen",
  "cmake",
@@ -601,9 +601,9 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
 name = "h2_imp"
-version = "0.3.21"
+version = "0.3.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ef9361fa9b352034d996f4c42060a2e607b10d41d26986a55de7828928d4411"
+checksum = "99de49837f5ae8ebd4ccf4e29efbb4d12fe2ba0f705bf942b218b79fb1203977"
 dependencies = [
  "bytes",
  "fnv",
@@ -749,9 +749,9 @@ dependencies = [
 
 [[package]]
 name = "hyper-boring-imp"
-version = "2.1.4"
+version = "2.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c9653ad3ba56c0b925e9e427f833148f3c6d7606b865720077440c06556f2b04"
+checksum = "c26bff347d13f5a6c49394a3ee844540912bc0602cce24571e8ccd94fe720164"
 dependencies = [
  "antidote",
  "boring-imp",
@@ -793,9 +793,9 @@ dependencies = [
 
 [[package]]
 name = "hyper_imp"
-version = "0.14.29"
+version = "0.14.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca3acf3d0c1ca47943dccb06181e767d3c35cbe9bb149d14c64eef517d1271da"
+checksum = "d359025b7316d337b5268ef931fbaa9e11a42d15682b86e1c4d1b9a8d28bc4c8"
 dependencies = [
  "bytes",
  "futures-channel",
