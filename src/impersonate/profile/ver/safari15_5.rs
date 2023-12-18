@@ -1,4 +1,7 @@
-use boring::ssl::{SslConnector, SslConnectorBuilder, SslCurve, SslMethod, SslOptions, SslVersion};
+use boring::ssl::{
+    CertCompressionAlgorithm, SslConnector, SslConnectorBuilder, SslCurve, SslMethod, SslOptions,
+    SslVersion,
+};
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
     HeaderMap,
@@ -68,6 +71,7 @@ fn create_ssl_connector() -> SslConnectorBuilder {
         "ecdsa_secp384r1_sha384",
         "ecdsa_sha1",
         "rsa_pss_rsae_sha384",
+        "rsa_pss_rsae_sha384",
         "rsa_pkcs1_sha384",
         "rsa_pss_rsae_sha512",
         "rsa_pkcs1_sha512",
@@ -88,6 +92,10 @@ fn create_ssl_connector() -> SslConnectorBuilder {
     builder.set_alpn_protos(b"\x02h2\x08http/1.1").unwrap();
 
     builder.enable_signed_cert_timestamps();
+
+    builder
+        .add_cert_compression_alg(CertCompressionAlgorithm::Zlib)
+        .unwrap();
 
     builder
         .set_min_proto_version(Some(SslVersion::TLS1))

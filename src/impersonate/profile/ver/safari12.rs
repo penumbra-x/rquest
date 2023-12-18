@@ -74,6 +74,7 @@ fn create_ssl_connector() -> SslConnectorBuilder {
         "ecdsa_secp384r1_sha384",
         "ecdsa_sha1",
         "rsa_pss_rsae_sha384",
+        "rsa_pss_rsae_sha384",
         "rsa_pkcs1_sha384",
         "rsa_pss_rsae_sha512",
         "rsa_pkcs1_sha512",

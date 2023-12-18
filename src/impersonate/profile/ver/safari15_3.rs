@@ -62,7 +62,7 @@ fn create_ssl_connector() -> SslConnectorBuilder {
         "TLS_RSA_WITH_AES_128_CBC_SHA",
         "TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA",
         "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA",
-        "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
+        "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
     ];
 
     builder.set_cipher_list(&cipher_list.join(":")).unwrap();
@@ -73,6 +73,7 @@ fn create_ssl_connector() -> SslConnectorBuilder {
         "rsa_pkcs1_sha256",
         "ecdsa_secp384r1_sha384",
         "ecdsa_sha1",
+        "rsa_pss_rsae_sha384",
         "rsa_pss_rsae_sha384",
         "rsa_pkcs1_sha384",
         "rsa_pss_rsae_sha512",
