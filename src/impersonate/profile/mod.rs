@@ -43,6 +43,7 @@ pub enum Impersonate {
     Safari15_5,
     Safari15_6_1,
     Safari16,
+    Safari16_5,
     OkHttp3_9,
     OkHttp3_11,
     OkHttp3_13,
@@ -78,6 +79,7 @@ impl FromStr for Impersonate {
             "safari15_5" => Ok(Impersonate::Safari15_5),
             "safari15_6_1" => Ok(Impersonate::Safari15_6_1),
             "safari16" => Ok(Impersonate::Safari16),
+            "safari16_5" => Ok(Impersonate::Safari16_5),
             "okhttp3_9" => Ok(Impersonate::OkHttp3_9),
             "okhttp3_11" => Ok(Impersonate::OkHttp3_11),
             "okhttp3_13" => Ok(Impersonate::OkHttp3_13),
@@ -114,7 +116,8 @@ impl Impersonate {
             | Impersonate::Safari15_3
             | Impersonate::Safari15_5
             | Impersonate::Safari15_6_1
-            | Impersonate::Safari16 => ClientProfile::Safari,
+            | Impersonate::Safari16
+            | Impersonate::Safari16_5 => ClientProfile::Safari,
 
             Impersonate::OkHttp3_9
             | Impersonate::OkHttp3_11
