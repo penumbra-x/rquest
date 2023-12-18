@@ -13,7 +13,7 @@ These patches were made specifically for `reqwest` to work, but I would apprecia
 `Cargo.toml`
 
 ```toml
-reqwest = { package = "reqwest-impersonate", version = "0.11.40", default-features = false, features = [
+reqwest = { package = "reqwest-impersonate", version = "0.11.41", default-features = false, features = [
     "boring-tls",
     "impersonate",
     "blocking",
