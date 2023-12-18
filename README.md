@@ -13,7 +13,7 @@ These patches were made specifically for `reqwest` to work, but I would apprecia
 `Cargo.toml`
 
 ```toml
-reqwest = { package = "reqwest-impersonate", version = "0.11.39", default-features = false, features = [
+reqwest = { package = "reqwest-impersonate", version = "0.11.40", default-features = false, features = [
     "boring-tls",
     "impersonate",
     "blocking",
@@ -62,17 +62,6 @@ fn main() {
         }
     };
 
-    match client
-        .post("https://order.surfshark.com/api/v1/account/users?source=surfshark")
-        .send()
-    {
-        Ok(res) => {
-            println!("{}", res.text().unwrap());
-        }
-        Err(err) => {
-            dbg!(err);
-        }
-    };
 }
 
 ```
