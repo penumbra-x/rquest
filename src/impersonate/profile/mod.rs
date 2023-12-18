@@ -34,6 +34,7 @@ pub enum Impersonate {
     Chrome109,
     Chrome114,
     Chrome116,
+    Chrome117,
     Chrome118,
     Chrome119,
     Chrome120,
@@ -68,6 +69,7 @@ impl FromStr for Impersonate {
             "chrome109" => Ok(Impersonate::Chrome109),
             "chrome114" => Ok(Impersonate::Chrome114),
             "chrome116" => Ok(Impersonate::Chrome116),
+            "chrome117" => Ok(Impersonate::Chrome117),
             "chrome118" => Ok(Impersonate::Chrome118),
             "chrome119" => Ok(Impersonate::Chrome119),
             "chrome120" => Ok(Impersonate::Chrome120),
@@ -103,6 +105,7 @@ impl Impersonate {
             | Impersonate::Chrome109
             | Impersonate::Chrome114
             | Impersonate::Chrome116
+            | Impersonate::Chrome117
             | Impersonate::Chrome118
             | Impersonate::Chrome119
             | Impersonate::Chrome120 => ClientProfile::Chrome,

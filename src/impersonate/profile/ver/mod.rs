@@ -24,6 +24,7 @@ mod v108;
 mod v109;
 mod v114;
 mod v116;
+mod v117;
 mod v118;
 mod v119;
 mod v120;
@@ -42,6 +43,7 @@ pub(super) fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
         Impersonate::Chrome109 => v109::get_settings(ver.profile()),
         Impersonate::Chrome114 => v114::get_settings(ver.profile()),
         Impersonate::Chrome116 => v116::get_settings(ver.profile()),
+        Impersonate::Chrome117 => v117::get_settings(ver.profile()),
         Impersonate::Chrome118 => v118::get_settings(ver.profile()),
         Impersonate::Chrome119 => v119::get_settings(ver.profile()),
         Impersonate::Chrome120 => v120::get_settings(ver.profile()),
