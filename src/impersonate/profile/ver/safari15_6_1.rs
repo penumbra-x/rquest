@@ -15,11 +15,11 @@ pub(super) fn get_settings(profile: ClientProfile) -> ImpersonateSettings {
     ImpersonateSettings {
         tls_builder_func: Arc::new(create_ssl_connector),
         http2: Http2Data {
-            initial_stream_window_size: Some(6291456),
-            initial_connection_window_size: Some(15728640),
-            max_concurrent_streams: Some(1000),
-            max_header_list_size: Some(262144),
-            header_table_size: Some(65536),
+            initial_stream_window_size: Some(4194304),
+            initial_connection_window_size: Some(10551295),
+            max_concurrent_streams: Some(100),
+            max_header_list_size: None,
+            header_table_size: None,
             enable_push: None,
         },
         headers: create_headers(profile),

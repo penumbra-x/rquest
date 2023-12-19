@@ -95,7 +95,7 @@ fn create_headers(profile: ClientProfile) -> HeaderMap {
     headers.insert(
         "sec-ch-ua",
         HeaderValue::from_static(
-            r#""Chromium";v="110", "Not A(Brand";v="24", "Google Chrome";v="110"#,
+            r#""Chromium";v="110", "Not A(Brand";v="24", "Google Chrome";v="110""#,
         ),
     );
     headers.insert("sec-ch-ua-mobile", "?0".parse().unwrap());
