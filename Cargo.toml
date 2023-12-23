@@ -149,7 +149,7 @@ rustls-pemfile = { version = "1.0", optional = true }
 
 ## boring-tls
 boring = { package = "boring-imp", version = "2.0.2", optional = true }
-boring-sys = { package = "boring-sys-imp", version = "2.0.5", optional = true }
+boring-sys = { package = "boring-sys-imp", version = "2.0.6", optional = true }
 hyper-boring = { package = "hyper-boring-imp", version = "2.1.5", optional = true }
 tokio-boring = { package = "tokio-boring-imp", version = "2.1.5", optional = true }
 foreign-types = { version = "0.5.0", optional = true }

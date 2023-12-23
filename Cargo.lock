@@ -166,9 +166,9 @@ dependencies = [
 
 [[package]]
 name = "boring-sys-imp"
-version = "2.0.5"
+version = "2.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7a09472465431da6dc9ffca11657f8416070e82f2b0b0bd6188961d0f2032cf"
+checksum = "ebfd2a239d38ecc77e6bef979cbceece50ed31ef418ad637c948cf928d646b7d"
 dependencies = [
  "bindgen",
  "cmake",
