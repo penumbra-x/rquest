@@ -2,10 +2,15 @@
 
 use crate::ClientBuilder;
 use std::str::FromStr;
-mod ver;
+
+use super::ImpersonateSettings;
+mod chrome;
+mod edge;
+mod okhttp;
+mod safari;
 
 pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) -> ClientBuilder {
-    let settings = ver::get_config_from_ver(ver);
+    let settings = get_config_from_ver(ver);
     builder
         .use_boring_tls(settings.tls_builder_func)
         .http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
@@ -17,6 +22,39 @@ pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) ->
         .replace_default_headers(settings.headers)
         .brotli(settings.brotli)
         .gzip(settings.gzip)
+}
+
+pub(super) fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
+    match ver {
+        Impersonate::Chrome99 => chrome::v99::get_settings(ver.profile()),
+        Impersonate::Chrome100 => chrome::v100::get_settings(ver.profile()),
+        Impersonate::Chrome101 => chrome::v101::get_settings(ver.profile()),
+        Impersonate::Chrome104 => chrome::v104::get_settings(ver.profile()),
+        Impersonate::Chrome105 => chrome::v105::get_settings(ver.profile()),
+        Impersonate::Chrome106 => chrome::v106::get_settings(ver.profile()),
+        Impersonate::Chrome107 => chrome::v107::get_settings(ver.profile()),
+        Impersonate::Chrome108 => chrome::v108::get_settings(ver.profile()),
+        Impersonate::Chrome109 => chrome::v109::get_settings(ver.profile()),
+        Impersonate::Chrome114 => chrome::v114::get_settings(ver.profile()),
+        Impersonate::Chrome116 => chrome::v116::get_settings(ver.profile()),
+        Impersonate::Chrome117 => chrome::v117::get_settings(ver.profile()),
+        Impersonate::Chrome118 => chrome::v118::get_settings(ver.profile()),
+        Impersonate::Chrome119 => chrome::v119::get_settings(ver.profile()),
+        Impersonate::Chrome120 => chrome::v120::get_settings(ver.profile()),
+        Impersonate::Safari12 => safari::safari12::get_settings(ver.profile()),
+        Impersonate::Safari15_3 => safari::safari15_3::get_settings(ver.profile()),
+        Impersonate::Safari15_5 => safari::safari15_5::get_settings(ver.profile()),
+        Impersonate::Safari15_6_1 => safari::safari15_6_1::get_settings(ver.profile()),
+        Impersonate::Safari16 => safari::safari16::get_settings(ver.profile()),
+        Impersonate::Safari16_5 => safari::safari16_5::get_settings(ver.profile()),
+        Impersonate::OkHttp3_9 => okhttp::okhttp3_9::get_settings(ver.profile()),
+        Impersonate::OkHttp3_11 => okhttp::okhttp3_11::get_settings(ver.profile()),
+        Impersonate::OkHttp3_13 => okhttp::okhttp3_13::get_settings(ver.profile()),
+        Impersonate::OkHttp3_14 => okhttp::okhttp3_14::get_settings(ver.profile()),
+        Impersonate::OkHttp4_9 => okhttp::okhttp4_9::get_settings(ver.profile()),
+        Impersonate::OkHttp4_10 => okhttp::okhttp4_10::get_settings(ver.profile()),
+        Impersonate::OkHttp5 => okhttp::okhttp5::get_settings(ver.profile()),
+    }
 }
 
 /// Defines the Chrome version to mimic when setting up a builder

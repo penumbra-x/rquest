@@ -14,7 +14,7 @@ pub mod profile;
 #[cfg(feature = "__impersonate")]
 pub(crate) use profile::configure_impersonate;
 
-struct ImpersonateSettings {
+pub(crate) struct ImpersonateSettings {
     pub tls_builder_func: Arc<dyn Fn() -> SslConnectorBuilder + Send + Sync>,
     pub http2: Http2Data,
     pub headers: HeaderMap,
@@ -22,7 +22,7 @@ struct ImpersonateSettings {
     pub brotli: bool,
 }
 
-struct Http2Data {
+pub(crate) struct Http2Data {
     pub initial_stream_window_size: Option<u32>,
     pub initial_connection_window_size: Option<u32>,
     pub max_concurrent_streams: Option<u32>,
