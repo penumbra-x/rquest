@@ -319,6 +319,25 @@ impl Proxy {
         self
     }
 
+    /// Set the `Proxy-Authorization` header to a specified value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # extern crate reqwest;
+    /// # use reqwest::header::*;
+    /// # fn run() -> Result<(), Box<std::error::Error>> {
+    /// let proxy = reqwest::Proxy::https("http://localhost:1234")?
+    ///     .custom_http_auth(HeaderValue::from_static("justletmeinalreadyplease"));
+    /// # Ok(())
+    /// # }
+    /// # fn main() {}
+    /// ```
+    pub fn custom_http_auth(mut self, header_value: HeaderValue) -> Proxy {
+        self.intercept.set_custom_http_auth(header_value);
+        self
+    }
+
     /// Adds a `No Proxy` exclusion list to this Proxy
     ///
     /// # Example
@@ -620,6 +639,21 @@ impl ProxyScheme {
         }
     }
 
+    fn set_custom_http_auth(&mut self, header_value: HeaderValue) {
+        match *self {
+            ProxyScheme::Http { ref mut auth, .. } => {
+                *auth = Some(header_value);
+            }
+            ProxyScheme::Https { ref mut auth, .. } => {
+                *auth = Some(header_value);
+            }
+            #[cfg(feature = "socks")]
+            ProxyScheme::Socks5 { .. } => {
+                panic!("Socks is not supported for this method")
+            }
+        }
+    }
+
     fn if_no_auth(mut self, update: &Option<HeaderValue>) -> Self {
         match self {
             ProxyScheme::Http { ref mut auth, .. } => {
@@ -740,6 +774,18 @@ impl Intercept {
             Intercept::Custom(ref mut custom) => {
                 let header = encode_basic_auth(username, password);
                 custom.auth = Some(header);
+            }
+        }
+    }
+
+    fn set_custom_http_auth(&mut self, header_value: HeaderValue) {
+        match self {
+            Intercept::All(ref mut s)
+            | Intercept::Http(ref mut s)
+            | Intercept::Https(ref mut s) => s.set_custom_http_auth(header_value),
+            Intercept::System(_) => unimplemented!(),
+            Intercept::Custom(ref mut custom) => {
+                custom.auth = Some(header_value);
             }
         }
     }
@@ -944,7 +990,9 @@ fn parse_setting_from_dynamic_store(
 fn get_from_platform_impl() -> Result<Option<String>, Box<dyn Error>> {
     let store = SCDynamicStoreBuilder::new("reqwest").build();
 
-    let Some(proxies_map) = store.get_proxies() else {
+    let proxies_map = if let Some(proxies_map) = store.get_proxies() {
+        proxies_map
+    } else {
         return Ok(None);
     };
 

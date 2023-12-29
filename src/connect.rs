@@ -128,6 +128,7 @@ impl Connector {
             _ => {},
         }
         http.set_nodelay(nodelay);
+
         Connector {
             inner: Inner::Http(http),
             verbose: verbose::OFF,

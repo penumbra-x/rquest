@@ -1195,6 +1195,7 @@ impl ClientBuilder {
 
     /// Only use HTTP/3.
     #[cfg(feature = "http3")]
+    #[cfg_attr(docsrs, doc(cfg(all(reqwest_unstable, feature = "http3",))))]
     pub fn http3_prior_knowledge(mut self) -> ClientBuilder {
         self.config.http_version_pref = HttpVersionPref::Http3;
         self
@@ -1670,6 +1671,14 @@ impl ClientBuilder {
         self
     }
 
+    /// Restrict the Client to be used with HTTPS only requests.
+    ///
+    /// Defaults to false.
+    pub fn https_only(mut self, enabled: bool) -> ClientBuilder {
+        self.config.https_only = enabled;
+        self
+    }
+
     /// Enables the [trust-dns](trust_dns_resolver) async resolver instead of a default threadpool using `getaddrinfo`.
     ///
     /// If the `trust-dns` feature is turned on, the default option is enabled.
@@ -1699,14 +1708,6 @@ impl ClientBuilder {
         {
             self
         }
-    }
-
-    /// Restrict the Client to be used with HTTPS only requests.
-    ///
-    /// Defaults to false.
-    pub fn https_only(mut self, enabled: bool) -> ClientBuilder {
-        self.config.https_only = enabled;
-        self
     }
 
     /// Override DNS resolution for specific domains to a particular IP address.
@@ -1751,6 +1752,7 @@ impl ClientBuilder {
     ///
     /// The default is false.
     #[cfg(feature = "http3")]
+    #[cfg_attr(docsrs, doc(cfg(all(reqwest_unstable, feature = "http3",))))]
     pub fn set_tls_enable_early_data(mut self, enabled: bool) -> ClientBuilder {
         self.config.tls_enable_early_data = enabled;
         self
@@ -1762,6 +1764,7 @@ impl ClientBuilder {
     ///
     /// [`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
     #[cfg(feature = "http3")]
+    #[cfg_attr(docsrs, doc(cfg(all(reqwest_unstable, feature = "http3",))))]
     pub fn set_quic_max_idle_timeout(mut self, value: Duration) -> ClientBuilder {
         self.config.quic_max_idle_timeout = Some(value);
         self
@@ -1774,6 +1777,7 @@ impl ClientBuilder {
     ///
     /// [`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
     #[cfg(feature = "http3")]
+    #[cfg_attr(docsrs, doc(cfg(all(reqwest_unstable, feature = "http3",))))]
     pub fn set_quic_stream_receive_window(mut self, value: VarInt) -> ClientBuilder {
         self.config.quic_stream_receive_window = Some(value);
         self
@@ -1786,6 +1790,7 @@ impl ClientBuilder {
     ///
     /// [`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
     #[cfg(feature = "http3")]
+    #[cfg_attr(docsrs, doc(cfg(all(reqwest_unstable, feature = "http3",))))]
     pub fn set_quic_receive_window(mut self, value: VarInt) -> ClientBuilder {
         self.config.quic_receive_window = Some(value);
         self
@@ -1797,6 +1802,7 @@ impl ClientBuilder {
     ///
     /// [`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
     #[cfg(feature = "http3")]
+    #[cfg_attr(docsrs, doc(cfg(all(reqwest_unstable, feature = "http3",))))]
     pub fn set_quic_send_window(mut self, value: u64) -> ClientBuilder {
         self.config.quic_send_window = Some(value);
         self
@@ -2528,6 +2534,10 @@ impl Future for PendingRequest {
                     match action {
                         redirect::ActionKind::Follow => {
                             debug!("redirecting '{}' to '{}'", self.url, loc);
+
+                            if loc.scheme() != "http" && loc.scheme() != "https" {
+                                return Poll::Ready(Err(error::url_bad_scheme(loc)));
+                            }
 
                             if self.client.https_only && loc.scheme() != "https" {
                                 return Poll::Ready(Err(error::redirect(
