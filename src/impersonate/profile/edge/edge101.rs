@@ -94,13 +94,13 @@ fn create_headers(profile: ClientProfile) -> HeaderMap {
     headers.insert(
         "sec-ch-ua",
         HeaderValue::from_static(
-            r#"" Not A;Brand";v="99", "Chromium";v="99", "Microsoft Edge";v="99""#,
+            r#"" Not A;Brand";v="99", "Chromium";v="101", "Microsoft Edge";v="101""#,
         ),
     );
     headers.insert("sec-ch-ua-mobile", "?0".parse().unwrap());
     headers.insert("sec-ch-ua-platform", "\"Windows\"".parse().unwrap());
     headers.insert(UPGRADE_INSECURE_REQUESTS, "1".parse().unwrap());
-    headers.insert(USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36 Edg/99.0.1150.30".parse().unwrap());
+    headers.insert(USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.64 Safari/537.36 Edg/101.0.1210.47".parse().unwrap());
     headers.insert(ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9".parse().unwrap());
     headers.insert("sec-fetch-site", "none".parse().unwrap());
     headers.insert("sec-fetch-mode", "navigate".parse().unwrap());

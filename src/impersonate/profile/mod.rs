@@ -55,6 +55,7 @@ fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
         Impersonate::OkHttp4_10 => okhttp::okhttp4_10::get_settings(ver.profile()),
         Impersonate::OkHttp5 => okhttp::okhttp5::get_settings(ver.profile()),
         Impersonate::Edge99 => edge::edge99::get_settings(ver.profile()),
+        Impersonate::Edge101 => edge::edge101::get_settings(ver.profile()),
     }
 }
 
@@ -91,6 +92,7 @@ pub enum Impersonate {
     OkHttp4_10,
     OkHttp5,
     Edge99,
+    Edge101,
 }
 
 /// Impersonate version from string
@@ -127,6 +129,8 @@ impl FromStr for Impersonate {
             "okhttp4_9" => Ok(Impersonate::OkHttp4_9),
             "okhttp4_10" => Ok(Impersonate::OkHttp4_10),
             "okhttp5" => Ok(Impersonate::OkHttp5),
+            "edge99" => Ok(Impersonate::Edge99),
+            "edge101" => Ok(Impersonate::Edge101),
             _ => Err("Invalid Impersonate version"),
         }
     }
@@ -166,7 +170,8 @@ impl Impersonate {
             | Impersonate::OkHttp4_9
             | Impersonate::OkHttp4_10
             | Impersonate::OkHttp5 => ClientProfile::OkHttp,
-            Impersonate::Edge99 => ClientProfile::Edge,
+
+            Impersonate::Edge99 | Impersonate::Edge101 => ClientProfile::Edge,
         }
     }
 }
