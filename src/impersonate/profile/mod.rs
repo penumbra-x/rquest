@@ -24,7 +24,7 @@ pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) ->
         .gzip(settings.gzip)
 }
 
-pub(super) fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
+fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
     match ver {
         Impersonate::Chrome99 => chrome::v99::get_settings(ver.profile()),
         Impersonate::Chrome100 => chrome::v100::get_settings(ver.profile()),
@@ -54,6 +54,7 @@ pub(super) fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
         Impersonate::OkHttp4_9 => okhttp::okhttp4_9::get_settings(ver.profile()),
         Impersonate::OkHttp4_10 => okhttp::okhttp4_10::get_settings(ver.profile()),
         Impersonate::OkHttp5 => okhttp::okhttp5::get_settings(ver.profile()),
+        Impersonate::Edge99 => edge::edge99::get_settings(ver.profile()),
     }
 }
 
@@ -89,6 +90,7 @@ pub enum Impersonate {
     OkHttp4_9,
     OkHttp4_10,
     OkHttp5,
+    Edge99,
 }
 
 /// Impersonate version from string
@@ -164,6 +166,7 @@ impl Impersonate {
             | Impersonate::OkHttp4_9
             | Impersonate::OkHttp4_10
             | Impersonate::OkHttp5 => ClientProfile::OkHttp,
+            Impersonate::Edge99 => ClientProfile::Edge,
         }
     }
 }
@@ -177,6 +180,8 @@ pub enum ClientProfile {
     OkHttp,
     /// Safari impersonate client profile
     Safari,
+    /// Edge impersonate client profile
+    Edge,
 }
 
 impl ToString for ClientProfile {
@@ -185,6 +190,7 @@ impl ToString for ClientProfile {
             ClientProfile::Chrome => "chrome".to_string(),
             ClientProfile::OkHttp => "okhttp".to_string(),
             ClientProfile::Safari => "safari".to_string(),
+            ClientProfile::Edge => "chrome".to_string(),
         }
     }
 }

@@ -88,7 +88,7 @@ fn tls_add_application_settings(conf: &mut ConnectConfiguration, ctx: &Impersona
     }
     // curl-impersonate does not know how to set this up, neither do I. Hopefully nothing breaks with these values.
     match ctx.client_profile {
-        ClientProfile::Chrome => {
+        ClientProfile::Chrome | ClientProfile::Edge => {
             // Enable ECH grease
             if ctx.enable_ech_grease {
                 unsafe { boring_sys::SSL_set_enable_ech_grease(conf.as_ptr(), 1) }
