@@ -726,6 +726,7 @@ impl ClientBuilder {
             builder.http2_keep_alive_while_idle(true);
         }
 
+        builder.http2_agent_profile(config.client_profile.into());
         builder.pool_idle_timeout(config.pool_idle_timeout);
         builder.pool_max_idle_per_host(config.pool_max_idle_per_host);
         connector.set_keepalive(config.tcp_keepalive);

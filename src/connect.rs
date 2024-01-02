@@ -106,8 +106,7 @@ fn tls_add_application_settings(conf: &mut ConnectConfiguration, ctx: &Impersona
                 );
             };
         }
-        ClientProfile::OkHttp => {}
-        ClientProfile::Safari => {},
+        ClientProfile::OkHttp | ClientProfile::Safari | ClientProfile::Firefox => {}
     }
 }
 

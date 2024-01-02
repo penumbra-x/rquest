@@ -1,5 +1,7 @@
 //! Settings for impersonating the Chrome impersonate
 
+use http::HeaderMap;
+
 use crate::ClientBuilder;
 use std::str::FromStr;
 
@@ -24,38 +26,48 @@ pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) ->
         .gzip(settings.gzip)
 }
 
+fn create_profile_headers(profile: ClientProfile) -> HeaderMap {
+    let mut headers = HeaderMap::new();
+    let agent: h2::profile::AgentProfile = profile.into();
+    let (name, value) = agent.to_header();
+    headers.insert(name, value.parse().unwrap());
+    headers
+}
+
 fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
+    let headers = create_profile_headers(ver.profile());
     match ver {
-        Impersonate::Chrome99 => chrome::v99::get_settings(ver.profile()),
-        Impersonate::Chrome100 => chrome::v100::get_settings(ver.profile()),
-        Impersonate::Chrome101 => chrome::v101::get_settings(ver.profile()),
-        Impersonate::Chrome104 => chrome::v104::get_settings(ver.profile()),
-        Impersonate::Chrome105 => chrome::v105::get_settings(ver.profile()),
-        Impersonate::Chrome106 => chrome::v106::get_settings(ver.profile()),
-        Impersonate::Chrome107 => chrome::v107::get_settings(ver.profile()),
-        Impersonate::Chrome108 => chrome::v108::get_settings(ver.profile()),
-        Impersonate::Chrome109 => chrome::v109::get_settings(ver.profile()),
-        Impersonate::Chrome114 => chrome::v114::get_settings(ver.profile()),
-        Impersonate::Chrome116 => chrome::v116::get_settings(ver.profile()),
-        Impersonate::Chrome117 => chrome::v117::get_settings(ver.profile()),
-        Impersonate::Chrome118 => chrome::v118::get_settings(ver.profile()),
-        Impersonate::Chrome119 => chrome::v119::get_settings(ver.profile()),
-        Impersonate::Chrome120 => chrome::v120::get_settings(ver.profile()),
-        Impersonate::Safari12 => safari::safari12::get_settings(ver.profile()),
-        Impersonate::Safari15_3 => safari::safari15_3::get_settings(ver.profile()),
-        Impersonate::Safari15_5 => safari::safari15_5::get_settings(ver.profile()),
-        Impersonate::Safari15_6_1 => safari::safari15_6_1::get_settings(ver.profile()),
-        Impersonate::Safari16 => safari::safari16::get_settings(ver.profile()),
-        Impersonate::Safari16_5 => safari::safari16_5::get_settings(ver.profile()),
-        Impersonate::OkHttp3_9 => okhttp::okhttp3_9::get_settings(ver.profile()),
-        Impersonate::OkHttp3_11 => okhttp::okhttp3_11::get_settings(ver.profile()),
-        Impersonate::OkHttp3_13 => okhttp::okhttp3_13::get_settings(ver.profile()),
-        Impersonate::OkHttp3_14 => okhttp::okhttp3_14::get_settings(ver.profile()),
-        Impersonate::OkHttp4_9 => okhttp::okhttp4_9::get_settings(ver.profile()),
-        Impersonate::OkHttp4_10 => okhttp::okhttp4_10::get_settings(ver.profile()),
-        Impersonate::OkHttp5 => okhttp::okhttp5::get_settings(ver.profile()),
-        Impersonate::Edge99 => edge::edge99::get_settings(ver.profile()),
-        Impersonate::Edge101 => edge::edge101::get_settings(ver.profile()),
+        Impersonate::Chrome99 => chrome::v99::get_settings(headers),
+        Impersonate::Chrome100 => chrome::v100::get_settings(headers),
+        Impersonate::Chrome101 => chrome::v101::get_settings(headers),
+        Impersonate::Chrome104 => chrome::v104::get_settings(headers),
+        Impersonate::Chrome105 => chrome::v105::get_settings(headers),
+        Impersonate::Chrome106 => chrome::v106::get_settings(headers),
+        Impersonate::Chrome107 => chrome::v107::get_settings(headers),
+        Impersonate::Chrome108 => chrome::v108::get_settings(headers),
+        Impersonate::Chrome109 => chrome::v109::get_settings(headers),
+        Impersonate::Chrome114 => chrome::v114::get_settings(headers),
+        Impersonate::Chrome116 => chrome::v116::get_settings(headers),
+        Impersonate::Chrome117 => chrome::v117::get_settings(headers),
+        Impersonate::Chrome118 => chrome::v118::get_settings(headers),
+        Impersonate::Chrome119 => chrome::v119::get_settings(headers),
+        Impersonate::Chrome120 => chrome::v120::get_settings(headers),
+        Impersonate::Safari12 => safari::safari12::get_settings(headers),
+        Impersonate::Safari15_3 => safari::safari15_3::get_settings(headers),
+        Impersonate::Safari15_5 => safari::safari15_5::get_settings(headers),
+        Impersonate::Safari15_6_1 => safari::safari15_6_1::get_settings(headers),
+        Impersonate::Safari16 => safari::safari16::get_settings(headers),
+        Impersonate::Safari16_5 => safari::safari16_5::get_settings(headers),
+        Impersonate::Safari17_2_1 => safari::safari17_2_1::get_settings(headers),
+        Impersonate::OkHttp3_9 => okhttp::okhttp3_9::get_settings(headers),
+        Impersonate::OkHttp3_11 => okhttp::okhttp3_11::get_settings(headers),
+        Impersonate::OkHttp3_13 => okhttp::okhttp3_13::get_settings(headers),
+        Impersonate::OkHttp3_14 => okhttp::okhttp3_14::get_settings(headers),
+        Impersonate::OkHttp4_9 => okhttp::okhttp4_9::get_settings(headers),
+        Impersonate::OkHttp4_10 => okhttp::okhttp4_10::get_settings(headers),
+        Impersonate::OkHttp5 => okhttp::okhttp5::get_settings(headers),
+        Impersonate::Edge99 => edge::edge99::get_settings(headers),
+        Impersonate::Edge101 => edge::edge101::get_settings(headers),
     }
 }
 
@@ -84,6 +96,7 @@ pub enum Impersonate {
     Safari15_6_1,
     Safari16,
     Safari16_5,
+    Safari17_2_1,
     OkHttp3_9,
     OkHttp3_11,
     OkHttp3_13,
@@ -122,6 +135,7 @@ impl FromStr for Impersonate {
             "safari15_6_1" => Ok(Impersonate::Safari15_6_1),
             "safari16" => Ok(Impersonate::Safari16),
             "safari16_5" => Ok(Impersonate::Safari16_5),
+            "safari17_2_1" => Ok(Impersonate::Safari17_2_1),
             "okhttp3_9" => Ok(Impersonate::OkHttp3_9),
             "okhttp3_11" => Ok(Impersonate::OkHttp3_11),
             "okhttp3_13" => Ok(Impersonate::OkHttp3_13),
@@ -161,7 +175,8 @@ impl Impersonate {
             | Impersonate::Safari15_5
             | Impersonate::Safari15_6_1
             | Impersonate::Safari16
-            | Impersonate::Safari16_5 => ClientProfile::Safari,
+            | Impersonate::Safari16_5
+            | Impersonate::Safari17_2_1 => ClientProfile::Safari,
 
             Impersonate::OkHttp3_9
             | Impersonate::OkHttp3_11
@@ -185,17 +200,20 @@ pub enum ClientProfile {
     OkHttp,
     /// Safari impersonate client profile
     Safari,
+    /// Foxfire impersonate client profile
+    Firefox,
     /// Edge impersonate client profile
     Edge,
 }
 
-impl ToString for ClientProfile {
-    fn to_string(&self) -> String {
+impl Into<h2::profile::AgentProfile> for ClientProfile {
+    fn into(self) -> h2::profile::AgentProfile {
         match self {
-            ClientProfile::Chrome => "chrome".to_string(),
-            ClientProfile::OkHttp => "okhttp".to_string(),
-            ClientProfile::Safari => "safari".to_string(),
-            ClientProfile::Edge => "chrome".to_string(),
+            Self::Chrome => h2::profile::AgentProfile::Chrome,
+            Self::OkHttp => h2::profile::AgentProfile::OkHttp,
+            Self::Safari => h2::profile::AgentProfile::Safari,
+            Self::Firefox => h2::profile::AgentProfile::Firefox,
+            Self::Edge => h2::profile::AgentProfile::Edge,
         }
     }
 }

@@ -10,10 +10,9 @@ use http::{
     HeaderMap,
 };
 
-use crate::impersonate::profile::ClientProfile;
 use crate::impersonate::{Http2Data, ImpersonateSettings};
 
-pub(crate) fn get_settings(profile: ClientProfile) -> ImpersonateSettings {
+pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
     ImpersonateSettings {
         tls_builder_func: Arc::new(create_ssl_connector),
         http2: Http2Data {
@@ -24,7 +23,7 @@ pub(crate) fn get_settings(profile: ClientProfile) -> ImpersonateSettings {
             header_table_size: Some(65536),
             enable_push: Some(false),
         },
-        headers: create_headers(profile),
+        headers: create_headers(headers),
         gzip: true,
         brotli: true,
     }
@@ -91,9 +90,7 @@ fn create_ssl_connector() -> SslConnectorBuilder {
     builder
 }
 
-fn create_headers(profile: ClientProfile) -> HeaderMap {
-    let mut headers = HeaderMap::new();
-
+fn create_headers(mut headers: HeaderMap) -> HeaderMap {
     headers.insert(
         "sec-ch-ua",
         "\"Chromium\";v=\"106\", \"Google Chrome\";v=\"106\", \"Not;A=Brand\";v=\"99\""
@@ -112,7 +109,6 @@ fn create_headers(profile: ClientProfile) -> HeaderMap {
     headers.insert("sec-fetch-dest", "document".parse().unwrap());
     headers.insert(ACCEPT_ENCODING, "gzip, deflate, br".parse().unwrap());
     headers.insert(ACCEPT_LANGUAGE, "en-US,en;q=0.9".parse().unwrap());
-    headers.insert("client_profile", profile.to_string().parse().unwrap());
 
     headers
 }
