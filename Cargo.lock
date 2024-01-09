@@ -593,9 +593,9 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
 name = "h2_imp"
-version = "0.3.24"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb9f266bfa7396446e2139b3012b4617e094cea77e83eac4b448b2d6867b84bb"
+checksum = "7b2889951f5399d67793348af56c43f28a8964ca4ff380c1b7d41fbda8bd1244"
 dependencies = [
  "bytes",
  "fnv",
@@ -787,9 +787,9 @@ dependencies = [
 
 [[package]]
 name = "hyper_imp"
-version = "0.14.33"
+version = "0.14.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "004cf8f7bfe0b8f1c1b46d3eb53305193ffe5e91da9c948fc216961c64b3105d"
+checksum = "23a053058a363c5c01e654d76f3c5f693815b81033ebdc13b60bc2ffdde14bbc"
 dependencies = [
  "bytes",
  "futures-channel",
