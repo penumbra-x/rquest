@@ -1819,6 +1819,12 @@ impl Default for Client {
 }
 
 impl Client {
+    /// Get the client user agent
+    #[cfg(feature = "__impersonate")]
+    pub fn user_agent(&self) -> Option<&HeaderValue> {
+        self.inner.headers.get(USER_AGENT)
+    }
+
     /// Constructs a new `Client`.
     ///
     /// # Panics
