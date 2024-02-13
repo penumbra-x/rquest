@@ -3,7 +3,7 @@ use boring::ssl::{
 };
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
-    HeaderMap,
+    HeaderMap, HeaderValue,
 };
 use std::sync::Arc;
 
@@ -100,16 +100,17 @@ fn create_ssl_connector() -> SslConnectorBuilder {
 fn create_headers(mut headers: HeaderMap) -> HeaderMap {
     headers.insert(
         ACCEPT,
-        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-            .parse()
-            .unwrap(),
+        HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
     );
-    headers.insert("sec-fetch-site", "none".parse().unwrap());
-    headers.insert(ACCEPT_ENCODING, "gzip, deflate, br".parse().unwrap());
-    headers.insert("sec-fetch-mode", "navigate".parse().unwrap());
-    headers.insert(USER_AGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_2_2) AppleWebKit/617.25.9 (KHTML, like Gecko) Version/12.1.21 Safari/617.25.9".parse().unwrap());
-    headers.insert("sec-fetch-dest", "document".parse().unwrap());
-    headers.insert(ACCEPT_LANGUAGE, "en-US,en;q=0.9".parse().unwrap());
+    headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
+    headers.insert(
+        ACCEPT_ENCODING,
+        HeaderValue::from_static("gzip, deflate, br"),
+    );
+    headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
+    headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_2_2) AppleWebKit/617.25.9 (KHTML, like Gecko) Version/12.1.21 Safari/617.25.9"));
+    headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
+    headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
 
     headers
 }

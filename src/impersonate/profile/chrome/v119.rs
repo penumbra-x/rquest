@@ -98,22 +98,23 @@ fn create_headers(mut headers: HeaderMap) -> HeaderMap {
             r#""Microsoft Edge";v="119", "Chromium";v="119", "Not?A_Brand";v="24""#,
         ),
     );
-    headers.insert("sec-ch-ua-mobile", "?0".parse().unwrap());
+    headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
     headers.insert("sec-ch-ua-platform", "\"macOS\"".parse().unwrap());
-    headers.insert(DNT, "1".parse().unwrap());
-    headers.insert(UPGRADE_INSECURE_REQUESTS, "1".parse().unwrap());
+    headers.insert(DNT, HeaderValue::from_static("1"));
+    headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
     headers.insert(USER_AGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0".parse().unwrap());
     headers.insert(ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7".parse().unwrap());
-    headers.insert("sec-fetch-site", "none".parse().unwrap());
-    headers.insert("sec-fetch-mode", "navigate".parse().unwrap());
-    headers.insert("sec-fetch-user", "?1".parse().unwrap());
-    headers.insert("sec-fetch-dest", "document".parse().unwrap());
-    headers.insert(ACCEPT_ENCODING, "gzip, deflate, br".parse().unwrap());
+    headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
+    headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
+    headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
+    headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
+    headers.insert(
+        ACCEPT_ENCODING,
+        HeaderValue::from_static("gzip, deflate, br"),
+    );
     headers.insert(
         ACCEPT_LANGUAGE,
-        "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6"
-            .parse()
-            .unwrap(),
+        "en;q=0.8,en-GB;q=0.7,en-US;q=0.6".parse().unwrap(),
     );
 
     headers

@@ -1,7 +1,7 @@
 use boring::ssl::{SslConnector, SslConnectorBuilder, SslCurve, SslMethod, SslVersion};
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
-    HeaderMap,
+    HeaderMap, HeaderValue,
 };
 use std::sync::Arc;
 
@@ -84,13 +84,13 @@ fn create_ssl_connector() -> SslConnectorBuilder {
 }
 
 fn create_headers(mut headers: HeaderMap) -> HeaderMap {
-    headers.insert(ACCEPT, "*/*".parse().unwrap());
+    headers.insert(ACCEPT, HeaderValue::from_static("*/*"));
+    headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+    headers.insert(USER_AGENT, HeaderValue::from_static("okhttp/5.0.0-alpha2"));
     headers.insert(
-        ACCEPT_LANGUAGE,
-        "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7".parse().unwrap(),
+        ACCEPT_ENCODING,
+        HeaderValue::from_static("gzip, deflate, br"),
     );
-    headers.insert(USER_AGENT, "okhttp/5.0.0-alpha2".parse().unwrap());
-    headers.insert(ACCEPT_ENCODING, "gzip, deflate, br".parse().unwrap());
 
     headers
 }

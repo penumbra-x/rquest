@@ -18,7 +18,7 @@ async fn main() {
     // https://chat.openai.com/backend-api/models
     // https://chat.openai.com/backend-api/conversation
     // https://order.surfshark.com/api/v1/account/users?source=surfshark
-    match client.get("https://tls.rustc.icu/api/all").send().await {
+    match client.get("https://tls.peet.ws/api/all").send().await {
         Ok(res) => {
             println!("{}", res.text().await.unwrap());
         }

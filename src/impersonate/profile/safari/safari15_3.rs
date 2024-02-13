@@ -1,7 +1,7 @@
 use boring::ssl::{SslConnector, SslConnectorBuilder, SslCurve, SslMethod, SslOptions, SslVersion};
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
-    HeaderMap,
+    HeaderMap, HeaderValue,
 };
 use std::sync::Arc;
 
@@ -103,15 +103,16 @@ fn create_ssl_connector() -> SslConnectorBuilder {
 }
 
 fn create_headers(mut headers: HeaderMap) -> HeaderMap {
-    headers.insert(USER_AGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Safari/605.1.15".parse().unwrap());
+    headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Safari/605.1.15"));
     headers.insert(
         ACCEPT,
-        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-            .parse()
-            .unwrap(),
+        HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
     );
-    headers.insert(ACCEPT_ENCODING, "gzip, deflate, br".parse().unwrap());
-    headers.insert(ACCEPT_LANGUAGE, "en-us".parse().unwrap());
+    headers.insert(
+        ACCEPT_ENCODING,
+        HeaderValue::from_static("gzip, deflate, br"),
+    );
+    headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-us"));
 
     headers
 }
