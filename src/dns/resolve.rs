@@ -1,4 +1,4 @@
-use hyper::client::connect::dns::Name;
+pub use hyper::client::connect::dns::Name;
 use hyper::service::Service;
 
 use std::collections::HashMap;
