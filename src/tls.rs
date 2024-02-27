@@ -401,7 +401,7 @@ pub(crate) enum TlsBackend {
     #[cfg(feature = "__rustls")]
     BuiltRustls(rustls::ClientConfig),
     #[cfg(feature = "__boring")]
-    BoringTls(Arc<dyn Fn() -> boring::ssl::SslConnectorBuilder + Send + Sync>),
+    BoringTls(Arc<dyn Fn(bool) -> boring::ssl::SslConnectorBuilder + Send + Sync>),
     #[cfg(any(feature = "native-tls", feature = "__rustls"))]
     UnknownPreconfigured,
 }
@@ -444,7 +444,7 @@ impl Default for TlsBackend {
         {
             use boring::ssl::{SslConnector, SslConnectorBuilder, SslMethod};
 
-            fn create_builder() -> SslConnectorBuilder {
+            fn create_builder(_h2: bool) -> SslConnectorBuilder {
                 SslConnector::builder(SslMethod::tls()).unwrap()
             }
             TlsBackend::BoringTls(Arc::new(create_builder))

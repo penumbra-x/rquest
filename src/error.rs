@@ -220,6 +220,13 @@ impl StdError for Error {
     }
 }
 
+#[cfg(feature = "websocket")]
+impl From<tungstenite::Error> for Error {
+    fn from(err: tungstenite::Error) -> Error {
+        Error::new(Kind::Upgrade, Some(err))
+    }
+}
+
 #[cfg(target_arch = "wasm32")]
 impl From<crate::error::Error> for wasm_bindgen::JsValue {
     fn from(err: Error) -> wasm_bindgen::JsValue {

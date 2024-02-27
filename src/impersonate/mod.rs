@@ -15,7 +15,7 @@ pub mod profile;
 pub(crate) use profile::configure_impersonate;
 
 pub(crate) struct ImpersonateSettings {
-    pub tls_builder_func: Arc<dyn Fn() -> SslConnectorBuilder + Send + Sync>,
+    pub tls_builder_func: Arc<dyn Fn(bool) -> SslConnectorBuilder + Send + Sync>,
     pub http2: Http2Data,
     pub headers: HeaderMap,
     pub gzip: bool,

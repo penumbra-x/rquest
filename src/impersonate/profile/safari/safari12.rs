@@ -26,7 +26,7 @@ pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
     }
 }
 
-fn create_ssl_connector() -> SslConnectorBuilder {
+fn create_ssl_connector(_h2: bool) -> SslConnectorBuilder {
     let mut builder = SslConnector::builder(SslMethod::tls_client()).unwrap();
 
     builder.set_default_verify_paths().unwrap();

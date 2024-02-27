@@ -12,6 +12,8 @@ use super::client::{Client, Pending};
 #[cfg(feature = "multipart")]
 use super::multipart;
 use super::response::Response;
+#[cfg(feature = "websocket")]
+use super::websocket::UpgradedRequestBuilder;
 #[cfg(feature = "multipart")]
 use crate::header::CONTENT_LENGTH;
 use crate::header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE};
@@ -481,6 +483,15 @@ impl RequestBuilder {
     /// embedded `Client`.
     pub fn build_split(self) -> (Client, crate::Result<Request>) {
         (self.client, self.request)
+    }
+
+    /// Upgrades the [`RequestBuilder`] to peform a
+    /// websocket handshake. This returns a wrapped type, so you you must do
+    /// this after you setup your request, and just before you send the
+    /// request.
+    #[cfg(feature = "websocket")]
+    pub fn upgrade(self) -> UpgradedRequestBuilder {
+        UpgradedRequestBuilder::new(self)
     }
 
     /// Constructs the Request and sends it to the target URL, returning a

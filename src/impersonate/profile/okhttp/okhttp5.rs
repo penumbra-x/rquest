@@ -24,7 +24,7 @@ pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
     }
 }
 
-fn create_ssl_connector() -> SslConnectorBuilder {
+fn create_ssl_connector(h2: bool) -> SslConnectorBuilder {
     let mut builder = SslConnector::builder(SslMethod::tls_client()).unwrap();
 
     builder.set_default_verify_paths().unwrap();
@@ -70,7 +70,11 @@ fn create_ssl_connector() -> SslConnectorBuilder {
 
     builder.set_sigalgs_list(&sigalgs_list.join(":")).unwrap();
 
-    builder.set_alpn_protos(b"\x02h2\x08http/1.1").unwrap();
+    if h2 {
+        builder.set_alpn_protos(b"\x02h2\x08http/1.1").unwrap();
+    } else {
+        builder.set_alpn_protos(b"\x08http/1.1").unwrap();
+    }
 
     builder
         .set_min_proto_version(Some(SslVersion::TLS1_2))

@@ -66,16 +66,17 @@ enum Inner {
     #[cfg(feature = "__boring")]
     BoringTls {
         http: HttpConnector,
-        tls: Arc<dyn Fn() -> SslConnectorBuilder + Send + Sync>,
+        tls: Arc<dyn Fn(bool) -> SslConnectorBuilder + Send + Sync>,
     },
 }
 
 #[derive(Clone)]
 pub(crate) struct ImpersonateContext {
-    pub(crate) client_profile: ClientProfile,
-    pub(crate) enable_ech_grease: bool,
-    pub(crate) permute_extensions: bool,
-    pub(crate) certs_verification: bool
+    pub client_profile: ClientProfile,
+    pub enable_ech_grease: bool,
+    pub permute_extensions: bool,
+    pub certs_verification: bool,
+    pub h2: bool,
 }
 
 #[cfg(feature = "__boring")]
@@ -94,17 +95,21 @@ fn tls_add_application_settings(conf: &mut ConnectConfiguration, ctx: &Impersona
                 unsafe { boring_sys::SSL_set_enable_ech_grease(conf.as_ptr(), 1) }
             }
 
-            const ALPN_H2: &str = "h2";
-            const ALPN_H2_LENGTH: usize = 2;
-            unsafe {
-                boring_sys::SSL_add_application_settings(
-                    conf.as_ptr(),
-                    ALPN_H2.as_ptr(),
-                    ALPN_H2_LENGTH,
-                    std::ptr::null(),
-                    0,
-                );
-            };
+            if ctx.h2 {
+                conf.set_alpn_protos(b"\x02h2\x08http/1.1").unwrap();
+
+                const ALPN_H2: &str = "h2";
+                const ALPN_H2_LENGTH: usize = 2;
+                unsafe {
+                    boring_sys::SSL_add_application_settings(
+                        conf.as_ptr(),
+                        ALPN_H2.as_ptr(),
+                        ALPN_H2_LENGTH,
+                        std::ptr::null(),
+                        0,
+                    );
+                };
+            }
         }
         ClientProfile::OkHttp | ClientProfile::Safari | ClientProfile::Firefox => {}
     }
@@ -190,7 +195,7 @@ impl Connector {
     #[cfg(feature = "__boring")]
     pub(crate) fn new_boring_tls(
         mut http: HttpConnector,
-        tls: Arc<dyn Fn() -> SslConnectorBuilder + Send + Sync>,
+        tls: Arc<dyn Fn(bool) -> SslConnectorBuilder + Send + Sync>,
         proxies: Arc<Vec<Proxy>>,
         user_agent: Option<HeaderValue>,
         local_addr_v4: Option<Ipv4Addr>,
@@ -329,7 +334,7 @@ impl Connector {
                 if dst.scheme() == Some(&Scheme::HTTPS) {
                     let host = dst.host().ok_or("no host in url")?.to_string();
                     let conn = socks::connect(proxy, dst, dns).await?;
-                    let mut tls_connector = tls();
+                    let mut tls_connector = tls(self.impersonate_context.h2);
                     if !self.impersonate_context.certs_verification {
                         tls_connector.set_verify(boring::ssl::SslVerifyMode::NONE);
                     }
@@ -442,9 +447,7 @@ impl Connector {
                     http.set_nodelay(true);
                 }
 
-
-
-                let mut tls_connector = tls();
+                let mut tls_connector = tls(self.impersonate_context.h2);
                 if !self.impersonate_context.certs_verification {
                     tls_connector.set_verify(boring::ssl::SslVerifyMode::NONE);
                 }
@@ -566,7 +569,7 @@ impl Connector {
                     let host = dst.host().to_owned();
                     let port = dst.port().map(|p| p.as_u16()).unwrap_or(443);
                     let http = http.clone();
-                    let mut tls_connector = tls();
+                    let mut tls_connector = tls(self.impersonate_context.h2);
                     if !self.impersonate_context.certs_verification {
                         tls_connector.set_verify(boring::ssl::SslVerifyMode::NONE);
                     }
@@ -591,7 +594,7 @@ impl Connector {
                     )
                         .await?;
 
-                    let mut tls_connector = tls();
+                    let mut tls_connector = tls(self.impersonate_context.h2);
                     if !self.impersonate_context.certs_verification {
                         tls_connector.set_verify(boring::ssl::SslVerifyMode::NONE);
                     }

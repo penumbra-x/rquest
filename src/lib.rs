@@ -300,6 +300,21 @@ pub async fn get<T: IntoUrl>(url: T) -> crate::Result<Response> {
     Client::builder().build()?.get(url).send().await
 }
 
+/// Opens a websocket at the specified URL.
+///
+/// This is a shorthand for creating a request, sending it, and turning the
+/// response into a websocket.
+#[cfg(all(feature = "websocket", not(target_arch = "wasm32")))]
+pub async fn websocket<T: IntoUrl>(url: T) -> crate::Result<async_impl::websocket::WebSocket> {
+    Ok(Client::new()
+        .get(url)
+        .upgrade()
+        .send()
+        .await?
+        .into_websocket()
+        .await?)
+}
+
 fn _assert_impls() {
     fn assert_send<T: Send>() {}
     fn assert_sync<T: Sync>() {}
@@ -327,7 +342,7 @@ if_hyper! {
     doc_comment::doctest!("../README.md");
 
     pub use self::async_impl::{
-        Body, Client, ClientBuilder, Request, RequestBuilder, Response, Upgraded,
+        Body, Client, ClientBuilder, Request, RequestBuilder, Response, Upgraded
     };
     pub use self::proxy::{Proxy,NoProxy};
     #[cfg(feature = "__tls")]
