@@ -657,9 +657,9 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
 name = "h2_imp"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b2889951f5399d67793348af56c43f28a8964ca4ff380c1b7d41fbda8bd1244"
+checksum = "1b67b3a34b5e884b953344439fdae6492f74ed8ee963064166108293e22e3e7f"
 dependencies = [
  "bytes",
  "fnv",
@@ -818,9 +818,9 @@ dependencies = [
 
 [[package]]
 name = "hyper-boring-imp"
-version = "2.1.5"
+version = "2.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c26bff347d13f5a6c49394a3ee844540912bc0602cce24571e8ccd94fe720164"
+checksum = "da4843d9908bc666df163b59123e58e3371519f57175b64b95caf3216f0b32fa"
 dependencies = [
  "antidote",
  "boring-imp",
@@ -862,9 +862,9 @@ dependencies = [
 
 [[package]]
 name = "hyper_imp"
-version = "0.14.35"
+version = "0.14.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23a053058a363c5c01e654d76f3c5f693815b81033ebdc13b60bc2ffdde14bbc"
+checksum = "a113638ad5043ae620cf55eb7124f8673da1be0d5de6dba5a1a648391f41fdf0"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -1459,7 +1459,7 @@ checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
 
 [[package]]
 name = "reqwest-impersonate"
-version = "0.11.60"
+version = "0.11.61"
 dependencies = [
  "async-compression",
  "async-tungstenite",
