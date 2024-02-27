@@ -12,6 +12,7 @@ use futures_util::{
     StreamExt,
 };
 use http::{header, StatusCode};
+use tungstenite::protocol::WebSocketConfig;
 use crate::{error::Kind, RequestBuilder};
 pub use tungstenite::Message;
 use crate::Error;
@@ -23,6 +24,7 @@ pub struct UpgradedRequestBuilder {
     inner: RequestBuilder,
     nonce: String,
     protocols: Vec<String>,
+    config: WebSocketConfig,
 }
 
 impl UpgradedRequestBuilder {
@@ -42,12 +44,43 @@ impl UpgradedRequestBuilder {
             inner,
             nonce,
             protocols: vec![],
+            config: WebSocketConfig::default(),
         }
     }
 
     /// Sets the websocket subprotocols to request.
     pub fn protocols(mut self, protocols: Vec<String>) -> Self {
         self.protocols.extend(protocols);
+        self
+    }
+
+    /// Sets the websocket max_frame_size configuration.
+    pub fn max_frame_size(mut self, max_frame_size: usize) -> Self {
+        self.config.max_frame_size = Some(max_frame_size);
+        self
+    }
+
+    /// Sets the websocket write_buffer_size configuration.
+    pub fn write_buffer_size(mut self, write_buffer_size: usize) -> Self {
+        self.config.write_buffer_size = write_buffer_size;
+        self
+    }
+
+    /// Sets the websocket max_write_buffer_size configuration.
+    pub fn max_write_buffer_size(mut self, max_write_buffer_size: usize) -> Self {
+        self.config.max_write_buffer_size = max_write_buffer_size;
+        self
+    }
+
+    /// Sets the websocket max_message_size configuration.
+    pub fn max_message_size(mut self, max_message_size: usize) -> Self {
+        self.config.max_message_size = Some(max_message_size);
+        self
+    }
+
+    /// Sets the websocket accept_unmasked_frames configuration.
+    pub fn accept_unmasked_frames(mut self, accept_unmasked_frames: bool) -> Self {
+        self.config.accept_unmasked_frames = accept_unmasked_frames;
         self
     }
 
@@ -82,7 +115,9 @@ impl UpgradedRequestBuilder {
                     url.set_scheme("https")
                         .expect("url should accept https scheme")
                 }
-                _ => {}
+                _ => {
+                    Err(Error::new(Kind::Builder, Some("invalid scheme")))?;
+                }
             }
 
             client.execute(request).await?
@@ -92,6 +127,7 @@ impl UpgradedRequestBuilder {
             inner,
             nonce: self.nonce,
             protocols: self.protocols,
+            config: self.config,
         })
     }
 }
@@ -105,6 +141,7 @@ pub struct UpgradeResponse {
     inner: crate::Response,
     nonce: String,
     protocols: Vec<String>,
+    config: WebSocketConfig,
 }
 
 impl std::ops::Deref for UpgradeResponse {
@@ -119,12 +156,11 @@ impl UpgradeResponse {
     /// Turns the response into a websocket. This checks if the websocket
     /// handshake was successful.
     pub async fn into_websocket(self) -> Result<WebSocket, Error> {
-        #[cfg(not(target_arch = "wasm32"))]
         let (inner, protocol) = {
             let headers = self.inner.headers();
 
             if self.inner.status() != StatusCode::SWITCHING_PROTOCOLS {
-                return Err(Error::new(Kind::Upgrade, Some("unexpected status code")));
+                return Err(Error::new(Kind::Status(self.res.status()), Some("unexpected status code")));
             }
 
             if !headers
@@ -133,7 +169,7 @@ impl UpgradeResponse {
                 .map(|s| s.eq_ignore_ascii_case("upgrade"))
                 .unwrap_or_default()
             {
-                return Err(Error::new(Kind::Upgrade, Some("missing connection upgrade")));
+                return Err(Error::new(Kind::Status(self.res.status()), Some("missing connection upgrade")));
             }
 
             if !headers
@@ -142,16 +178,17 @@ impl UpgradeResponse {
                 .map(|s| s.eq_ignore_ascii_case("websocket"))
                 .unwrap_or_default()
             {
-                return Err(Error::new(Kind::Upgrade, Some("missing upgrade to websocket")));
+                return Err(Error::new(Kind::Status(self.res.status()), Some("missing upgrade to websocket")));
             }
 
             let accept = headers
                 .get(header::SEC_WEBSOCKET_ACCEPT)
                 .and_then(|v| v.to_str().ok())
-                .ok_or_else(||Error::new(Kind::Upgrade, Some("invalid accept key")))?;
-            let expected_accept = tungstenite::handshake::derive_accept_key(self.nonce.as_bytes());
-            if accept != expected_accept {
-                return Err(Error::new(Kind::Upgrade, Some("invalid accept key")));
+                .ok_or_else(||Error::new(Kind::Status(self.res.status()), Some("invalid accept key")))?;
+            
+            // Check the accept key
+            if accept != tungstenite::handshake::derive_accept_key(self.nonce.as_bytes()) {
+                return Err(Error::new(Kind::Status(self.res.status()), Some("invalid accept key")));
             }
 
             let protocol = headers
@@ -166,17 +203,17 @@ impl UpgradeResponse {
                 }
                 (false, None) => {
                     // server didn't reply with a protocol
-                    return Err(Error::new(Kind::Upgrade, Some("missing protocol")));
+                    return Err(Error::new(Kind::Status(self.res.status()), Some("missing protocol")));
                 }
                 (false, Some(protocol)) => {
                     if !self.protocols.contains(protocol) {
                         // the responded protocol is none which we requested
-                        return Err(Error::new(Kind::Upgrade, Some("invalid protocol")));
+                        return Err(Error::new(Kind::Status(self.res.status()), Some("invalid protocol")));
                     }
                 }
                 (true, Some(_)) => {
                     // we didn't request any protocols but got one anyway
-                    return Err(Error::new(Kind::Upgrade, Some("invalid protocol")));
+                    return Err(Error::new(Kind::Status(self.res.status()), Some("invalid protocol")));
                 }
             }
 
@@ -185,7 +222,7 @@ impl UpgradeResponse {
             let inner = async_tungstenite::WebSocketStream::from_raw_socket(
                 self.inner.upgrade().await?.compat(),
                 tungstenite::protocol::Role::Client,
-                None,
+                Some(self.config),
             )
             .await;
 
