@@ -241,6 +241,7 @@ pub struct WebSocket {
 }
 
 impl WebSocket {
+    /// Returns the subprotocol that the server has accepted.
     pub fn protocol(&self) -> Option<&str> {
         self.protocol.as_deref()
     }

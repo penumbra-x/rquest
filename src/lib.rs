@@ -343,6 +343,7 @@ if_hyper! {
 
     pub use self::async_impl::{
         Body, Client, ClientBuilder, Request, RequestBuilder, Response, Upgraded, websocket::Message,
+        websocket::UpgradeResponse, websocket::WebSocket
     };
     pub use self::proxy::{Proxy,NoProxy};
     #[cfg(feature = "__tls")]
