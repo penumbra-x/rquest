@@ -342,9 +342,10 @@ if_hyper! {
     doc_comment::doctest!("../README.md");
 
     pub use self::async_impl::{
-        Body, Client, ClientBuilder, Request, RequestBuilder, Response, Upgraded, websocket::Message,
-        websocket::UpgradeResponse, websocket::WebSocket
+        Body, Client, ClientBuilder, Request, RequestBuilder, Response, Upgraded
     };
+    #[cfg(feature = "websocket")]
+    pub use self::async_impl::websocket::{Message, WebSocket, UpgradeResponse};
     pub use self::proxy::{Proxy,NoProxy};
     #[cfg(feature = "__tls")]
     // Re-exports, to be removed in a future release
