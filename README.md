@@ -1,82 +1,16 @@
-# reqwest
-
-A fork of reqwest used to impersonate the Chrome browser / OkHttp. Inspired by [curl-impersonate](https://github.com/lwthiker/curl-impersonate).
-
-This crate was intended to be an experiment to learn more about TLS and HTTP2 fingerprinting. Some parts of reqwest may not have the code needed to work when used to copy Chrome.
-
-It is currently missing HTTP/2 `PRIORITY` support. (PRs to [h2](https://github.com/hyperium/h2) are welcome)
-
-These patches were made specifically for `reqwest` to work, but I would appreciate if someone took the time to PR more "proper" versions to the parent projects.
-
-## Example
-
-`Cargo.toml`
-
-```toml
-reqwest = { package = "reqwest-impersonate", version = "0.11.46", default-features = false, features = [
-    "boring-tls",
-    "impersonate",
-    "blocking",
-] }
-```
-
-`main.rs`
-
-```rs
-use reqwest_impersonate as reqwest;
-
-fn main() {
-    // Build a client to mimic OkHttpAndroid13
-    let client = reqwest::blocking::Client::builder()
-        .impersonate(reqwest::impersonate::Impersonate::Chrome120)
-        .enable_ech_grease(true)
-        .permute_extensions(true)
-        .cookie_store(true)
-        .tls_info(true)
-        .build()
-        .unwrap();
-
-    // Use the API you're already familiar with
-    // https://tls.peet.ws/api/all
-    // https://chat.openai.com/backend-api/models
-    // https://chat.openai.com/backend-api/conversation
-    // https://order.surfshark.com/api/v1/account/users?source=surfshark
-    match client.get("https://tls.peet.ws/api/all").send() {
-        Ok(res) => {
-            println!("{}", res.text().unwrap());
-        }
-        Err(err) => {
-            dbg!(err);
-        }
-    };
-
-    match client
-        .post("https://chat.openai.com/backend-api/conversation")
-        .send()
-    {
-        Ok(res) => {
-            println!("{}", res.text().unwrap());
-        }
-        Err(err) => {
-            dbg!(err);
-        }
-    };
-
-}
-
-```
-
-## Original readme
+# reqwest-impersonate
 
 [![crates.io](https://img.shields.io/crates/v/reqwest-impersonate.svg)](https://crates.io/crates/reqwest-impersonate)
-[![Documentation](https://docs.rs/reqwest-impersonate/badge.svg)](https://docs.rs/reqwest-impersonate)
 [![MIT/Apache-2 licensed](https://img.shields.io/crates/l/reqwest.svg)](./LICENSE-APACHE)
 [![CI](https://github.com/seanmonstar/reqwest/workflows/CI/badge.svg)](https://github.com/seanmonstar/reqwest/actions?query=workflow%3ACI)
 
 An ergonomic, batteries-included HTTP Client for Rust.
 
+A fork of reqwest used to impersonate the Chrome browser / OkHttp. Inspired by [curl-impersonate](https://github.com/lwthiker/curl-impersonate).
+
 - Plain bodies, JSON, urlencoded, multipart
 - Customizable redirect policy
+- WebSocket
 - HTTP Proxies
 - HTTPS via system-native TLS (or optionally, rustls)
 - Cookie Store
@@ -90,42 +24,84 @@ optional features, so your `Cargo.toml` could look like this:
 
 ```toml
 [dependencies]
-reqwest = { version = "0.11", features = ["json"] }
 tokio = { version = "1", features = ["full"] }
+reqwest_impersonate = { version = "0.11", default-features = false, features = [
+    "boring-tls",
+    "impersonate",
+    "blocking",
+] }
 ```
 
 And then the code:
 
 ```rust,no_run
-use std::collections::HashMap;
+use std::error::Error;
+use reqwest_impersonate as reqwest;
+use reqwest::impersonate::Impersonate;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let resp = reqwest::get("https://httpbin.org/ip")
-        .await?
-        .json::<HashMap<String, String>>()
-        .await?;
-    println!("{:#?}", resp);
+async fn main() -> Result<(), Box<dyn Error>> {
+    // Build a client to mimic Chrome120
+    let client = reqwest::Client::builder()
+        .impersonate(Impersonate::Chrome120)
+        .danger_accept_invalid_certs(true)
+        .enable_ech_grease(true)
+        .permute_extensions(true)
+        .cookie_store(true)
+        .build()?;
+
+    // Use the API you're already familiar with
+    let resp = client.get("https://tls.peet.ws/api/all").send().await?;
+    println!("{}", resp.text().await?);
+
+    let resp = client
+        .post("https://chat.openai.com/backend-api/conversation")
+        .send().await?;
+    println!("{}", resp.text().await?);
+    
     Ok(())
 }
 ```
 
-## Blocking Client
-
-There is an optional "blocking" client API that can be enabled:
-
-```toml
-[dependencies]
-reqwest = { version = "0.11", features = ["blocking", "json"] }
-```
+And then the websocket code:
 
 ```rust,no_run
-use std::collections::HashMap;
+use reqwest_impersonate as reqwest;
+use std::error::Error;
+use tungstenite::Message;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let resp = reqwest::blocking::get("https://httpbin.org/ip")?
-        .json::<HashMap<String, String>>()?;
-    println!("{:#?}", resp);
+use futures_util::{SinkExt, StreamExt, TryStreamExt};
+use reqwest::{impersonate::Impersonate, Client};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let websocket = Client::builder()
+        .impersonate_websocket(Impersonate::Chrome120)
+        .build()?
+        .get("wss://echo.websocket.org")
+        .upgrade()
+        .send()
+        .await?
+        .into_websocket()
+        .await?;
+
+    let (mut tx, mut rx) = websocket.split();
+
+    tokio::spawn(async move {
+        for i in 1..11 {
+            tx.send(Message::Text(format!("Hello, World! #{i}")))
+                .await
+                .unwrap();
+        }
+    });
+
+    while let Some(message) = rx.try_next().await? {
+        match message {
+            Message::Text(text) => println!("received: {text}"),
+            _ => {}
+        }
+    }
+
     Ok(())
 }
 ```
