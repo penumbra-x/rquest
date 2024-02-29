@@ -8,9 +8,9 @@ use reqwest::{impersonate::Impersonate, Client};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let websocket = Client::builder()
-        .impersonate_websocket(Impersonate::Chrome100)
+        .impersonate_websocket(Impersonate::Chrome120)
         .build()?
-        .get("wss://chatgpt-async-webps-prod-southcentralus-25.webpubsub.azure.com/client/hubs/conversations?access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJodHRwczovL2NoYXRncHQtYXN5bmMtd2VicHMtcHJvZC1zb3V0aGNlbnRyYWx1cy0yNS53ZWJwdWJzdWIuYXp1cmUuY29tL2NsaWVudC9odWJzL2NvbnZlcnNhdGlvbnMiLCJpYXQiOjE3MDkwMjE5NzEsImV4cCI6MTcwOTAyNTU3MSwic3ViIjoidXNlci02NkdLTzh0MFY4TDJyMUtQODhnNXVjc00ifQ.zIu4tz5JFnnV_7IS-LKApTk3pW_RqCbLrElmqEptghY")
+        .get("wss://echo.websocket.org")
         .upgrade()
         .send()
         .await?
