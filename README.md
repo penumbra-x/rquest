@@ -6,8 +6,6 @@
 
 An ergonomic, batteries-included HTTP Client for Rust.
 
-A fork of reqwest used to impersonate the Chrome browser / OkHttp. Inspired by [curl-impersonate](https://github.com/lwthiker/curl-impersonate).
-
 - Plain bodies, JSON, urlencoded, multipart
 - Customizable redirect policy
 - WebSocket
@@ -16,6 +14,8 @@ A fork of reqwest used to impersonate the Chrome browser / OkHttp. Inspired by [
 - Cookie Store
 - WASM
 - [Changelog](CHANGELOG.md)
+
+> A fork of reqwest used to impersonate the Chrome browser / OkHttp. Inspired by [curl-impersonate](https://github.com/lwthiker/curl-impersonate).
 
 ## Example
 
