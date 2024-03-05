@@ -27,8 +27,7 @@ optional features, so your `Cargo.toml` could look like this:
 tokio = { version = "1", features = ["full"] }
 reqwest_impersonate = { version = "0.11", default-features = false, features = [
     "boring-tls",
-    "impersonate",
-    "blocking",
+    "impersonate"
 ] }
 ```
 
@@ -62,6 +61,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
+
+so your `Cargo.toml` could look like this:
+
+```toml
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+reqwest_impersonate = { version = "0.11", default-features = false, features = [
+    "boring-tls",
+    "impersonate",
+    "websocket",
+] }
 
 And then the websocket code:
 

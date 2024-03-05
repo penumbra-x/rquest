@@ -42,8 +42,8 @@ boring-tls = ["__boring"]
 
 
 blocking = ["futures-util/io", "tokio/rt-multi-thread", "tokio/sync"]
-impersonate = ["__impersonate", "websocket"]
-websocket = ["async-tungstenite", "tungstenite", "tokio-util/compat"]
+impersonate = ["__impersonate"]
+websocket = ["async-tungstenite", "tungstenite", "tokio-util/compat", "impersonate"]
 
 
 cookies = ["cookie_crate", "cookie_store"]
@@ -272,6 +272,11 @@ path = "examples/simple.rs"
 name = "impersonate"
 path = "examples/impersonate.rs"
 required-features = ["impersonate", "blocking", "socks", "cookies"]
+
+[[example]]
+name = "websocket"
+path = "examples/websocket.rs"
+required-features = ["websocket", "blocking", "socks", "cookies"]
 
 [[test]]
 name = "blocking"

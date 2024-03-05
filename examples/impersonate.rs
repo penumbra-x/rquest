@@ -1,6 +1,6 @@
-use std::error::Error;
-use reqwest_impersonate as reqwest;
 use reqwest::impersonate::Impersonate;
+use reqwest_impersonate as reqwest;
+use std::error::Error;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -19,8 +19,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let resp = client
         .post("https://chat.openai.com/backend-api/conversation")
-        .send().await?;
+        .send()
+        .await?;
     println!("{}", resp.text().await?);
-    
+
     Ok(())
 }
