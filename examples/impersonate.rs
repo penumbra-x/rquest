@@ -6,7 +6,7 @@ use std::error::Error;
 async fn main() -> Result<(), Box<dyn Error>> {
     // Build a client to mimic Chrome120
     let client = reqwest::Client::builder()
-        .impersonate(Impersonate::Edge122)
+        .impersonate(Impersonate::Safari16_5)
         .danger_accept_invalid_certs(true)
         .enable_ech_grease(true)
         .permute_extensions(true)
