@@ -90,7 +90,7 @@ fn create_ssl_connector(h2: bool) -> SslConnectorBuilder {
 fn create_headers(mut headers: HeaderMap) -> HeaderMap {
     headers.insert(ACCEPT, HeaderValue::from_static("*/*"));
     headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
-    headers.insert(USER_AGENT, HeaderValue::from_static("okhttp/5.0.0-alpha2"));
+    headers.insert(USER_AGENT, HeaderValue::from_static("NRC Audio/2.0.6 (nl.nrc.audio; build:36; Android 14; Sdk:34; Manufacturer:OnePlus; Model: CPH2609) OkHttp/5.0.0-alpha2"));
     headers.insert(
         ACCEPT_ENCODING,
         HeaderValue::from_static("gzip, deflate, br"),

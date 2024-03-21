@@ -92,7 +92,7 @@ fn create_headers(mut headers: HeaderMap) -> HeaderMap {
         ACCEPT_LANGUAGE,
         HeaderValue::from_static("de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7"),
     );
-    headers.insert(USER_AGENT, HeaderValue::from_static("okhttp/4.9.1"));
+    headers.insert(USER_AGENT, HeaderValue::from_static("GM-Android/6.111.1 (240460200; M:motorola moto g power (2021); O:30; D:76ba9f6628d198c8) ObsoleteUrlFactory/1.0 OkHttp/4.9"));
     headers.insert(
         ACCEPT_ENCODING,
         HeaderValue::from_static("gzip, deflate, br"),

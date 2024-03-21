@@ -90,7 +90,7 @@ fn create_ssl_connector(h2: bool) -> SslConnectorBuilder {
 fn create_headers(mut headers: HeaderMap) -> HeaderMap {
     headers.insert(ACCEPT, HeaderValue::from_static("*/*"));
     headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
-    headers.insert(USER_AGENT, HeaderValue::from_static("okhttp/3.14"));
+    headers.insert(USER_AGENT, HeaderValue::from_static("DS podcast/2.0.1 (be.standaard.audio; build:9; Android 11; Sdk:30; Manufacturer:samsung; Model: SM-A405FN) OkHttp/3.14.0"));
     headers.insert(
         ACCEPT_ENCODING,
         HeaderValue::from_static("gzip, deflate, br"),

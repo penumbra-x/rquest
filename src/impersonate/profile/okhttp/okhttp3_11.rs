@@ -90,7 +90,7 @@ fn create_headers(mut headers: HeaderMap) -> HeaderMap {
         ACCEPT_LANGUAGE,
         HeaderValue::from_static("de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7"),
     );
-    headers.insert(USER_AGENT, HeaderValue::from_static("okhttp/3.11"));
+    headers.insert(USER_AGENT, HeaderValue::from_static("NRC Audio/2.0.6 (nl.nrc.audio; build:36; Android 12; Sdk:31; Manufacturer:motorola; Model: moto g72) OkHttp/3.11.0"));
     headers.insert(
         ACCEPT_ENCODING,
         HeaderValue::from_static("gzip, deflate, br"),
