@@ -6,7 +6,7 @@ use std::error::Error;
 async fn main() -> Result<(), Box<dyn Error>> {
     // Build a client to mimic Chrome120
     let client = reqwest::Client::builder()
-        .impersonate(Impersonate::Safari16_5)
+        .impersonate(Impersonate::Chrome123)
         .danger_accept_invalid_certs(true)
         .enable_ech_grease(true)
         .permute_extensions(true)
@@ -18,7 +18,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("{}", resp.text().await?);
 
     let resp = client
-        .post("https://chat.openai.com/backend-api/conversation")
+        .get("https://chat.openai.com/api/auth/csrf")
         .send()
         .await?;
     println!("{}", resp.text().await?);

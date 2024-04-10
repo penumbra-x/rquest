@@ -52,6 +52,7 @@ fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
         Impersonate::Chrome118 => chrome::v118::get_settings(headers),
         Impersonate::Chrome119 => chrome::v119::get_settings(headers),
         Impersonate::Chrome120 => chrome::v120::get_settings(headers),
+        Impersonate::Chrome123 => chrome::v123::get_settings(headers),
         Impersonate::Safari12 => safari::safari12::get_settings(headers),
         Impersonate::Safari15_3 => safari::safari15_3::get_settings(headers),
         Impersonate::Safari15_5 => safari::safari15_5::get_settings(headers),
@@ -73,7 +74,7 @@ fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
 }
 
 /// Defines the Chrome version to mimic when setting up a builder
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 #[allow(missing_docs)]
 pub enum Impersonate {
     Chrome99,
@@ -91,6 +92,7 @@ pub enum Impersonate {
     Chrome118,
     Chrome119,
     Chrome120,
+    Chrome123,
     Safari12,
     Safari15_3,
     Safari15_5,
@@ -116,38 +118,39 @@ impl FromStr for Impersonate {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "chrome99" => Ok(Impersonate::Chrome99),
-            "chrome100" => Ok(Impersonate::Chrome100),
-            "chrome101" => Ok(Impersonate::Chrome101),
-            "chrome104" => Ok(Impersonate::Chrome104),
-            "chrome105" => Ok(Impersonate::Chrome105),
-            "chrome106" => Ok(Impersonate::Chrome106),
-            "chrome108" => Ok(Impersonate::Chrome108),
-            "chrome107" => Ok(Impersonate::Chrome107),
-            "chrome109" => Ok(Impersonate::Chrome109),
-            "chrome114" => Ok(Impersonate::Chrome114),
-            "chrome116" => Ok(Impersonate::Chrome116),
-            "chrome117" => Ok(Impersonate::Chrome117),
-            "chrome118" => Ok(Impersonate::Chrome118),
-            "chrome119" => Ok(Impersonate::Chrome119),
-            "chrome120" => Ok(Impersonate::Chrome120),
-            "safari12" => Ok(Impersonate::Safari12),
-            "safari15_3" => Ok(Impersonate::Safari15_3),
-            "safari15_5" => Ok(Impersonate::Safari15_5),
-            "safari15_6_1" => Ok(Impersonate::Safari15_6_1),
-            "safari16" => Ok(Impersonate::Safari16),
-            "safari16_5" => Ok(Impersonate::Safari16_5),
-            "safari17_2_1" => Ok(Impersonate::Safari17_2_1),
-            "okhttp3_9" => Ok(Impersonate::OkHttp3_9),
-            "okhttp3_11" => Ok(Impersonate::OkHttp3_11),
-            "okhttp3_13" => Ok(Impersonate::OkHttp3_13),
-            "okhttp3_14" => Ok(Impersonate::OkHttp3_14),
-            "okhttp4_9" => Ok(Impersonate::OkHttp4_9),
-            "okhttp4_10" => Ok(Impersonate::OkHttp4_10),
-            "okhttp5" => Ok(Impersonate::OkHttp5),
-            "edge99" => Ok(Impersonate::Edge99),
-            "edge101" => Ok(Impersonate::Edge101),
-            "edge120" => Ok(Impersonate::Edge122),
+            "chrome_99" => Ok(Impersonate::Chrome99),
+            "chrome_100" => Ok(Impersonate::Chrome100),
+            "chrome_101" => Ok(Impersonate::Chrome101),
+            "chrome_104" => Ok(Impersonate::Chrome104),
+            "chrome_105" => Ok(Impersonate::Chrome105),
+            "chrome_106" => Ok(Impersonate::Chrome106),
+            "chrome_108" => Ok(Impersonate::Chrome108),
+            "chrome_107" => Ok(Impersonate::Chrome107),
+            "chrome_109" => Ok(Impersonate::Chrome109),
+            "chrome_114" => Ok(Impersonate::Chrome114),
+            "chrome_116" => Ok(Impersonate::Chrome116),
+            "chrome_117" => Ok(Impersonate::Chrome117),
+            "chrome_118" => Ok(Impersonate::Chrome118),
+            "chrome_119" => Ok(Impersonate::Chrome119),
+            "chrome_120" => Ok(Impersonate::Chrome120),
+            "chrome_123" => Ok(Impersonate::Chrome123),
+            "safari_12" => Ok(Impersonate::Safari12),
+            "safari_15_3" => Ok(Impersonate::Safari15_3),
+            "safari_15_5" => Ok(Impersonate::Safari15_5),
+            "safari_15_6_1" => Ok(Impersonate::Safari15_6_1),
+            "safari_16" => Ok(Impersonate::Safari16),
+            "safari_16_5" => Ok(Impersonate::Safari16_5),
+            "safari_17_2_1" => Ok(Impersonate::Safari17_2_1),
+            "okhttp_3_9" => Ok(Impersonate::OkHttp3_9),
+            "okhttp_3_11" => Ok(Impersonate::OkHttp3_11),
+            "okhttp_3_13" => Ok(Impersonate::OkHttp3_13),
+            "okhttp_3_14" => Ok(Impersonate::OkHttp3_14),
+            "okhttp_4_9" => Ok(Impersonate::OkHttp4_9),
+            "okhttp_4_10" => Ok(Impersonate::OkHttp4_10),
+            "okhttp_5" => Ok(Impersonate::OkHttp5),
+            "edge_99" => Ok(Impersonate::Edge99),
+            "edge_101" => Ok(Impersonate::Edge101),
+            "edge_120" => Ok(Impersonate::Edge122),
             _ => Err("Invalid Impersonate version"),
         }
     }
@@ -171,7 +174,8 @@ impl Impersonate {
             | Impersonate::Chrome117
             | Impersonate::Chrome118
             | Impersonate::Chrome119
-            | Impersonate::Chrome120 => ClientProfile::Chrome,
+            | Impersonate::Chrome120
+            | Impersonate::Chrome123 => ClientProfile::Chrome,
 
             Impersonate::Safari12
             | Impersonate::Safari15_3
