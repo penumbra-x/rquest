@@ -443,7 +443,7 @@ impl RequestBuilder {
                 Ok(body) => {
                     if !req.headers().contains_key(CONTENT_TYPE) {
                         req.headers_mut()
-                            .insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+                            .insert(CONTENT_TYPE, HeaderValue::from_static("application/x-www-form-urlencoded"));
                     }
                     *req.body_mut() = Some(body.into());
                 }
