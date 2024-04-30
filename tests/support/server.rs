@@ -8,7 +8,6 @@ use std::time::Duration;
 
 use tokio::sync::oneshot;
 
-pub use http::Response;
 use tokio::runtime;
 
 pub struct Server {
