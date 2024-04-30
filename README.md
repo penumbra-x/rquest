@@ -25,10 +25,7 @@ optional features, so your `Cargo.toml` could look like this:
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-reqwest_impersonate = { version = "0.11", default-features = false, features = [
-    "boring-tls",
-    "impersonate"
-] }
+reqwest_impersonate = "0.11"
 ```
 
 Or WebSocket:
@@ -36,11 +33,7 @@ Or WebSocket:
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-reqwest_impersonate = { version = "0.11", default-features = false, features = [
-    "boring-tls",
-    "impersonate",
-    "websocket",
-] }
+reqwest_impersonate = { version = "0.11", features = ["websocket"] }
 ```
 
 And then the code:
