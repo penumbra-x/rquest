@@ -345,7 +345,7 @@ if_hyper! {
         Body, Client, ClientBuilder, Request, RequestBuilder, Response, Upgraded
     };
     #[cfg(feature = "websocket")]
-    pub use self::async_impl::websocket::{Message, WebSocket, UpgradeResponse};
+    pub use self::async_impl::websocket::{UpgradedRequestBuilder, Message, WebSocket, UpgradeResponse};
     pub use self::proxy::{Proxy,NoProxy};
     #[cfg(feature = "__tls")]
     // Re-exports, to be removed in a future release
