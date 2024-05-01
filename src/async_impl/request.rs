@@ -485,13 +485,22 @@ impl RequestBuilder {
         (self.client, self.request)
     }
 
-    /// Upgrades the [`RequestBuilder`] to peform a
-    /// websocket handshake. This returns a wrapped type, so you you must do
-    /// this after you setup your request, and just before you send the
+    /// Upgrades the [`RequestBuilder`] to perform a
+    /// websocket handshake. This returns a wrapped type, so you must do
+    /// this after you set up your request, and just before you send the
     /// request.
     #[cfg(feature = "websocket")]
     pub fn upgrade(self) -> UpgradedRequestBuilder {
         UpgradedRequestBuilder::new(self)
+    }
+
+    /// Upgrades the [`RequestBuilder`] to perform a
+    /// websocket handshake with a specified websocket key. This returns a wrapped type, 
+    /// so you must do this after you set up your request, and just before you send the
+    /// request.
+    #[cfg(feature = "websocket")]
+    pub fn upgrade_with_key<T: Into<String>>(self, websocket_key: T) -> UpgradedRequestBuilder {
+        UpgradedRequestBuilder::new_with_key(self, websocket_key.into())
     }
 
     /// Constructs the Request and sends it to the target URL, returning a

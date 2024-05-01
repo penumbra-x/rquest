@@ -1,21 +1,14 @@
 use std::{
-    convert::TryFrom, pin::Pin, task::{
-        Context,
-        Poll,
-    }
+    pin::Pin,
+    task::{Context, Poll},
 };
 
-use futures_util::{
-    Sink,
-    SinkExt,
-    Stream,
-    StreamExt,
-};
-use http::{header, HeaderName, HeaderValue, StatusCode};
-use tungstenite::protocol::WebSocketConfig;
-use crate::{error::Kind, RequestBuilder};
-pub use tungstenite::Message;
 use crate::Error;
+use crate::{error::Kind, RequestBuilder};
+use futures_util::{Sink, SinkExt, Stream, StreamExt};
+use http::{header, StatusCode};
+use tungstenite::protocol::WebSocketConfig;
+pub use tungstenite::Message;
 
 /// Wrapper for [`RequestBuilder`] that performs the
 /// websocket handshake when sent.
@@ -28,9 +21,8 @@ pub struct UpgradedRequestBuilder {
 }
 
 impl UpgradedRequestBuilder {
-    pub(crate) fn new(inner: RequestBuilder) -> Self {
+    fn create_upgraded_request(inner: RequestBuilder, nonce: String) -> Self {
         let (nonce, inner) = {
-            let nonce = tungstenite::handshake::client::generate_key();
             let inner = inner
                 .header(header::CONNECTION, "upgrade")
                 .header(header::UPGRADE, "websocket")
@@ -48,21 +40,18 @@ impl UpgradedRequestBuilder {
         }
     }
 
+    pub(crate) fn new_with_key(inner: RequestBuilder, nonce: String) -> Self {
+        Self::create_upgraded_request(inner, nonce)
+    }
+
+    pub(crate) fn new(inner: RequestBuilder) -> Self {
+        let nonce = tungstenite::handshake::client::generate_key();
+        Self::create_upgraded_request(inner, nonce)
+    }
+
     /// Sets the websocket subprotocols to request.
     pub fn protocols(mut self, protocols: Vec<String>) -> Self {
         self.protocols.extend(protocols);
-        self
-    }
-
-    /// Add a `Header` to this Request.
-    pub fn header<K, V>(mut self, key: K, value: V) -> Self
-    where
-        HeaderName: TryFrom<K>,
-        <HeaderName as TryFrom<K>>::Error: Into<http::Error>,
-        HeaderValue: TryFrom<V>,
-        <HeaderValue as TryFrom<V>>::Error: Into<http::Error>,
-    {
-        self.inner = self.inner.header(key, value);
         self
     }
 
@@ -113,28 +102,30 @@ impl UpgradedRequestBuilder {
 
             // sets subprotocols
             if !self.protocols.is_empty() {
-                let subprotocols = self.protocols
+                let subprotocols = self
+                    .protocols
                     .iter()
                     .map(|s| s.as_str())
                     .collect::<Vec<&str>>()
                     .join(", ");
 
-                request.headers_mut()
-                    .insert(header::SEC_WEBSOCKET_PROTOCOL, subprotocols.parse().map_err(|_| 
-                        Error::new(Kind::Builder, Some("invalid subprotocol")))?);
+                request.headers_mut().insert(
+                    header::SEC_WEBSOCKET_PROTOCOL,
+                    subprotocols
+                        .parse()
+                        .map_err(|_| Error::new(Kind::Builder, Some("invalid subprotocol")))?,
+                );
             }
 
             // change the scheme from wss? to https?
             let url = request.url_mut();
             match url.scheme() {
-                "ws" => {
-                    url.set_scheme("http")
-                        .expect("url should accept http scheme")
-                }
-                "wss" => {
-                    url.set_scheme("https")
-                        .expect("url should accept https scheme")
-                }
+                "ws" => url
+                    .set_scheme("http")
+                    .expect("url should accept http scheme"),
+                "wss" => url
+                    .set_scheme("https")
+                    .expect("url should accept https scheme"),
                 _ => {
                     Err(Error::new(Kind::Builder, Some("invalid scheme")))?;
                 }
@@ -180,7 +171,10 @@ impl UpgradeResponse {
             let headers = self.inner.headers();
 
             if self.inner.status() != StatusCode::SWITCHING_PROTOCOLS {
-                return Err(Error::new(Kind::Status(self.res.status()), Some("unexpected status code")));
+                return Err(Error::new(
+                    Kind::Status(self.res.status()),
+                    Some("unexpected status code"),
+                ));
             }
 
             if !headers
@@ -189,7 +183,10 @@ impl UpgradeResponse {
                 .map(|s| s.eq_ignore_ascii_case("upgrade"))
                 .unwrap_or_default()
             {
-                return Err(Error::new(Kind::Status(self.res.status()), Some("missing connection upgrade")));
+                return Err(Error::new(
+                    Kind::Status(self.res.status()),
+                    Some("missing connection upgrade"),
+                ));
             }
 
             if !headers
@@ -198,17 +195,25 @@ impl UpgradeResponse {
                 .map(|s| s.eq_ignore_ascii_case("websocket"))
                 .unwrap_or_default()
             {
-                return Err(Error::new(Kind::Status(self.res.status()), Some("missing upgrade to websocket")));
+                return Err(Error::new(
+                    Kind::Status(self.res.status()),
+                    Some("missing upgrade to websocket"),
+                ));
             }
 
             let accept = headers
                 .get(header::SEC_WEBSOCKET_ACCEPT)
                 .and_then(|v| v.to_str().ok())
-                .ok_or_else(||Error::new(Kind::Status(self.res.status()), Some("invalid accept key")))?;
-            
+                .ok_or_else(|| {
+                    Error::new(Kind::Status(self.res.status()), Some("invalid accept key"))
+                })?;
+
             // Check the accept key
             if accept != tungstenite::handshake::derive_accept_key(self.nonce.as_bytes()) {
-                return Err(Error::new(Kind::Status(self.res.status()), Some("invalid accept key")));
+                return Err(Error::new(
+                    Kind::Status(self.res.status()),
+                    Some("invalid accept key"),
+                ));
             }
 
             let protocol = headers
@@ -223,17 +228,26 @@ impl UpgradeResponse {
                 }
                 (false, None) => {
                     // server didn't reply with a protocol
-                    return Err(Error::new(Kind::Status(self.res.status()), Some("missing protocol")));
+                    return Err(Error::new(
+                        Kind::Status(self.res.status()),
+                        Some("missing protocol"),
+                    ));
                 }
                 (false, Some(protocol)) => {
                     if !self.protocols.contains(protocol) {
                         // the responded protocol is none which we requested
-                        return Err(Error::new(Kind::Status(self.res.status()), Some("invalid protocol")));
+                        return Err(Error::new(
+                            Kind::Status(self.res.status()),
+                            Some("invalid protocol"),
+                        ));
                     }
                 }
                 (true, Some(_)) => {
                     // we didn't request any protocols but got one anyway
-                    return Err(Error::new(Kind::Status(self.res.status()), Some("invalid protocol")));
+                    return Err(Error::new(
+                        Kind::Status(self.res.status()),
+                        Some("invalid protocol"),
+                    ));
                 }
             }
 
@@ -276,9 +290,7 @@ impl Stream for WebSocket {
                 Poll::Pending => return Poll::Pending,
                 Poll::Ready(None) => return Poll::Ready(None),
                 Poll::Ready(Some(Err(error))) => return Poll::Ready(Some(Err(error.into()))),
-                Poll::Ready(Some(Ok(message))) => {
-                    return Poll::Ready(Some(Ok(message)))
-                }
+                Poll::Ready(Some(Ok(message))) => return Poll::Ready(Some(Ok(message))),
             }
         }
     }
