@@ -1,5 +1,5 @@
 use std::{
-    pin::Pin, task::{
+    convert::TryFrom, pin::Pin, task::{
         Context,
         Poll,
     }
@@ -11,7 +11,7 @@ use futures_util::{
     Stream,
     StreamExt,
 };
-use http::{header, StatusCode};
+use http::{header, HeaderName, HeaderValue, StatusCode};
 use tungstenite::protocol::WebSocketConfig;
 use crate::{error::Kind, RequestBuilder};
 pub use tungstenite::Message;
@@ -51,6 +51,18 @@ impl UpgradedRequestBuilder {
     /// Sets the websocket subprotocols to request.
     pub fn protocols(mut self, protocols: Vec<String>) -> Self {
         self.protocols.extend(protocols);
+        self
+    }
+
+    /// Add a `Header` to this Request.
+    pub fn header<K, V>(mut self, key: K, value: V) -> Self
+    where
+        HeaderName: TryFrom<K>,
+        <HeaderName as TryFrom<K>>::Error: Into<http::Error>,
+        HeaderValue: TryFrom<V>,
+        <HeaderValue as TryFrom<V>>::Error: Into<http::Error>,
+    {
+        self.inner = self.inner.header(key, value);
         self
     }
 

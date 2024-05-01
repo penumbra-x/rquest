@@ -69,7 +69,7 @@ async fn test_badssl_no_built_in_roots() {
         .no_proxy()
         .build()
         .unwrap()
-        .get("https://untrusted-root.badssl.com/") 
+        .get("https://untrusted-root.badssl.com/")
         .send()
         .await;
 
