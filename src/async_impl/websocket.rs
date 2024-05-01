@@ -66,6 +66,14 @@ impl UpgradedRequestBuilder {
         self
     }
 
+    /// Add a set of Headers to the existing ones on this Request.
+    ///
+    /// The headers will be merged in to any already set.
+    pub fn headers(mut self, headers: crate::header::HeaderMap) -> Self {
+        self.inner = self.inner.headers(headers);
+        self
+    }
+
     /// Sets the websocket max_frame_size configuration.
     pub fn max_frame_size(mut self, max_frame_size: usize) -> Self {
         self.config.max_frame_size = Some(max_frame_size);
