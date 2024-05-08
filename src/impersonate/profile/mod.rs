@@ -97,8 +97,8 @@ pub enum Impersonate {
     Chrome104,
     Chrome105,
     Chrome106,
-    Chrome108,
     Chrome107,
+    Chrome108,
     Chrome109,
     Chrome114,
     Chrome116,
@@ -140,8 +140,8 @@ impl FromStr for Impersonate {
             "chrome_104" => Ok(Impersonate::Chrome104),
             "chrome_105" => Ok(Impersonate::Chrome105),
             "chrome_106" => Ok(Impersonate::Chrome106),
-            "chrome_108" => Ok(Impersonate::Chrome108),
             "chrome_107" => Ok(Impersonate::Chrome107),
+            "chrome_108" => Ok(Impersonate::Chrome108),
             "chrome_109" => Ok(Impersonate::Chrome109),
             "chrome_114" => Ok(Impersonate::Chrome114),
             "chrome_116" => Ok(Impersonate::Chrome116),
@@ -151,13 +151,14 @@ impl FromStr for Impersonate {
             "chrome_120" => Ok(Impersonate::Chrome120),
             "chrome_123" => Ok(Impersonate::Chrome123),
             "chrome_124" => Ok(Impersonate::Chrome124),
-            "safari_12" => Ok(Impersonate::SafariIos17_2),
+            "safari_ios_17_2" => Ok(Impersonate::SafariIos17_2),
             "safari_15_3" => Ok(Impersonate::Safari15_3),
             "safari_15_5" => Ok(Impersonate::Safari15_5),
             "safari_15_6_1" => Ok(Impersonate::Safari15_6_1),
             "safari_16" => Ok(Impersonate::Safari16),
             "safari_16_5" => Ok(Impersonate::Safari16_5),
             "safari_17_2_1" => Ok(Impersonate::Safari17_2_1),
+            "safari_17_4_1" => Ok(Impersonate::Safari17_4_1),
             "okhttp_3_9" => Ok(Impersonate::OkHttp3_9),
             "okhttp_3_11" => Ok(Impersonate::OkHttp3_11),
             "okhttp_3_13" => Ok(Impersonate::OkHttp3_13),
@@ -167,7 +168,7 @@ impl FromStr for Impersonate {
             "okhttp_5" => Ok(Impersonate::OkHttp5),
             "edge_99" => Ok(Impersonate::Edge99),
             "edge_101" => Ok(Impersonate::Edge101),
-            "edge_120" => Ok(Impersonate::Edge122),
+            "edge_122" => Ok(Impersonate::Edge122),
             _ => Err("Invalid Impersonate version"),
         }
     }
@@ -183,8 +184,8 @@ impl Impersonate {
             | Impersonate::Chrome104
             | Impersonate::Chrome105
             | Impersonate::Chrome106
-            | Impersonate::Chrome108
             | Impersonate::Chrome107
+            | Impersonate::Chrome108
             | Impersonate::Chrome109
             | Impersonate::Chrome114
             | Impersonate::Chrome116
