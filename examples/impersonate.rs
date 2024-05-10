@@ -4,11 +4,11 @@ use std::error::Error;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    // Build a client to mimic Chrome123
+    // Build a client to mimic SafariIos16_5
     let client = reqwest::Client::builder()
-        .impersonate(Impersonate::Chrome124)
-        .enable_ech_grease(true)
-        .permute_extensions(true)
+        .impersonate(Impersonate::SafariIos16_5)
+        .enable_ech_grease()
+        .permute_extensions()
         .cookie_store(true)
         .build()?;
 
