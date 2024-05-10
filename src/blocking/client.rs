@@ -98,15 +98,15 @@ impl ClientBuilder {
 
     /// Enable Encrypted Client Hello (Secure SNI)
     #[cfg(feature = "__impersonate")]
-    pub fn enable_ech_grease(self, enable: bool) -> ClientBuilder {
-        self.with_inner(move |inner| inner.enable_ech_grease(enable))
+    pub fn enable_ech_grease(self) -> ClientBuilder {
+        self.with_inner(move |inner| inner.enable_ech_grease())
     }
 
 
     /// Enable TLS permute_extensions
     #[cfg(feature = "__impersonate")]
-    pub fn permute_extensions(self, enable: bool) -> ClientBuilder {
-        self.with_inner(move |inner| inner.permute_extensions(enable))
+    pub fn permute_extensions(self) -> ClientBuilder {
+        self.with_inner(move |inner| inner.permute_extensions())
     }
 
     /// Returns a `Client` that uses this `ClientBuilder` configuration.
@@ -1220,6 +1220,7 @@ impl Default for Timeout {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) struct KeepCoreThreadAlive(Option<Arc<InnerClientHandle>>);
 
 impl KeepCoreThreadAlive {

@@ -72,7 +72,7 @@ enum Inner {
 
 #[derive(Clone)]
 pub(crate) struct ImpersonateContext {
-    pub client_profile: ClientProfile,
+    pub profile: ClientProfile,
     pub enable_ech_grease: bool,
     pub permute_extensions: bool,
     pub certs_verification: bool,
@@ -81,15 +81,16 @@ pub(crate) struct ImpersonateContext {
 
 #[cfg(feature = "__boring")]
 fn tls_add_application_settings(conf: &mut ConnectConfiguration, ctx: &ImpersonateContext) {
-    // Enable random TLS extensions
-    if ctx.permute_extensions {
-        unsafe {
-            boring_sys::SSL_set_permute_extensions(conf.as_ptr(), 1);
-        }
-    }
-    // curl-impersonate does not know how to set this up, neither do I. Hopefully nothing breaks with these values.
-    match ctx.client_profile {
+
+    match ctx.profile {
         ClientProfile::Chrome | ClientProfile::Edge => {
+            // Enable random TLS extensions
+            if ctx.permute_extensions {
+                unsafe {
+                    boring_sys::SSL_set_permute_extensions(conf.as_ptr(), 1);
+                }
+            }
+
             // Enable ECH grease
             if ctx.enable_ech_grease {
                 unsafe { boring_sys::SSL_set_enable_ech_grease(conf.as_ptr(), 1) }

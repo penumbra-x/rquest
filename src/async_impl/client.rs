@@ -160,7 +160,7 @@ struct Config {
     dns_overrides: HashMap<String, Vec<SocketAddr>>,
     dns_resolver: Option<Arc<dyn Resolve>>,
     #[cfg(feature = "impersonate")]
-    client_profile: ClientProfile,
+    profile: ClientProfile,
     #[cfg(feature = "impersonate")]
     enable_ech_grease: bool,
     #[cfg(feature = "impersonate")]
@@ -255,7 +255,7 @@ impl ClientBuilder {
                 quic_send_window: None,
                 dns_resolver: None,
                 #[cfg(feature = "impersonate")]
-                client_profile: ClientProfile::Chrome,
+                profile: ClientProfile::Chrome,
                 #[cfg(feature = "impersonate")]
                 enable_ech_grease: false,
                 #[cfg(feature = "impersonate")]
@@ -267,29 +267,29 @@ impl ClientBuilder {
     /// Sets the necessary values to mimic the specified impersonate version.
     #[cfg(feature = "__impersonate")]
     pub fn impersonate(mut self, ver: Impersonate) -> ClientBuilder {
-        self.config.client_profile = ver.profile();
+        self.config.profile = ver.profile();
         configure_impersonate(ver, self)
     }
 
     /// Sets the necessary values to mimic the specified impersonate version. (websocket)
     #[cfg(feature = "__impersonate")]
     pub fn impersonate_websocket(mut self, ver: Impersonate) -> ClientBuilder {
-        self.config.client_profile = ver.profile();
+        self.config.profile = ver.profile();
         self = self.http1_only();
         configure_impersonate(ver, self)
     }
 
     /// Enable Encrypted Client Hello (Secure SNI)
     #[cfg(feature = "__impersonate")]
-    pub fn enable_ech_grease(mut self, enable: bool) -> ClientBuilder {
-        self.config.enable_ech_grease = enable;
+    pub fn enable_ech_grease(mut self) -> ClientBuilder {
+        self.config.enable_ech_grease = true;
         self
     }
 
     /// Enable TLS permute_extensions
     #[cfg(feature = "__impersonate")]
-    pub fn permute_extensions(mut self, enable: bool) -> ClientBuilder {
-        self.config.permute_extensions = enable;
+    pub fn permute_extensions(mut self) -> ClientBuilder {
+        self.config.permute_extensions = true;
         self
     }
 
@@ -407,7 +407,7 @@ impl ClientBuilder {
                     config.nodelay,
                     config.tls_info,
                     ImpersonateContext {
-                        client_profile: config.client_profile,
+                        profile: config.profile,
                         certs_verification: config.certs_verification,
                         enable_ech_grease: config.enable_ech_grease,
                         permute_extensions: config.permute_extensions,
@@ -739,7 +739,7 @@ impl ClientBuilder {
             builder.http2_keep_alive_while_idle(true);
         }
 
-        builder.http2_agent_profile(config.client_profile.into());
+        builder.http2_agent_profile(config.profile.into());
         builder.pool_idle_timeout(config.pool_idle_timeout);
         builder.pool_max_idle_per_host(config.pool_max_idle_per_host);
         connector.set_keepalive(config.tcp_keepalive);
