@@ -6,7 +6,7 @@ use std::error::Error;
 async fn main() -> Result<(), Box<dyn Error>> {
     // Build a client to mimic SafariIos16_5
     let client = reqwest::Client::builder()
-        .impersonate(Impersonate::SafariIos16_5)
+        .impersonate(Impersonate::SafariIos17_4_1)
         .enable_ech_grease()
         .permute_extensions()
         .cookie_store(true)
