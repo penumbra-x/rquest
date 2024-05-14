@@ -17,11 +17,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .send()
         .await?;
 
-        println!("{:?}", upgrade_response.status());
-        println!("{:?}", upgrade_response.headers());
+    println!("{:?}", upgrade_response.status());
+    println!("{:?}", upgrade_response.headers());
 
-       let websocket = upgrade_response.into_websocket()
-        .await?;
+    let websocket = upgrade_response.into_websocket().await?;
 
     let (mut tx, mut rx) = websocket.split();
 
