@@ -52,6 +52,8 @@ gzip = ["async-compression", "async-compression/gzip", "tokio-util"]
 
 brotli = ["async-compression", "async-compression/brotli", "tokio-util"]
 
+zstd = ["async-compression", "async-compression/zstd", "tokio-util"]
+
 deflate = ["async-compression", "async-compression/deflate", "tokio-util"]
 
 json = ["serde_json"]
@@ -195,6 +197,7 @@ hyper = { package = "hyper_imp", version = "0.14.30", default-features = false, 
 serde = { version = "1.0", features = ["derive"] }
 libflate = "2.0.0"
 brotli_crate = { package = "brotli", version = "3.3.0" }
+zstd_crate = { package = "zstd", version = "0.13" }
 doc-comment = "0.3"
 tokio = { version = "1.0", default-features = false, features = [
     "macros",
@@ -271,7 +274,7 @@ path = "examples/simple.rs"
 [[example]]
 name = "impersonate"
 path = "examples/impersonate.rs"
-required-features = ["impersonate", "blocking", "socks", "cookies"]
+required-features = ["impersonate", "blocking", "socks", "cookies", "zstd"]
 
 [[example]]
 name = "websocket"
