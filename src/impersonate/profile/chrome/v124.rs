@@ -123,7 +123,7 @@ fn create_headers(mut headers: HeaderMap) -> HeaderMap {
     headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
     headers.insert(
         ACCEPT_ENCODING,
-        HeaderValue::from_static("gzip, deflate, br"),
+        HeaderValue::from_static("gzip, deflate, br, zstd"),
     );
     headers.insert(
         ACCEPT_LANGUAGE,
