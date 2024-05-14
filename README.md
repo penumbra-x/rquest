@@ -48,8 +48,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Build a client to mimic Chrome123
     let client = reqwest::Client::builder()
         .impersonate(Impersonate::Chrome123)
-        .enable_ech_grease(true)
-        .permute_extensions(true)
+        .enable_ech_grease()
+        .permute_extensions()
         .cookie_store(true)
         .build()?;
 
