@@ -868,7 +868,7 @@ impl ClientBuilder {
         self.with_inner(move |inner| inner.use_preconfigured_tls(tls))
     }
 
-    /// Enables the [hickory-dns](trust_dns_resolver) async resolver instead of a default threadpool using `getaddrinfo`.
+    /// Enables the [hickory-dns](hickory_dns_resolver) async resolver instead of a default threadpool using `getaddrinfo`.
     ///
     /// If the `hickory-dns` feature is turned on, the default option is enabled.
     ///
@@ -877,8 +877,8 @@ impl ClientBuilder {
     /// This requires the optional `hickory-dns` feature to be enabled
     #[cfg(feature = "hickory-dns")]
     #[cfg_attr(docsrs, doc(cfg(feature = "hickory-dns")))]
-    pub fn trust_dns(self, enable: bool) -> ClientBuilder {
-        self.with_inner(|inner| inner.trust_dns(enable))
+    pub fn hickory_dns(self, enable: bool) -> ClientBuilder {
+        self.with_inner(|inner| inner.hickory_dns(enable))
     }
 
     /// Disables the hickory-dns async resolver.
@@ -886,8 +886,8 @@ impl ClientBuilder {
     /// This method exists even if the optional `hickory-dns` feature is not enabled.
     /// This can be used to ensure a `Client` doesn't use the hickory-dns async resolver
     /// even if another dependency were to enable the optional `hickory-dns` feature.
-    pub fn no_trust_dns(self) -> ClientBuilder {
-        self.with_inner(|inner| inner.no_trust_dns())
+    pub fn no_hickory_dns(self) -> ClientBuilder {
+        self.with_inner(|inner| inner.no_hickory_dns())
     }
 
     /// Restrict the Client to be used with HTTPS only requests.
