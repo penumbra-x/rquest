@@ -60,7 +60,7 @@ json = ["serde_json"]
 
 multipart = ["mime_guess"]
 
-trust-dns = ["trust-dns-resolver"]
+hickory-dns = ["hickory-resolver"]
 
 stream = ["tokio/fs", "tokio-util", "wasm-streams"]
 
@@ -172,9 +172,8 @@ tokio-socks = { version = "0.5.1", optional = true }
 async-tungstenite = { version = "0.23.0", default-features = false, optional = true }
 tungstenite = { version = "0.20", default-features = false, features = ["handshake"], optional = true }
 
-
-## trust-dns
-trust-dns-resolver = { version = "0.23", optional = true, features = ["tokio-runtime"] }
+## hickory-dns
+hickory-resolver = { version = "0.24", optional = true, features = ["tokio-runtime"] }
 
 # HTTP/3 experimental support
 h3 = { version="0.0.3", optional = true }
@@ -274,7 +273,7 @@ path = "examples/simple.rs"
 [[example]]
 name = "impersonate"
 path = "examples/impersonate.rs"
-required-features = ["impersonate", "blocking", "socks", "cookies", "zstd"]
+required-features = ["impersonate", "blocking", "socks", "cookies", "zstd", "hickory-dns"]
 
 [[example]]
 name = "websocket"

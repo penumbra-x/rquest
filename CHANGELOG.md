@@ -207,7 +207,7 @@ All notable changes to this project will be documented in this file.
 
 ### Dep
 
-- Upgrade trust-dns-resolver from v0.22 to v0.23 (#1965)
+- Upgrade hickory-dns-resolver from v0.22 to v0.23 (#1965)
 
 ## [0.11.19] - 2023-08-21
 

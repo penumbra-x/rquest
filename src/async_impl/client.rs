@@ -35,8 +35,8 @@ use crate::async_impl::h3_client::{H3Client, H3ResponseFuture};
 use crate::connect::{Connector, ImpersonateContext};
 #[cfg(feature = "cookies")]
 use crate::cookie;
-#[cfg(feature = "trust-dns")]
-use crate::dns::trust_dns::TrustDnsResolver;
+#[cfg(feature = "hickory-dns")]
+use crate::dns::hickory::HickoryDnsResolver;
 use crate::dns::{gai::GaiResolver, DnsResolverWithOverrides, DynResolver, Resolve};
 use crate::error;
 use crate::into_url::{expect_uri, try_uri};
@@ -238,7 +238,7 @@ impl ClientBuilder {
                 local_address_ipv6: None,
                 local_address_ipv4: None,
                 nodelay: true,
-                trust_dns: cfg!(feature = "trust-dns"),
+                trust_dns: cfg!(feature = "hickory-dns"),
                 #[cfg(feature = "cookies")]
                 cookie_store: None,
                 https_only: false,
@@ -324,10 +324,10 @@ impl ClientBuilder {
 
             let mut resolver: Arc<dyn Resolve> = match config.trust_dns {
                 false => Arc::new(GaiResolver::new()),
-                #[cfg(feature = "trust-dns")]
-                true => Arc::new(TrustDnsResolver::default()),
-                #[cfg(not(feature = "trust-dns"))]
-                true => unreachable!("trust-dns shouldn't be enabled unless the feature is"),
+                #[cfg(feature = "hickory-dns")]
+                true => Arc::new(HickoryDnsResolver::default()),
+                #[cfg(not(feature = "hickory-dns"))]
+                true => unreachable!("hickory-dns shouldn't be enabled unless the feature is"),
             };
             if let Some(dns_resolver) = config.dns_resolver {
                 resolver = dns_resolver;
@@ -1733,32 +1733,32 @@ impl ClientBuilder {
         self
     }
 
-    /// Enables the [trust-dns](trust_dns_resolver) async resolver instead of a default threadpool using `getaddrinfo`.
+    /// Enables the [hickory-dns](trust_dns_resolver) async resolver instead of a default threadpool using `getaddrinfo`.
     ///
-    /// If the `trust-dns` feature is turned on, the default option is enabled.
+    /// If the `hickory-dns` feature is turned on, the default option is enabled.
     ///
     /// # Optional
     ///
-    /// This requires the optional `trust-dns` feature to be enabled
-    #[cfg(feature = "trust-dns")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "trust-dns")))]
+    /// This requires the optional `hickory-dns` feature to be enabled
+    #[cfg(feature = "hickory-dns")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "hickory-dns")))]
     pub fn trust_dns(mut self, enable: bool) -> ClientBuilder {
         self.config.trust_dns = enable;
         self
     }
 
-    /// Disables the trust-dns async resolver.
+    /// Disables the hickory-dns async resolver.
     ///
-    /// This method exists even if the optional `trust-dns` feature is not enabled.
-    /// This can be used to ensure a `Client` doesn't use the trust-dns async resolver
-    /// even if another dependency were to enable the optional `trust-dns` feature.
+    /// This method exists even if the optional `hickory-dns` feature is not enabled.
+    /// This can be used to ensure a `Client` doesn't use the hickory-dns async resolver
+    /// even if another dependency were to enable the optional `hickory-dns` feature.
     pub fn no_trust_dns(self) -> ClientBuilder {
-        #[cfg(feature = "trust-dns")]
+        #[cfg(feature = "hickory-dns")]
         {
             self.trust_dns(false)
         }
 
-        #[cfg(not(feature = "trust-dns"))]
+        #[cfg(not(feature = "hickory-dns"))]
         {
             self
         }

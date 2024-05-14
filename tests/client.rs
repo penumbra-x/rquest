@@ -232,7 +232,7 @@ async fn overridden_dns_resolution_with_gai_multiple() {
     assert_eq!("Hello", text);
 }
 
-#[cfg(feature = "trust-dns")]
+#[cfg(feature = "hickory-dns")]
 #[tokio::test]
 async fn overridden_dns_resolution_with_trust_dns() {
     let _ = env_logger::builder().is_test(true).try_init();
@@ -257,7 +257,7 @@ async fn overridden_dns_resolution_with_trust_dns() {
     assert_eq!("Hello", text);
 }
 
-#[cfg(feature = "trust-dns")]
+#[cfg(feature = "hickory-dns")]
 #[tokio::test]
 async fn overridden_dns_resolution_with_trust_dns_multiple() {
     let _ = env_logger::builder().is_test(true).try_init();
