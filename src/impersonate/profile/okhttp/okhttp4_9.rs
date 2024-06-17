@@ -7,6 +7,8 @@ use std::sync::Arc;
 
 use crate::impersonate::{Http2Data, ImpersonateSettings};
 
+use super::SIGALGS_LIST;
+
 pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
     ImpersonateSettings {
         tls_builder_func: Arc::new(create_ssl_connector),
@@ -55,19 +57,7 @@ fn create_ssl_connector(h2: bool) -> SslConnectorBuilder {
 
     builder.set_cipher_list(&cipher_list.join(":")).unwrap();
 
-    let sigalgs_list = [
-        "ecdsa_secp256r1_sha256",
-        "rsa_pss_rsae_sha256",
-        "rsa_pkcs1_sha256",
-        "ecdsa_secp384r1_sha384",
-        "rsa_pss_rsae_sha384",
-        "rsa_pkcs1_sha384",
-        "rsa_pss_rsae_sha512",
-        "rsa_pkcs1_sha512",
-        "rsa_pkcs1_sha1",
-    ];
-
-    builder.set_sigalgs_list(&sigalgs_list.join(":")).unwrap();
+    builder.set_sigalgs_list(&SIGALGS_LIST.join(":")).unwrap();
 
     if h2 {
         builder.set_alpn_protos(b"\x02h2\x08http/1.1").unwrap();
