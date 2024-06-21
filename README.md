@@ -6,6 +6,7 @@
 
 An ergonomic, batteries-included HTTP Client for Rust.
 
+- Impersonate Chrome / Safari / Edge / OkHttp
 - Plain bodies, JSON, urlencoded, multipart
 - Customizable redirect policy
 - HTTP Proxies
@@ -14,8 +15,6 @@ An ergonomic, batteries-included HTTP Client for Rust.
 - Cookie Store
 - WASM
 - [Changelog](CHANGELOG.md)
-
-> A fork of reqwest used to impersonate the Chrome browser / OkHttp. Inspired by [curl-impersonate](https://github.com/lwthiker/curl-impersonate).
 
 ## Sponsors
 
