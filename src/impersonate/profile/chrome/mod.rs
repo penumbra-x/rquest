@@ -1,5 +1,5 @@
 use boring::ssl::{
-    CertCompressionAlgorithm, SslConnector, SslConnectorBuilder, SslMethod, SslVersion,
+    CertCompressionAlgorithm, SslConnector, SslConnectorBuilder, SslCurve, SslMethod, SslVersion,
 };
 
 pub mod v100;
@@ -84,4 +84,14 @@ fn create_ssl_connector(h2: bool) -> SslConnectorBuilder {
         .unwrap();
 
     builder
+}
+
+fn configure_curves_ssl(builder: &mut SslConnectorBuilder) -> Result<(), boring::ssl::Error> {
+    builder.set_curves(&[
+        SslCurve::X25519_KYBER768_DRAFT00,
+        SslCurve::X25519,
+        SslCurve::SECP256R1,
+        SslCurve::SECP384R1,
+    ])?;
+    Ok(())
 }

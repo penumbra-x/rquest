@@ -6,11 +6,15 @@ use std::sync::Arc;
 
 use crate::impersonate::{Http2Data, ImpersonateSettings};
 
-use super::create_ssl_connector;
+use super::{configure_curves_ssl, create_ssl_connector};
 
 pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
     ImpersonateSettings {
-        tls_builder_func: Arc::new(create_ssl_connector),
+        tls_builder_func: Arc::new(|h2| {
+            let mut builder = create_ssl_connector(h2);
+            configure_curves_ssl(&mut builder).expect("Failed to configure curves SSL");
+            builder
+        }),
         http2: Http2Data {
             initial_stream_window_size: Some(6291456),
             initial_connection_window_size: Some(15728640),
