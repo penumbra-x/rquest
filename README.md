@@ -4,7 +4,7 @@
 [![MIT/Apache-2 licensed](https://img.shields.io/crates/l/reqwest.svg)](./LICENSE-APACHE)
 [![CI](https://github.com/seanmonstar/reqwest/workflows/CI/badge.svg)](https://github.com/seanmonstar/reqwest/actions?query=workflow%3ACI)
 
-An ergonomic, batteries-included HTTP Client for Rust.
+An ergonomic, batteries-included HTTP / WebSocket Client for Rust.
 
 - Impersonate Chrome / Safari / Edge / OkHttp
 - Plain bodies, JSON, urlencoded, multipart

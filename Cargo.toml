@@ -1,12 +1,12 @@
 [package]
 name = "reqwest-impersonate"
 version = "0.11.85"                                                 # remember to update html_root_url
-description = "An easy and powerful Rust HTTP Client (Impersonate Chrome/OkHttp)"
+description = "An easy and powerful Rust HTTP / WebSocket Client"
 keywords = ["http", "request", "client"]
 categories = ["web-programming::http-client", "wasm"]
-repository = "https://github.com/seanmonstar/reqwest"
-documentation = "https://docs.rs/reqwest"
-authors = ["Sean McArthur <sean@seanmonstar.com>"]
+repository = "https://github.com/0x676e67/reqwest-impersonate"
+documentation = "https://docs.rs/reqwest-impersonate"
+authors = ["0x676e67 <gngppz@gmail.com>"]
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 edition = "2018"
