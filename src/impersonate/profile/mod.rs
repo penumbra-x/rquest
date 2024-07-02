@@ -1,7 +1,7 @@
 //! Settings for impersonating the Chrome impersonate
 
 use h2::profile::AgentProfile;
-use http::HeaderMap;
+use http::{HeaderMap, HeaderValue};
 
 use crate::ClientBuilder;
 use std::str::FromStr;
@@ -29,9 +29,9 @@ pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) ->
 
 fn create_profile_headers(profile: ClientProfile) -> HeaderMap {
     let mut headers = HeaderMap::new();
-    let agent: h2::profile::AgentProfile = profile.into();
+    let agent: AgentProfile = profile.into();
     let (name, value) = agent.to_header();
-    headers.insert(name, value.parse().unwrap());
+    headers.insert(name, HeaderValue::from_static(value));
     headers
 }
 
