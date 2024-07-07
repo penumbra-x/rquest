@@ -5,6 +5,7 @@ pub mod safari16;
 pub mod safari16_5;
 pub mod safari17_2_1;
 pub mod safari17_4_1;
+pub mod safari17_5;
 pub mod safari_ios_16_5;
 pub mod safari_ios_17_2;
 pub mod safari_ios_17_4_1;
