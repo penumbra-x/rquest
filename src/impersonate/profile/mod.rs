@@ -67,6 +67,7 @@ fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
         Impersonate::Chrome123 => chrome::v123::get_settings,
         Impersonate::Chrome124 => chrome::v124::get_settings,
         Impersonate::Chrome126 => chrome::v126::get_settings,
+
         Impersonate::SafariIos17_2 => safari::safari_ios_17_2::get_settings,
         Impersonate::SafariIos17_4_1 => safari::safari_ios_17_4_1::get_settings,
         Impersonate::SafariIos16_5 => safari::safari_ios_16_5::get_settings,
@@ -77,6 +78,8 @@ fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
         Impersonate::Safari16_5 => safari::safari16_5::get_settings,
         Impersonate::Safari17_2_1 => safari::safari17_2_1::get_settings,
         Impersonate::Safari17_4_1 => safari::safari17_4_1::get_settings,
+        Impersonate::Safari17_5 => safari::safari17_5::get_settings,
+
         Impersonate::OkHttp3_9 => okhttp::okhttp3_9::get_settings,
         Impersonate::OkHttp3_11 => okhttp::okhttp3_11::get_settings,
         Impersonate::OkHttp3_13 => okhttp::okhttp3_13::get_settings,
@@ -122,6 +125,7 @@ pub enum Impersonate {
     Safari16_5,
     Safari17_2_1,
     Safari17_4_1,
+    Safari17_5,
     OkHttp3_9,
     OkHttp3_11,
     OkHttp3_13,
@@ -215,7 +219,8 @@ impl Impersonate {
             | Impersonate::Safari16
             | Impersonate::Safari16_5
             | Impersonate::Safari17_2_1
-            | Impersonate::Safari17_4_1 => ClientProfile::Safari,
+            | Impersonate::Safari17_4_1
+            | Impersonate::Safari17_5 => ClientProfile::Safari,
 
             Impersonate::OkHttp3_9
             | Impersonate::OkHttp3_11
