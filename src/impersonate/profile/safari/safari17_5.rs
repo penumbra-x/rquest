@@ -21,7 +21,7 @@ pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
             max_concurrent_streams: Some(100),
             max_header_list_size: None,
             header_table_size: None,
-            enable_push: None,
+            enable_push: Some(false),
         },
         headers: create_headers(headers),
         gzip: true,
