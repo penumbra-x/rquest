@@ -93,7 +93,6 @@ fn get_config_from_ver(ver: Impersonate) -> ImpersonateSettings {
     )
 }
 
-/// Defines the Chrome version to mimic when setting up a builder
 #[allow(missing_docs)]
 #[derive(Clone, Copy, Debug)]
 pub enum Impersonate {
@@ -162,6 +161,7 @@ impl FromStr for Impersonate {
             "chrome_123" => Ok(Impersonate::Chrome123),
             "chrome_124" => Ok(Impersonate::Chrome124),
             "chrome_126" => Ok(Impersonate::Chrome126),
+
             "safari_ios_17.2" => Ok(Impersonate::SafariIos17_2),
             "safari_ios_17.4.1" => Ok(Impersonate::SafariIos17_4_1),
             "safari_15.3" => Ok(Impersonate::Safari15_3),
@@ -172,6 +172,8 @@ impl FromStr for Impersonate {
             "safari_ios_16.5" => Ok(Impersonate::SafariIos16_5),
             "safari_17.2.1" => Ok(Impersonate::Safari17_2_1),
             "safari_17.4.1" => Ok(Impersonate::Safari17_4_1),
+            "safari_17.5" => Ok(Impersonate::Safari17_5),
+
             "okhttp_3.9" => Ok(Impersonate::OkHttp3_9),
             "okhttp_3.11" => Ok(Impersonate::OkHttp3_11),
             "okhttp_3.13" => Ok(Impersonate::OkHttp3_13),
@@ -179,10 +181,11 @@ impl FromStr for Impersonate {
             "okhttp_4.9" => Ok(Impersonate::OkHttp4_9),
             "okhttp_4.10" => Ok(Impersonate::OkHttp4_10),
             "okhttp_5" => Ok(Impersonate::OkHttp5),
+            
             "edge_99" => Ok(Impersonate::Edge99),
             "edge_101" => Ok(Impersonate::Edge101),
             "edge_122" => Ok(Impersonate::Edge122),
-            _ => Err("Invalid Impersonate version"),
+            _ => Err("Invalid impersonate version"),
         }
     }
 }
