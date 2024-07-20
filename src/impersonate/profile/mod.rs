@@ -181,7 +181,7 @@ impl FromStr for Impersonate {
             "okhttp_4.9" => Ok(Impersonate::OkHttp4_9),
             "okhttp_4.10" => Ok(Impersonate::OkHttp4_10),
             "okhttp_5" => Ok(Impersonate::OkHttp5),
-            
+
             "edge_99" => Ok(Impersonate::Edge99),
             "edge_101" => Ok(Impersonate::Edge101),
             "edge_122" => Ok(Impersonate::Edge122),

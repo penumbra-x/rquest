@@ -1,7 +1,7 @@
 #[cfg(any(feature = "native-tls", feature = "__rustls",))]
 use std::any::Any;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use std::{collections::HashMap, convert::TryInto, net::SocketAddr};
 use std::{fmt, str};
@@ -26,8 +26,6 @@ use super::decoder::Accepts;
 use super::request::{Request, RequestBuilder};
 use super::response::Response;
 use super::Body;
-#[cfg(feature = "__impersonate")]
-use crate::impersonate::{configure_impersonate, Impersonate};
 #[cfg(feature = "http3")]
 use crate::async_impl::h3_client::connect::H3Connector;
 #[cfg(feature = "http3")]
@@ -39,6 +37,10 @@ use crate::cookie;
 use crate::dns::hickory::HickoryDnsResolver;
 use crate::dns::{gai::GaiResolver, DnsResolverWithOverrides, DynResolver, Resolve};
 use crate::error;
+#[cfg(feature = "impersonate")]
+use crate::impersonate::profile::ClientProfile;
+#[cfg(feature = "__impersonate")]
+use crate::impersonate::{configure_impersonate, Impersonate};
 use crate::into_url::{expect_uri, try_uri};
 use crate::redirect::{self, remove_sensitive_headers};
 #[cfg(feature = "__tls")]
@@ -48,8 +50,6 @@ use crate::Certificate;
 #[cfg(any(feature = "native-tls", feature = "__rustls"))]
 use crate::Identity;
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
-#[cfg(feature = "impersonate")]
-use crate::impersonate::profile::ClientProfile;
 use log::{debug, trace};
 #[cfg(feature = "http3")]
 use quinn::TransportConfig;
@@ -310,7 +310,7 @@ impl ClientBuilder {
         if config.auto_sys_proxy {
             proxies.push(Proxy::system());
         }
-        let proxies = Arc::new(proxies);
+        let proxies = Arc::new(RwLock::new(proxies));
 
         #[allow(unused)]
         #[cfg(feature = "http3")]
@@ -372,7 +372,8 @@ impl ClientBuilder {
                         transport_config.send_window(send_window);
                     }
 
-                    let local_address = local_address_v6.map(|v| IpAddr::from(v))
+                    let local_address = local_address_v6
+                        .map(|v| IpAddr::from(v))
                         .or(local_address_v4.map(|v| IpAddr::from(v)));
 
                     let res = H3Connector::new(
@@ -709,7 +710,8 @@ impl ClientBuilder {
         if let Some(http2_initial_connection_window_size) =
             config.http2_initial_connection_window_size
         {
-            builder.http2_initial_connection_window_size(http2_initial_connection_window_size);
+            builder
+                .http2_initial_connection_window_size(http2_initial_connection_window_size);
         }
         if config.http2_adaptive_window {
             builder.http2_adaptive_window(true);
@@ -764,7 +766,11 @@ impl ClientBuilder {
             builder.http1_allow_spaces_after_header_name_in_responses(true);
         }
 
-        let proxies_maybe_http_auth = proxies.iter().any(|p| p.maybe_has_http_auth());
+        let proxies_maybe_http_auth = proxies
+            .read()
+            .unwrap()
+            .iter()
+            .any(|p| p.maybe_has_http_auth());
 
         Ok(Client {
             inner: Arc::new(ClientRef {
@@ -1385,11 +1391,11 @@ impl ClientBuilder {
         match addr.into() {
             Some(IpAddr::V4(v4)) => {
                 self.config.local_address_ipv4 = Some(v4);
-            },
+            }
             Some(IpAddr::V6(v6)) => {
                 self.config.local_address_ipv6 = Some(v6);
-            },
-            _ => {},
+            }
+            _ => {}
         }
         self
     }
@@ -1872,12 +1878,6 @@ impl Default for Client {
 }
 
 impl Client {
-    /// Get the client user agent
-    #[cfg(feature = "__impersonate")]
-    pub fn user_agent(&self) -> Option<&HeaderValue> {
-        self.inner.headers.get(USER_AGENT)
-    }
-
     /// Constructs a new `Client`.
     ///
     /// # Panics
@@ -2094,15 +2094,77 @@ impl Client {
             return;
         }
 
-        for proxy in self.inner.proxies.iter() {
-            if proxy.is_match(dst) {
-                if let Some(header) = proxy.http_basic_auth(dst) {
-                    headers.insert(PROXY_AUTHORIZATION, header);
-                }
+        if let Ok(proxies) = self.inner.proxies.read() {
+            for proxy in proxies.iter() {
+                if proxy.is_match(dst) {
+                    if let Some(header) = proxy.http_basic_auth(dst) {
+                        headers.insert(PROXY_AUTHORIZATION, header);
+                    }
 
-                break;
+                    break;
+                }
             }
         }
+    }
+
+    /// Get the client user agent
+    #[cfg(feature = "impersonate")]
+    pub fn user_agent(&self) -> Option<&HeaderValue> {
+        self.inner.headers.get(USER_AGENT)
+    }
+
+    /// Returns a `String` of the header-value of all `Cookie` in a `Url`.
+    ///
+    /// # Errors
+    ///
+    /// This method fails if there was an error parsing the cookies.
+    #[cfg(feature = "cookies")]
+    pub fn get_cookies<U: IntoUrl>(&self, url: U) -> Result<Option<String>, error::Error> {
+        // Parse the URL
+        let target_url = url.into_url()?;
+
+        // Check if the cookie_store is set
+        let result = self
+            .inner
+            .cookie_store
+            .as_ref()
+            .and_then(|cookie_store| cookie_store.cookies(&target_url))
+            .as_ref()
+            .and_then(|header| header.to_str().ok())
+            .map(|cookies_str| Some(cookies_str.to_owned()))
+            .flatten();
+
+        Ok(result)
+    }
+
+    /// Injects a 'Cookie' into the 'CookieStore' for the specified URL.
+    ///
+    /// # Errors
+    ///
+    /// This method fails if there was an error parsing the cookies.
+    #[cfg(feature = "cookies")]
+    pub fn set_cookies<U: IntoUrl>(
+        &self,
+        cookies: Vec<HeaderValue>,
+        url: U,
+    ) -> Result<(), error::Error> {
+        // Parse the URL
+        let target_url = url.into_url()?;
+
+        // Check if the cookie_store is set
+        if let Some(cookie_store) = &self.inner.cookie_store {
+            let mut iter = cookies.iter();
+            cookie_store.set_cookies(&mut iter, &target_url);
+        }
+
+        Ok(())
+    }
+
+    /// Set the proxy for this client.
+    pub fn set_proxy(&self, proxy: Proxy) {
+        let mut old_proxies = self.inner.proxies.write().unwrap();
+        *old_proxies = vec![proxy];
+        self.inner.hyper.reset_pool_idle();
     }
 }
 
@@ -2277,7 +2339,7 @@ struct ClientRef {
     redirect_policy: redirect::Policy,
     referer: bool,
     request_timeout: Option<Duration>,
-    proxies: Arc<Vec<Proxy>>,
+    proxies: Arc<RwLock<Vec<Proxy>>>,
     proxies_maybe_http_auth: bool,
     https_only: bool,
 }
@@ -2296,8 +2358,12 @@ impl ClientRef {
 
         f.field("accepts", &self.accepts);
 
-        if !self.proxies.is_empty() {
-            f.field("proxies", &self.proxies);
+        if let Ok(proxies) = self.proxies.try_read() {
+            if !proxies.is_empty() {
+                f.field("proxies", &self.proxies);
+            }
+        } else {
+            log::warn!("failed to read proxies");
         }
 
         if !self.redirect_policy.is_default() {
@@ -2649,7 +2715,9 @@ impl Future for PendingRequest {
                                             .expect("valid request parts");
                                         *req.headers_mut() = headers.clone();
                                         std::mem::swap(self.as_mut().headers(), &mut headers);
-                                        ResponseFuture::Default(self.client.hyper.request(req))
+                                        ResponseFuture::Default(
+                                            self.client.hyper.request(req),
+                                        )
                                     }
                                 };
 

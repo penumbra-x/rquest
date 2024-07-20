@@ -1,9 +1,8 @@
 use reqwest::impersonate::Impersonate;
 use reqwest_impersonate as reqwest;
-use std::error::Error;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Build a client to mimic Chrome126
     let client = reqwest::Client::builder()
         .impersonate(Impersonate::Chrome126)
@@ -12,8 +11,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .cookie_store(true)
         .build()?;
 
-    // Use the API you're already familiar with
-    let resp = client.get("https://tls.peet.ws/api/all").send().await?;
+    let resp = client.get("https://api.ip.sb/ip").send().await?;
+    println!("{}", resp.text().await?);
+
+    let proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
+    client.set_proxy(proxy);
+
+    let resp = client.get("https://api.ip.sb/ip").send().await?;
     println!("{}", resp.text().await?);
 
     Ok(())

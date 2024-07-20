@@ -6,7 +6,7 @@ keywords = ["http", "request", "client"]
 categories = ["web-programming::http-client", "wasm"]
 repository = "https://github.com/0x676e67/reqwest-impersonate"
 documentation = "https://docs.rs/reqwest-impersonate"
-authors = ["0x676e67 <0x676e67z@gmail.com>"]
+authors = ["0x676e67 <gngppz@gmail.com>"]
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 edition = "2018"
@@ -22,7 +22,7 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 features = ["blocking", "cookies", "json", "multipart"]
 
 [features]
-default = ["boring-tls", "impersonate"]
+default = ["boring-tls", "impersonate", "cookies"]
 
 # Note: this doesn't enable the 'native-tls' feature, which adds specific
 # functionality for it.
@@ -273,7 +273,12 @@ path = "examples/simple.rs"
 [[example]]
 name = "impersonate"
 path = "examples/impersonate.rs"
-required-features = ["impersonate", "blocking", "socks", "cookies", "zstd", "hickory-dns"]
+required-features = ["blocking", "socks", "cookies", "zstd", "hickory-dns"]
+
+[[example]]
+name = "set_proxies"
+path = "examples/set_proxies.rs"
+required-features = ["blocking", "socks", "cookies", "zstd", "hickory-dns", "socks"]
 
 [[example]]
 name = "websocket"

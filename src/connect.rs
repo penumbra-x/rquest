@@ -17,7 +17,7 @@ use std::future::Future;
 use std::io::{self, IoSlice};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll};
 use std::time::Duration;
 
@@ -38,7 +38,7 @@ pub(crate) type HttpConnector = hyper::client::HttpConnector<DynResolver>;
 #[derive(Clone)]
 pub(crate) struct Connector {
     inner: Inner,
-    proxies: Arc<Vec<Proxy>>,
+    proxies: Arc<RwLock<Vec<Proxy>>>,
     verbose: verbose::Wrapper,
     timeout: Option<Duration>,
     #[cfg(feature = "__tls")]
@@ -197,7 +197,7 @@ impl Connector {
     pub(crate) fn new_boring_tls(
         mut http: HttpConnector,
         tls: Arc<dyn Fn(bool) -> SslConnectorBuilder + Send + Sync>,
-        proxies: Arc<Vec<Proxy>>,
+        proxies: Arc<std::sync::RwLock<Vec<Proxy>>>,
         user_agent: Option<HeaderValue>,
         local_addr_v4: Option<Ipv4Addr>,
         local_addr_v6: Option<Ipv6Addr>,
@@ -213,6 +213,7 @@ impl Connector {
             _ => {},
         }
         http.enforce_http(false);
+        
 
         Connector {
             inner: Inner::BoringTls { http, tls },
@@ -670,7 +671,7 @@ impl Service<Uri> for Connector {
     fn call(&mut self, dst: Uri) -> Self::Future {
         log::debug!("starting new connection: {:?}", dst);
         let timeout = self.timeout;
-        for prox in self.proxies.iter() {
+        for prox in self.proxies.read().unwrap().iter() {
             if let Some(proxy_scheme) = prox.intercept(&dst) {
                 return Box::pin(with_timeout(
                     self.clone().connect_via_proxy(dst, proxy_scheme),
