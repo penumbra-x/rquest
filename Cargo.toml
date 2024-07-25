@@ -2,7 +2,7 @@
 name = "reqwest-impersonate"
 version = "0.11.90"
 description = "An intuitive and robust Rust HTTP/WebSocket Client featuring TLS/JA3/JA4/HTTP2 fingerprint impersonate"
-keywords = ["http", "request", "client"]
+keywords = ["http", "request", "client", "websocket", "ja3"]
 categories = ["web-programming::http-client", "wasm"]
 repository = "https://github.com/0x676e67/reqwest-impersonate"
 documentation = "https://docs.rs/reqwest-impersonate"
