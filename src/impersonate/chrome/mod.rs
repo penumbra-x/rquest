@@ -20,7 +20,6 @@ pub mod v120;
 pub mod v123;
 pub mod v124;
 pub mod v126;
-pub mod v99;
 
 const SIGALGS_LIST: [&str; 8] = [
     "ecdsa_secp256r1_sha256",

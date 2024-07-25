@@ -49,7 +49,6 @@ fn get_settings(ver: Impersonate) -> ImpersonateSettings {
     impersonate_match!(
         ver,
         create_profile_headers(ver.profile()),
-        Impersonate::Chrome99 => chrome::v99::get_settings,
         Impersonate::Chrome100 => chrome::v100::get_settings,
         Impersonate::Chrome101 => chrome::v101::get_settings,
         Impersonate::Chrome104 => chrome::v104::get_settings,
@@ -97,7 +96,6 @@ fn get_settings(ver: Impersonate) -> ImpersonateSettings {
 #[allow(missing_docs)]
 #[derive(Clone, Copy, Debug)]
 pub enum Impersonate {
-    Chrome99,
     Chrome100,
     Chrome101,
     Chrome104,
@@ -144,7 +142,6 @@ impl FromStr for Impersonate {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "chrome_99" => Ok(Impersonate::Chrome99),
             "chrome_100" => Ok(Impersonate::Chrome100),
             "chrome_101" => Ok(Impersonate::Chrome101),
             "chrome_104" => Ok(Impersonate::Chrome104),
@@ -195,8 +192,7 @@ impl Impersonate {
     /// Get the client profile for the given impersonate version
     pub fn profile(&self) -> ClientProfile {
         match self {
-            Impersonate::Chrome99
-            | Impersonate::Chrome100
+            Impersonate::Chrome100
             | Impersonate::Chrome101
             | Impersonate::Chrome104
             | Impersonate::Chrome105
