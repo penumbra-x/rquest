@@ -2,7 +2,58 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.11.77] - 2024-05-06
+## [unreleased]
+
+### 🚀 Features
+
+- *(impersonate)* Optimize TLS connector context handle
+
+## [0.11.89] - 2024-07-25
+
+### 🚀 Features
+
+- *(client)* Support client proxy settings (#32)
+- *(client)* Add ability to set proxies/address after client has been initialised (#34)
+
+## [0.11.88] - 2024-07-09
+
+### 🐛 Bug Fixes
+
+- *(impersonate)* Add Safari17_5 from string
+
+## [0.11.87] - 2024-07-07
+
+### 🚀 Features
+
+- *(impersonate)* Add Safari_17_5 impersonate (#28)
+- *(impersonate)* Add Safari_17_5 impersonate
+
+## [0.11.85] - 2024-06-24
+
+### 🚀 Features
+
+- *(impersonate)* Specification version number match
+- *(impersonate)* Add Safari_IOS_16_5 impersonate
+- *(impersonate)* Add Safari_IOS_17_4_1 impersonate
+- Add zstd support
+
+### 🚜 Refactor
+
+- *(impersonate)* Refactor unnecessary settings
+- Migrate trust-dns to hickory-dns
+- Migrate trust-dns to hickory-dns
+- *(impersonate)* Reuse code
+
+### Impersonate
+
+- Bugfix `chrome_123`, `chrome_124` headers
+
+### Impersonate
+
+- Chrome_123, chrome_125 - add `zstd` to Accept-Encoding header
+- Add `chrome_126`
+
+## [0.11.78] - 2024-05-08
 
 ### 🚀 Features
 
@@ -195,97 +246,134 @@ All notable changes to this project will be documented in this file.
 
 - *(impersonate)* Update SSL verify mode
 
-## [0.11.21] - 2023-10-02
+## [0.11.22] - 2023-10-15
+
+### 🚀 Features
+
+- Set default headers
+- Add Response::text()
+- *(proxy)* Adds NO_PROXY environment variable support (#877)
+- *(multipart)* Adds support for manually setting size
+- Enable client to be a service without ownership (#1556)
 
 ### 🐛 Bug Fixes
 
+- Tests::support::server
+- *(response)* `copy_to()` and `text()` return `reqwest::Result`
+- Upgrade to http2 if the server reports that it supports it (#1166)
+- Respect https_only option when redirecting (#1313)
+- Wasm client: pass response header to builder by reference (#1350)
+- Strip BOM in Response::text_with_charset
+- Strip BOM in `Response::text_with_charset` (#1898)
 - Split connect timeout for multiple IPs (#1940)
+
+### 🚜 Refactor
+
+- Disable ssl verify
+
+### 📚 Documentation
+
+- Make encoding_rs link clickable (#674)
+- Build wasm32-unknown-unknown docs (#998)
+- Adds amplifying note about private key formats (#1335)
+- Fix some typos (#1346)
+- Provide basic auth example (#1362)
+- Fix some typos (#1531)
+- Fix broken doc comment example. (#1584)
+- Fix some typos (#1562)
+- Fix wording on main docs page (#1765)
+- Fix building on docs.rs (#1789)
+
+### 🧪 Testing
+
+- Added some trivial tests for the RequestBuilder
+- Fixed up issue with reading a Body and finished RequestBuilder tests
+- Use verbose output
+- Add tests for setting default headers
+- Response::text()
+- Add more badssl tests for rustls
+
+### ⚙️ Miscellaneous Tasks
+
+- Update gitignore
+- Fix appveyor build for backtrace-sys dependency (#526)
+- *(docs)* Fix missing link for 'blocking'
+- Update changelog for 0.11.15
+- A few simple cleanups/lints (#1849)
+
+### Body
+
+- Don't call poll_ready on tx when 0 bytes remaining. (#479)
+
+### CI
+
+- Check documentation (#1246)
+- Make a single final job that depends on all others (#1291)
+- Enable dependabot for GitHub Action Workflow (#1831)
+
+### Doc
+
+- `stream` feature is needed for `wrap_stream` and `From<File>` for `Body` (#1456)
+
+### Error
+
+- Add functions to check more error types. (#945)
+
+### Examples
+
+- Allow passing URL via CLI
 
 ### Feature
 
 - Auto detect MacOS proxy settings (#1955)
 
-### Dep
+### From<http
 
-- Upgrade hickory-dns-resolver from v0.22 to v0.23 (#1965)
+- :Response> for Response (#360)
 
-## [0.11.19] - 2023-08-21
+### Lint
 
-### 🐛 Bug Fixes
+- Fix unused `Identity` if only using `default-tls` (#1164)
 
-- Strip BOM in `Response::text_with_charset` (#1898)
+### Response.copy_to
 
-### ⚙️ Miscellaneous Tasks
+- Fix docs markup
 
-- A few simple cleanups/lints (#1849)
+### WASM
 
-### Deps
+- Set RequestCredentials to None by default (#1249)
+- Add `try_clone` implementations to `Request` and `RequestBuilder` (#1286)
 
-- Update winrege 0.10 -> 0.50 (#1869)
+### [#1095]
 
-### Http3
+- Implement `basic_auth` for WASM
 
-- Don't force `webpki` when experiemental `http3` is enabled (#1845)
-- Enable `runtime-tokio` for `quinn` (#1846)
+### Actions
 
-### Msrv
+- Remove --all flag from rustfmt (#795)
 
-- Bump to 1.63 (#1947)
+### Async
 
-## [0.11.18] - 2023-05-16
+- Add conversions from static slices to Body
 
-### CI
+### Async/client
 
-- Enable dependabot for GitHub Action Workflow (#1831)
+- Return a impl Future on execute()
 
-### Bug
+### Async/reponse
 
-- Fix custom content-type overidden by json method (#1833)
-
-### Deps
-
-- Update async-compression v0.3.13 => v0.4.0 (#1828)
-- Update rustls v0.20.1 -> v0.21.0 (#1791)
-
-## [0.11.17] - 2023-04-28
-
-### Wasm
-
-- Blob url support (#1797)
-
-## [0.11.16] - 2023-03-27
-
-### 📚 Documentation
-
-- Fix building on docs.rs (#1789)
-
-### ⚙️ Miscellaneous Tasks
-
-- Update changelog for 0.11.15
-
-## [0.11.15] - 2023-03-20
-
-### 📚 Documentation
-
-- Fix wording on main docs page (#1765)
+- Return a impl Future on json()
 
 ### Async/request
 
+- Return a impl Future on send()
+- Add a basic example for send()
 - Add methods to split and reassemble a RequestBuilder (#1770)
 
-### Wasm
+### Blocking
 
-- Fix premature abort for streaming bodies (#1782)
-
-## [0.11.14] - 2023-01-19
-
-### 🐛 Bug Fixes
-
-- Strip BOM in Response::text_with_charset
-
-### 🚜 Refactor
-
-- Disable ssl verify
+- Opt-out CPUs auto-detection in debug mode (#807)
+- Add tcp_keepalive option (#1100)
 
 ### Boring
 
@@ -298,314 +386,82 @@ All notable changes to this project will be documented in this file.
 ### Bug
 
 - Fix custom content-type overidden by json method
+- Fix custom content-type overidden by json method (#1833)
 
-## [0.11.13] - 2022-11-16
+### Cargo
 
-### 📚 Documentation
+- Update to rustls 0.16
 
-- Fix some typos (#1562)
+### Client
 
-### Native-tls
+- Add convenience method for DELETE
 
-- Add Identiy::from_pkcs8_pem (#1655)
+### Dep
 
-## [0.11.12] - 2022-09-20
+- Upgrade trust-dns-resolver from v0.22 to v0.23 (#1965)
 
-### 📚 Documentation
+### Dependencies
 
-- Fix broken doc comment example. (#1584)
+- Upgrade base64 to latest version (#692)
 
-## [0.11.11] - 2022-06-13
+### Deps
 
-### 🚀 Features
-
-- Enable client to be a service without ownership (#1556)
-
-### 📚 Documentation
-
-- Fix some typos (#1531)
-
-### [#1095]
-
-- Implement `basic_auth` for WASM
-
-## [0.11.10] - 2022-03-14
-
-### Doc
-
-- `stream` feature is needed for `wrap_stream` and `From<File>` for `Body` (#1456)
-
-## [0.11.9] - 2022-01-10
-
-### Examples
-
-- Allow passing URL via CLI
-
-## [0.11.7] - 2021-11-30
-
-### 📚 Documentation
-
-- Provide basic auth example (#1362)
-
-### Wasm
-
-- Fix standalone/multipart body conversion to JsValue (#1364)
-
-## [0.11.6] - 2021-10-18
-
-### 🐛 Bug Fixes
-
-- Wasm client: pass response header to builder by reference (#1350)
-
-### 📚 Documentation
-
-- Fix some typos (#1346)
-
-### Fmt
-
-- Wasm body (#1359)
-
-### Wasm
-
-- Don't send request body as plain uint8 array (#1358)
-
-## [0.11.5] - 2021-10-07
-
-### 🐛 Bug Fixes
-
-- Respect https_only option when redirecting (#1313)
-
-### 📚 Documentation
-
-- Adds amplifying note about private key formats (#1335)
-
-### CI
-
-- Make a single final job that depends on all others (#1291)
-
-### Wasm
-
-- Avoid dependency on serde-serialize feature (#1337)
-- Add missing `as_bytes` method to `Body` implementation (#1270)
-
-## [0.11.4] - 2021-06-21
-
-### CI
-
-- Check documentation (#1246)
-
-### WASM
-
-- Set RequestCredentials to None by default (#1249)
-- Add `try_clone` implementations to `Request` and `RequestBuilder` (#1286)
-
-## [0.11.3] - 2021-04-12
-
-### Proxy
-
-- Refactor a collapsible_match (#1214)
-
-## [0.11.1] - 2021-02-18
-
-### 🐛 Bug Fixes
-
-- Upgrade to http2 if the server reports that it supports it (#1166)
-
-### Lint
-
-- Fix unused `Identity` if only using `default-tls` (#1164)
-
-## [0.11.0] - 2021-01-05
+- *(chore)* Update to the latest rustls (#969)
+- Update async-compression v0.3.13 => v0.4.0 (#1828)
+- Update rustls v0.20.1 -> v0.21.0 (#1791)
+- Update winrege 0.10 -> 0.50 (#1869)
 
 ### Example
 
 - Update usage doc for blocking example (#1112)
 
-## [0.10.10] - 2020-12-14
+### Fmt
 
-### 🚀 Features
+- Wasm body (#1359)
 
-- *(multipart)* Adds support for manually setting size
+### Http3
 
-### Blocking
+- Don't force `webpki` when experiemental `http3` is enabled (#1845)
+- Enable `runtime-tokio` for `quinn` (#1846)
 
-- Add tcp_keepalive option (#1100)
+### Msrv
 
-## [0.10.9] - 2020-11-20
+- Bump to 1.63 (#1947)
 
-### ⚙️ Miscellaneous Tasks
+### Multipart
 
-- *(docs)* Fix missing link for 'blocking'
+- Force a CRLF at the end of request
 
-## [0.10.8] - 2020-08-25
+### Native-tls
 
-### 📚 Documentation
+- Add Identiy::from_pkcs8_pem (#1655)
 
-- Build wasm32-unknown-unknown docs (#998)
+### Proxy
 
-### Wasm
+- Refactor a collapsible_match (#1214)
 
-- Impl TryFrom<HttpRequest<T>> for Request (#997)
-- Omit request body if it's empty (#1012)
+### Request
 
-## [0.10.7] - 2020-07-24
+- Test adding duplicate headers to the request (#519)
 
-### 🚀 Features
+### Tmp
 
-- *(proxy)* Adds NO_PROXY environment variable support (#877)
-
-### Error
-
-- Add functions to check more error types. (#945)
-
-### Deps
-
-- *(chore)* Update to the latest rustls (#969)
-
-## [0.10.2] - 2020-02-21
-
-### Actions
-
-- Remove --all flag from rustfmt (#795)
-
-### Blocking
-
-- Opt-out CPUs auto-detection in debug mode (#807)
-
-### Wasm
-
-- Add error_for_status to wasm response (#779)
-
-## [0.10.1] - 2020-01-09
-
-### Wasm
-
-- Add url function to wasm response (#777)
-
-## [0.10.0-alpha.2] - 2019-11-12
-
-### 📚 Documentation
-
-- Make encoding_rs link clickable (#674)
-
-### Dependencies
-
-- Upgrade base64 to latest version (#692)
+- Use upstream git repo for hyper-native-tls
 
 ### Wasm
 
 - Translate over response headers (#689)
 - Add bytes method to wasm response (#694)
 - Add request body in the form of Bytes (#696)
-
-## [0.10.0-alpha.1] - 2019-10-08
-
-### 🧪 Testing
-
-- Add more badssl tests for rustls
-
-### Cargo
-
-- Update to rustls 0.16
-
-## [0.9.18] - 2019-06-06
-
-### ⚙️ Miscellaneous Tasks
-
-- Fix appveyor build for backtrace-sys dependency (#526)
-
-## [0.9.17] - 2019-05-15
-
-### Request
-
-- Test adding duplicate headers to the request (#519)
-
-## [0.9.13] - 2019-04-02
-
-### Body
-
-- Don't call poll_ready on tx when 0 bytes remaining. (#479)
-
-## [0.9.11] - 2019-03-04
-
-### Async/client
-
-- Return a impl Future on execute()
-
-## [0.9.10] - 2019-02-18
-
-### Async/reponse
-
-- Return a impl Future on json()
-
-### Async/request
-
-- Return a impl Future on send()
-- Add a basic example for send()
-
-## [0.9.6] - 2019-01-07
-
-### Response.copy_to
-
-- Fix docs markup
-
-## [0.9.3] - 2018-10-17
-
-### From<http
-
-- :Response> for Response (#360)
-
-## [0.9.0] - 2018-09-18
-
-### Multipart
-
-- Force a CRLF at the end of request
-
-## [0.8.1] - 2017-11-07
-
-### 🚀 Features
-
-- Set default headers
-- Add Response::text()
-
-### 🐛 Bug Fixes
-
-- Tests::support::server
-- *(response)* `copy_to()` and `text()` return `reqwest::Result`
-
-### 🧪 Testing
-
-- Use verbose output
-- Add tests for setting default headers
-- Response::text()
-
-### ⚙️ Miscellaneous Tasks
-
-- Update gitignore
-
-## [0.8.0] - 2017-10-02
-
-### Async
-
-- Add conversions from static slices to Body
-
-## [0.7.0] - 2017-07-11
-
-### Tmp
-
-- Use upstream git repo for hyper-native-tls
-
-## [0.5.0] - 2017-03-24
-
-### Client
-
-- Add convenience method for DELETE
-
-## [0.2.0] - 2016-12-14
-
-### 🧪 Testing
-
-- Added some trivial tests for the RequestBuilder
-- Fixed up issue with reading a Body and finished RequestBuilder tests
+- Add url function to wasm response (#777)
+- Add error_for_status to wasm response (#779)
+- Impl TryFrom<HttpRequest<T>> for Request (#997)
+- Omit request body if it's empty (#1012)
+- Avoid dependency on serde-serialize feature (#1337)
+- Add missing `as_bytes` method to `Body` implementation (#1270)
+- Don't send request body as plain uint8 array (#1358)
+- Fix standalone/multipart body conversion to JsValue (#1364)
+- Fix premature abort for streaming bodies (#1782)
+- Blob url support (#1797)
 
 <!-- generated by git-cliff -->

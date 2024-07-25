@@ -1,5 +1,5 @@
 #![deny(missing_docs)]
-#![deny(missing_debug_implementations)]
+// #![deny(missing_debug_implementations)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(test, deny(warnings))]
 
@@ -261,7 +261,8 @@ pub use url::Url;
 // universal mods
 #[macro_use]
 mod error;
-#[cfg(feature = "__browser_common")]
+/// HTTP client implementate module
+#[cfg(feature = "impersonate")]
 pub mod impersonate;
 mod into_url;
 mod response;

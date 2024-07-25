@@ -30,7 +30,7 @@ use super::Body;
 use crate::async_impl::h3_client::connect::H3Connector;
 #[cfg(feature = "http3")]
 use crate::async_impl::h3_client::{H3Client, H3ResponseFuture};
-use crate::connect::{Connector, ImpersonateContext};
+use crate::connect::Connector;
 #[cfg(feature = "cookies")]
 use crate::cookie;
 #[cfg(feature = "hickory-dns")]
@@ -38,9 +38,7 @@ use crate::dns::hickory::HickoryDnsResolver;
 use crate::dns::{gai::GaiResolver, DnsResolverWithOverrides, DynResolver, Resolve};
 use crate::error;
 #[cfg(feature = "impersonate")]
-use crate::impersonate::profile::ClientProfile;
-#[cfg(feature = "__impersonate")]
-use crate::impersonate::{configure_impersonate, Impersonate};
+use crate::impersonate::{profile::ClientProfile, Impersonate, ImpersonateContext};
 use crate::into_url::{expect_uri, try_uri};
 use crate::redirect::{self, remove_sensitive_headers};
 #[cfg(feature = "__tls")]
@@ -267,6 +265,8 @@ impl ClientBuilder {
     /// Sets the necessary values to mimic the specified impersonate version.
     #[cfg(feature = "__impersonate")]
     pub fn impersonate(mut self, ver: Impersonate) -> ClientBuilder {
+        use crate::impersonate::profile::configure_impersonate;
+        
         self.config.profile = ver.profile();
         configure_impersonate(ver, self)
     }
@@ -274,6 +274,8 @@ impl ClientBuilder {
     /// Sets the necessary values to mimic the specified impersonate version. (websocket)
     #[cfg(feature = "__impersonate")]
     pub fn impersonate_websocket(mut self, ver: Impersonate) -> ClientBuilder {
+        use crate::impersonate::profile::configure_impersonate;
+
         self.config.profile = ver.profile();
         self = self.http1_only();
         configure_impersonate(ver, self)
@@ -769,8 +771,6 @@ impl ClientBuilder {
         let proxies_maybe_http_auth = proxies
             .iter()
             .any(|p| p.maybe_has_http_auth());
-
-        // let connector = Arc::new(connector);
 
         Ok(Client {
             inner: Arc::new(ClientRef {
@@ -1654,9 +1654,9 @@ impl ClientBuilder {
     #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub fn use_boring_tls(
         mut self,
-        builder_func: Arc<dyn Fn(bool) -> boring::ssl::SslConnectorBuilder + Send + Sync>,
+        connector: crate::impersonate::BoringTlsConnector,
     ) -> ClientBuilder {
-        self.config.tls = TlsBackend::BoringTls(builder_func);
+        self.config.tls = TlsBackend::BoringTls(connector);
         self
     }
 

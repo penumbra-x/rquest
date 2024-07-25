@@ -10,6 +10,8 @@
 //!   [`Identity`] type.
 //! - Various parts of TLS can also be configured or even disabled on the
 //!   `ClientBuilder`.
+
+use boring::ssl::SslConnectorBuilder;
 #[cfg(feature = "__rustls")]
 use rustls::{
     client::HandshakeSignatureValid, client::ServerCertVerified, client::ServerCertVerifier,
@@ -18,6 +20,8 @@ use rustls::{
 use std::fmt;
 #[cfg(feature = "__boring")]
 use std::sync::Arc;
+#[cfg(feature = "__boring")]
+use crate::impersonate::BoringTlsConnector;
 
 /// Represents a server X509 certificate.
 pub struct Certificate {
@@ -401,7 +405,7 @@ pub(crate) enum TlsBackend {
     #[cfg(feature = "__rustls")]
     BuiltRustls(rustls::ClientConfig),
     #[cfg(feature = "__boring")]
-    BoringTls(Arc<dyn Fn(bool) -> boring::ssl::SslConnectorBuilder + Send + Sync>),
+    BoringTls(BoringTlsConnector),
     #[cfg(any(feature = "native-tls", feature = "__rustls"))]
     UnknownPreconfigured,
 }
@@ -442,12 +446,12 @@ impl Default for TlsBackend {
 
         #[cfg(all(feature = "__boring", not(feature = "default-tls")))]
         {
-            use boring::ssl::{SslConnector, SslConnectorBuilder, SslMethod};
+            use boring::ssl::{SslConnector, SslMethod};
 
-            fn create_builder(_h2: bool) -> SslConnectorBuilder {
+            fn create_builder() -> SslConnectorBuilder {
                 SslConnector::builder(SslMethod::tls()).unwrap()
             }
-            TlsBackend::BoringTls(Arc::new(create_builder))
+            TlsBackend::BoringTls(BoringTlsConnector::new(Arc::new(create_builder)))
         }
     }
 }
