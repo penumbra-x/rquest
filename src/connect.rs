@@ -17,7 +17,7 @@ use std::future::Future;
 use std::io::{self, IoSlice};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::pin::Pin;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use std::task::{Context, Poll};
 use std::time::Duration;
 
@@ -38,7 +38,7 @@ pub(crate) type HttpConnector = hyper::client::HttpConnector<DynResolver>;
 #[derive(Clone)]
 pub(crate) struct Connector {
     inner: Inner,
-    proxies: Arc<RwLock<Vec<Proxy>>>,
+    proxies: Arc<Vec<Proxy>>,
     verbose: verbose::Wrapper,
     timeout: Option<Duration>,
     #[cfg(feature = "__tls")]
@@ -197,7 +197,7 @@ impl Connector {
     pub(crate) fn new_boring_tls(
         mut http: HttpConnector,
         tls: Arc<dyn Fn(bool) -> SslConnectorBuilder + Send + Sync>,
-        proxies: Arc<std::sync::RwLock<Vec<Proxy>>>,
+        proxies: Arc<Vec<Proxy>>,
         user_agent: Option<HeaderValue>,
         local_addr_v4: Option<Ipv4Addr>,
         local_addr_v6: Option<Ipv6Addr>,
@@ -205,7 +205,6 @@ impl Connector {
         tls_info: bool,
         impersonate_context: ImpersonateContext,
     ) -> Connector {
-
         match (local_addr_v4, local_addr_v6) {
             (Some(v4), Some(v6)) => http.set_local_addresses(v4, v6),
             (Some(v4), None) => http.set_local_address(Some(IpAddr::from(v4))),
@@ -278,6 +277,28 @@ impl Connector {
 
     pub(crate) fn set_verbose(&mut self, enabled: bool) {
         self.verbose.0 = enabled;
+    }
+
+    pub(crate) fn get_proxies(&self) -> Arc<Vec<Proxy>> {
+        self.proxies.clone()
+    }
+
+    pub(crate) fn set_proxies(&mut self, proxies: Vec<Proxy>) {
+        Arc::make_mut(&mut self.proxies).clone_from_slice(&proxies);
+    }
+
+    pub(crate) fn set_local_address(&mut self, addr: Option<IpAddr>) {
+        match &mut self.inner {
+            #[cfg(feature = "__boring")]
+            Inner::BoringTls { http, .. } => http.set_local_address(addr),
+        }
+    }
+
+    pub(crate) fn set_local_addresses(&mut self, addr_ipv4: Ipv4Addr, addr_ipv6: Ipv6Addr) {
+        match &mut self.inner {
+            #[cfg(feature = "__boring")]
+            Inner::BoringTls { http, .. } => http.set_local_addresses(addr_ipv4, addr_ipv6),
+        }
     }
 
     #[cfg(feature = "socks")]
@@ -632,6 +653,20 @@ impl Connector {
             Inner::BoringTls { http, .. } => http.set_keepalive(dur),
         }
     }
+
+    // pub(crate) fn set_local_address(&mut self, addr: Option<IpAddr>) {
+    //     match &mut self.inner {
+    //         #[cfg(feature = "__boring")]
+    //         Inner::BoringTls { http, .. } => http.set_local_address(addr),
+    //     }
+    // }
+
+    // pub(crate) fn set_local_addresses(&mut self, addr_ipv4: Ipv4Addr, addr_ipv6: Ipv6Addr) {
+    //     match &mut self.inner {
+    //         #[cfg(feature = "__boring")]
+    //         Inner::BoringTls { http, .. } => http.set_local_addresses(addr_ipv4, addr_ipv6),
+    //     }
+    // }
 }
 
 fn into_uri(scheme: Scheme, host: Authority) -> Uri {
@@ -671,7 +706,7 @@ impl Service<Uri> for Connector {
     fn call(&mut self, dst: Uri) -> Self::Future {
         log::debug!("starting new connection: {:?}", dst);
         let timeout = self.timeout;
-        for prox in self.proxies.read().unwrap().iter() {
+        for prox in self.proxies.iter(){
             if let Some(proxy_scheme) = prox.intercept(&dst) {
                 return Box::pin(with_timeout(
                     self.clone().connect_via_proxy(dst, proxy_scheme),

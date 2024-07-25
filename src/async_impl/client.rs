@@ -1,7 +1,7 @@
 #[cfg(any(feature = "native-tls", feature = "__rustls",))]
 use std::any::Any;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use std::time::Duration;
 use std::{collections::HashMap, convert::TryInto, net::SocketAddr};
 use std::{fmt, str};
@@ -310,7 +310,7 @@ impl ClientBuilder {
         if config.auto_sys_proxy {
             proxies.push(Proxy::system());
         }
-        let proxies = Arc::new(RwLock::new(proxies));
+        let proxies = Arc::new(proxies);
 
         #[allow(unused)]
         #[cfg(feature = "http3")]
@@ -767,10 +767,10 @@ impl ClientBuilder {
         }
 
         let proxies_maybe_http_auth = proxies
-            .read()
-            .unwrap()
             .iter()
             .any(|p| p.maybe_has_http_auth());
+
+        // let connector = Arc::new(connector);
 
         Ok(Client {
             inner: Arc::new(ClientRef {
@@ -788,10 +788,9 @@ impl ClientBuilder {
                 },
                 hyper: builder.build(connector),
                 headers: config.headers,
-                redirect_policy: config.redirect_policy,
+                redirect_policy: Arc::new(config.redirect_policy),
                 referer: config.referer,
                 request_timeout: config.timeout,
-                proxies,
                 proxies_maybe_http_auth,
                 https_only: config.https_only,
             }),
@@ -2094,17 +2093,16 @@ impl Client {
             return;
         }
 
-        if let Ok(proxies) = self.inner.proxies.read() {
-            for proxy in proxies.iter() {
-                if proxy.is_match(dst) {
-                    if let Some(header) = proxy.http_basic_auth(dst) {
-                        headers.insert(PROXY_AUTHORIZATION, header);
-                    }
-
-                    break;
+        for proxy in self.inner.hyper.get_proxies().iter() {
+            if proxy.is_match(dst) {
+                if let Some(header) = proxy.http_basic_auth(dst) {
+                    headers.insert(PROXY_AUTHORIZATION, header);
                 }
+
+                break;
             }
         }
+        
     }
 
     /// Get the client user agent
@@ -2160,12 +2158,32 @@ impl Client {
         Ok(())
     }
 
-    /// Set the proxy for this client.
-    pub fn set_proxy(&self, proxy: Proxy) {
-        let mut old_proxies = self.inner.proxies.write().unwrap();
-        *old_proxies = vec![proxy];
+    /// Set the proxies for this client.
+    pub fn set_proxies(&mut self, proxies: Vec<Proxy>) {
+        Arc::make_mut(&mut self.inner).hyper.set_proxies(proxies);
         self.inner.hyper.reset_pool_idle();
     }
+
+    /// Set that all sockets are bound to the configured address before connection.
+    ///
+    /// If `None`, the sockets will not be bound.
+    ///
+    /// Default is `None`.
+    pub fn set_local_address<T>(&mut self, addr: T)
+    where
+        T: Into<Option<IpAddr>>,
+    {
+        Arc::make_mut(&mut self.inner).hyper.set_local_address(addr.into());
+        self.inner.hyper.reset_pool_idle();
+    }
+
+    /// Set that all sockets are bound to the configured IPv4 or IPv6 address (depending on host's
+    /// preferences) before connection.
+    pub fn set_local_addresses(&mut self, addr_ipv4: Ipv4Addr, addr_ipv6: Ipv6Addr) {
+        Arc::make_mut(&mut self.inner).hyper.set_local_addresses(addr_ipv4, addr_ipv6);
+        self.inner.hyper.reset_pool_idle();
+    }
+
 }
 
 impl fmt::Debug for Client {
@@ -2328,6 +2346,7 @@ impl Config {
     }
 }
 
+#[derive(Clone)]
 struct ClientRef {
     accepts: Accepts,
     #[cfg(feature = "cookies")]
@@ -2336,10 +2355,9 @@ struct ClientRef {
     hyper: HyperClient,
     #[cfg(feature = "http3")]
     h3_client: Option<H3Client>,
-    redirect_policy: redirect::Policy,
+    redirect_policy: Arc<redirect::Policy>,
     referer: bool,
     request_timeout: Option<Duration>,
-    proxies: Arc<RwLock<Vec<Proxy>>>,
     proxies_maybe_http_auth: bool,
     https_only: bool,
 }
@@ -2358,12 +2376,9 @@ impl ClientRef {
 
         f.field("accepts", &self.accepts);
 
-        if let Ok(proxies) = self.proxies.try_read() {
-            if !proxies.is_empty() {
-                f.field("proxies", &self.proxies);
-            }
-        } else {
-            log::warn!("failed to read proxies");
+        let proxies = self.hyper.get_proxies();
+        if !proxies.is_empty() {
+            f.field("proxies", &proxies);
         }
 
         if !self.redirect_policy.is_default() {

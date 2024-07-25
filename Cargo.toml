@@ -181,7 +181,6 @@ h3-quinn = { version="0.0.4", optional = true }
 quinn = { version = "0.10", default-features = false, features = ["tls-rustls", "ring", "runtime-tokio"], optional = true  }
 futures-channel = { version="0.3", optional = true}
 
-
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 env_logger = "0.10.0"
 hyper = { package = "hyper_imp", version = "0.14.30", default-features = false, features = [
@@ -279,6 +278,10 @@ required-features = ["blocking", "socks", "cookies", "zstd", "hickory-dns"]
 name = "set_proxies"
 path = "examples/set_proxies.rs"
 required-features = ["blocking", "socks", "cookies", "zstd", "hickory-dns", "socks"]
+
+[[example]]
+name = "set_local_address"
+path = "examples/set_local_address.rs"
 
 [[example]]
 name = "websocket"
