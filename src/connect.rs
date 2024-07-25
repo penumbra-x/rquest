@@ -241,17 +241,20 @@ impl Connector {
         Arc::make_mut(&mut self.proxies).clone_from_slice(&proxies);
     }
 
+
     pub(crate) fn set_local_address(&mut self, addr: Option<IpAddr>) {
-        match &mut self.inner {
-            #[cfg(feature = "__boring")]
-            Inner::BoringTls { http, .. } => http.set_local_address(addr),
+        #[cfg(feature = "__boring")]
+        {
+            let Inner::BoringTls { http, .. } = &mut self.inner;
+            http.set_local_address(addr);
         }
     }
 
     pub(crate) fn set_local_addresses(&mut self, addr_ipv4: Ipv4Addr, addr_ipv6: Ipv6Addr) {
-        match &mut self.inner {
-            #[cfg(feature = "__boring")]
-            Inner::BoringTls { http, .. } => http.set_local_addresses(addr_ipv4, addr_ipv6),
+        #[cfg(feature = "__boring")]
+        {
+            let Inner::BoringTls { http, .. } = &mut self.inner;
+            http.set_local_addresses(addr_ipv4, addr_ipv6);
         }
     }
 
