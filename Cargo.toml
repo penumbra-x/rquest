@@ -1,6 +1,6 @@
 [package]
 name = "reqwest-impersonate"
-version = "0.11.90"
+version = "0.11.91"
 description = "An intuitive and robust Rust HTTP/WebSocket Client featuring TLS/JA3/JA4/HTTP2 fingerprint impersonate"
 keywords = ["http", "request", "client", "websocket", "ja3"]
 categories = ["web-programming::http-client", "wasm"]
