@@ -136,6 +136,12 @@ pub enum Impersonate {
     Edge122,
 }
 
+impl Default for Impersonate {
+    fn default() -> Self {
+        Impersonate::Chrome126
+    }
+}
+
 /// Impersonate version from string
 impl FromStr for Impersonate {
     type Err = &'static str;

@@ -10,7 +10,7 @@ authors = ["0x676e67 <gngppz@gmail.com>"]
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 edition = "2018"
-rust-version = "1.63.0"
+rust-version = "1.79"
 autotests = true
 
 [package.metadata.docs.rs]

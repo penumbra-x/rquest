@@ -310,11 +310,11 @@ impl Connector {
                 }
             }
             #[cfg(feature = "__boring")]
-            Inner::BoringTls { tls, .. } => {
+            Inner::BoringTls { http, tls, .. } => {
                 if dst.scheme() == Some(&Scheme::HTTPS) {
                     let host = dst.host().ok_or("no host in url")?.to_string();
-                    let conn = socks::connect(proxy, dst, dns).await?;
-                    let conf = tls.create_connect_configuration(&self.impersonate_context)?;
+                    let conn = socks::connect(proxy, dst.clone(), dns).await?;
+                    let conf = tls.create_connector_configuration(&self.impersonate_context, http.clone(), &dst, &host).await?;
                     let io = tokio_boring::connect(conf, &host, conn).await?;
                     return Ok(Conn {
                         inner: self.verbose.wrap(BoringTlsConn { inner: io }),
@@ -420,7 +420,7 @@ impl Connector {
                     http.set_nodelay(true);
                 }
 
-                let mut http = tls.create_https_connector(&self.impersonate_context, http)?;
+                let mut http = tls.create_https_connector(&self.impersonate_context, http).await?;
                 let io = http.call(dst).await?;
 
                 if let hyper_boring::MaybeHttpsStream::Https(stream) = io {
@@ -531,9 +531,11 @@ impl Connector {
                     let port = dst.port().map(|p| p.as_u16()).unwrap_or(443);
 
                     let http = http.clone();
-                    let mut http = tls.create_https_connector(&self.impersonate_context, http)?;
+                    // Create a new HTTPS connector with the proxy settings
+                    let mut https = tls.create_https_connector(&self.impersonate_context, http.clone()).await?;
 
-                    let conn = http.call(proxy_dst).await?;
+                    // Connect to the proxy
+                    let conn = https.call(proxy_dst).await?;
                     log::trace!("tunneling HTTPS over proxy");
                     let tunneled = tunnel(
                         conn,
@@ -541,11 +543,9 @@ impl Connector {
                         port,
                         self.user_agent.clone(),
                         auth,
-                    )
-                        .await?;
+                    ).await?;
 
-                    let conf = tls.create_connect_configuration(&self.impersonate_context)?;
-
+                    let conf = https.configure_and_setup(&dst, host.ok_or("no host in url")?)?;
                     let io = tokio_boring::connect(conf, host.ok_or("no host in url")?, tunneled)
                         .await?;
                     return Ok(Conn {

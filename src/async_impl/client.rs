@@ -38,7 +38,7 @@ use crate::dns::hickory::HickoryDnsResolver;
 use crate::dns::{gai::GaiResolver, DnsResolverWithOverrides, DynResolver, Resolve};
 use crate::error;
 #[cfg(feature = "impersonate")]
-use crate::impersonate::{profile::ClientProfile, Impersonate, ImpersonateContext};
+use crate::impersonate::{Impersonate, ImpersonateContext};
 use crate::into_url::{expect_uri, try_uri};
 use crate::redirect::{self, remove_sensitive_headers};
 #[cfg(feature = "__tls")]
@@ -158,7 +158,7 @@ struct Config {
     dns_overrides: HashMap<String, Vec<SocketAddr>>,
     dns_resolver: Option<Arc<dyn Resolve>>,
     #[cfg(feature = "impersonate")]
-    profile: ClientProfile,
+    impersonate: Impersonate,
     #[cfg(feature = "impersonate")]
     enable_ech_grease: bool,
     #[cfg(feature = "impersonate")]
@@ -253,7 +253,7 @@ impl ClientBuilder {
                 quic_send_window: None,
                 dns_resolver: None,
                 #[cfg(feature = "impersonate")]
-                profile: ClientProfile::Chrome,
+                impersonate: Impersonate::default(),
                 #[cfg(feature = "impersonate")]
                 enable_ech_grease: false,
                 #[cfg(feature = "impersonate")]
@@ -264,21 +264,21 @@ impl ClientBuilder {
 
     /// Sets the necessary values to mimic the specified impersonate version.
     #[cfg(feature = "__impersonate")]
-    pub fn impersonate(mut self, ver: Impersonate) -> ClientBuilder {
+    pub fn impersonate(mut self, impersonate: Impersonate) -> ClientBuilder {
         use crate::impersonate::profile::configure_impersonate;
         
-        self.config.profile = ver.profile();
-        configure_impersonate(ver, self)
+        self.config.impersonate = impersonate;
+        configure_impersonate(impersonate, self)
     }
 
     /// Sets the necessary values to mimic the specified impersonate version. (websocket)
     #[cfg(feature = "__impersonate")]
-    pub fn impersonate_websocket(mut self, ver: Impersonate) -> ClientBuilder {
+    pub fn impersonate_websocket(mut self, impersonate: Impersonate) -> ClientBuilder {
         use crate::impersonate::profile::configure_impersonate;
 
-        self.config.profile = ver.profile();
+        self.config.impersonate = impersonate;
         self = self.http1_only();
-        configure_impersonate(ver, self)
+        configure_impersonate(impersonate, self)
     }
 
     /// Enable Encrypted Client Hello (Secure SNI)
@@ -410,7 +410,7 @@ impl ClientBuilder {
                     config.nodelay,
                     config.tls_info,
                     ImpersonateContext {
-                        profile: config.profile,
+                        impersonate: config.impersonate,
                         certs_verification: config.certs_verification,
                         enable_ech_grease: config.enable_ech_grease,
                         permute_extensions: config.permute_extensions,
@@ -743,7 +743,7 @@ impl ClientBuilder {
             builder.http2_keep_alive_while_idle(true);
         }
 
-        builder.http2_agent_profile(config.profile.into());
+        builder.http2_agent_profile(config.impersonate.profile().into());
         builder.pool_idle_timeout(config.pool_idle_timeout);
         builder.pool_max_idle_per_host(config.pool_max_idle_per_host);
         connector.set_keepalive(config.tcp_keepalive);

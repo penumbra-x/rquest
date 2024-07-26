@@ -6,3 +6,4 @@ Cargo.lock
 .direnv
 result
 curl
+.idea
