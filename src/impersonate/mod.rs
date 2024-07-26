@@ -65,7 +65,7 @@ impl BoringTlsConnector {
         &self,
         context: &ImpersonateContext,
         http: HttpConnector,
-        uri: &uri::Uri,
+        uri: &http::uri::Uri,
         host: &str,
     ) -> Result<ConnectConfiguration, ErrorStack> {
         let connector = self.create_https_connector(context, http).await?;
