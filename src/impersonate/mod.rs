@@ -27,7 +27,7 @@ impl BoringTlsConnector {
         context: &ImpersonateContext,
         http: HttpConnector,
     ) -> Result<hyper_boring::HttpsConnector<HttpConnector>, boring::error::ErrorStack> {
-        let mut builder = (self.0)();
+        let mut builder = self.0();
         alpn_and_cert_settings(context, &mut builder);
 
         let mut http = hyper_boring::HttpsConnector::with_connector(http, builder)?;
@@ -45,7 +45,7 @@ impl BoringTlsConnector {
         &self,
         context: &ImpersonateContext,
     ) -> Result<ConnectConfiguration, boring::ssl::Error> {
-        let mut builder = (self.0)();
+        let mut builder = self.0();
         alpn_and_cert_settings(context, &mut builder);
 
         let mut conf = builder.build().configure()?;
@@ -85,8 +85,6 @@ fn add_application_settings(conf: &mut ConnectConfiguration, ctx: &ImpersonateCo
             }
 
             if ctx.h2 {
-                conf.set_alpn_protos(b"\x02h2\x08http/1.1").unwrap();
-
                 const ALPN_H2: &str = "h2";
                 const ALPN_H2_LENGTH: usize = 2;
                 unsafe {
