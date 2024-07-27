@@ -65,6 +65,7 @@ __boring = [
     "__tls",
     "boring-sys",
     "foreign-types",
+    "antidote",
 ]
 
 __impersonate = ["__boring", "__browser_common"]
@@ -120,6 +121,7 @@ boring-sys = { package = "boring-sys-imp", version = "2", optional = true }
 hyper-boring = { package = "hyper-boring-imp", version = "2", optional = true }
 tokio-boring = { package = "tokio-boring-imp", version = "2", optional = true }
 foreign-types = { version = "0.5.0", optional = true }
+antidote = { version = "1.0.0", optional = true }
 
 ## cookies
 cookie_crate = { version = "0.18", package = "cookie", optional = true }

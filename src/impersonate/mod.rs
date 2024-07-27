@@ -5,16 +5,16 @@ pub mod profile;
 mod safari;
 
 use crate::connect::HttpConnector;
+use antidote::Mutex;
 use boring::{
     error::ErrorStack,
     ssl::{ConnectConfiguration, SslConnectorBuilder},
 };
 use http::HeaderMap;
-use hyper_boring::HttpsConnector;
+use hyper_boring::{HttpsConnector, SessionCache};
 use profile::ClientProfile;
 pub use profile::Impersonate;
 use std::sync::Arc;
-use tokio::sync::OnceCell;
 
 /// A wrapper around a `SslConnectorBuilder` that allows for additional settings.
 #[derive(Clone)]
@@ -22,7 +22,7 @@ pub struct BoringTlsConnector {
     /// The inner `SslConnectorBuilder` function.
     inner: Arc<dyn Fn() -> SslConnectorBuilder + Send + Sync>,
     /// The cached `HttpsConnector`.
-    connector: Arc<OnceCell<HttpsConnector<HttpConnector>>>,
+    session: Arc<Mutex<SessionCache>>,
 }
 
 impl BoringTlsConnector {
@@ -30,7 +30,7 @@ impl BoringTlsConnector {
     pub fn new(inner: Arc<dyn Fn() -> SslConnectorBuilder + Send + Sync>) -> BoringTlsConnector {
         Self {
             inner,
-            connector: Arc::new(OnceCell::new()),
+            session: Arc::new(Mutex::new(SessionCache::new())),
         }
     }
 
@@ -43,20 +43,17 @@ impl BoringTlsConnector {
         let mut builder = (self.inner)();
         alpn_and_cert_settings(context, &mut builder);
 
-        let http = match context.impersonate {
+        let psk_extension = match context.impersonate {
             Impersonate::Chrome117
             | Impersonate::Chrome120
             | Impersonate::Chrome123
             | Impersonate::Chrome124
-            | Impersonate::Chrome126 => self
-                .connector
-                .get_or_try_init(|| async { Self::create_connector(context, http, builder) })
-                .await?
-                .clone(),
-            _ => Self::create_connector(context, http, builder)?,
+            | Impersonate::Chrome126
+            | Impersonate::Edge122 => true,
+            _ => false,
         };
 
-        Ok(http)
+        self.create_connector(context, http, builder, psk_extension)
     }
 
     /// Create a new `SslConnector` with the settings from the `ImpersonateContext`.
@@ -76,11 +73,17 @@ impl BoringTlsConnector {
 
     /// Create a new `HttpsConnector` with the settings from the `ImpersonateContext`.
     fn create_connector(
+        &self,
         context: &ImpersonateContext,
         http: HttpConnector,
         builder: SslConnectorBuilder,
+        psk: bool,
     ) -> Result<HttpsConnector<HttpConnector>, ErrorStack> {
-        let mut http = HttpsConnector::with_connector(http, builder)?;
+        let mut http = if psk {
+            HttpsConnector::with_connecotr_and_cache(http, builder, self.session.clone())?
+        } else {
+            HttpsConnector::with_connector(http, builder)?
+        };
         let context = context.clone();
         http.set_callback(move |conf, _| Ok(add_application_settings(conf, &context)));
         Ok(http)
