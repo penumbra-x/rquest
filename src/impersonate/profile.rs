@@ -89,7 +89,8 @@ fn get_settings(ver: Impersonate) -> ImpersonateSettings {
 
         Impersonate::Edge99 => edge::edge99::get_settings,
         Impersonate::Edge101 => edge::edge101::get_settings,
-        Impersonate::Edge122 => edge::edge122::get_settings
+        Impersonate::Edge122 => edge::edge122::get_settings,
+        Impersonate::Edge127 => edge::edge127::get_settings
     )
 }
 
@@ -134,6 +135,7 @@ pub enum Impersonate {
     Edge99,
     Edge101,
     Edge122,
+    Edge127,
 }
 
 impl Default for Impersonate {
@@ -189,6 +191,7 @@ impl FromStr for Impersonate {
             "edge_99" => Ok(Impersonate::Edge99),
             "edge_101" => Ok(Impersonate::Edge101),
             "edge_122" => Ok(Impersonate::Edge122),
+            "edge_127" => Ok(Impersonate::Edge127),
             _ => Err("Invalid impersonate version"),
         }
     }
@@ -236,9 +239,10 @@ impl Impersonate {
             | Impersonate::OkHttp4_10
             | Impersonate::OkHttp5 => ClientProfile::OkHttp,
 
-            Impersonate::Edge99 | Impersonate::Edge101 | Impersonate::Edge122 => {
-                ClientProfile::Edge
-            }
+            Impersonate::Edge99
+            | Impersonate::Edge101
+            | Impersonate::Edge122
+            | Impersonate::Edge127 => ClientProfile::Edge,
         }
     }
 }

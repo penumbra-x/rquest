@@ -49,7 +49,8 @@ impl BoringTlsConnector {
             | Impersonate::Chrome123
             | Impersonate::Chrome124
             | Impersonate::Chrome126
-            | Impersonate::Edge122 => true,
+            | Impersonate::Edge122
+            | Impersonate::Edge127 => true,
             _ => false,
         };
 
@@ -80,7 +81,7 @@ impl BoringTlsConnector {
         psk: bool,
     ) -> Result<HttpsConnector<HttpConnector>, ErrorStack> {
         let mut http = if psk {
-            HttpsConnector::with_connecotr_and_cache(http, builder, self.session.clone())?
+            HttpsConnector::with_connector_and_cache(http, builder, self.session.clone())?
         } else {
             HttpsConnector::with_connector(http, builder)?
         };

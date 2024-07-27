@@ -1,8 +1,10 @@
 use boring::ssl::{
-    CertCompressionAlgorithm, SslConnector, SslConnectorBuilder, SslMethod, SslVersion,
+    CertCompressionAlgorithm, Error, SslConnector, SslConnectorBuilder, SslCurve, SslMethod,
+    SslVersion,
 };
 pub mod edge101;
 pub mod edge122;
+pub mod edge127;
 pub mod edge99;
 
 const SIGALGS_LIST: [&str; 8] = [
@@ -62,4 +64,14 @@ fn ssl_builder() -> SslConnectorBuilder {
         .unwrap();
 
     builder
+}
+
+fn configure_curves_ssl(builder: &mut SslConnectorBuilder) -> Result<(), Error> {
+    builder.set_curves(&[
+        SslCurve::X25519_KYBER768_DRAFT00,
+        SslCurve::X25519,
+        SslCurve::SECP256R1,
+        SslCurve::SECP384R1,
+    ])?;
+    Ok(())
 }
