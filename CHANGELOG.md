@@ -2,11 +2,62 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.11.92] - 2024-07-27
 
 ### 🚀 Features
 
-- *(impersonate)* Optimize TLS connector context handle
+- *(connect)* Add PSK extension (#52)
+- *(impersonate)* Add Edge_127 impersonate (#59)
+
+### 🐛 Bug Fixes
+
+- *(connector)* Fix TLS session failure when changing address (#55)
+
+### 🚜 Refactor
+
+- Remove unused crates (#54)
+- Remove unused crates
+
+### 🎨 Styling
+
+- *(impersonate)* Remove dead code (#51)
+
+### ⚙️ Miscellaneous Tasks
+
+- 1.70 as MSRV (#53)
+- 1.70 as MSRV
+
+### Deps
+
+- *(ipnet)* V2.9.0 (#56)
+- *(mime)* V0.3.17 (#57)
+- *(url)* V2.5 (#58)
+
+## [0.11.91] - 2024-07-25
+
+### 🎨 Styling
+
+- *(connect)* Replace all non-refutable if let patterns with let statements (#44)
+
+### Deps
+
+- *(base64)* Bump version to v0.22.x (#46)
+- *(cookie_store)* Bump version to v0.21.x (#47)
+
+## [0.11.90] - 2024-07-25
+
+### 🚀 Features
+
+- *(impersonate)* Optimize TLS connector context handle (#37)
+
+### ◀️ Revert
+
+- *(impersonate)* Remove chrome99 impersonate (#38)
+
+### Build
+
+- *(deps)* Bump softprops/action-gh-release from 1 to 2 (#36)
+- *(deps)* Bump actions/checkout from 3 to 4 (#35)
 
 ## [0.11.89] - 2024-07-25
 
@@ -259,7 +310,7 @@ All notable changes to this project will be documented in this file.
 ### 🐛 Bug Fixes
 
 - Tests::support::server
-- *(response)* `copy_to()` and `text()` return `rquest::Result`
+- *(response)* `copy_to()` and `text()` return `reqwest::Result`
 - Upgrade to http2 if the server reports that it supports it (#1166)
 - Respect https_only option when redirecting (#1313)
 - Wasm client: pass response header to builder by reference (#1350)
