@@ -104,7 +104,7 @@ hyper = { package = "hyper_imp", version = "0.14", default-features = false, fea
 ] }
 h2 = { package = "h2_imp", version = "0.5.0" }
 log = "0.4"
-mime = "0.3.16"
+mime = "0.3.17"
 percent-encoding = "2.1"
 tokio = { version = "1", default-features = false, features = [
     "net",
