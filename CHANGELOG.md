@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.93] - 2024-07-27
+
+### 🚀 Features
+
+- *(impersonate)* Optimize reuse of impersonate configuration (#61)
+- *(connect)* Reduce unnecessary connection overhead (#62)
+
 ## [0.11.92] - 2024-07-27
 
 ### 🚀 Features
