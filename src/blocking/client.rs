@@ -1,5 +1,3 @@
-#[cfg(any(feature = "native-tls", feature = "__rustls",))]
-use std::any::Any;
 use std::convert::TryInto;
 use std::fmt;
 use std::future::Future;
@@ -20,10 +18,6 @@ use super::wait;
 use crate::impersonate::Impersonate;
 #[cfg(feature = "__tls")]
 use crate::tls;
-#[cfg(feature = "__tls")]
-use crate::Certificate;
-#[cfg(any(feature = "native-tls", feature = "__rustls"))]
-use crate::Identity;
 use crate::{async_impl, header, redirect, IntoUrl, Method, Proxy};
 
 /// A `Client` to make Requests with.
@@ -604,49 +598,6 @@ impl ClientBuilder {
 
     // TLS options
 
-    /// Add a custom root certificate.
-    ///
-    /// This allows connecting to a server that has a self-signed
-    /// certificate for example. This **does not** replace the existing
-    /// trusted store.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use std::fs::File;
-    /// # use std::io::Read;
-    /// # fn build_client() -> Result<(), Box<dyn std::error::Error>> {
-    /// // read a local binary DER encoded certificate
-    /// let der = std::fs::read("my-cert.der")?;
-    ///
-    /// // create a certificate
-    /// let cert = reqwest::Certificate::from_der(&der)?;
-    ///
-    /// // get a client builder
-    /// let client = reqwest::blocking::Client::builder()
-    ///     .add_root_certificate(cert)
-    ///     .build()?;
-    /// # drop(client);
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Optional
-    ///
-    /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
-    /// feature to be enabled.
-    #[cfg(feature = "__tls")]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(any(
-            feature = "default-tls",
-            feature = "native-tls",
-            feature = "rustls-tls"
-        )))
-    )]
-    pub fn add_root_certificate(self, cert: Certificate) -> ClientBuilder {
-        self.with_inner(move |inner| inner.add_root_certificate(cert))
-    }
 
     /// Controls the use of built-in system certificates during certificate validation.
     ///
@@ -657,48 +608,8 @@ impl ClientBuilder {
     /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(any(
-            feature = "default-tls",
-            feature = "native-tls",
-            feature = "rustls-tls"
-        )))
-    )]
     pub fn tls_built_in_root_certs(self, tls_built_in_root_certs: bool) -> ClientBuilder {
         self.with_inner(move |inner| inner.tls_built_in_root_certs(tls_built_in_root_certs))
-    }
-
-    /// Sets the identity to be used for client certificate authentication.
-    ///
-    /// # Optional
-    ///
-    /// This requires the optional `native-tls` or `rustls-tls(-...)` feature to be
-    /// enabled.
-    #[cfg(any(feature = "native-tls", feature = "__rustls"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "native-tls", feature = "rustls-tls"))))]
-    pub fn identity(self, identity: Identity) -> ClientBuilder {
-        self.with_inner(move |inner| inner.identity(identity))
-    }
-
-    /// Controls the use of hostname verification.
-    ///
-    /// Defaults to `false`.
-    ///
-    /// # Warning
-    ///
-    /// You should think very carefully before you use this method. If
-    /// hostname verification is not used, any valid certificate for any
-    /// site will be trusted for use from any other. This introduces a
-    /// significant vulnerability to man-in-the-middle attacks.
-    ///
-    /// # Optional
-    ///
-    /// This requires the optional `native-tls` feature to be enabled.
-    #[cfg(feature = "native-tls")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "native-tls")))]
-    pub fn danger_accept_invalid_hostnames(self, accept_invalid_hostname: bool) -> ClientBuilder {
-        self.with_inner(|inner| inner.danger_accept_invalid_hostnames(accept_invalid_hostname))
     }
 
     /// Controls the use of certificate validation.
@@ -713,14 +624,6 @@ impl ClientBuilder {
     /// introduces significant vulnerabilities, and should only be used
     /// as a last resort.
     #[cfg(feature = "__tls")]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(any(
-            feature = "default-tls",
-            feature = "native-tls",
-            feature = "rustls-tls"
-        )))
-    )]
     pub fn danger_accept_invalid_certs(self, accept_invalid_certs: bool) -> ClientBuilder {
         self.with_inner(|inner| inner.danger_accept_invalid_certs(accept_invalid_certs))
     }
@@ -729,14 +632,6 @@ impl ClientBuilder {
     ///
     /// Defaults to `true`.
     #[cfg(feature = "__tls")]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(any(
-            feature = "default-tls",
-            feature = "native-tls",
-            feature = "rustls-tls"
-        )))
-    )]
     pub fn tls_sni(self, tls_sni: bool) -> ClientBuilder {
         self.with_inner(|inner| inner.tls_sni(tls_sni))
     }
@@ -757,14 +652,6 @@ impl ClientBuilder {
     /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(any(
-            feature = "default-tls",
-            feature = "native-tls",
-            feature = "rustls-tls"
-        )))
-    )]
     pub fn min_tls_version(self, version: tls::Version) -> ClientBuilder {
         self.with_inner(|inner| inner.min_tls_version(version))
     }
@@ -785,44 +672,8 @@ impl ClientBuilder {
     /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(any(
-            feature = "default-tls",
-            feature = "native-tls",
-            feature = "rustls-tls"
-        )))
-    )]
     pub fn max_tls_version(self, version: tls::Version) -> ClientBuilder {
         self.with_inner(|inner| inner.max_tls_version(version))
-    }
-
-    /// Force using the native TLS backend.
-    ///
-    /// Since multiple TLS backends can be optionally enabled, this option will
-    /// force the `native-tls` backend to be used for this `Client`.
-    ///
-    /// # Optional
-    ///
-    /// This requires the optional `native-tls` feature to be enabled.
-    #[cfg(feature = "native-tls")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "native-tls")))]
-    pub fn use_native_tls(self) -> ClientBuilder {
-        self.with_inner(move |inner| inner.use_native_tls())
-    }
-
-    /// Force using the Rustls TLS backend.
-    ///
-    /// Since multiple TLS backends can be optionally enabled, this option will
-    /// force the `rustls` backend to be used for this `Client`.
-    ///
-    /// # Optional
-    ///
-    /// This requires the optional `rustls-tls(-...)` feature to be enabled.
-    #[cfg(feature = "__rustls")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "rustls-tls")))]
-    pub fn use_rustls_tls(self) -> ClientBuilder {
-        self.with_inner(move |inner| inner.use_rustls_tls())
     }
 
     /// Add TLS information as `TlsInfo` extension to responses.
@@ -832,41 +683,10 @@ impl ClientBuilder {
     /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(any(
-            feature = "default-tls",
-            feature = "native-tls",
-            feature = "rustls-tls"
-        )))
-    )]
     pub fn tls_info(self, tls_info: bool) -> ClientBuilder {
         self.with_inner(|inner| inner.tls_info(tls_info))
     }
 
-    /// Use a preconfigured TLS backend.
-    ///
-    /// If the passed `Any` argument is not a TLS backend that reqwest
-    /// understands, the `ClientBuilder` will error when calling `build`.
-    ///
-    /// # Advanced
-    ///
-    /// This is an advanced option, and can be somewhat brittle. Usage requires
-    /// keeping the preconfigured TLS argument version in sync with reqwest,
-    /// since version mismatches will result in an "unknown" TLS backend.
-    ///
-    /// If possible, it's preferable to use the methods on `ClientBuilder`
-    /// to configure reqwest's TLS.
-    ///
-    /// # Optional
-    ///
-    /// This requires one of the optional features `native-tls` or
-    /// `rustls-tls(-...)` to be enabled.
-    #[cfg(any(feature = "native-tls", feature = "__rustls",))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "native-tls", feature = "rustls-tls"))))]
-    pub fn use_preconfigured_tls(self, tls: impl Any) -> ClientBuilder {
-        self.with_inner(move |inner| inner.use_preconfigured_tls(tls))
-    }
 
     /// Enables the [hickory-dns](hickory_dns_resolver) async resolver instead of a default threadpool using `getaddrinfo`.
     ///

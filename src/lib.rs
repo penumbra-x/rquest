@@ -226,14 +226,6 @@
 //! [Proxy]: ./struct.Proxy.html
 //! [cargo-features]: https://doc.rust-lang.org/stable/cargo/reference/manifest.html#the-features-section
 
-#[cfg(all(feature = "http3"))]
-compile_error!(
-    "\
-    The `http3` feature is unstable, and requires the \
-    `RUSTFLAGS='--cfg reqwest_unstable'` environment variable to be set.\
-"
-);
-
 macro_rules! if_wasm {
     ($($item:item)*) => {$(
         #[cfg(target_arch = "wasm32")]
@@ -249,9 +241,7 @@ macro_rules! if_hyper {
 }
 
 /// Re-export of boring to keep versions in check
-#[cfg(feature = "__boring")]
 pub use boring;
-#[cfg(feature = "__boring")]
 pub use boring_sys;
 pub use http::header;
 pub use http::Method;
@@ -262,7 +252,6 @@ pub use url::Url;
 #[macro_use]
 mod error;
 /// HTTP client implementate module
-#[cfg(feature = "impersonate")]
 pub mod impersonate;
 mod into_url;
 mod response;
@@ -349,9 +338,6 @@ if_hyper! {
     #[cfg(feature = "websocket")]
     pub use self::async_impl::websocket::{UpgradedRequestBuilder, Message, WebSocket, UpgradeResponse};
     pub use self::proxy::{Proxy,NoProxy};
-    #[cfg(feature = "__tls")]
-    // Re-exports, to be removed in a future release
-    pub use tls::{Certificate, Identity};
     #[cfg(feature = "multipart")]
     pub use self::async_impl::multipart;
 
@@ -365,7 +351,6 @@ if_hyper! {
     pub mod dns;
     mod proxy;
     pub mod redirect;
-    #[cfg(feature = "__tls")]
     pub mod tls;
     mod util;
 }

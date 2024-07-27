@@ -293,94 +293,6 @@ async fn overridden_dns_resolution_with_hickory_dns_multiple() {
     assert_eq!("Hello", text);
 }
 
-#[cfg(any(feature = "native-tls", feature = "__rustls",))]
-#[test]
-fn use_preconfigured_tls_with_bogus_backend() {
-    struct DefinitelyNotTls;
-
-    reqwest::Client::builder()
-        .use_preconfigured_tls(DefinitelyNotTls)
-        .build()
-        .expect_err("definitely is not TLS");
-}
-
-#[cfg(feature = "native-tls")]
-#[test]
-fn use_preconfigured_native_tls_default() {
-    extern crate native_tls_crate;
-
-    let tls = native_tls_crate::TlsConnector::builder()
-        .build()
-        .expect("tls builder");
-
-    reqwest::Client::builder()
-        .use_preconfigured_tls(tls)
-        .build()
-        .expect("preconfigured default tls");
-}
-
-#[cfg(feature = "__rustls")]
-#[test]
-fn use_preconfigured_rustls_default() {
-    extern crate rustls;
-
-    let root_cert_store = rustls::RootCertStore::empty();
-    let tls = rustls::ClientConfig::builder()
-        .with_safe_defaults()
-        .with_root_certificates(root_cert_store)
-        .with_no_client_auth();
-
-    reqwest::Client::builder()
-        .use_preconfigured_tls(tls)
-        .build()
-        .expect("preconfigured rustls tls");
-}
-
-#[cfg(feature = "__rustls")]
-#[tokio::test]
-#[ignore = "Needs TLS support in the test server"]
-async fn http2_upgrade() {
-    let server = server::http(move |_| async move { http::Response::default() });
-
-    let url = format!("https://localhost:{}", server.addr().port());
-    let res = reqwest::Client::builder()
-        .danger_accept_invalid_certs(true)
-        .use_rustls_tls()
-        .build()
-        .expect("client builder")
-        .get(&url)
-        .send()
-        .await
-        .expect("request");
-
-    assert_eq!(res.status(), reqwest::StatusCode::OK);
-    assert_eq!(res.version(), reqwest::Version::HTTP_2);
-}
-
-#[cfg(feature = "default-tls")]
-#[tokio::test]
-async fn test_allowed_methods() {
-    let resp = reqwest::Client::builder()
-        .https_only(true)
-        .build()
-        .expect("client builder")
-        .get("https://google.com")
-        .send()
-        .await;
-
-    assert!(resp.is_ok());
-
-    let resp = reqwest::Client::builder()
-        .https_only(true)
-        .build()
-        .expect("client builder")
-        .get("http://google.com")
-        .send()
-        .await;
-
-    assert!(resp.is_err());
-}
-
 #[test]
 #[cfg(feature = "json")]
 fn add_json_default_content_type_if_not_set_manually() {
@@ -411,7 +323,7 @@ fn update_json_content_type_if_set_manually() {
     assert_eq!("application/json", req.headers().get(CONTENT_TYPE).unwrap());
 }
 
-#[cfg(all(feature = "__tls", not(feature = "rustls-tls-manual-roots")))]
+#[cfg(all(feature = "__tls"))]
 #[tokio::test]
 async fn test_tls_info() {
     let resp = reqwest::Client::builder()

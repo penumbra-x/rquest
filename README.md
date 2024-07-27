@@ -9,11 +9,9 @@ An intuitive and robust Rust `HTTP`/`WebSocket` Client featuring TLS/JA3/JA4/HTT
 - Impersonate Chrome / Safari / Edge / OkHttp
 - Plain bodies, JSON, urlencoded, multipart
 - Customizable redirect policy
-- HTTP Proxies
-- HTTPS via BoringSSL
-- WebSocket
+- `HTTP`/`HTTPS`/`Socks5` Proxies
+- `HTTPS`/`WebSocket` via BoringSSL
 - Cookie Store
-- WASM
 - [Changelog](CHANGELOG.md)
 
 ## Example

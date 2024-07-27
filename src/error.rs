@@ -121,7 +121,6 @@ impl Error {
         matches!(self.inner.kind, Kind::Request)
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
     /// Returns true if the error is related to connect
     pub fn is_connect(&self) -> bool {
         let mut source = self.source();
@@ -224,20 +223,6 @@ impl StdError for Error {
 impl From<tungstenite::Error> for Error {
     fn from(err: tungstenite::Error) -> Error {
         Error::new(Kind::Upgrade, Some(err))
-    }
-}
-
-#[cfg(target_arch = "wasm32")]
-impl From<crate::error::Error> for wasm_bindgen::JsValue {
-    fn from(err: Error) -> wasm_bindgen::JsValue {
-        js_sys::Error::from(err).into()
-    }
-}
-
-#[cfg(target_arch = "wasm32")]
-impl From<crate::error::Error> for js_sys::Error {
-    fn from(err: Error) -> js_sys::Error {
-        js_sys::Error::new(&format!("{}", err))
     }
 }
 
