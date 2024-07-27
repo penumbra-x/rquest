@@ -153,19 +153,8 @@
 //! security to connect to HTTPS destinations. This means schannel on Windows,
 //! Security-Framework on macOS, and OpenSSL on Linux.
 //!
-//! - Additional X509 certificates can be configured on a `ClientBuilder` with the
-//!   [`Certificate`] type.
-//! - Client certificates can be added to a `ClientBuilder` with the
-//!   [`Identity`] type.
 //! - Various parts of TLS can also be configured or even disabled on the
 //!   `ClientBuilder`.
-//!
-//! ## WASM
-//!
-//! The Client implementation automatically switches to the WASM one when the target_arch is wasm32,
-//! the usage is basically the same as the async api. Some of the features are disabled in wasm
-//! : [`tls`], [`cookie`], [`blocking`].
-//!
 //!
 //! ## Optional Features
 //!

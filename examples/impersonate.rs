@@ -1,5 +1,5 @@
-use rquest::impersonate::Impersonate;
 use rquest;
+use rquest::impersonate::Impersonate;
 use std::error::Error;
 
 #[tokio::main]

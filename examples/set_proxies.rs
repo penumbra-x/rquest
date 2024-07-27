@@ -1,5 +1,5 @@
-use rquest::impersonate::Impersonate;
 use rquest;
+use rquest::impersonate::Impersonate;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
