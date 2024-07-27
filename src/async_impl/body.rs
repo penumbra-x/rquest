@@ -60,7 +60,7 @@ impl Body {
     /// # Example
     ///
     /// ```
-    /// # use reqwest::Body;
+    /// # use rquest::Body;
     /// # use futures_util;
     /// # fn main() {
     /// let chunks: Vec<Result<_, ::std::io::Error>> = vec![

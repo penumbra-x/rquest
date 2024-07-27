@@ -1,11 +1,11 @@
 [package]
-name = "reqwest-impersonate"
+name = "rquest"
 version = "0.11.91"
 description = "An intuitive and robust Rust HTTP/WebSocket Client featuring TLS/JA3/JA4/HTTP2 fingerprint impersonate"
 keywords = ["http", "request", "client", "websocket", "ja3"]
 categories = ["web-programming::http-client"]
-repository = "https://github.com/0x676e67/reqwest-impersonate"
-documentation = "https://docs.rs/reqwest-impersonate"
+repository = "https://github.com/0x676e67/rquest"
+documentation = "https://docs.rs/rquest"
 authors = ["0x676e67 <gngppz@gmail.com>"]
 readme = "README.md"
 license = "MIT OR Apache-2.0"

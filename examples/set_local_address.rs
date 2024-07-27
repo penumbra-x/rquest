@@ -1,12 +1,12 @@
 use std::net::Ipv4Addr;
 
-use reqwest::impersonate::Impersonate;
-use reqwest_impersonate as reqwest;
+use rquest::impersonate::Impersonate;
+use rquest;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Build a client to mimic Chrome126
-    let mut client = reqwest::Client::builder()
+    let mut client = rquest::Client::builder()
         .impersonate(Impersonate::Chrome126)
         .enable_ech_grease()
         .permute_extensions()

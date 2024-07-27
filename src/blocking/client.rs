@@ -32,9 +32,9 @@ use crate::{async_impl, header, redirect, IntoUrl, Method, Proxy};
 /// # Examples
 ///
 /// ```rust
-/// use reqwest::blocking::Client;
+/// use rquest::blocking::Client;
 /// #
-/// # fn run() -> Result<(), reqwest::Error> {
+/// # fn run() -> Result<(), rquest::Error> {
 /// let client = Client::new();
 /// let resp = client.get("http://httpbin.org/").send()?;
 /// #   drop(resp);
@@ -52,10 +52,10 @@ pub struct Client {
 /// # Example
 ///
 /// ```
-/// # fn run() -> Result<(), reqwest::Error> {
+/// # fn run() -> Result<(), rquest::Error> {
 /// use std::time::Duration;
 ///
-/// let client = reqwest::blocking::Client::builder()
+/// let client = rquest::blocking::Client::builder()
 ///     .timeout(Duration::from_secs(10))
 ///     .build()?;
 /// # Ok(())
@@ -113,7 +113,7 @@ impl ClientBuilder {
     /// # Panics
     ///
     /// This method panics if called from within an async runtime. See docs on
-    /// [`reqwest::blocking`][crate::blocking] for details.
+    /// [`rquest::blocking`][crate::blocking] for details.
     pub fn build(self) -> crate::Result<Client> {
         ClientHandle::new(self).map(|handle| Client { inner: handle })
     }
@@ -125,7 +125,7 @@ impl ClientBuilder {
     /// # Example
     ///
     /// ```rust
-    /// # fn doc() -> Result<(), reqwest::Error> {
+    /// # fn doc() -> Result<(), rquest::Error> {
     /// // Name your user agent after your app?
     /// static APP_USER_AGENT: &str = concat!(
     ///     env!("CARGO_PKG_NAME"),
@@ -133,7 +133,7 @@ impl ClientBuilder {
     ///     env!("CARGO_PKG_VERSION"),
     /// );
     ///
-    /// let client = reqwest::blocking::Client::builder()
+    /// let client = rquest::blocking::Client::builder()
     ///     .user_agent(APP_USER_AGENT)
     ///     .build()?;
     /// let res = client.get("https://www.rust-lang.org").send()?;
@@ -153,8 +153,8 @@ impl ClientBuilder {
     /// # Example
     ///
     /// ```rust
-    /// use reqwest::header;
-    /// # fn build_client() -> Result<(), reqwest::Error> {
+    /// use rquest::header;
+    /// # fn build_client() -> Result<(), rquest::Error> {
     /// let mut headers = header::HeaderMap::new();
     /// headers.insert("X-MY-HEADER", header::HeaderValue::from_static("value"));
     /// headers.insert(header::AUTHORIZATION, header::HeaderValue::from_static("secret"));
@@ -165,7 +165,7 @@ impl ClientBuilder {
     /// headers.insert(header::AUTHORIZATION, auth_value);
     ///
     /// // get a client builder
-    /// let client = reqwest::blocking::Client::builder()
+    /// let client = rquest::blocking::Client::builder()
     ///     .default_headers(headers)
     ///     .build()?;
     /// let res = client.get("https://www.rust-lang.org").send()?;
@@ -176,13 +176,13 @@ impl ClientBuilder {
     /// Override the default headers:
     ///
     /// ```rust
-    /// use reqwest::header;
-    /// # fn build_client() -> Result<(), reqwest::Error> {
+    /// use rquest::header;
+    /// # fn build_client() -> Result<(), rquest::Error> {
     /// let mut headers = header::HeaderMap::new();
     /// headers.insert("X-MY-HEADER", header::HeaderValue::from_static("value"));
     ///
     /// // get a client builder
-    /// let client = reqwest::blocking::Client::builder()
+    /// let client = rquest::blocking::Client::builder()
     ///     .default_headers(headers)
     ///     .build()?;
     /// let res = client
@@ -569,7 +569,7 @@ impl ClientBuilder {
     /// ```
     /// use std::net::IpAddr;
     /// let local_addr = IpAddr::from([12, 4, 1, 8]);
-    /// let client = reqwest::blocking::Client::builder()
+    /// let client = rquest::blocking::Client::builder()
     ///     .local_address(local_addr)
     ///     .build().unwrap();
     /// ```
@@ -779,7 +779,7 @@ impl Client {
     /// instead of panicking.
     ///
     /// This method also panics if called from within an async runtime. See docs
-    /// on [`reqwest::blocking`][crate::blocking] for details.
+    /// on [`rquest::blocking`][crate::blocking] for details.
     pub fn new() -> Client {
         ClientBuilder::new().build().expect("Client::new()")
     }
@@ -928,7 +928,7 @@ impl ClientHandle {
         let (tx, rx) = mpsc::unbounded_channel::<(async_impl::Request, OneshotResponse)>();
         let (spawn_tx, spawn_rx) = oneshot::channel::<crate::Result<()>>();
         let handle = thread::Builder::new()
-            .name("reqwest-internal-sync-runtime".into())
+            .name("rquest-internal-sync-runtime".into())
             .spawn(move || {
                 use tokio::runtime;
                 let rt = match runtime::Builder::new_current_thread()

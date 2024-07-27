@@ -1,8 +1,8 @@
-# reqwest-impersonate
+# rquest
 
-[![crates.io](https://img.shields.io/crates/v/reqwest-impersonate.svg)](https://crates.io/crates/reqwest-impersonate)
-[![MIT/Apache-2 licensed](https://img.shields.io/crates/l/reqwest.svg)](./LICENSE-APACHE)
-[![CI](https://github.com/seanmonstar/reqwest/workflows/CI/badge.svg)](https://github.com/seanmonstar/reqwest/actions?query=workflow%3ACI)
+[![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)
+[![MIT/Apache-2 licensed](https://img.shields.io/crates/l/rquest.svg)](./LICENSE-APACHE)
+[![CI](https://github.com/0x676e67/rquest/workflows/CI/badge.svg)](https://github.com/0x676e67/rquest/actions?query=workflow%3ACI)
 
 An intuitive and robust Rust `HTTP`/`WebSocket` Client featuring TLS/JA3/JA4/HTTP2 fingerprint impersonate
 
@@ -22,7 +22,7 @@ optional features, so your `Cargo.toml` could look like this:
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-reqwest_impersonate = "0.11"
+rquest = "0.11"
 ```
 
 Or WebSocket:
@@ -30,20 +30,20 @@ Or WebSocket:
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-reqwest_impersonate = { version = "0.11", features = ["websocket"] }
+rquest = { version = "0.11", features = ["websocket"] }
 ```
 
 And then the code:
 
 ```rust,no_run
 use std::error::Error;
-use reqwest_impersonate as reqwest;
-use reqwest::impersonate::Impersonate;
+use rquest;
+use rquest::impersonate::Impersonate;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // Build a client to mimic Chrome123
-    let client = reqwest::Client::builder()
+    let client = rquest::Client::builder()
         .impersonate(Impersonate::Chrome123)
         .enable_ech_grease()
         .permute_extensions()
@@ -61,12 +61,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 And then the websocket code:
 
 ```rust,no_run
-use reqwest_impersonate as reqwest;
+use rquest;
 use std::error::Error;
 use tungstenite::Message;
 
 use futures_util::{SinkExt, StreamExt, TryStreamExt};
-use reqwest::{impersonate::Impersonate, Client};
+use rquest::{impersonate::Impersonate, Client};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -100,23 +100,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
-
-## Requirements
-
-On Linux:
-
-- OpenSSL with headers. See https://docs.rs/openssl for supported versions
-  and more details. Alternatively you can enable the `native-tls-vendored`
-  feature to compile a copy of OpenSSL.
-
-On Windows and macOS:
-
-- Nothing.
-
-Reqwest uses [rust-native-tls](https://github.com/sfackler/rust-native-tls),
-which will use the operating system TLS framework if available, meaning Windows
-and macOS. On Linux, it will use OpenSSL 1.1.
-
 
 ## License
 

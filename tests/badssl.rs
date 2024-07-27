@@ -1,10 +1,10 @@
 #![cfg(not(target_arch = "wasm32"))]
-use reqwest_impersonate as reqwest;
+use rquest;
 
 #[cfg(all(feature = "__tls"))]
 #[tokio::test]
 async fn test_badssl_modern() {
-    let text = reqwest::Client::builder()
+    let text = rquest::Client::builder()
         .no_proxy()
         .build()
         .unwrap()
@@ -22,8 +22,8 @@ async fn test_badssl_modern() {
 #[cfg(feature = "__tls")]
 #[tokio::test]
 async fn test_badssl_self_signed() {
-    let text = reqwest::Client::builder()
-        .impersonate(reqwest::impersonate::Impersonate::OkHttp4_9)
+    let text = rquest::Client::builder()
+        .impersonate(rquest::impersonate::Impersonate::OkHttp4_9)
         .danger_accept_invalid_certs(true)
         .no_proxy()
         .build()
@@ -42,7 +42,7 @@ async fn test_badssl_self_signed() {
 #[cfg(feature = "__tls")]
 #[tokio::test]
 async fn test_badssl_no_built_in_roots() {
-    let result = reqwest::Client::builder()
+    let result = rquest::Client::builder()
         .tls_built_in_root_certs(false)
         .no_proxy()
         .build()

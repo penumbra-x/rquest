@@ -45,7 +45,7 @@ use winreg::RegKey;
 ///
 /// ```rust
 /// # fn run() -> Result<(), Box<std::error::Error>> {
-/// let proxy = reqwest::Proxy::http("https://secure.example")?;
+/// let proxy = rquest::Proxy::http("https://secure.example")?;
 /// # Ok(())
 /// # }
 /// ```
@@ -62,7 +62,7 @@ use winreg::RegKey;
 /// By enabling the `"socks"` feature it is possible to use a socks proxy:
 /// ```rust
 /// # fn run() -> Result<(), Box<std::error::Error>> {
-/// let proxy = reqwest::Proxy::http("socks5://192.168.1.1:9000")?;
+/// let proxy = rquest::Proxy::http("socks5://192.168.1.1:9000")?;
 /// # Ok(())
 /// # }
 /// ```
@@ -195,10 +195,10 @@ impl Proxy {
     /// # Example
     ///
     /// ```
-    /// # extern crate reqwest;
+    /// # extern crate rquest;
     /// # fn run() -> Result<(), Box<std::error::Error>> {
-    /// let client = reqwest::Client::builder()
-    ///     .proxy(reqwest::Proxy::http("https://my.prox")?)
+    /// let client = rquest::Client::builder()
+    ///     .proxy(rquest::Proxy::http("https://my.prox")?)
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -215,10 +215,10 @@ impl Proxy {
     /// # Example
     ///
     /// ```
-    /// # extern crate reqwest;
+    /// # extern crate rquest;
     /// # fn run() -> Result<(), Box<std::error::Error>> {
-    /// let client = reqwest::Client::builder()
-    ///     .proxy(reqwest::Proxy::https("https://example.prox:4545")?)
+    /// let client = rquest::Client::builder()
+    ///     .proxy(rquest::Proxy::https("https://example.prox:4545")?)
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -235,10 +235,10 @@ impl Proxy {
     /// # Example
     ///
     /// ```
-    /// # extern crate reqwest;
+    /// # extern crate rquest;
     /// # fn run() -> Result<(), Box<std::error::Error>> {
-    /// let client = reqwest::Client::builder()
-    ///     .proxy(reqwest::Proxy::all("http://pro.xy")?)
+    /// let client = rquest::Client::builder()
+    ///     .proxy(rquest::Proxy::all("http://pro.xy")?)
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -255,11 +255,11 @@ impl Proxy {
     /// # Example
     ///
     /// ```
-    /// # extern crate reqwest;
+    /// # extern crate rquest;
     /// # fn run() -> Result<(), Box<std::error::Error>> {
-    /// let target = reqwest::Url::parse("https://my.prox")?;
-    /// let client = reqwest::Client::builder()
-    ///     .proxy(reqwest::Proxy::custom(move |url| {
+    /// let target = rquest::Url::parse("https://my.prox")?;
+    /// let client = rquest::Client::builder()
+    ///     .proxy(rquest::Proxy::custom(move |url| {
     ///         if url.host_str() == Some("hyper.rs") {
     ///             Some(target.clone())
     ///         } else {
@@ -306,9 +306,9 @@ impl Proxy {
     /// # Example
     ///
     /// ```
-    /// # extern crate reqwest;
+    /// # extern crate rquest;
     /// # fn run() -> Result<(), Box<std::error::Error>> {
-    /// let proxy = reqwest::Proxy::https("http://localhost:1234")?
+    /// let proxy = rquest::Proxy::https("http://localhost:1234")?
     ///     .basic_auth("Aladdin", "open sesame");
     /// # Ok(())
     /// # }
@@ -324,10 +324,10 @@ impl Proxy {
     /// # Example
     ///
     /// ```
-    /// # extern crate reqwest;
-    /// # use reqwest::header::*;
+    /// # extern crate rquest;
+    /// # use rquest::header::*;
     /// # fn run() -> Result<(), Box<std::error::Error>> {
-    /// let proxy = reqwest::Proxy::https("http://localhost:1234")?
+    /// let proxy = rquest::Proxy::https("http://localhost:1234")?
     ///     .custom_http_auth(HeaderValue::from_static("justletmeinalreadyplease"));
     /// # Ok(())
     /// # }
@@ -343,10 +343,10 @@ impl Proxy {
     /// # Example
     ///
     /// ```
-    /// # extern crate reqwest;
+    /// # extern crate rquest;
     /// # fn run() -> Result<(), Box<std::error::Error>> {
-    /// let proxy = reqwest::Proxy::https("http://localhost:1234")?
-    ///     .no_proxy(reqwest::NoProxy::from_string("direct.tld, sub.direct2.tld"));
+    /// let proxy = rquest::Proxy::https("http://localhost:1234")?
+    ///     .no_proxy(rquest::NoProxy::from_string("direct.tld, sub.direct2.tld"));
     /// # Ok(())
     /// # }
     /// # fn main() {}
@@ -967,7 +967,7 @@ fn parse_setting_from_dynamic_store(
 
 #[cfg(target_os = "macos")]
 fn get_from_platform_impl() -> Result<Option<String>, Box<dyn Error>> {
-    let store = SCDynamicStoreBuilder::new("reqwest").build();
+    let store = SCDynamicStoreBuilder::new("rquest").build();
 
     let proxies_map = if let Some(proxies_map) = store.get_proxies() {
         proxies_map

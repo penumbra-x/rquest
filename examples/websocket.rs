@@ -1,9 +1,9 @@
-use reqwest_impersonate as reqwest;
+use rquest;
 use std::error::Error;
 use tungstenite::Message;
 
 use futures_util::{SinkExt, StreamExt, TryStreamExt};
-use reqwest::{impersonate::Impersonate, Client};
+use rquest::{impersonate::Impersonate, Client};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

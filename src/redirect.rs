@@ -74,7 +74,7 @@ impl Policy {
     /// # Example
     ///
     /// ```rust
-    /// # use reqwest::{Error, redirect};
+    /// # use rquest::{Error, redirect};
     /// #
     /// # fn run() -> Result<(), Error> {
     /// let custom = redirect::Policy::custom(|attempt| {
@@ -87,7 +87,7 @@ impl Policy {
     ///         attempt.follow()
     ///     }
     /// });
-    /// let client = reqwest::Client::builder()
+    /// let client = rquest::Client::builder()
     ///     .redirect(custom)
     ///     .build()?;
     /// # Ok(())
@@ -114,7 +114,7 @@ impl Policy {
     /// # Example
     ///
     /// ```rust
-    /// # use reqwest::{Error, redirect};
+    /// # use rquest::{Error, redirect};
     /// #
     /// # fn run() -> Result<(), Error> {
     /// let custom = redirect::Policy::custom(|attempt| {
@@ -174,14 +174,14 @@ impl<'a> Attempt<'a> {
     pub fn previous(&self) -> &[Url] {
         self.previous
     }
-    /// Returns an action meaning reqwest should follow the next URL.
+    /// Returns an action meaning rquest should follow the next URL.
     pub fn follow(self) -> Action {
         Action {
             inner: ActionKind::Follow,
         }
     }
 
-    /// Returns an action meaning reqwest should not follow the next URL.
+    /// Returns an action meaning rquest should not follow the next URL.
     ///
     /// The 30x response will be returned as the `Ok` result.
     pub fn stop(self) -> Action {

@@ -1,11 +1,11 @@
 #![deny(warnings)]
-use reqwest_impersonate as reqwest;
+use rquest;
 
 // This is using the `tokio` runtime. You'll need the following dependency:
 //
 // `tokio = { version = "1", features = ["full"] }`
 #[tokio::main]
-async fn main() -> Result<(), reqwest::Error> {
+async fn main() -> Result<(), rquest::Error> {
     // Some simple CLI args requirements...
     let url = if let Some(url) = std::env::args().nth(1) {
         url
@@ -16,11 +16,11 @@ async fn main() -> Result<(), reqwest::Error> {
 
     eprintln!("Fetching {:?}...", url);
 
-    // reqwest::get() is a convenience function.
+    // rquest::get() is a convenience function.
     //
-    // In most cases, you should create/build a reqwest::Client and reuse
+    // In most cases, you should create/build a rquest::Client and reuse
     // it for all requests.
-    let res = reqwest::get(url).await?;
+    let res = rquest::get(url).await?;
 
     eprintln!("Response: {:?} {}", res.version(), res.status());
     eprintln!("Headers: {:#?}\n", res.headers());

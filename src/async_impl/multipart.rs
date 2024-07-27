@@ -70,8 +70,8 @@ impl Form {
     /// # Examples
     ///
     /// ```
-    /// let form = reqwest::multipart::Form::new()
-    ///     .text("username", "seanmonstar")
+    /// let form = rquest::multipart::Form::new()
+    ///     .text("username", "0x676e67")
     ///     .text("password", "secret");
     /// ```
     pub fn text<T, U>(self, name: T, value: U) -> Form
@@ -475,7 +475,7 @@ impl PercentEncoding {
         }
 
         // According to RFC7578 Section 4.2, `filename*=` syntax is invalid.
-        // See https://github.com/seanmonstar/reqwest/issues/419.
+        // See https://github.com/0x676e67/rquest/issues/419.
         if let Some(filename) = &field.file_name {
             buf.extend_from_slice(b"; filename=\"");
             let legal_filename = filename

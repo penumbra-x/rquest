@@ -1,4 +1,4 @@
-use reqwest_impersonate as reqwest;
+use rquest;
 // Short example of a POST request with form data.
 //
 // This is using the `tokio` runtime. You'll need the following dependency:
@@ -6,7 +6,7 @@ use reqwest_impersonate as reqwest;
 // `tokio = { version = "1", features = ["full"] }`
 #[tokio::main]
 async fn main() {
-    let response = reqwest::Client::new()
+    let response = rquest::Client::new()
         .post("http://www.baidu.com")
         .form(&[("one", "1")])
         .send()
