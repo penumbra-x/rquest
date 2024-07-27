@@ -1,18 +1,18 @@
 #![deny(warnings)]
 
-use reqwest_impersonate as reqwest;
+use rquest;
 
 // This is using the `tokio` runtime. You'll need the following dependency:
 //
 // `tokio = { version = "1", features = ["full"] }`
 #[tokio::main]
-async fn main() -> Result<(), reqwest::Error> {
+async fn main() -> Result<(), rquest::Error> {
     // Make sure you are running tor and this is your socks port
-    let proxy = reqwest::Proxy::all("socks5h://127.0.0.1:9050").expect("tor proxy should be there");
-    let client = reqwest::Client::builder()
+    let proxy = rquest::Proxy::all("socks5h://127.0.0.1:9050").expect("tor proxy should be there");
+    let client = rquest::Client::builder()
         .proxy(proxy)
         .build()
-        .expect("should be able to build reqwest client");
+        .expect("should be able to build rquest client");
 
     let res = client.get("https://check.torproject.org").send().await?;
     println!("Status: {}", res.status());

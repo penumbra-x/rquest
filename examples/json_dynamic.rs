@@ -8,15 +8,15 @@
 //
 // `tokio = { version = "1", features = ["full"] }`
 
-use reqwest_impersonate as reqwest;
+use rquest;
 
 #[tokio::main]
-async fn main() -> Result<(), reqwest::Error> {
-    let echo_json: serde_json::Value = reqwest::Client::new()
+async fn main() -> Result<(), rquest::Error> {
+    let echo_json: serde_json::Value = rquest::Client::new()
         .post("https://jsonplaceholder.typicode.com/posts")
         .json(&serde_json::json!({
             "title": "Reqwest.rs",
-            "body": "https://docs.rs/reqwest",
+            "body": "https://docs.rs/rquest",
             "userId": 1
         }))
         .send()
@@ -28,7 +28,7 @@ async fn main() -> Result<(), reqwest::Error> {
     // Object(
     //     {
     //         "body": String(
-    //             "https://docs.rs/reqwest"
+    //             "https://docs.rs/rquest"
     //         ),
     //         "id": Number(
     //             101

@@ -5,7 +5,7 @@
 //! more code.
 
 // These require the `serde` dependency.
-use reqwest_impersonate as reqwest;
+use rquest;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -21,14 +21,14 @@ struct Post {
 //
 // `tokio = { version = "1", features = ["full"] }`
 #[tokio::main]
-async fn main() -> Result<(), reqwest::Error> {
+async fn main() -> Result<(), rquest::Error> {
     let new_post = Post {
         id: None,
         title: "Reqwest.rs".into(),
-        body: "https://docs.rs/reqwest".into(),
+        body: "https://docs.rs/rquest".into(),
         user_id: 1,
     };
-    let new_post: Post = reqwest::Client::new()
+    let new_post: Post = rquest::Client::new()
         .post("https://jsonplaceholder.typicode.com/posts")
         .json(&new_post)
         .send()
@@ -42,7 +42,7 @@ async fn main() -> Result<(), reqwest::Error> {
     //         101
     //     ),
     //     title: "Reqwest.rs",
-    //     body: "https://docs.rs/reqwest",
+    //     body: "https://docs.rs/rquest",
     //     user_id: 1
     // }
     Ok(())

@@ -7,12 +7,12 @@
 //! # Example
 //!
 //! ```
-//! use reqwest::blocking::multipart;
+//! use rquest::blocking::multipart;
 //!
 //! # fn run() -> Result<(), Box<dyn std::error::Error>> {
 //! let form = multipart::Form::new()
 //!     // Adding just a simple text field...
-//!     .text("username", "seanmonstar")
+//!     .text("username", "0x676e67")
 //!     // And a file...
 //!     .file("photo", "/path/to/photo.png")?;
 //!
@@ -25,7 +25,7 @@
 //! let form = form.part("biography", bio);
 //!
 //! // And finally, send the form
-//! let client = reqwest::blocking::Client::new();
+//! let client = rquest::blocking::Client::new();
 //! let resp = client
 //!     .post("http://localhost:8080/user")
 //!     .multipart(form)
@@ -84,8 +84,8 @@ impl Form {
     /// # Examples
     ///
     /// ```
-    /// let form = reqwest::blocking::multipart::Form::new()
-    ///     .text("username", "seanmonstar")
+    /// let form = rquest::blocking::multipart::Form::new()
+    ///     .text("username", "0x676e67")
     ///     .text("password", "secret");
     /// ```
     pub fn text<T, U>(self, name: T, value: U) -> Form
@@ -104,7 +104,7 @@ impl Form {
     ///
     /// ```no_run
     /// # fn run() -> std::io::Result<()> {
-    /// let files = reqwest::blocking::multipart::Form::new()
+    /// let files = rquest::blocking::multipart::Form::new()
     ///     .file("key", "/path/to/file")?;
     /// # Ok(())
     /// # }

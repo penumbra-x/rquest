@@ -1,6 +1,6 @@
 #![cfg(not(target_arch = "wasm32"))]
 mod support;
-use reqwest_impersonate as reqwest;
+use rquest;
 use support::*;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -31,7 +31,7 @@ async fn http_upgrade() {
         }
     });
 
-    let res = reqwest::Client::builder()
+    let res = rquest::Client::builder()
         .build()
         .unwrap()
         .get(format!("http://{}", server.addr()))

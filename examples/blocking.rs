@@ -1,7 +1,7 @@
 //! `cargo run --example blocking --features=blocking`
 #![deny(warnings)]
 
-use reqwest_impersonate as reqwest;
+use rquest;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
@@ -17,11 +17,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     eprintln!("Fetching {:?}...", url);
 
-    // reqwest::blocking::get() is a convenience function.
+    // rquest::blocking::get() is a convenience function.
     //
-    // In most cases, you should create/build a reqwest::Client and reuse
+    // In most cases, you should create/build a rquest::Client and reuse
     // it for all requests.
-    let mut res = reqwest::blocking::get(url)?;
+    let mut res = rquest::blocking::get(url)?;
 
     eprintln!("Response: {:?} {}", res.version(), res.status());
     eprintln!("Headers: {:#?}\n", res.headers());

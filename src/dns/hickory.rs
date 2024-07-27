@@ -1,12 +1,10 @@
 //! DNS resolution via the [hickory-resolver](https://github.com/hickory-dns/hickory-dns) crate
 
 use hickory_resolver::{lookup_ip::LookupIpIntoIter, system_conf, TokioAsyncResolver};
-use once_cell::sync::OnceCell;
-
 use std::io;
 use std::net::SocketAddr;
 use std::sync::Arc;
-
+use tokio::sync::OnceCell;
 use super::{Addrs, Name, Resolve, Resolving};
 
 /// Wrapper around an `AsyncResolver`, which implements the `Resolve` trait.
@@ -26,7 +24,7 @@ impl Resolve for HickoryDnsResolver {
     fn resolve(&self, name: Name) -> Resolving {
         let resolver = self.clone();
         Box::pin(async move {
-            let resolver = resolver.state.get_or_try_init(new_resolver)?;
+            let resolver = resolver.state.get_or_try_init(|| async { new_resolver() }).await?;
 
             let lookup = resolver.lookup_ip(name.as_str()).await?;
             let addrs: Addrs = Box::new(SocketAddrs {

@@ -1,6 +1,6 @@
 #![cfg(not(target_arch = "wasm32"))]
 mod support;
-use reqwest_impersonate as reqwest;
+use rquest;
 
 use futures_util::stream::StreamExt;
 #[cfg(feature = "json")]
@@ -11,7 +11,7 @@ use http::HeaderValue;
 use std::collections::HashMap;
 use support::*;
 
-use reqwest::Client;
+use rquest::Client;
 
 #[tokio::test]
 async fn auto_headers() {
@@ -43,7 +43,7 @@ async fn auto_headers() {
     });
 
     let url = format!("http://{}/1", server.addr());
-    let res = reqwest::Client::builder()
+    let res = rquest::Client::builder()
         .no_proxy()
         .build()
         .unwrap()
@@ -53,20 +53,20 @@ async fn auto_headers() {
         .unwrap();
 
     assert_eq!(res.url().as_str(), &url);
-    assert_eq!(res.status(), reqwest::StatusCode::OK);
+    assert_eq!(res.status(), rquest::StatusCode::OK);
     assert_eq!(res.remote_addr(), Some(server.addr()));
 }
 
 #[tokio::test]
 async fn user_agent() {
     let server = server::http(move |req| async move {
-        assert_eq!(req.headers()["user-agent"], "reqwest-test-agent");
+        assert_eq!(req.headers()["user-agent"], "rquest-test-agent");
         http::Response::default()
     });
 
     let url = format!("http://{}/ua", server.addr());
-    let res = reqwest::Client::builder()
-        .user_agent("reqwest-test-agent")
+    let res = rquest::Client::builder()
+        .user_agent("rquest-test-agent")
         .build()
         .expect("client builder")
         .get(&url)
@@ -74,7 +74,7 @@ async fn user_agent() {
         .await
         .expect("request");
 
-    assert_eq!(res.status(), reqwest::StatusCode::OK);
+    assert_eq!(res.status(), rquest::StatusCode::OK);
 }
 
 #[tokio::test]
@@ -161,7 +161,7 @@ async fn body_pipe_response() {
         .await
         .expect("get1");
 
-    assert_eq!(res1.status(), reqwest::StatusCode::OK);
+    assert_eq!(res1.status(), rquest::StatusCode::OK);
     assert_eq!(res1.content_length(), Some(7));
 
     // and now ensure we can "pipe" the response to another request
@@ -172,7 +172,7 @@ async fn body_pipe_response() {
         .await
         .expect("res2");
 
-    assert_eq!(res2.status(), reqwest::StatusCode::OK);
+    assert_eq!(res2.status(), rquest::StatusCode::OK);
 }
 
 #[tokio::test]
@@ -186,14 +186,14 @@ async fn overridden_dns_resolution_with_gai() {
         overridden_domain,
         server.addr().port()
     );
-    let client = reqwest::Client::builder()
+    let client = rquest::Client::builder()
         .resolve(overridden_domain, server.addr())
         .build()
         .expect("client builder");
     let req = client.get(&url);
     let res = req.send().await.expect("request");
 
-    assert_eq!(res.status(), reqwest::StatusCode::OK);
+    assert_eq!(res.status(), rquest::StatusCode::OK);
     let text = res.text().await.expect("Failed to get text");
     assert_eq!("Hello", text);
 }
@@ -211,7 +211,7 @@ async fn overridden_dns_resolution_with_gai_multiple() {
     );
     // the server runs on IPv4 localhost, so provide both IPv4 and IPv6 and let the happy eyeballs
     // algorithm decide which address to use.
-    let client = reqwest::Client::builder()
+    let client = rquest::Client::builder()
         .resolve_to_addrs(
             overridden_domain,
             &[
@@ -227,7 +227,7 @@ async fn overridden_dns_resolution_with_gai_multiple() {
     let req = client.get(&url);
     let res = req.send().await.expect("request");
 
-    assert_eq!(res.status(), reqwest::StatusCode::OK);
+    assert_eq!(res.status(), rquest::StatusCode::OK);
     let text = res.text().await.expect("Failed to get text");
     assert_eq!("Hello", text);
 }
@@ -244,7 +244,7 @@ async fn overridden_dns_resolution_with_hickory_dns() {
         overridden_domain,
         server.addr().port()
     );
-    let client = reqwest::Client::builder()
+    let client = rquest::Client::builder()
         .resolve(overridden_domain, server.addr())
         .hickory_dns(true)
         .build()
@@ -252,7 +252,7 @@ async fn overridden_dns_resolution_with_hickory_dns() {
     let req = client.get(&url);
     let res = req.send().await.expect("request");
 
-    assert_eq!(res.status(), reqwest::StatusCode::OK);
+    assert_eq!(res.status(), rquest::StatusCode::OK);
     let text = res.text().await.expect("Failed to get text");
     assert_eq!("Hello", text);
 }
@@ -271,7 +271,7 @@ async fn overridden_dns_resolution_with_hickory_dns_multiple() {
     );
     // the server runs on IPv4 localhost, so provide both IPv4 and IPv6 and let the happy eyeballs
     // algorithm decide which address to use.
-    let client = reqwest::Client::builder()
+    let client = rquest::Client::builder()
         .resolve_to_addrs(
             overridden_domain,
             &[
@@ -288,97 +288,9 @@ async fn overridden_dns_resolution_with_hickory_dns_multiple() {
     let req = client.get(&url);
     let res = req.send().await.expect("request");
 
-    assert_eq!(res.status(), reqwest::StatusCode::OK);
+    assert_eq!(res.status(), rquest::StatusCode::OK);
     let text = res.text().await.expect("Failed to get text");
     assert_eq!("Hello", text);
-}
-
-#[cfg(any(feature = "native-tls", feature = "__rustls",))]
-#[test]
-fn use_preconfigured_tls_with_bogus_backend() {
-    struct DefinitelyNotTls;
-
-    reqwest::Client::builder()
-        .use_preconfigured_tls(DefinitelyNotTls)
-        .build()
-        .expect_err("definitely is not TLS");
-}
-
-#[cfg(feature = "native-tls")]
-#[test]
-fn use_preconfigured_native_tls_default() {
-    extern crate native_tls_crate;
-
-    let tls = native_tls_crate::TlsConnector::builder()
-        .build()
-        .expect("tls builder");
-
-    reqwest::Client::builder()
-        .use_preconfigured_tls(tls)
-        .build()
-        .expect("preconfigured default tls");
-}
-
-#[cfg(feature = "__rustls")]
-#[test]
-fn use_preconfigured_rustls_default() {
-    extern crate rustls;
-
-    let root_cert_store = rustls::RootCertStore::empty();
-    let tls = rustls::ClientConfig::builder()
-        .with_safe_defaults()
-        .with_root_certificates(root_cert_store)
-        .with_no_client_auth();
-
-    reqwest::Client::builder()
-        .use_preconfigured_tls(tls)
-        .build()
-        .expect("preconfigured rustls tls");
-}
-
-#[cfg(feature = "__rustls")]
-#[tokio::test]
-#[ignore = "Needs TLS support in the test server"]
-async fn http2_upgrade() {
-    let server = server::http(move |_| async move { http::Response::default() });
-
-    let url = format!("https://localhost:{}", server.addr().port());
-    let res = reqwest::Client::builder()
-        .danger_accept_invalid_certs(true)
-        .use_rustls_tls()
-        .build()
-        .expect("client builder")
-        .get(&url)
-        .send()
-        .await
-        .expect("request");
-
-    assert_eq!(res.status(), reqwest::StatusCode::OK);
-    assert_eq!(res.version(), reqwest::Version::HTTP_2);
-}
-
-#[cfg(feature = "default-tls")]
-#[tokio::test]
-async fn test_allowed_methods() {
-    let resp = reqwest::Client::builder()
-        .https_only(true)
-        .build()
-        .expect("client builder")
-        .get("https://google.com")
-        .send()
-        .await;
-
-    assert!(resp.is_ok());
-
-    let resp = reqwest::Client::builder()
-        .https_only(true)
-        .build()
-        .expect("client builder")
-        .get("http://google.com")
-        .send()
-        .await;
-
-    assert!(resp.is_err());
 }
 
 #[test]
@@ -411,10 +323,10 @@ fn update_json_content_type_if_set_manually() {
     assert_eq!("application/json", req.headers().get(CONTENT_TYPE).unwrap());
 }
 
-#[cfg(all(feature = "__tls", not(feature = "rustls-tls-manual-roots")))]
+#[cfg(all(feature = "__tls"))]
 #[tokio::test]
 async fn test_tls_info() {
-    let resp = reqwest::Client::builder()
+    let resp = rquest::Client::builder()
         .tls_info(true)
         .build()
         .expect("client builder")
@@ -422,7 +334,7 @@ async fn test_tls_info() {
         .send()
         .await
         .expect("response");
-    let tls_info = resp.extensions().get::<reqwest::tls::TlsInfo>();
+    let tls_info = resp.extensions().get::<rquest::tls::TlsInfo>();
     assert!(tls_info.is_some());
     let tls_info = tls_info.unwrap();
     let peer_certificate = tls_info.peer_certificate();
@@ -430,13 +342,13 @@ async fn test_tls_info() {
     let der = peer_certificate.unwrap();
     assert_eq!(der[0], 0x30); // ASN.1 SEQUENCE
 
-    let resp = reqwest::Client::builder()
+    let resp = rquest::Client::builder()
         .build()
         .expect("client builder")
         .get("https://google.com")
         .send()
         .await
         .expect("response");
-    let tls_info = resp.extensions().get::<reqwest::tls::TlsInfo>();
+    let tls_info = resp.extensions().get::<rquest::tls::TlsInfo>();
     assert!(tls_info.is_none());
 }
