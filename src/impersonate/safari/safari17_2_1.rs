@@ -1,18 +1,14 @@
-use super::SIGALGS_LIST;
+use super::base_ssl_builder;
 use crate::impersonate::{BoringTlsConnector, Http2Data, ImpersonateSettings};
-use boring::ssl::{
-    CertCompressionAlgorithm, SslConnector, SslConnectorBuilder, SslCurve, SslMethod, SslOptions,
-    SslVersion,
-};
+use boring::{error::ErrorStack, ssl::SslConnectorBuilder};
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
     HeaderMap, HeaderValue,
 };
-use std::sync::Arc;
 
 pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
     ImpersonateSettings {
-        tls_connector: BoringTlsConnector::new(Arc::new(ssl_builder)),
+        tls_connector: BoringTlsConnector::new(ssl_builder),
         http2: Http2Data {
             initial_stream_window_size: Some(4194304),
             initial_connection_window_size: Some(10551295),
@@ -27,16 +23,8 @@ pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
     }
 }
 
-fn ssl_builder() -> SslConnectorBuilder {
-    let mut builder = SslConnector::builder(SslMethod::tls_client()).unwrap();
-
-    builder.set_default_verify_paths().unwrap();
-
-    builder.set_options(SslOptions::NO_TICKET);
-
-    builder.set_grease_enabled(true);
-
-    builder.enable_ocsp_stapling();
+fn ssl_builder() -> Result<SslConnectorBuilder, ErrorStack> {
+    let mut builder = base_ssl_builder()?;
 
     let cipher_list = [
         "TLS_AES_128_GCM_SHA256",
@@ -61,30 +49,9 @@ fn ssl_builder() -> SslConnectorBuilder {
         "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
     ];
 
-    builder.set_cipher_list(&cipher_list.join(":")).unwrap();
+    builder.set_cipher_list(&cipher_list.join(":"))?;
 
-    builder.set_sigalgs_list(&SIGALGS_LIST.join(":")).unwrap();
-
-    builder
-        .set_curves(&[
-            SslCurve::X25519,
-            SslCurve::SECP256R1,
-            SslCurve::SECP384R1,
-            SslCurve::SECP521R1,
-        ])
-        .unwrap();
-
-    builder.enable_signed_cert_timestamps();
-
-    builder
-        .add_cert_compression_alg(CertCompressionAlgorithm::Zlib)
-        .unwrap();
-
-    builder
-        .set_min_proto_version(Some(SslVersion::TLS1))
-        .unwrap();
-
-    builder
+    Ok(builder)
 }
 
 fn create_headers(mut headers: HeaderMap) -> HeaderMap {

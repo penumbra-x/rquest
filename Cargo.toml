@@ -199,12 +199,17 @@ path = "examples/simple.rs"
 [[example]]
 name = "impersonate"
 path = "examples/impersonate.rs"
-required-features = ["blocking", "socks", "cookies", "zstd", "hickory-dns"]
+required-features = ["blocking", "socks", "zstd", "hickory-dns"]
+
+[[example]]
+name = "psk_impersonate"
+path = "examples/psk_impersonate.rs"
+required-features = ["blocking", "socks", "zstd", "hickory-dns"]
 
 [[example]]
 name = "set_proxies"
 path = "examples/set_proxies.rs"
-required-features = ["blocking", "socks", "cookies", "zstd", "hickory-dns", "socks"]
+required-features = ["blocking", "socks", "zstd", "hickory-dns", "socks"]
 
 [[example]]
 name = "set_local_address"

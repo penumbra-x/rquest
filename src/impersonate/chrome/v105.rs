@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use super::ssl_builder;
 use crate::impersonate::{BoringTlsConnector, Http2Data, ImpersonateSettings};
 use http::{
@@ -11,7 +9,7 @@ use http::{
 
 pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
     ImpersonateSettings {
-        tls_connector: BoringTlsConnector::new(Arc::new(ssl_builder)),
+        tls_connector: BoringTlsConnector::new(ssl_builder),
         http2: Http2Data {
             initial_stream_window_size: Some(6291456),
             initial_connection_window_size: Some(15728640),

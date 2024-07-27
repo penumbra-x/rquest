@@ -8,7 +8,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .impersonate(Impersonate::Chrome126)
         .enable_ech_grease()
         .permute_extensions()
-        .cookie_store(true)
         .build()?;
 
     let resp = client.get("https://api.ip.sb/ip").send().await?;

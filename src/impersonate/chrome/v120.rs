@@ -7,11 +7,10 @@ use http::{
     },
     HeaderMap, HeaderValue,
 };
-use std::sync::Arc;
 
 pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
     ImpersonateSettings {
-        tls_connector: BoringTlsConnector::new(Arc::new(ssl_builder)),
+        tls_connector: BoringTlsConnector::new(ssl_builder),
         http2: Http2Data {
             initial_stream_window_size: Some(6291456),
             initial_connection_window_size: Some(15728640),

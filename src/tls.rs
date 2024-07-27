@@ -7,10 +7,7 @@
 //! - Various parts of TLS can also be configured or even disabled on the
 //!   `ClientBuilder`.
 
-use boring::ssl::SslConnectorBuilder;
 use std::fmt;
-#[cfg(feature = "__boring")]
-use std::sync::Arc;
 #[cfg(feature = "__boring")]
 use crate::impersonate::BoringTlsConnector;
 
@@ -63,11 +60,7 @@ impl Default for TlsBackend {
         #[cfg(feature = "__boring")]
         {
             use boring::ssl::{SslConnector, SslMethod};
-
-            fn create_builder() -> SslConnectorBuilder {
-                SslConnector::builder(SslMethod::tls()).unwrap()
-            }
-            TlsBackend::BoringTls(BoringTlsConnector::new(Arc::new(create_builder)))
+            TlsBackend::BoringTls(BoringTlsConnector::new(|| SslConnector::builder(SslMethod::tls())))
         }
         #[cfg(not(feature = "__boring"))]
         {

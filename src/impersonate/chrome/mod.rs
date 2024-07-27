@@ -1,8 +1,7 @@
-use boring::ssl::{
-    CertCompressionAlgorithm, Error, SslConnector, SslConnectorBuilder, SslCurve, SslMethod,
-    SslVersion,
+use boring::{
+    error::ErrorStack,
+    ssl::{CertCompressionAlgorithm, SslConnector, SslConnectorBuilder, SslMethod, SslVersion},
 };
-
 pub mod v100;
 pub mod v101;
 pub mod v104;
@@ -50,42 +49,26 @@ const CIPHER_LIST: [&str; 15] = [
     "TLS_RSA_WITH_AES_256_CBC_SHA",
 ];
 
-fn ssl_builder() -> SslConnectorBuilder {
-    let mut builder = SslConnector::builder(SslMethod::tls_client()).unwrap();
+fn ssl_builder() -> Result<SslConnectorBuilder, ErrorStack> {
+    let mut builder = SslConnector::builder(SslMethod::tls_client())?;
 
-    builder.set_default_verify_paths().unwrap();
+    builder.set_default_verify_paths()?;
 
     builder.set_grease_enabled(true);
 
     builder.enable_ocsp_stapling();
 
-    builder.set_cipher_list(&CIPHER_LIST.join(":")).unwrap();
+    builder.set_cipher_list(&CIPHER_LIST.join(":"))?;
 
-    builder.set_sigalgs_list(&SIGALGS_LIST.join(":")).unwrap();
+    builder.set_sigalgs_list(&SIGALGS_LIST.join(":"))?;
 
     builder.enable_signed_cert_timestamps();
 
-    builder
-        .add_cert_compression_alg(CertCompressionAlgorithm::Brotli)
-        .unwrap();
+    builder.add_cert_compression_alg(CertCompressionAlgorithm::Brotli)?;
 
-    builder
-        .set_min_proto_version(Some(SslVersion::TLS1_2))
-        .unwrap();
+    builder.set_min_proto_version(Some(SslVersion::TLS1_2))?;
 
-    builder
-        .set_max_proto_version(Some(SslVersion::TLS1_3))
-        .unwrap();
+    builder.set_max_proto_version(Some(SslVersion::TLS1_3))?;
 
-    builder
-}
-
-fn configure_curves_ssl(builder: &mut SslConnectorBuilder) -> Result<(), Error> {
-    builder.set_curves(&[
-        SslCurve::X25519_KYBER768_DRAFT00,
-        SslCurve::X25519,
-        SslCurve::SECP256R1,
-        SslCurve::SECP384R1,
-    ])?;
-    Ok(())
+    Ok(builder)
 }

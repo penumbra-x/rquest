@@ -95,7 +95,7 @@ struct Config {
     #[cfg(feature = "__tls")]
     tls_info: bool,
     #[cfg(feature = "__tls")]
-    tls: TlsBackend,
+    tls: Option<TlsBackend>,
     http_version_pref: HttpVersionPref,
     http09_responses: bool,
     http1_title_case_headers: bool,
@@ -175,7 +175,7 @@ impl ClientBuilder {
                 #[cfg(feature = "__tls")]
                 tls_info: false,
                 #[cfg(feature = "__tls")]
-                tls: TlsBackend::default(),
+                tls: None,
                 http_version_pref: HttpVersionPref::All,
                 http09_responses: false,
                 http1_title_case_headers: false,
@@ -291,7 +291,7 @@ impl ClientBuilder {
             http.set_connect_timeout(config.connect_timeout);
 
             #[cfg(feature = "__tls")]
-            match config.tls {
+            match config.tls.unwrap_or_default() {
                 #[cfg(feature = "__boring")]
                 TlsBackend::BoringTls(tls) => Connector::new_boring_tls(
                     http,
@@ -1178,7 +1178,7 @@ impl ClientBuilder {
         mut self,
         connector: crate::impersonate::BoringTlsConnector,
     ) -> ClientBuilder {
-        self.config.tls = TlsBackend::BoringTls(connector);
+        self.config.tls = Some(TlsBackend::BoringTls(connector));
         self
     }
 

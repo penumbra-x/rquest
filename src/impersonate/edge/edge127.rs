@@ -1,18 +1,19 @@
-use super::{configure_curves_ssl, ssl_builder};
-use crate::impersonate::{BoringTlsConnector, Http2Data, ImpersonateSettings};
+use super::ssl_builder;
+use crate::impersonate::{
+    curves::configure_chrome_new_curves, BoringTlsConnector, Http2Data, ImpersonateSettings,
+};
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, UPGRADE_INSECURE_REQUESTS, USER_AGENT},
     HeaderMap, HeaderValue,
 };
-use std::sync::Arc;
 
 pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
     ImpersonateSettings {
-        tls_connector: BoringTlsConnector::new(Arc::new(|| {
-            let mut builder = ssl_builder();
-            configure_curves_ssl(&mut builder).expect("Failed to configure curves SSL");
-            builder
-        })),
+        tls_connector: BoringTlsConnector::new(|| {
+            let mut builder = ssl_builder()?;
+            configure_chrome_new_curves(&mut builder)?;
+            Ok(builder)
+        }),
         http2: Http2Data {
             initial_stream_window_size: Some(6291456),
             initial_connection_window_size: Some(15728640),

@@ -1,15 +1,14 @@
-use super::SIGALGS_LIST;
+use super::base_ssl_builder;
 use crate::impersonate::{BoringTlsConnector, Http2Data, ImpersonateSettings};
-use boring::ssl::{SslConnector, SslConnectorBuilder, SslCurve, SslMethod, SslVersion};
+use boring::{error::ErrorStack, ssl::SslConnectorBuilder};
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
     HeaderMap, HeaderValue,
 };
-use std::sync::Arc;
 
 pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
     ImpersonateSettings {
-        tls_connector: BoringTlsConnector::new(Arc::new(ssl_builder)),
+        tls_connector: BoringTlsConnector::new(ssl_builder),
         http2: Http2Data {
             initial_stream_window_size: Some(16777216),
             initial_connection_window_size: Some(16777216),
@@ -24,16 +23,8 @@ pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
     }
 }
 
-fn ssl_builder() -> SslConnectorBuilder {
-    let mut builder = SslConnector::builder(SslMethod::tls_client()).unwrap();
-
-    builder.set_default_verify_paths().unwrap();
-
-    builder.enable_ocsp_stapling();
-
-    builder
-        .set_curves(&[SslCurve::X25519, SslCurve::SECP256R1, SslCurve::SECP384R1])
-        .unwrap();
+fn ssl_builder() -> Result<SslConnectorBuilder, ErrorStack> {
+    let mut builder = base_ssl_builder()?;
 
     let cipher_list = [
         "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
@@ -51,19 +42,9 @@ fn ssl_builder() -> SslConnectorBuilder {
         "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
     ];
 
-    builder.set_cipher_list(&cipher_list.join(":")).unwrap();
+    builder.set_cipher_list(&cipher_list.join(":"))?;
 
-    builder.set_sigalgs_list(&SIGALGS_LIST.join(":")).unwrap();
-
-    builder
-        .set_min_proto_version(Some(SslVersion::TLS1_2))
-        .unwrap();
-
-    builder
-        .set_max_proto_version(Some(SslVersion::TLS1_3))
-        .unwrap();
-
-    builder
+    Ok(builder)
 }
 
 fn create_headers(mut headers: HeaderMap) -> HeaderMap {
