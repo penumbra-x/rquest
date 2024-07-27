@@ -91,6 +91,15 @@ impl Connector {
         }
     }
 
+    pub(crate) fn set_keepalive(&mut self, dur: Option<Duration>) {
+        match &mut self.inner {
+            #[cfg(not(feature = "__tls"))]
+            Inner::Http(http) => http.set_keepalive(dur),
+            #[cfg(feature = "__boring")]
+            Inner::BoringTls { http, .. } => http.set_keepalive(dur),
+        }
+    }
+
     pub(crate) fn set_timeout(&mut self, timeout: Option<Duration>) {
         self.timeout = timeout;
     }
@@ -142,9 +151,9 @@ impl Connector {
             #[cfg(feature = "__boring")]
             Inner::BoringTls { http, tls, .. } => {
                 if dst.scheme() == Some(&Scheme::HTTPS) {
-                    let host = dst.host().ok_or("no host in url")?.to_string();
+                    let host = dst.host().ok_or("no host in url")?;
                     let conn = socks::connect(proxy, dst.clone(), dns).await?;
-                    let conf = tls.create_connector_configuration(&self.context, http.clone(), &dst, &host).await?;
+                    let conf = tls.create_connector_configuration(&self.context, http.clone(), &dst, host).await?;
                     let io = tokio_boring::connect(conf, &host, conn).await?;
                     return Ok(Conn {
                         inner: self.verbose.wrap(BoringTlsConn { inner: io }),
@@ -225,33 +234,30 @@ impl Connector {
         };
 
         #[cfg(feature = "__tls")]
-            let auth = _auth;
+        let auth = _auth;
 
         match &self.inner {
             #[cfg(feature = "__boring")]
             Inner::BoringTls { http, tls } => {
                 if dst.scheme() == Some(&Scheme::HTTPS) {
-                    let host = dst.host().to_owned();
+                    let host = dst.host().ok_or("no host in url")?;
                     let port = dst.port().map(|p| p.as_u16()).unwrap_or(443);
 
-                    let http = http.clone();
-                    // Create a new HTTPS connector with the proxy settings
-                    let mut https = tls.create_https_connector(&self.context, http.clone()).await?;
-
-                    // Connect to the proxy
-                    let conn = https.call(proxy_dst).await?;
+                    let mut http = tls.create_https_connector(&self.context, http.clone()).await?;
+                    let conn = http.call(proxy_dst).await?;
                     log::trace!("tunneling HTTPS over proxy");
                     let tunneled = tunnel(
                         conn,
-                        host.ok_or("no host in url")?.to_string(),
+                        host,
                         port,
-                        self.user_agent.clone(),
+                        self.user_agent.as_ref(),
                         auth,
                     ).await?;
 
-                    let conf = https.configure_and_setup(&dst, host.ok_or("no host in url")?)?;
-                    let io = tokio_boring::connect(conf, host.ok_or("no host in url")?, tunneled)
+                    let conf = http.configure_and_setup(&dst, host)?;
+                    let io = tokio_boring::connect(conf, host, tunneled)
                         .await?;
+
                     return Ok(Conn {
                         inner: self.verbose.wrap(BoringTlsConn { inner: io }),
                         is_proxy: false,
@@ -264,15 +270,6 @@ impl Connector {
         }
 
         self.connect_with_maybe_proxy(proxy_dst, true).await
-    }
-
-    pub fn set_keepalive(&mut self, dur: Option<Duration>) {
-        match &mut self.inner {
-            #[cfg(not(feature = "__tls"))]
-            Inner::Http(http) => http.set_keepalive(dur),
-            #[cfg(feature = "__boring")]
-            Inner::BoringTls { http, .. } => http.set_keepalive(dur),
-        }
     }
 }
 
@@ -486,9 +483,9 @@ pub(crate) type Connecting = Pin<Box<dyn Future<Output = Result<Conn, BoxError>>
 #[cfg(feature = "__tls")]
 async fn tunnel<T>(
     mut conn: T,
-    host: String,
+    host: &str,
     port: u16,
-    user_agent: Option<HeaderValue>,
+    user_agent: Option<&HeaderValue>,
     auth: Option<HeaderValue>,
 ) -> Result<T, BoxError>
     where
@@ -940,7 +937,7 @@ mod tests {
             let tcp = TcpStream::connect(&addr).await?;
             let host = addr.ip().to_string();
             let port = addr.port();
-            tunnel(tcp, host, port, ua(), None).await
+            tunnel(tcp, &host, port, ua().as_ref(), None).await
         };
 
         rt.block_on(f).unwrap();
@@ -958,7 +955,7 @@ mod tests {
             let tcp = TcpStream::connect(&addr).await?;
             let host = addr.ip().to_string();
             let port = addr.port();
-            tunnel(tcp, host, port, ua(), None).await
+            tunnel(tcp, &host, port, ua().as_ref(), None).await
         };
 
         rt.block_on(f).unwrap_err();
@@ -976,7 +973,7 @@ mod tests {
             let tcp = TcpStream::connect(&addr).await?;
             let host = addr.ip().to_string();
             let port = addr.port();
-            tunnel(tcp, host, port, ua(), None).await
+            tunnel(tcp, &host, port, ua().as_ref(), None).await
         };
 
         rt.block_on(f).unwrap_err();
@@ -1000,7 +997,7 @@ mod tests {
             let tcp = TcpStream::connect(&addr).await?;
             let host = addr.ip().to_string();
             let port = addr.port();
-            tunnel(tcp, host, port, ua(), None).await
+            tunnel(tcp, &host, port, ua().as_ref(), None).await
         };
 
         let error = rt.block_on(f).unwrap_err();
@@ -1024,9 +1021,9 @@ mod tests {
             let port = addr.port();
             tunnel(
                 tcp,
-                host,
+                &host,
                 port,
-                ua(),
+                ua().as_ref(),
                 Some(proxy::encode_basic_auth("Aladdin", "open sesame")),
             )
                 .await
