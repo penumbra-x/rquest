@@ -78,7 +78,7 @@ __internal_proxy_sys_no_cache = []
 [dependencies]
 base64 = "0.22"
 http = "0.2"
-url = "2.2"
+url = "2.5"
 bytes = "1.0"
 serde = "1.0"
 serde_urlencoded = "0.7.1"
@@ -143,7 +143,7 @@ hickory-resolver = { version = "0.24", optional = true, features = ["tokio-runti
 
 [dev-dependencies]
 env_logger = "0.10.0"
-hyper = { package = "hyper_imp", version = "0.14.30", default-features = false, features = [
+hyper = { package = "hyper_imp", version = "0.14", default-features = false, features = [
     "tcp",
     "stream",
     "http1",
