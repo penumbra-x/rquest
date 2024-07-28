@@ -36,9 +36,9 @@ pub(crate) struct ImpersonateContext {
 /// A wrapper around a `SslConnectorBuilder` that allows for additional settings.
 #[derive(Clone)]
 pub struct BoringTlsConnector {
-    /// The inner `` function.
+    /// The inner `SslConnectorBuilder`.
     builder: Arc<Builder>,
-    /// The cached `HttpsConnector`.
+    /// The cached `HttpsConnector` sessions.
     session: Arc<Mutex<SessionCache>>,
 }
 
