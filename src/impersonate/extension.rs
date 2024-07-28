@@ -31,21 +31,14 @@ impl Extension for ChromeExtension {
         ];
 
         let mut builder = SslConnector::builder(SslMethod::tls_client())?;
-
         builder.set_default_verify_paths()?;
-
         builder.set_grease_enabled(true);
-
         builder.enable_ocsp_stapling();
-
+        builder.set_curves(&[SslCurve::X25519, SslCurve::SECP256R1, SslCurve::SECP384R1])?;
         builder.set_sigalgs_list(&SIGALGS_LIST.join(":"))?;
-
         builder.enable_signed_cert_timestamps();
-
         builder.add_cert_compression_alg(CertCompressionAlgorithm::Brotli)?;
-
         builder.set_min_proto_version(Some(SslVersion::TLS1_2))?;
-
         builder.set_max_proto_version(Some(SslVersion::TLS1_3))?;
 
         Ok(builder)
@@ -70,21 +63,14 @@ impl Extension for EdgeExtension {
         ];
 
         let mut builder = SslConnector::builder(SslMethod::tls_client())?;
-
         builder.set_default_verify_paths()?;
-
         builder.set_grease_enabled(true);
-
         builder.enable_ocsp_stapling();
-
+        builder.set_curves(&[SslCurve::X25519, SslCurve::SECP256R1, SslCurve::SECP384R1])?;
         builder.set_sigalgs_list(&SIGALGS_LIST.join(":"))?;
-
         builder.enable_signed_cert_timestamps();
-
         builder.add_cert_compression_alg(CertCompressionAlgorithm::Brotli)?;
-
         builder.set_min_proto_version(Some(SslVersion::TLS1_2))?;
-
         builder.set_max_proto_version(Some(SslVersion::TLS1_3))?;
 
         Ok(builder)
@@ -112,28 +98,19 @@ impl Extension for SafariExtension {
         ];
 
         let mut builder = SslConnector::builder(SslMethod::tls_client())?;
-
         builder.set_default_verify_paths()?;
-
         builder.set_options(SslOptions::NO_TICKET);
-
         builder.set_grease_enabled(true);
-
         builder.enable_ocsp_stapling();
-
         builder.set_sigalgs_list(&SIGALGS_LIST.join(":"))?;
-
         builder.set_curves(&[
             SslCurve::X25519,
             SslCurve::SECP256R1,
             SslCurve::SECP384R1,
             SslCurve::SECP521R1,
         ])?;
-
         builder.enable_signed_cert_timestamps();
-
         builder.add_cert_compression_alg(CertCompressionAlgorithm::Zlib)?;
-
         builder.set_min_proto_version(Some(SslVersion::TLS1))?;
 
         Ok(builder)
@@ -159,17 +136,11 @@ impl Extension for OkHttpExtension {
         ];
 
         let mut builder = SslConnector::builder(SslMethod::tls_client())?;
-
         builder.set_default_verify_paths()?;
-
         builder.enable_ocsp_stapling();
-
         builder.set_curves(&[SslCurve::X25519, SslCurve::SECP256R1, SslCurve::SECP384R1])?;
-
         builder.set_sigalgs_list(&SIGALGS_LIST.join(":"))?;
-
         builder.set_min_proto_version(Some(SslVersion::TLS1_2))?;
-
         builder.set_max_proto_version(Some(SslVersion::TLS1_3))?;
 
         Ok(builder)
@@ -213,10 +184,10 @@ pub trait SslConnectExtension {
 impl SslExtension for SslConnectorBuilder {
     fn configure_chrome_new_curves(mut self) -> Result<SslConnectorBuilder, ErrorStack> {
         self.set_curves(&[
+            SslCurve::X25519_KYBER768_DRAFT00,
             SslCurve::X25519,
             SslCurve::SECP256R1,
             SslCurve::SECP384R1,
-            SslCurve::SECP521R1,
         ])?;
         Ok(self)
     }

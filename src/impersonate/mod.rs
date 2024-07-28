@@ -69,7 +69,8 @@ impl BoringTlsConnector {
         // Check if the PSK extension should be enabled.
         let psk_extension = matches!(
             context.impersonate,
-            Impersonate::Chrome117
+            Impersonate::Chrome116
+                | Impersonate::Chrome117
                 | Impersonate::Chrome120
                 | Impersonate::Chrome123
                 | Impersonate::Chrome124
