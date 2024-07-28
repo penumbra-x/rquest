@@ -1,5 +1,7 @@
-use super::ssl_builder;
-use crate::impersonate::{BoringTlsConnector, Http2Data, ImpersonateSettings};
+use super::CIPHER_LIST;
+use crate::impersonate::extension::{ChromeExtension, Extension, SslExtension};
+use crate::impersonate::profile::{Http2Settings, ImpersonateSettings};
+use crate::impersonate::BoringTlsConnector;
 use http::{
     header::{
         ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, DNT, UPGRADE_INSECURE_REQUESTS, USER_AGENT,
@@ -9,8 +11,10 @@ use http::{
 
 pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
     ImpersonateSettings {
-        tls_connector: BoringTlsConnector::new(ssl_builder),
-        http2: Http2Data {
+        tls_connector: BoringTlsConnector::new(|| {
+            ChromeExtension::builder()?.configure_cipher_list(&CIPHER_LIST)
+        }),
+        http2: Http2Settings {
             initial_stream_window_size: Some(6291456),
             initial_connection_window_size: Some(15728640),
             max_concurrent_streams: None,

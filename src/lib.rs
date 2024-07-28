@@ -1,5 +1,5 @@
 #![deny(missing_docs)]
-// #![deny(missing_debug_implementations)]
+#![deny(missing_debug_implementations)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(test, deny(warnings))]
 

@@ -195,7 +195,7 @@ impl Connector {
                     http.set_nodelay(true);
                 }
 
-                let mut http = tls.create_https_connector(&self.context, http).await?;
+                let mut http = tls.create_connector(&self.context, http).await?;
                 let io = http.call(dst).await?;
 
                 if let hyper_boring::MaybeHttpsStream::Https(stream) = io {
@@ -243,7 +243,7 @@ impl Connector {
                     let host = dst.host().ok_or("no host in url")?;
                     let port = dst.port().map(|p| p.as_u16()).unwrap_or(443);
 
-                    let mut http = tls.create_https_connector(&self.context, http.clone()).await?;
+                    let mut http = tls.create_connector(&self.context, http.clone()).await?;
                     let conn = http.call(proxy_dst).await?;
                     log::trace!("tunneling HTTPS over proxy");
                     let tunneled = tunnel(

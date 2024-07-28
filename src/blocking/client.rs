@@ -96,11 +96,16 @@ impl ClientBuilder {
         self.with_inner(move |inner| inner.enable_ech_grease())
     }
 
-
     /// Enable TLS permute_extensions
     #[cfg(feature = "__impersonate")]
     pub fn permute_extensions(self) -> ClientBuilder {
         self.with_inner(move |inner| inner.permute_extensions())
+    }
+
+    /// Enable TLS pre_shared_key
+    #[cfg(feature = "__impersonate")]
+    pub fn pre_shared_key(self) -> ClientBuilder {
+        self.with_inner(move |inner| inner.pre_shared_key())
     }
 
     /// Returns a `Client` that uses this `ClientBuilder` configuration.

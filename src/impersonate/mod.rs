@@ -1,23 +1,37 @@
+#![allow(missing_debug_implementations)]
+
 mod chrome;
-mod curves;
 mod edge;
+pub mod extension;
 mod okhttp;
-pub mod profile;
+mod profile;
 mod safari;
 
 use crate::connect::HttpConnector;
+use crate::impersonate::extension::{SslConnectExtension, SslExtension};
 use antidote::Mutex;
 use boring::{
     error::ErrorStack,
     ssl::{ConnectConfiguration, SslConnectorBuilder},
 };
-use http::HeaderMap;
 use hyper_boring::{HttpsConnector, SessionCache};
+pub(crate) use profile::configure_impersonate;
 use profile::ClientProfile;
-pub use profile::Impersonate;
+pub use profile::{Http2Settings, Impersonate, ImpersonateSettings};
 use std::sync::Arc;
 
 type Builder = dyn Fn() -> Result<SslConnectorBuilder, ErrorStack> + Send + Sync;
+
+/// Context for impersonating a client.
+#[derive(Clone)]
+pub(crate) struct ImpersonateContext {
+    pub impersonate: Impersonate,
+    pub enable_ech_grease: bool,
+    pub permute_extensions: bool,
+    pub certs_verification: bool,
+    pub pre_shared_key: bool,
+    pub h2: bool,
+}
 
 /// A wrapper around a `SslConnectorBuilder` that allows for additional settings.
 #[derive(Clone)]
@@ -42,15 +56,39 @@ impl BoringTlsConnector {
 
     /// Create a new `HttpsConnector` with the settings from the `ImpersonateContext`.
     #[inline]
-    pub(crate) async fn create_https_connector(
+    pub(crate) async fn create_connector(
         &self,
         context: &ImpersonateContext,
         http: HttpConnector,
     ) -> Result<HttpsConnector<HttpConnector>, ErrorStack> {
-        let mut builder = (self.builder)()?;
-        set_alpn_proto(&mut builder, context.h2);
-        set_cert_verification(&mut builder, context.certs_verification);
-        self.create_connector(context, http, builder)
+        // Create the `SslConnectorBuilder` and configure it.
+        let builder = (self.builder)()?
+            .configure_alpn_protos(context.h2)?
+            .configure_cert_verification(context.certs_verification)?;
+
+        // Check if the PSK extension should be enabled.
+        let psk_extension = matches!(
+            context.impersonate,
+            Impersonate::Chrome117
+                | Impersonate::Chrome120
+                | Impersonate::Chrome123
+                | Impersonate::Chrome124
+                | Impersonate::Chrome126
+                | Impersonate::Edge122
+                | Impersonate::Edge127
+        );
+
+        // Create the `HttpsConnector` with the given settings.
+        let mut http = if psk_extension || context.pre_shared_key {
+            HttpsConnector::with_connector_and_cache(http, builder, self.session.clone())?
+        } else {
+            HttpsConnector::with_connector(http, builder)?
+        };
+
+        // Set the callback to add application settings.
+        let context = context.clone();
+        http.set_callback(move |conf, _| Ok(configure_ssl_context(conf, &context)));
+        Ok(http)
     }
 
     /// Create a new `SslConnector` with the settings from the `ImpersonateContext`.
@@ -63,125 +101,21 @@ impl BoringTlsConnector {
         uri: &http::uri::Uri,
         host: &str,
     ) -> Result<ConnectConfiguration, ErrorStack> {
-        let connector = self.create_https_connector(context, http).await?;
+        let connector = self.create_connector(context, http).await?;
         let mut conf = connector.configure_and_setup(uri, host)?;
-        set_add_application_settings(&mut conf, context);
+        configure_ssl_context(&mut conf, context);
         Ok(conf)
-    }
-
-    /// Create a new `HttpsConnector` with the settings from the `ImpersonateContext`.
-    fn create_connector(
-        &self,
-        context: &ImpersonateContext,
-        http: HttpConnector,
-        builder: SslConnectorBuilder,
-    ) -> Result<HttpsConnector<HttpConnector>, ErrorStack> {
-        let psk_extension = matches!(
-            context.impersonate,
-            Impersonate::Chrome117
-                | Impersonate::Chrome120
-                | Impersonate::Chrome123
-                | Impersonate::Chrome124
-                | Impersonate::Chrome126
-                | Impersonate::Edge122
-                | Impersonate::Edge127
-        );
-
-        let mut http = if psk_extension {
-            HttpsConnector::with_connector_and_cache(http, builder, self.session.clone())?
-        } else {
-            HttpsConnector::with_connector(http, builder)?
-        };
-
-        set_callback(&mut http, context.clone());
-        Ok(http)
-    }
-}
-
-/// Configure the callback for the given `HttpsConnector`.
-fn set_callback(http: &mut HttpsConnector<HttpConnector>, context: ImpersonateContext) {
-    http.set_callback(move |conf, _| Ok(set_add_application_settings(conf, &context)));
-}
-
-/// Configure the ALPN and certificate settings for the given `SslConnectorBuilder`.
-fn set_alpn_proto(builder: &mut SslConnectorBuilder, h2: bool) {
-    if h2 {
-        builder.set_alpn_protos(b"\x02h2\x08http/1.1").unwrap();
-    } else {
-        builder.set_alpn_protos(b"\x08http/1.1").unwrap();
-    }
-}
-
-/// Configure the certificate verification for the given `SslConnectorBuilder`.
-fn set_cert_verification(builder: &mut SslConnectorBuilder, certs_verification: bool) {
-    if !certs_verification {
-        builder.set_verify(boring::ssl::SslVerifyMode::NONE);
     }
 }
 
 /// Add application settings to the given `ConnectConfiguration`.
-fn set_add_application_settings(conf: &mut ConnectConfiguration, ctx: &ImpersonateContext) {
-    match ctx.impersonate.profile() {
-        ClientProfile::Chrome | ClientProfile::Edge => {
-            configure_tls_extensions(conf, ctx);
-        }
-        _ => {}
+fn configure_ssl_context(conf: &mut ConnectConfiguration, ctx: &ImpersonateContext) {
+    if matches!(
+        ctx.impersonate.profile(),
+        ClientProfile::Chrome | ClientProfile::Edge
+    ) {
+        conf.configure_permute_extensions(ctx.permute_extensions)
+            .configure_enable_ech_grease(ctx.enable_ech_grease)
+            .configure_add_application_settings(ctx.h2);
     }
-}
-
-/// Configure the TLS extensions for the given `ConnectConfiguration`.
-fn configure_tls_extensions(conf: &mut ConnectConfiguration, ctx: &ImpersonateContext) {
-    use foreign_types::ForeignTypeRef;
-    if ctx.permute_extensions {
-        unsafe {
-            boring_sys::SSL_set_permute_extensions(conf.as_ptr(), 1);
-        }
-    }
-
-    if ctx.enable_ech_grease {
-        unsafe { boring_sys::SSL_set_enable_ech_grease(conf.as_ptr(), 1) }
-    }
-
-    if ctx.h2 {
-        const ALPN_H2: &str = "h2";
-        const ALPN_H2_LENGTH: usize = 2;
-        unsafe {
-            boring_sys::SSL_add_application_settings(
-                conf.as_ptr(),
-                ALPN_H2.as_ptr(),
-                ALPN_H2_LENGTH,
-                std::ptr::null(),
-                0,
-            );
-        };
-    }
-}
-
-/// Create a new `BoringTlsConnector` with the given function.
-pub(crate) struct ImpersonateSettings {
-    pub tls_connector: BoringTlsConnector,
-    pub http2: Http2Data,
-    pub headers: HeaderMap,
-    pub gzip: bool,
-    pub brotli: bool,
-}
-
-/// HTTP/2 settings.
-pub(crate) struct Http2Data {
-    pub initial_stream_window_size: Option<u32>,
-    pub initial_connection_window_size: Option<u32>,
-    pub max_concurrent_streams: Option<u32>,
-    pub max_header_list_size: Option<u32>,
-    pub header_table_size: Option<u32>,
-    pub enable_push: Option<bool>,
-}
-
-/// Context for impersonating a client.
-#[derive(Clone)]
-pub(crate) struct ImpersonateContext {
-    pub impersonate: Impersonate,
-    pub enable_ech_grease: bool,
-    pub permute_extensions: bool,
-    pub certs_verification: bool,
-    pub h2: bool,
 }

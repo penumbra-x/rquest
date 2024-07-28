@@ -129,6 +129,8 @@ struct Config {
     enable_ech_grease: bool,
     #[cfg(feature = "impersonate")]
     permute_extensions: bool,
+    #[cfg(feature = "impersonate")]
+    pre_shared_key: bool,
 }
 
 impl Default for ClientBuilder {
@@ -208,6 +210,8 @@ impl ClientBuilder {
                 enable_ech_grease: false,
                 #[cfg(feature = "impersonate")]
                 permute_extensions: false,
+                #[cfg(feature = "impersonate")]
+                pre_shared_key: false,
             },
         }
     }
@@ -215,7 +219,7 @@ impl ClientBuilder {
     /// Sets the necessary values to mimic the specified impersonate version.
     #[cfg(feature = "__impersonate")]
     pub fn impersonate(mut self, impersonate: Impersonate) -> ClientBuilder {
-        use crate::impersonate::profile::configure_impersonate;
+        use crate::impersonate::configure_impersonate;
         
         self.config.impersonate = impersonate;
         configure_impersonate(impersonate, self)
@@ -224,7 +228,7 @@ impl ClientBuilder {
     /// Sets the necessary values to mimic the specified impersonate version. (websocket)
     #[cfg(feature = "__impersonate")]
     pub fn impersonate_websocket(mut self, impersonate: Impersonate) -> ClientBuilder {
-        use crate::impersonate::profile::configure_impersonate;
+        use crate::impersonate::configure_impersonate;
 
         self.config.impersonate = impersonate;
         self = self.http1_only();
@@ -242,6 +246,13 @@ impl ClientBuilder {
     #[cfg(feature = "__impersonate")]
     pub fn permute_extensions(mut self) -> ClientBuilder {
         self.config.permute_extensions = true;
+        self
+    }
+
+    /// Enable TLS pre_shared_key
+    #[cfg(feature = "__impersonate")]
+    pub fn pre_shared_key(mut self) -> ClientBuilder {
+        self.config.pre_shared_key = true;
         self
     }
 
@@ -307,6 +318,7 @@ impl ClientBuilder {
                         certs_verification: config.certs_verification,
                         enable_ech_grease: config.enable_ech_grease,
                         permute_extensions: config.permute_extensions,
+                        pre_shared_key: config.pre_shared_key,
                         h2: match config.http_version_pref {
                             HttpVersionPref::Http1 => false,
                             HttpVersionPref::Http2 | HttpVersionPref::All => true,

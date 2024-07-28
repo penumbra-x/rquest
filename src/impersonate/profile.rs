@@ -1,6 +1,6 @@
 #![allow(missing_docs)]
 
-use super::ImpersonateSettings;
+use super::BoringTlsConnector;
 use crate::{
     impersonate::{chrome, edge, okhttp, safari},
     ClientBuilder,
@@ -272,4 +272,23 @@ impl Into<AgentProfile> for ClientProfile {
             Self::Edge => AgentProfile::Edge,
         }
     }
+}
+
+/// Create a new `BoringTlsConnector` with the given function.
+pub struct ImpersonateSettings {
+    pub tls_connector: BoringTlsConnector,
+    pub http2: Http2Settings,
+    pub headers: HeaderMap,
+    pub gzip: bool,
+    pub brotli: bool,
+}
+
+/// HTTP/2 settings.
+pub struct Http2Settings {
+    pub initial_stream_window_size: Option<u32>,
+    pub initial_connection_window_size: Option<u32>,
+    pub max_concurrent_streams: Option<u32>,
+    pub max_header_list_size: Option<u32>,
+    pub header_table_size: Option<u32>,
+    pub enable_push: Option<bool>,
 }
