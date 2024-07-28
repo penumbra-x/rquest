@@ -10,9 +10,7 @@ use http::{
 pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
     ImpersonateSettings {
         tls_connector: BoringTlsConnector::new(|| {
-            EdgeExtension::builder()?
-                .configure_cipher_list(&CIPHER_LIST)?
-                .configure_chrome_new_curves()
+            EdgeExtension::builder()?.configure_cipher_list(&CIPHER_LIST)
         }),
         http2: Http2Settings {
             initial_stream_window_size: Some(6291456),
