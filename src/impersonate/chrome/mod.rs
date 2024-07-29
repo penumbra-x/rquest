@@ -15,6 +15,7 @@ pub mod v120;
 pub mod v123;
 pub mod v124;
 pub mod v126;
+pub mod v127;
 
 const CIPHER_LIST: [&str; 15] = [
     "TLS_AES_128_GCM_SHA256",

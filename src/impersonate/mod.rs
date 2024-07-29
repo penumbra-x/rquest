@@ -75,6 +75,7 @@ impl BoringTlsConnector {
                 | Impersonate::Chrome123
                 | Impersonate::Chrome124
                 | Impersonate::Chrome126
+                | Impersonate::Chrome127
                 | Impersonate::Edge122
                 | Impersonate::Edge127
         );
