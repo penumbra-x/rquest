@@ -7,10 +7,47 @@ use boring::ssl::{
 };
 use foreign_types::ForeignTypeRef;
 
+/// Extension trait for `SslConnector`.
 pub trait Extension {
+    /// The signature algorithms list.
     type SigalgsList;
 
+    /// Create a new `SslConnectorBuilder`.
     fn builder() -> Result<SslConnectorBuilder, ErrorStack>;
+}
+
+/// Extension trait for `SslConnectorBuilder`.
+pub trait SslExtension {
+    /// Configure chrome to use the curves. (Chrome 123+)
+    fn configure_chrome_new_curves(self) -> Result<SslConnectorBuilder, ErrorStack>;
+
+    /// Configure the certificate verification for the given `SslConnectorBuilder`.
+    fn configure_cert_verification(
+        self,
+        certs_verification: bool,
+    ) -> Result<SslConnectorBuilder, ErrorStack>;
+
+    /// Configure the ALPN and certificate settings for the given `SslConnectorBuilder`.
+    fn configure_alpn_protos(self, h2: bool) -> Result<SslConnectorBuilder, ErrorStack>;
+
+    /// Configure the cipher list for the given `SslConnectorBuilder`.
+    fn configure_cipher_list(self, cipher: &[&str]) -> Result<SslConnectorBuilder, ErrorStack>;
+}
+
+/// Context Extension trait for `ConnectConfiguration`.
+pub trait SslConnectExtension {
+    /// Configure the permute_extensions for the given `ConnectConfiguration`.
+    fn configure_permute_extensions(
+        &mut self,
+        permute_extensions: bool,
+    ) -> &mut ConnectConfiguration;
+
+    /// Configure the enable_ech_grease for the given `ConnectConfiguration`.
+    fn configure_enable_ech_grease(&mut self, enable_ech_grease: bool)
+        -> &mut ConnectConfiguration;
+
+    /// Configure the add_application_settings for the given `ConnectConfiguration`.
+    fn configure_add_application_settings(&mut self, h2: bool) -> &mut ConnectConfiguration;
 }
 
 pub struct ChromeExtension;
@@ -145,40 +182,6 @@ impl Extension for OkHttpExtension {
 
         Ok(builder)
     }
-}
-
-/// Extension trait for `SslConnectorBuilder`.
-pub trait SslExtension {
-    /// Configure chrome to use the curves. (Chrome 123+)
-    fn configure_chrome_new_curves(self) -> Result<SslConnectorBuilder, ErrorStack>;
-
-    /// Configure the certificate verification for the given `SslConnectorBuilder`.
-    fn configure_cert_verification(
-        self,
-        certs_verification: bool,
-    ) -> Result<SslConnectorBuilder, ErrorStack>;
-
-    /// Configure the ALPN and certificate settings for the given `SslConnectorBuilder`.
-    fn configure_alpn_protos(self, h2: bool) -> Result<SslConnectorBuilder, ErrorStack>;
-
-    /// Configure the cipher list for the given `SslConnectorBuilder`.
-    fn configure_cipher_list(self, cipher: &[&str]) -> Result<SslConnectorBuilder, ErrorStack>;
-}
-
-/// Context Extension trait for `ConnectConfiguration`.
-pub trait SslConnectExtension {
-    /// Configure the permute_extensions for the given `ConnectConfiguration`.
-    fn configure_permute_extensions(
-        &mut self,
-        permute_extensions: bool,
-    ) -> &mut ConnectConfiguration;
-
-    /// Configure the enable_ech_grease for the given `ConnectConfiguration`.
-    fn configure_enable_ech_grease(&mut self, enable_ech_grease: bool)
-        -> &mut ConnectConfiguration;
-
-    /// Configure the add_application_settings for the given `ConnectConfiguration`.
-    fn configure_add_application_settings(&mut self, h2: bool) -> &mut ConnectConfiguration;
 }
 
 impl SslExtension for SslConnectorBuilder {
