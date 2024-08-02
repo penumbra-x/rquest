@@ -76,6 +76,7 @@ fn get_settings(ver: Impersonate) -> ImpersonateSettings {
         Impersonate::Safari15_6_1 => safari::safari15_6_1::get_settings,
         Impersonate::Safari16 => safari::safari16::get_settings,
         Impersonate::Safari16_5 => safari::safari16_5::get_settings,
+        Impersonate::Safari17_0 => safari::safari17_0::get_settings,
         Impersonate::Safari17_2_1 => safari::safari17_2_1::get_settings,
         Impersonate::Safari17_4_1 => safari::safari17_4_1::get_settings,
         Impersonate::Safari17_5 => safari::safari17_5::get_settings,
@@ -124,6 +125,7 @@ pub enum Impersonate {
     Safari15_6_1,
     Safari16,
     Safari16_5,
+    Safari17_0,
     Safari17_2_1,
     Safari17_4_1,
     Safari17_5,
@@ -179,6 +181,7 @@ impl FromStr for Impersonate {
             "safari_16" => Ok(Impersonate::Safari16),
             "safari_16.5" => Ok(Impersonate::Safari16_5),
             "safari_ios_16.5" => Ok(Impersonate::SafariIos16_5),
+            "safari_17.0" => Ok(Impersonate::Safari17_0),
             "safari_17.2.1" => Ok(Impersonate::Safari17_2_1),
             "safari_17.4.1" => Ok(Impersonate::Safari17_4_1),
             "safari_17.5" => Ok(Impersonate::Safari17_5),
@@ -231,6 +234,7 @@ impl Impersonate {
             | Impersonate::Safari15_6_1
             | Impersonate::Safari16
             | Impersonate::Safari16_5
+            | Impersonate::Safari17_0
             | Impersonate::Safari17_2_1
             | Impersonate::Safari17_4_1
             | Impersonate::Safari17_5 => ClientProfile::Safari,

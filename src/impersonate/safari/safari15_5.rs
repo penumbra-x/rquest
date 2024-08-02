@@ -34,7 +34,7 @@ fn create_headers(mut headers: HeaderMap) -> HeaderMap {
     );
     headers.insert(
         ACCEPT_LANGUAGE,
-        HeaderValue::from_static("de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7"),
+        HeaderValue::from_static("en-US,en;q=0.9"),
     );
     headers.insert(
         ACCEPT_ENCODING,

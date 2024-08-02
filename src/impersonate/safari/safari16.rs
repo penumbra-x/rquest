@@ -29,7 +29,10 @@ pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
 fn create_headers(mut headers: HeaderMap) -> HeaderMap {
     headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"));
     headers.insert(ACCEPT, HeaderValue::from_static("*/*"));
-    headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-us"));
+    headers.insert(
+        ACCEPT_LANGUAGE,
+        HeaderValue::from_static("en-US,en;q=0.9"),
+    );
     headers.insert(
         ACCEPT_ENCODING,
         HeaderValue::from_static("gzip, deflate, br"),
