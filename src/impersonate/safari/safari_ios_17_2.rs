@@ -38,10 +38,7 @@ fn create_headers(mut headers: HeaderMap) -> HeaderMap {
     );
     headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
     headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1"));
-    headers.insert(
-        ACCEPT_LANGUAGE,
-        HeaderValue::from_static("en-US,en;q=0.9"),
-    );
+    headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
     headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
     headers
 }

@@ -32,10 +32,7 @@ fn create_headers(mut headers: HeaderMap) -> HeaderMap {
         ACCEPT,
         HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
     );
-    headers.insert(
-        ACCEPT_LANGUAGE,
-        HeaderValue::from_static("en-US,en;q=0.9"),
-    );
+    headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
     headers.insert(
         ACCEPT_ENCODING,
         HeaderValue::from_static("gzip, deflate, br"),
