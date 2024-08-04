@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.99] - 2024-08-04
+
+### 🚀 Features
+
+- *(impersonate)* Add `Safari17_0` impersonate (#71)
+- *(websocket)* Improve websocket upgrade (#73)
+- *(connector)* Using session cache to delay initialization of connector (#78)
+
+### 🐛 Bug Fixes
+
+- *(impersonate)* Fix `safari15_3`/`safari15_5` http2 fingerprint (#70)
+- *(impersonate)* Fix safari header order (#72)
+
+### ⚙️ Miscellaneous Tasks
+
+- 1.80 as MSRV (#74)
+
+### Deps
+
+- *(percent-encoding)* V2.3 (#75)
+- *(boring)* V4.x (#76)
+
+## [0.11.97] - 2024-07-28
+
+### 🐛 Bug Fixes
+
+- *(extension)* Fix configure chrome new curves (#67)
+
+## [0.11.96] - 2024-07-28
+
+### 🚀 Features
+
+- *(impersonate)* Export the Impersonate custom extension configuration (#64)
+- *(impersonate)* Reuse Safari cipher list in groups (#65)
+
+### ◀️ Revert
+
+- *(impersonate)* Revert Edge122 configure new curves (#66)
+
 ## [0.11.93] - 2024-07-27
 
 ### 🚀 Features
@@ -317,7 +356,7 @@ All notable changes to this project will be documented in this file.
 ### 🐛 Bug Fixes
 
 - Tests::support::server
-- *(response)* `copy_to()` and `text()` return `rquest::Result`
+- *(response)* `copy_to()` and `text()` return `reqwest::Result`
 - Upgrade to http2 if the server reports that it supports it (#1166)
 - Respect https_only option when redirecting (#1313)
 - Wasm client: pass response header to builder by reference (#1350)
