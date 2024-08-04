@@ -15,7 +15,7 @@ async fn main() -> Result<(), rquest::Error> {
     let echo_json: serde_json::Value = rquest::Client::new()
         .post("https://jsonplaceholder.typicode.com/posts")
         .json(&serde_json::json!({
-            "title": "Reqwest.rs",
+            "title": "rquest.rs",
             "body": "https://docs.rs/rquest",
             "userId": 1
         }))
@@ -34,7 +34,7 @@ async fn main() -> Result<(), rquest::Error> {
     //             101
     //         ),
     //         "title": String(
-    //             "Reqwest.rs"
+    //             "rquest.rs"
     //         ),
     //         "userId": Number(
     //             1

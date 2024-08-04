@@ -317,7 +317,7 @@ All notable changes to this project will be documented in this file.
 ### 🐛 Bug Fixes
 
 - Tests::support::server
-- *(response)* `copy_to()` and `text()` return `reqwest::Result`
+- *(response)* `copy_to()` and `text()` return `rquest::Result`
 - Upgrade to http2 if the server reports that it supports it (#1166)
 - Respect https_only option when redirecting (#1313)
 - Wasm client: pass response header to builder by reference (#1350)

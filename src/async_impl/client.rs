@@ -220,7 +220,7 @@ impl ClientBuilder {
     #[cfg(feature = "__impersonate")]
     pub fn impersonate(mut self, impersonate: Impersonate) -> ClientBuilder {
         use crate::impersonate::configure_impersonate;
-        
+
         self.config.impersonate = impersonate;
         configure_impersonate(impersonate, self)
     }
@@ -274,7 +274,6 @@ impl ClientBuilder {
             proxies.push(Proxy::system());
         }
         let proxies = Arc::new(proxies);
-
 
         let mut connector = {
             #[cfg(feature = "__tls")]
@@ -352,8 +351,7 @@ impl ClientBuilder {
         if let Some(http2_initial_connection_window_size) =
             config.http2_initial_connection_window_size
         {
-            builder
-                .http2_initial_connection_window_size(http2_initial_connection_window_size);
+            builder.http2_initial_connection_window_size(http2_initial_connection_window_size);
         }
         if config.http2_adaptive_window {
             builder.http2_adaptive_window(true);
@@ -408,9 +406,7 @@ impl ClientBuilder {
             builder.http1_allow_spaces_after_header_name_in_responses(true);
         }
 
-        let proxies_maybe_http_auth = proxies
-            .iter()
-            .any(|p| p.maybe_has_http_auth());
+        let proxies_maybe_http_auth = proxies.iter().any(|p| p.maybe_has_http_auth());
 
         Ok(Client {
             inner: Arc::new(ClientRef {
@@ -1507,7 +1503,6 @@ impl Client {
                 break;
             }
         }
-        
     }
 
     /// Get the client user agent
@@ -1578,17 +1573,20 @@ impl Client {
     where
         T: Into<Option<IpAddr>>,
     {
-        Arc::make_mut(&mut self.inner).hyper.set_local_address(addr.into());
+        Arc::make_mut(&mut self.inner)
+            .hyper
+            .set_local_address(addr.into());
         self.inner.hyper.reset_pool_idle();
     }
 
     /// Set that all sockets are bound to the configured IPv4 or IPv6 address (depending on host's
     /// preferences) before connection.
     pub fn set_local_addresses(&mut self, addr_ipv4: Ipv4Addr, addr_ipv6: Ipv6Addr) {
-        Arc::make_mut(&mut self.inner).hyper.set_local_addresses(addr_ipv4, addr_ipv6);
+        Arc::make_mut(&mut self.inner)
+            .hyper
+            .set_local_addresses(addr_ipv4, addr_ipv6);
         self.inner.hyper.reset_pool_idle();
     }
-
 }
 
 impl fmt::Debug for Client {
@@ -1814,7 +1812,7 @@ pin_project! {
 }
 
 enum ResponseFuture {
-    Default(HyperResponseFuture)
+    Default(HyperResponseFuture),
 }
 
 impl PendingRequest {
@@ -2060,9 +2058,7 @@ impl Future for PendingRequest {
                                             .expect("valid request parts");
                                         *req.headers_mut() = headers.clone();
                                         std::mem::swap(self.as_mut().headers(), &mut headers);
-                                        ResponseFuture::Default(
-                                            self.client.hyper.request(req),
-                                        )
+                                        ResponseFuture::Default(self.client.hyper.request(req))
                                     }
                                 };
 

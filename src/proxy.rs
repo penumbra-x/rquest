@@ -287,7 +287,8 @@ impl Proxy {
                 get_from_platform(),
             ))))
         } else {
-            let sys_proxies = SYS_PROXIES.get_or_init(|| Arc::new(get_sys_proxies(get_from_platform())));
+            let sys_proxies =
+                SYS_PROXIES.get_or_init(|| Arc::new(get_sys_proxies(get_from_platform())));
             Proxy::new(Intercept::System(sys_proxies.clone()))
         };
         proxy.no_proxy = NoProxy::from_env();
@@ -829,7 +830,7 @@ impl Dst for Uri {
     }
 }
 
-static SYS_PROXIES: OnceLock<Arc<SystemProxyMap>> =OnceLock::new();
+static SYS_PROXIES: OnceLock<Arc<SystemProxyMap>> = OnceLock::new();
 
 /// Get system proxies information.
 ///

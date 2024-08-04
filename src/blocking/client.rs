@@ -1,8 +1,8 @@
 use std::convert::TryInto;
 use std::fmt;
 use std::future::Future;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::net::SocketAddr;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
@@ -603,7 +603,6 @@ impl ClientBuilder {
 
     // TLS options
 
-
     /// Controls the use of built-in system certificates during certificate validation.
     ///
     /// Defaults to `true` -- built-in system certs will be used.
@@ -691,7 +690,6 @@ impl ClientBuilder {
     pub fn tls_info(self, tls_info: bool) -> ClientBuilder {
         self.with_inner(|inner| inner.tls_info(tls_info))
     }
-
 
     /// Enables the [hickory-dns](hickory_dns_resolver) async resolver instead of a default threadpool using `getaddrinfo`.
     ///

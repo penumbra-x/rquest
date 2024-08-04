@@ -9,7 +9,7 @@ documentation = "https://docs.rs/rquest"
 authors = ["0x676e67 <gngppz@gmail.com>"]
 readme = "README.md"
 license = "MIT"
-edition = "2018"
+edition = "2021"
 rust-version = "1.70"
 autotests = true
 
@@ -17,9 +17,6 @@ autotests = true
 all-features = true
 rustdoc-args = ["--cfg", "docsrs", "--cfg"]
 targets = ["x86_64-unknown-linux-gnu"]
-
-[package.metadata.playground]
-features = ["blocking", "cookies", "json", "multipart"]
 
 [features]
 default = ["boring-tls", "impersonate"]

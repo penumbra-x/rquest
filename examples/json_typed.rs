@@ -24,7 +24,7 @@ struct Post {
 async fn main() -> Result<(), rquest::Error> {
     let new_post = Post {
         id: None,
-        title: "Reqwest.rs".into(),
+        title: "rquest.rs".into(),
         body: "https://docs.rs/rquest".into(),
         user_id: 1,
     };
@@ -41,7 +41,7 @@ async fn main() -> Result<(), rquest::Error> {
     //     id: Some(
     //         101
     //     ),
-    //     title: "Reqwest.rs",
+    //     title: "rquest.rs",
     //     body: "https://docs.rs/rquest",
     //     user_id: 1
     // }

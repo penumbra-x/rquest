@@ -7,9 +7,9 @@
 //! - Various parts of TLS can also be configured or even disabled on the
 //!   `ClientBuilder`.
 
-use std::fmt;
 #[cfg(feature = "__boring")]
 use crate::impersonate::BoringTlsConnector;
+use std::fmt;
 
 /// A TLS protocol version.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -60,7 +60,9 @@ impl Default for TlsBackend {
         #[cfg(feature = "__boring")]
         {
             use boring::ssl::{SslConnector, SslMethod};
-            TlsBackend::BoringTls(BoringTlsConnector::new(|| SslConnector::builder(SslMethod::tls())))
+            TlsBackend::BoringTls(BoringTlsConnector::new(|| {
+                SslConnector::builder(SslMethod::tls())
+            }))
         }
         #[cfg(not(feature = "__boring"))]
         {

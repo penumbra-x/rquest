@@ -25,7 +25,7 @@
 //! Additional learning resources include:
 //!
 //! - [The Rust Cookbook](https://rust-lang-nursery.github.io/rust-cookbook/web/clients.html)
-//! - [Reqwest Repository Examples](https://github.com/0x676e67/rquest/tree/master/examples)
+//! - [rquest Repository Examples](https://github.com/0x676e67/rquest/tree/master/examples)
 //!
 //! ## Making a GET request
 //!
@@ -215,20 +215,6 @@
 //! [Proxy]: ./struct.Proxy.html
 //! [cargo-features]: https://doc.rust-lang.org/stable/cargo/reference/manifest.html#the-features-section
 
-macro_rules! if_wasm {
-    ($($item:item)*) => {$(
-        #[cfg(target_arch = "wasm32")]
-        $item
-    )*}
-}
-
-macro_rules! if_hyper {
-    ($($item:item)*) => {$(
-        #[cfg(not(target_arch = "wasm32"))]
-        $item
-    )*}
-}
-
 /// Re-export of boring to keep versions in check
 pub use boring;
 pub use boring_sys;
@@ -316,39 +302,28 @@ fn _assert_impls() {
     assert_sync::<Error>();
 }
 
-if_hyper! {
+#[cfg(test)]
+doc_comment::doctest!("../README.md");
 
-    #[cfg(test)]
-    doc_comment::doctest!("../README.md");
+#[cfg(feature = "multipart")]
+pub use self::async_impl::multipart;
+#[cfg(feature = "websocket")]
+pub use self::async_impl::websocket::{
+    Message, WebSocket, WebSocketRequestBuilder, WebSocketResponse,
+};
+pub use self::async_impl::{
+    Body, Client, ClientBuilder, Request, RequestBuilder, Response, Upgraded,
+};
+pub use self::proxy::{NoProxy, Proxy};
 
-    pub use self::async_impl::{
-        Body, Client, ClientBuilder, Request, RequestBuilder, Response, Upgraded
-    };
-    #[cfg(feature = "websocket")]
-    pub use self::async_impl::websocket::{UpgradedRequestBuilder, Message, WebSocket, UpgradeResponse};
-    pub use self::proxy::{Proxy,NoProxy};
-    #[cfg(feature = "multipart")]
-    pub use self::async_impl::multipart;
-
-
-    mod async_impl;
-    #[cfg(feature = "blocking")]
-    pub mod blocking;
-    mod connect;
-    #[cfg(feature = "cookies")]
-    pub mod cookie;
-    pub mod dns;
-    mod proxy;
-    pub mod redirect;
-    pub mod tls;
-    mod util;
-}
-
-if_wasm! {
-    mod wasm;
-    mod util;
-
-    pub use self::wasm::{Body, Client, ClientBuilder, Request, RequestBuilder, Response};
-    #[cfg(feature = "multipart")]
-    pub use self::wasm::multipart;
-}
+mod async_impl;
+#[cfg(feature = "blocking")]
+pub mod blocking;
+mod connect;
+#[cfg(feature = "cookies")]
+pub mod cookie;
+pub mod dns;
+mod proxy;
+pub mod redirect;
+pub mod tls;
+mod util;

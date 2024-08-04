@@ -13,7 +13,7 @@ use super::client::{Client, Pending};
 use super::multipart;
 use super::response::Response;
 #[cfg(feature = "websocket")]
-use super::websocket::UpgradedRequestBuilder;
+use super::websocket::WebSocketRequestBuilder;
 #[cfg(feature = "multipart")]
 use crate::header::CONTENT_LENGTH;
 use crate::header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE};
@@ -490,17 +490,17 @@ impl RequestBuilder {
     /// this after you set up your request, and just before you send the
     /// request.
     #[cfg(feature = "websocket")]
-    pub fn upgrade(self) -> UpgradedRequestBuilder {
-        UpgradedRequestBuilder::new(self)
+    pub fn upgrade(self) -> WebSocketRequestBuilder {
+        WebSocketRequestBuilder::new(self)
     }
 
     /// Upgrades the [`RequestBuilder`] to perform a
-    /// websocket handshake with a specified websocket key. This returns a wrapped type, 
+    /// websocket handshake with a specified websocket key. This returns a wrapped type,
     /// so you must do this after you set up your request, and just before you send the
     /// request.
     #[cfg(feature = "websocket")]
-    pub fn upgrade_with_key<T: Into<String>>(self, websocket_key: T) -> UpgradedRequestBuilder {
-        UpgradedRequestBuilder::new_with_key(self, websocket_key.into())
+    pub fn upgrade_with_key<T: Into<String>>(self, websocket_key: T) -> WebSocketRequestBuilder {
+        WebSocketRequestBuilder::new_with_key(self, websocket_key.into())
     }
 
     /// Constructs the Request and sends it to the target URL, returning a

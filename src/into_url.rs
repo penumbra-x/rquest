@@ -73,16 +73,14 @@ impl<'a> IntoUrlSealed for String {
     }
 }
 
-if_hyper! {
-    pub(crate) fn expect_uri(url: &Url) -> http::Uri {
-        url.as_str()
-            .parse()
-            .expect("a parsed Url should always be a valid Uri")
-    }
+pub(crate) fn expect_uri(url: &Url) -> http::Uri {
+    url.as_str()
+        .parse()
+        .expect("a parsed Url should always be a valid Uri")
+}
 
-    pub(crate) fn try_uri(url: &Url) -> Option<http::Uri> {
-        url.as_str().parse().ok()
-    }
+pub(crate) fn try_uri(url: &Url) -> Option<http::Uri> {
+    url.as_str().parse().ok()
 }
 
 #[cfg(test)]
@@ -105,16 +103,5 @@ mod tests {
             err.to_string(),
             "builder error for url (blob:https://example.com): URL scheme is not allowed"
         );
-    }
-
-    if_wasm! {
-        use wasm_bindgen_test::*;
-
-        #[wasm_bindgen_test]
-        fn into_url_blob_scheme_wasm() {
-            let url = "blob:http://example.com".into_url().unwrap();
-
-            assert_eq!(url.as_str(), "blob:http://example.com");
-        }
     }
 }

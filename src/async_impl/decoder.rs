@@ -162,7 +162,6 @@ impl Decoder {
         }
     }
 
-
     /// A zstd decoder.
     ///
     /// This decoder will buffer and decompress chunks that are zstd compressed.

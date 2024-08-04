@@ -1,11 +1,11 @@
-#[cfg(feature = "__boring")]
-use impersonate::BoringTlsConnector;
 #[cfg(feature = "__tls")]
 use http::header::HeaderValue;
 use http::uri::{Authority, Scheme};
 use http::Uri;
 use hyper::client::connect::{Connected, Connection};
 use hyper::service::Service;
+#[cfg(feature = "__boring")]
+use impersonate::BoringTlsConnector;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
 use pin_project_lite::pin_project;
@@ -40,7 +40,7 @@ pub(crate) struct Connector {
     #[cfg(feature = "__tls")]
     user_agent: Option<HeaderValue>,
     #[cfg(feature = "impersonate")]
-    context: ImpersonateContext
+    context: ImpersonateContext,
 }
 
 #[derive(Clone)]
@@ -54,9 +54,7 @@ enum Inner {
     },
 }
 
-
 impl Connector {
-
     #[cfg(feature = "__boring")]
     pub(crate) fn new_boring_tls(
         mut http: HttpConnector,
@@ -69,15 +67,13 @@ impl Connector {
         tls_info: bool,
         impersonate_context: ImpersonateContext,
     ) -> Connector {
-
         match (local_addr_v4, local_addr_v6) {
             (Some(v4), Some(v6)) => http.set_local_addresses(v4, v6),
             (Some(v4), None) => http.set_local_address(Some(IpAddr::from(v4))),
             (None, Some(v6)) => http.set_local_address(Some(IpAddr::from(v6))),
-            _ => {},
+            _ => {}
         }
         http.enforce_http(false);
-        
 
         Connector {
             inner: Inner::BoringTls { http, tls },
@@ -87,7 +83,7 @@ impl Connector {
             nodelay,
             user_agent,
             tls_info,
-            context: impersonate_context
+            context: impersonate_context,
         }
     }
 
@@ -115,7 +111,6 @@ impl Connector {
     pub(crate) fn set_proxies(&mut self, proxies: Vec<Proxy>) {
         Arc::make_mut(&mut self.proxies).clone_from_slice(&proxies);
     }
-
 
     pub(crate) fn set_local_address(&mut self, addr: Option<IpAddr>) {
         #[cfg(feature = "__boring")]
@@ -153,7 +148,9 @@ impl Connector {
                 if dst.scheme() == Some(&Scheme::HTTPS) {
                     let host = dst.host().ok_or("no host in url")?;
                     let conn = socks::connect(proxy, dst.clone(), dns).await?;
-                    let conf = tls.create_connector_configuration(&self.context, http.clone(), &dst, host).await?;
+                    let conf = tls
+                        .create_connector_configuration(&self.context, http.clone(), &dst, host)
+                        .await?;
                     let io = tokio_boring::connect(conf, &host, conn).await?;
                     return Ok(Conn {
                         inner: self.verbose.wrap(BoringTlsConn { inner: io }),
@@ -246,17 +243,10 @@ impl Connector {
                     let mut http = tls.create_connector(&self.context, http.clone()).await?;
                     let conn = http.call(proxy_dst).await?;
                     log::trace!("tunneling HTTPS over proxy");
-                    let tunneled = tunnel(
-                        conn,
-                        host,
-                        port,
-                        self.user_agent.as_ref(),
-                        auth,
-                    ).await?;
+                    let tunneled = tunnel(conn, host, port, self.user_agent.as_ref(), auth).await?;
 
                     let conf = http.configure_and_setup(&dst, host)?;
-                    let io = tokio_boring::connect(conf, host, tunneled)
-                        .await?;
+                    let io = tokio_boring::connect(conf, host, tunneled).await?;
 
                     return Ok(Conn {
                         inner: self.verbose.wrap(BoringTlsConn { inner: io }),
@@ -284,8 +274,8 @@ fn into_uri(scheme: Scheme, host: Authority) -> Uri {
 }
 
 async fn with_timeout<T, F>(f: F, timeout: Option<Duration>) -> Result<T, BoxError>
-    where
-        F: Future<Output = Result<T, BoxError>>,
+where
+    F: Future<Output = Result<T, BoxError>>,
 {
     if let Some(to) = timeout {
         match tokio::time::timeout(to, f).await {
@@ -310,7 +300,7 @@ impl Service<Uri> for Connector {
     fn call(&mut self, dst: Uri) -> Self::Future {
         log::debug!("starting new connection: {:?}", dst);
         let timeout = self.timeout;
-        for prox in self.proxies.iter(){
+        for prox in self.proxies.iter() {
             if let Some(proxy_scheme) = prox.intercept(&dst) {
                 return Box::pin(with_timeout(
                     self.clone().connect_via_proxy(dst, proxy_scheme),
@@ -335,10 +325,11 @@ trait TlsInfoFactory {
 impl TlsInfoFactory for BoringTlsConn<tokio::net::TcpStream> {
     fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
         let peer_certificate = self
-            .inner.ssl()
+            .inner
+            .ssl()
             .peer_certificate()
             .and_then(|c| c.to_der().ok());
-        Some(crate::tls::TlsInfo { peer_certificate })    
+        Some(crate::tls::TlsInfo { peer_certificate })
     }
 }
 
@@ -346,12 +337,10 @@ impl TlsInfoFactory for BoringTlsConn<tokio::net::TcpStream> {
 impl TlsInfoFactory for hyper_boring::MaybeHttpsStream<tokio::net::TcpStream> {
     fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
         match self {
-                hyper_boring::MaybeHttpsStream::Https(tls) => {
-                    let peer_certificate = tls.ssl()
-                    .peer_certificate()
-                    .and_then(|c| c.to_der().ok());
-                Some(crate::tls::TlsInfo { peer_certificate })    
-            },
+            hyper_boring::MaybeHttpsStream::Https(tls) => {
+                let peer_certificate = tls.ssl().peer_certificate().and_then(|c| c.to_der().ok());
+                Some(crate::tls::TlsInfo { peer_certificate })
+            }
             hyper_boring::MaybeHttpsStream::Http(_) => None,
         }
     }
@@ -362,17 +351,13 @@ impl TlsInfoFactory for BoringTlsConn<hyper_boring::MaybeHttpsStream<tokio::net:
     fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
         match self.inner.get_ref() {
             hyper_boring::MaybeHttpsStream::Https(ref tls) => {
-                let peer_certificate = tls.ssl()
-                    .peer_certificate()
-                    .and_then(|c| c.to_der().ok());
-                Some(crate::tls::TlsInfo { peer_certificate })    
-            },
+                let peer_certificate = tls.ssl().peer_certificate().and_then(|c| c.to_der().ok());
+                Some(crate::tls::TlsInfo { peer_certificate })
+            }
             hyper_boring::MaybeHttpsStream::Http(_) => None,
         }
     }
 }
-
-
 
 #[cfg(feature = "__tls")]
 impl TlsInfoFactory for tokio::net::TcpStream {
@@ -381,9 +366,8 @@ impl TlsInfoFactory for tokio::net::TcpStream {
     }
 }
 
-
 pub(crate) trait AsyncConn:
-AsyncRead + AsyncWrite + Connection + Send + Sync + Unpin + 'static
+    AsyncRead + AsyncWrite + Connection + Send + Sync + Unpin + 'static
 {
 }
 
@@ -488,8 +472,8 @@ async fn tunnel<T>(
     user_agent: Option<&HeaderValue>,
     auth: Option<HeaderValue>,
 ) -> Result<T, BoxError>
-    where
-        T: AsyncRead + AsyncWrite + Unpin,
+where
+    T: AsyncRead + AsyncWrite + Unpin,
 {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -500,7 +484,7 @@ async fn tunnel<T>(
          ",
         host, port
     )
-        .into_bytes();
+    .into_bytes();
 
     // user-agent
     if let Some(user_agent) = user_agent {
@@ -688,8 +672,8 @@ mod socks {
                 &username,
                 &password,
             )
-                .await
-                .map_err(|e| format!("socks connect error: {}", e))?
+            .await
+            .map_err(|e| format!("socks connect error: {}", e))?
         } else {
             Socks5Stream::connect(socket_addr, (host.as_str(), port))
                 .await
@@ -1026,7 +1010,7 @@ mod tests {
                 ua().as_ref(),
                 Some(proxy::encode_basic_auth("Aladdin", "open sesame")),
             )
-                .await
+            .await
         };
 
         rt.block_on(f).unwrap();
