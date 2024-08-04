@@ -159,7 +159,7 @@ impl ClientBuilder {
                 connect_timeout: None,
                 connection_verbose: false,
                 pool_idle_timeout: Some(Duration::from_secs(90)),
-                pool_max_idle_per_host: std::usize::MAX,
+                pool_max_idle_per_host: usize::MAX,
                 // TODO: Re-enable default duration once hyper's HttpConnector is fixed
                 // to no longer error when an option fails.
                 tcp_keepalive: None, //Some(Duration::from_secs(60)),
@@ -1448,14 +1448,12 @@ impl Client {
             .uri(uri)
             .version(version);
 
-        let in_flight = match version {
-            _ => {
-                let mut req = builder
-                    .body(body.into_stream())
-                    .expect("valid request parts");
-                *req.headers_mut() = headers.clone();
-                ResponseFuture::Default(self.inner.hyper.request(req))
-            }
+        let in_flight = {
+            let mut req = builder
+                .body(body.into_stream())
+                .expect("valid request parts");
+            *req.headers_mut() = headers.clone();
+            ResponseFuture::Default(self.inner.hyper.request(req))
         };
 
         let timeout = timeout

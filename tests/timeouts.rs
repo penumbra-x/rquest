@@ -1,6 +1,5 @@
 #![cfg(not(target_arch = "wasm32"))]
 mod support;
-use rquest;
 use support::*;
 
 use std::time::Duration;
@@ -131,7 +130,7 @@ async fn connect_many_timeout() {
         .build()
         .unwrap();
 
-    let url = format!("http://many_addrs:81/slow");
+    let url = "http://many_addrs:81/slow".to_string();
 
     let res = client
         .get(url)

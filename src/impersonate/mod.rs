@@ -97,7 +97,10 @@ impl BoringTlsConnector {
 
         // Set the callback to add application settings.
         let context = context.clone();
-        http.set_callback(move |conf, _| Ok(configure_ssl_context(conf, &context)));
+        http.set_callback(move |conf, _| {
+            configure_ssl_context(conf, &context);
+            Ok(())
+        });
         Ok(http)
     }
 

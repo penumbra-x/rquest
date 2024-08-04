@@ -1,5 +1,4 @@
 #![deny(warnings)]
-use rquest;
 
 // This is using the `tokio` runtime. You'll need the following dependency:
 //

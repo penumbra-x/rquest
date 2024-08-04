@@ -1,6 +1,5 @@
 use std::net::Ipv4Addr;
 
-use rquest;
 use rquest::impersonate::Impersonate;
 
 #[tokio::main]

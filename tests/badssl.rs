@@ -1,5 +1,4 @@
 #![cfg(not(target_arch = "wasm32"))]
-use rquest;
 
 #[cfg(all(feature = "__tls"))]
 #[tokio::test]

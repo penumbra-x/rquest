@@ -1,4 +1,3 @@
-use rquest;
 // Short example of a POST request with form data.
 //
 // This is using the `tokio` runtime. You'll need the following dependency:

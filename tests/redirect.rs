@@ -1,7 +1,6 @@
 mod support;
 use futures_util::stream::StreamExt;
 use hyper::Body;
-use rquest;
 use support::*;
 
 #[tokio::test]

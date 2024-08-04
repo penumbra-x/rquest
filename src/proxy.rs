@@ -144,14 +144,11 @@ impl<S: IntoUrl> IntoProxyScheme for S {
                 let mut source = e.source();
                 while let Some(err) = source {
                     if let Some(parse_error) = err.downcast_ref::<url::ParseError>() {
-                        match parse_error {
-                            url::ParseError::RelativeUrlWithoutBase => {
-                                presumed_to_have_scheme = false;
-                                break;
-                            }
-                            _ => {}
+                        if parse_error == &url::ParseError::RelativeUrlWithoutBase {
+                            presumed_to_have_scheme = false;
+                            break;
                         }
-                    } else if let Some(_) = err.downcast_ref::<crate::error::BadScheme>() {
+                    } else if err.downcast_ref::<crate::error::BadScheme>().is_some() {
                         presumed_to_have_scheme = false;
                         break;
                     }
@@ -1018,7 +1015,7 @@ fn parse_platform_values_impl(platform_values: String) -> SystemProxyMap {
                 [protocol, address] => {
                     // If address doesn't specify an explicit protocol as protocol://address
                     // then default to HTTP
-                    let address = if extract_type_prefix(*address).is_some() {
+                    let address = if extract_type_prefix(address).is_some() {
                         String::from(*address)
                     } else {
                         format!("http://{}", address)
@@ -1034,15 +1031,13 @@ fn parse_platform_values_impl(platform_values: String) -> SystemProxyMap {
                 }
             }
         }
+    } else if let Some(scheme) = extract_type_prefix(&platform_values) {
+        // Explicit protocol has been specified
+        insert_proxy(&mut proxies, scheme, platform_values.to_owned());
     } else {
-        if let Some(scheme) = extract_type_prefix(&platform_values) {
-            // Explicit protocol has been specified
-            insert_proxy(&mut proxies, scheme, platform_values.to_owned());
-        } else {
-            // No explicit protocol has been specified, default to HTTP
-            insert_proxy(&mut proxies, "http", format!("http://{}", platform_values));
-            insert_proxy(&mut proxies, "https", format!("http://{}", platform_values));
-        }
+        // No explicit protocol has been specified, default to HTTP
+        insert_proxy(&mut proxies, "http", format!("http://{}", platform_values));
+        insert_proxy(&mut proxies, "https", format!("http://{}", platform_values));
     }
     proxies
 }

@@ -1,6 +1,5 @@
 #![cfg(not(target_arch = "wasm32"))]
 mod support;
-use rquest;
 
 use futures_util::stream::StreamExt;
 #[cfg(feature = "json")]
@@ -323,7 +322,7 @@ fn update_json_content_type_if_set_manually() {
     assert_eq!("application/json", req.headers().get(CONTENT_TYPE).unwrap());
 }
 
-#[cfg(all(feature = "__tls"))]
+#[cfg(feature = "__tls")]
 #[tokio::test]
 async fn test_tls_info() {
     let resp = rquest::Client::builder()
