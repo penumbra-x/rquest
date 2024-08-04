@@ -21,6 +21,7 @@ pub(crate) use profile::configure_impersonate;
 use profile::ClientProfile;
 pub use profile::{Http2Settings, Impersonate, ImpersonateSettings};
 use std::sync::Arc;
+use tokio::sync::OnceCell;
 
 type Builder = dyn Fn() -> Result<SslConnectorBuilder, ErrorStack> + Send + Sync;
 
@@ -35,13 +36,17 @@ pub(crate) struct ImpersonateContext {
     pub h2: bool,
 }
 
+const DEFAULT_SESSION_CACHE_CAPACITY: usize = 8;
+
+type Session = Arc<Mutex<SessionCache>>;
+
 /// A wrapper around a `SslConnectorBuilder` that allows for additional settings.
 #[derive(Clone)]
 pub struct BoringTlsConnector {
     /// The inner `SslConnectorBuilder`.
     builder: Arc<Builder>,
     /// The cached `HttpsConnector` sessions.
-    session: Arc<Mutex<SessionCache>>,
+    session: Arc<OnceCell<Session>>,
 }
 
 impl BoringTlsConnector {
@@ -52,7 +57,7 @@ impl BoringTlsConnector {
     {
         Self {
             builder: Arc::new(builder),
-            session: Arc::new(Mutex::new(SessionCache::with_capacity(8))),
+            session: Arc::new(OnceCell::new()),
         }
     }
 
@@ -84,11 +89,23 @@ impl BoringTlsConnector {
 
         // Create the `HttpsConnector` with the given settings.
         let mut http = if psk_extension || context.pre_shared_key {
+            // Initialize the session cache.
+            let session = self
+                .session
+                .get_or_init(|| async {
+                    Session::new(Mutex::new(SessionCache::with_capacity(
+                        DEFAULT_SESSION_CACHE_CAPACITY,
+                    )))
+                })
+                .await
+                .clone();
+
             HttpsConnector::with_connector_and_settings(
                 http,
                 builder,
                 HttpsLayerSettings::builder()
-                    .session_cache(self.session.clone())
+                    .session_cache_capacity(DEFAULT_SESSION_CACHE_CAPACITY)
+                    .session_cache(session)
                     .build(),
             )?
         } else {
