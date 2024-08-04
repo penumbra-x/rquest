@@ -10,11 +10,13 @@ mod safari;
 use crate::connect::HttpConnector;
 use crate::impersonate::extension::{SslConnectExtension, SslExtension};
 use antidote::Mutex;
+#[cfg(feature = "socks")]
+use boring::ssl::Ssl;
 use boring::{
     error::ErrorStack,
     ssl::{ConnectConfiguration, SslConnectorBuilder},
 };
-use hyper_boring::{HttpsConnector, SessionCache};
+use hyper_boring::{HttpsConnector, HttpsLayerSettings, SessionCache};
 pub(crate) use profile::configure_impersonate;
 use profile::ClientProfile;
 pub use profile::{Http2Settings, Impersonate, ImpersonateSettings};
@@ -50,7 +52,7 @@ impl BoringTlsConnector {
     {
         Self {
             builder: Arc::new(builder),
-            session: Arc::new(Mutex::new(SessionCache::new())),
+            session: Arc::new(Mutex::new(SessionCache::with_capacity(8))),
         }
     }
 
@@ -82,7 +84,13 @@ impl BoringTlsConnector {
 
         // Create the `HttpsConnector` with the given settings.
         let mut http = if psk_extension || context.pre_shared_key {
-            HttpsConnector::with_connector_and_cache(http, builder, self.session.clone())?
+            HttpsConnector::with_connector_and_settings(
+                http,
+                builder,
+                HttpsLayerSettings::builder()
+                    .session_cache(self.session.clone())
+                    .build(),
+            )?
         } else {
             HttpsConnector::with_connector(http, builder)?
         };
@@ -102,11 +110,9 @@ impl BoringTlsConnector {
         http: HttpConnector,
         uri: &http::uri::Uri,
         host: &str,
-    ) -> Result<ConnectConfiguration, ErrorStack> {
+    ) -> Result<Ssl, ErrorStack> {
         let connector = self.create_connector(context, http).await?;
-        let mut conf = connector.configure_and_setup(uri, host)?;
-        configure_ssl_context(&mut conf, context);
-        Ok(conf)
+        connector.setup_ssl(uri, host)
     }
 }
 

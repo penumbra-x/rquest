@@ -148,10 +148,12 @@ impl Connector {
                 if dst.scheme() == Some(&Scheme::HTTPS) {
                     let host = dst.host().ok_or("no host in url")?;
                     let conn = socks::connect(proxy, dst.clone(), dns).await?;
-                    let conf = tls
+                    let ssl = tls
                         .create_connector_configuration(&self.context, http.clone(), &dst, host)
                         .await?;
-                    let io = tokio_boring::connect(conf, &host, conn).await?;
+                    let io = tokio_boring::SslStreamBuilder::new(ssl, conn)
+                        .connect()
+                        .await?;
                     return Ok(Conn {
                         inner: self.verbose.wrap(BoringTlsConn { inner: io }),
                         is_proxy: false,
@@ -245,8 +247,10 @@ impl Connector {
                     log::trace!("tunneling HTTPS over proxy");
                     let tunneled = tunnel(conn, host, port, self.user_agent.as_ref(), auth).await?;
 
-                    let conf = http.configure_and_setup(&dst, host)?;
-                    let io = tokio_boring::connect(conf, host, tunneled).await?;
+                    let ssl = http.setup_ssl(&dst, host)?;
+                    let io = tokio_boring::SslStreamBuilder::new(ssl, tunneled)
+                        .connect()
+                        .await?;
 
                     return Ok(Conn {
                         inner: self.verbose.wrap(BoringTlsConn { inner: io }),

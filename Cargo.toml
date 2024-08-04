@@ -113,10 +113,10 @@ ipnet = "2.9.0"
 # Optional deps...
 
 ## boring-tls
-boring = { package = "boring-imp", version = "2", optional = true }
-boring-sys = { package = "boring-sys-imp", version = "2", optional = true }
-hyper-boring = { package = "hyper-boring-imp", version = "2", optional = true }
-tokio-boring = { package = "tokio-boring-imp", version = "2", optional = true }
+boring = { package = "boring-imp", version = "4", optional = true }
+boring-sys = { package = "boring-sys-imp", version = "4", optional = true }
+hyper-boring = { package = "hyper-boring-imp", version = "4", optional = true }
+tokio-boring = { package = "tokio-boring-imp", version = "4", optional = true }
 foreign-types = { version = "0.5.0", optional = true }
 antidote = { version = "1.0.0", optional = true }
 
