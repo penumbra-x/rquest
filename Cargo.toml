@@ -10,7 +10,7 @@ authors = ["0x676e67 <gngppz@gmail.com>"]
 readme = "README.md"
 license = "MIT"
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.80"
 autotests = true
 
 [package.metadata.docs.rs]
