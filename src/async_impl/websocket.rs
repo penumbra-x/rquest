@@ -86,7 +86,7 @@ impl WebSocketRequestBuilder {
         self
     }
 
-    /// Sends the request and returns and [`UpgradeResponse`].
+    /// Sends the request and returns and [`WebSocketResponse`].
     pub async fn send(self) -> Result<WebSocketResponse, Error> {
         let (client, request_result) = self.inner.build_split();
         let mut request = request_result?;

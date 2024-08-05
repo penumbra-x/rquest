@@ -691,7 +691,7 @@ impl ClientBuilder {
         self.with_inner(|inner| inner.tls_info(tls_info))
     }
 
-    /// Enables the [hickory-dns](hickory_dns_resolver) async resolver instead of a default threadpool using `getaddrinfo`.
+    /// Enables the [hickory-dns](hickory-dns) async resolver instead of a default threadpool using `getaddrinfo`.
     ///
     /// If the `hickory-dns` feature is turned on, the default option is enabled.
     ///

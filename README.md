@@ -5,36 +5,35 @@
 [![MIT](https://img.shields.io/crates/l/rquest.svg)](./LICENSE)
 [![CI](https://github.com/0x676e67/rquest/workflows/CI/badge.svg)](https://github.com/0x676e67/rquest/actions?query=workflow%3ACI)
 
-An intuitive and robust Rust `HTTP`/`WebSocket` Client featuring TLS/JA3/JA4/HTTP2 fingerprint impersonate
+An ergonomic, batteries included `HTTP`/`WebSocket` Rust client with TLS/JA3/JA4/HTTP2 fingerprinting emulation capabilities
 
 - Impersonate Chrome / Safari / Edge / OkHttp
 - Plain bodies, JSON, urlencoded, multipart
 - Customizable redirect policy
-- `HTTP`/`HTTPS`/`Socks5`/`Socks5h` Proxies
+- `HTTP` Proxies
 - `HTTPS`/`WebSocket` via BoringSSL
 - Cookie Store
 - [Changelog](CHANGELOG.md)
 
-## Example
+Additional learning resources include:
+
+ - [The Rust Cookbook](https://rust-lang-nursery.github.io/rust-cookbook/web/clients.html)
+ - [Repository Examples](https://github.com/0x676e67/rquest/tree/master/examples)
+ - [API Documentation](https://docs.rs/rquest)
+
+
+### Usage
 
 This asynchronous example uses [Tokio](https://tokio.rs) and enables some
 optional features, so your `Cargo.toml` could look like this:
+
+- HTTP
 
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 rquest = "0.11"
 ```
-
-Or WebSocket:
-
-```toml
-[dependencies]
-tokio = { version = "1", features = ["full"] }
-rquest = { version = "0.11", features = ["websocket"] }
-```
-
-And then the code:
 
 ```rust,no_run
 use std::error::Error;
@@ -58,7 +57,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
-And then the websocket code:
+- WebSocket
+
+```toml
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+rquest = { version = "0.11", features = ["websocket"] }
+```
 
 ```rust,no_run
 use std::error::Error;
@@ -100,14 +105,26 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
-## Contributing
+### Requirements
+
+Install the environment required to build [BoringSSL](https://github.com/google/boringssl/blob/master/BUILDING.md)
+
+Do not compile with crates that depend on OpenSSL; their prefixing symbols are the same and may cause linking [failures](https://github.com/rustls/rustls/issues/2010).
+
+### Contributing
 
 If you would like to submit your contribution, please open a [Pull Request](https://github.com/0x676e67/rquest/pulls).
 
-## Getting help
+### Getting help
 
 Your question might already be answered on the [issues](https://github.com/0x676e67/rquest/issues)
 
-## License
+### License
 
 MIT license ([LICENSE](LICENSE) or <http://opensource.org/licenses/MIT>)
+
+### Sponsors
+
+Support this project by becoming a [sponsor][].
+
+[sponsor]: https://github.com/0x676e67/0x676e67/blob/main/SPONSOR.md#sponsor-my-open-source-works

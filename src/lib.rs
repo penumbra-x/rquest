@@ -11,21 +11,20 @@
 //! It handles many of the things that most people just expect an HTTP client
 //! to do for them.
 //!
+//! In addition, it also provides common browser TLS/Http2 fingerprint simulation.
+//!
+//! - [Impersonate](#impersonate) Chrome / Safari / Edge / OkHttp
 //! - Async and [blocking] Clients
-//! - Plain bodies, [JSON](#json), [urlencoded](#forms), [multipart]
+//! - Plain bodies, [JSON](#json), [urlencoded](#forms), [multipart], [websockets](#websockets)
 //! - Customizable [redirect policy](#redirect-policies)
 //! - HTTP [Proxies](#proxies)
-//! - Uses system-native [TLS](#tls)
+//! - Uses BoringSSL [TLS](#tls)
 //! - Cookies
-//!
-//! The [`rquest::Client`][client] is asynchronous. For applications wishing
-//! to only make a few HTTP requests, the [`rquest::blocking`](blocking) API
-//! may be more convenient.
 //!
 //! Additional learning resources include:
 //!
 //! - [The Rust Cookbook](https://rust-lang-nursery.github.io/rust-cookbook/web/clients.html)
-//! - [rquest Repository Examples](https://github.com/0x676e67/rquest/tree/master/examples)
+//! - [Repository Examples](https://github.com/0x676e67/rquest/tree/master/examples)
 //!
 //! ## Making a GET request
 //!
@@ -117,6 +116,76 @@
 //! # }
 //! ```
 //!
+//! ## Impersonate
+//!
+//! The `impersonate` module provides a way to simulate various browser fingerprints.
+//!
+//! ```rust,no_run
+//! use std::error::Error;
+//! use rquest::impersonate::Impersonate;
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), Box<dyn Error>> {
+//!     // Build a client to mimic Chrome123
+//!     let client = rquest::Client::builder()
+//!         .impersonate(Impersonate::Chrome123)
+//!         .enable_ech_grease()
+//!         .permute_extensions()
+//!         .cookie_store(true)
+//!         .build()?;
+//!
+//!     // Use the API you're already familiar with
+//!     let resp = client.get("https://tls.peet.ws/api/all").send().await?;
+//!     println!("{}", resp.text().await?);
+//!
+//!     Ok(())
+//! }
+//! ```
+//!
+//! ## Websockets
+//!
+//! The `websocket` module provides a way to upgrade a connection to a websocket.
+//!
+//! ```rust,no_run
+//! use std::error::Error;
+//! use tungstenite::Message;
+//!
+//! use futures_util::{SinkExt, StreamExt, TryStreamExt};
+//! use rquest::{impersonate::Impersonate, Client};
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), Box<dyn Error>> {
+//!     let websocket = Client::builder()
+//!         .impersonate_websocket(Impersonate::Chrome120)
+//!         .build()?
+//!         .get("wss://echo.websocket.org")
+//!         .upgrade()
+//!         .send()
+//!         .await?
+//!         .into_websocket()
+//!         .await?;
+//!
+//!     let (mut tx, mut rx) = websocket.split();
+//!
+//!     tokio::spawn(async move {
+//!         for i in 1..11 {
+//!             tx.send(Message::Text(format!("Hello, World! #{i}")))
+//!                 .await
+//!                 .unwrap();
+//!         }
+//!     });
+//!
+//!     while let Some(message) = rx.try_next().await? {
+//!         match message {
+//!             Message::Text(text) => println!("received: {text}"),
+//!             _ => {}
+//!         }
+//!     }
+//!
+//!     Ok(())
+//! }
+//! ```
+//!
 //! ## Redirect Policies
 //!
 //! By default, a `Client` will automatically handle HTTP redirects, having a
@@ -146,12 +215,9 @@
 //! ```bash
 //! export https_proxy=socks5://127.0.0.1:1086
 //! ```
-//!
 //! ## TLS
 //!
-//! By default, a `Client` will make use of system-native transport layer
-//! security to connect to HTTPS destinations. This means schannel on Windows,
-//! Security-Framework on macOS, and OpenSSL on Linux.
+//! By default, clients will utilize BoringSSL transport layer security to connect to HTTPS targets.
 //!
 //! - Various parts of TLS can also be configured or even disabled on the
 //!   `ClientBuilder`.
@@ -161,19 +227,10 @@
 //! The following are a list of [Cargo features][cargo-features] that can be
 //! enabled or disabled:
 //!
-//! - **default-tls** *(enabled by default)*: Provides TLS support to connect
+//! - **boring-tls** *(enabled by default)*: Provides TLS support to connect
 //!   over HTTPS.
-//! - **native-tls**: Enables TLS functionality provided by `native-tls`.
-//! - **native-tls-vendored**: Enables the `vendored` feature of `native-tls`.
-//! - **native-tls-alpn**: Enables the `alpn` feature of `native-tls`.
-//! - **rustls-tls**: Enables TLS functionality provided by `rustls`.
-//!   Equivalent to `rustls-tls-webpki-roots`.
-//! - **rustls-tls-manual-roots**: Enables TLS functionality provided by `rustls`,
-//!   without setting any root certificates. Roots have to be specified manually.
-//! - **rustls-tls-webpki-roots**: Enables TLS functionality provided by `rustls`,
-//!   while using root certificates from the `webpki-roots` crate.
-//! - **rustls-tls-native-roots**: Enables TLS functionality provided by `rustls`,
-//!   while using root certificates from the `rustls-native-certs` crate.
+//! - **impersonate** *(enabled by default)*: Provides browser fingerprint
+//! - **websocket**: Provides websocket support.
 //! - **blocking**: Provides the [blocking][] client API.
 //! - **cookies**: Provides cookie session support.
 //! - **gzip**: Provides response body gzip decompression.
@@ -186,23 +243,6 @@
 //! - **socks**: Provides SOCKS5 proxy support.
 //! - **hickory-dns**: Enables a hickory-dns async resolver instead of default
 //!   threadpool using `getaddrinfo`.
-//!
-//! ## Unstable Features
-//!
-//! Some feature flags require additional opt-in by the application, by setting
-//! a `rquest_unstable` flag.
-//!
-//! - **http3** *(unstable)*: Enables support for sending HTTP/3 requests.
-//!
-//! These features are unstable, and experimental. Details about them may be
-//! changed in patch releases.
-//!
-//! You can pass such a flag to the compiler via `.cargo/config`, or
-//! environment variables, such as:
-//!
-//! ```notrust
-//! RUSTFLAGS="--cfg rquest_unstable" cargo build
-//! ```
 //!
 //! [hyper]: http://hyper.rs
 //! [blocking]: ./blocking/index.html
