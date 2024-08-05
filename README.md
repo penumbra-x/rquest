@@ -1,7 +1,8 @@
 # rquest
 
 [![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)
-[![MIT/Apache-2 licensed](https://img.shields.io/crates/l/rquest.svg)](./LICENSE-APACHE)
+[![Documentation](https://docs.rs/rquest/badge.svg)](https://docs.rs/rquest)
+[![MIT](https://img.shields.io/crates/l/rquest.svg)](./LICENSE)
 [![CI](https://github.com/0x676e67/rquest/workflows/CI/badge.svg)](https://github.com/0x676e67/rquest/actions?query=workflow%3ACI)
 
 An intuitive and robust Rust `HTTP`/`WebSocket` Client featuring TLS/JA3/JA4/HTTP2 fingerprint impersonate
