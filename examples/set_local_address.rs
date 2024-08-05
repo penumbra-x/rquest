@@ -1,6 +1,5 @@
-use std::net::Ipv4Addr;
-
 use rquest::impersonate::Impersonate;
+use std::net::Ipv4Addr;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

@@ -1,8 +1,6 @@
 //! `cargo run --example blocking --features=blocking`
 #![deny(warnings)]
 
-use rquest;
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
 

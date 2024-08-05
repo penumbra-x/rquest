@@ -37,7 +37,6 @@ And then the code:
 
 ```rust,no_run
 use std::error::Error;
-use rquest;
 use rquest::impersonate::Impersonate;
 
 #[tokio::main]
@@ -61,7 +60,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
 And then the websocket code:
 
 ```rust,no_run
-use rquest;
 use std::error::Error;
 use tungstenite::Message;
 

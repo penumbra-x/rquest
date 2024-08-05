@@ -5,7 +5,6 @@
 //! more code.
 
 // These require the `serde` dependency.
-use rquest;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -1,4 +1,3 @@
-use rquest;
 use rquest::impersonate::Impersonate;
 
 #[tokio::main]

@@ -1,4 +1,3 @@
-use rquest;
 use std::error::Error;
 use tungstenite::Message;
 

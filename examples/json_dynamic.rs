@@ -7,9 +7,6 @@
 // This is using the `tokio` runtime. You'll need the following dependency:
 //
 // `tokio = { version = "1", features = ["full"] }`
-
-use rquest;
-
 #[tokio::main]
 async fn main() -> Result<(), rquest::Error> {
     let echo_json: serde_json::Value = rquest::Client::new()
