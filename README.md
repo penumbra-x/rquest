@@ -5,7 +5,7 @@
 [![MIT](https://img.shields.io/crates/l/rquest.svg)](./LICENSE)
 [![CI](https://github.com/0x676e67/rquest/workflows/CI/badge.svg)](https://github.com/0x676e67/rquest/actions?query=workflow%3ACI)
 
-An ergonomic, batteries included `HTTP`/`WebSocket` Rust client with TLS/JA3/JA4/HTTP2 fingerprinting emulation capabilities
+An ergonomic, batteries included `HTTP`/`WebSocket` Rust client with TLS/JA3/JA4/HTTP2 fingerprinting impersonate
 
 - Impersonate Chrome / Safari / Edge / OkHttp
 - Plain bodies, JSON, urlencoded, multipart
