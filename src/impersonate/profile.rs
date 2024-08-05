@@ -6,7 +6,7 @@ use crate::{
     ClientBuilder,
 };
 use h2::profile::AgentProfile;
-use http::{HeaderMap, HeaderValue};
+use http::HeaderMap;
 use std::str::FromStr;
 
 /// Configure the client to impersonate the given version
@@ -25,15 +25,6 @@ pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) ->
         .gzip(settings.gzip)
 }
 
-/// Create the headers for the given profile
-fn create_profile_headers(profile: ClientProfile) -> HeaderMap {
-    let mut headers = HeaderMap::new();
-    let agent: AgentProfile = profile.into();
-    let (name, value) = agent.to_header();
-    headers.insert(name, HeaderValue::from_static(value));
-    headers
-}
-
 macro_rules! impersonate_match {
     ($ver:expr, $headers:expr, $($variant:pat => $path:path),+) => {
         match $ver {
@@ -48,7 +39,7 @@ macro_rules! impersonate_match {
 fn get_settings(ver: Impersonate) -> ImpersonateSettings {
     impersonate_match!(
         ver,
-        create_profile_headers(ver.profile()),
+        HeaderMap::new(),
         Impersonate::Chrome100 => chrome::v100::get_settings,
         Impersonate::Chrome101 => chrome::v101::get_settings,
         Impersonate::Chrome104 => chrome::v104::get_settings,

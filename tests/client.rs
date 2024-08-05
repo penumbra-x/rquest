@@ -5,8 +5,6 @@ use futures_util::stream::StreamExt;
 #[cfg(feature = "json")]
 use http::header::CONTENT_TYPE;
 #[cfg(feature = "json")]
-use http::HeaderValue;
-#[cfg(feature = "json")]
 use std::collections::HashMap;
 use support::*;
 

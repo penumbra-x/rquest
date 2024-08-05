@@ -124,7 +124,7 @@ impl BoringTlsConnector {
     /// Create a new `SslConnector` with the settings from the `ImpersonateContext`.
     #[cfg(feature = "socks")]
     #[inline]
-    pub(crate) async fn create_connector_configuration(
+    pub(crate) async fn create_ssl(
         &self,
         context: &ImpersonateContext,
         http: HttpConnector,

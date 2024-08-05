@@ -149,7 +149,7 @@ impl Connector {
                     let host = dst.host().ok_or("no host in url")?;
                     let conn = socks::connect(proxy, dst.clone(), dns).await?;
                     let ssl = tls
-                        .create_connector_configuration(&self.context, http.clone(), &dst, host)
+                        .create_ssl(&self.context, http.clone(), &dst, host)
                         .await?;
                     let io = tokio_boring::SslStreamBuilder::new(ssl, conn)
                         .connect()

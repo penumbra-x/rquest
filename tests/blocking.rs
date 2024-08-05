@@ -296,7 +296,6 @@ fn test_blocking_inside_a_runtime() {
     });
 }
 
-#[cfg(feature = "default-tls")]
 #[test]
 fn test_allowed_methods_blocking() {
     let resp = rquest::blocking::Client::builder()
