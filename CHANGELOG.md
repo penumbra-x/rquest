@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.100] - 2024-08-05
+
+### 🚀 Features
+
+- *(http2)* Optimize http2 frame order settings (#80)
+
 ## [0.11.99] - 2024-08-04
 
 ### 🚀 Features
