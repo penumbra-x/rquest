@@ -7,7 +7,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Build a client to mimic Edge127
     let client = rquest::Client::builder()
         .impersonate(Impersonate::Edge127)
-        .header_order(vec![header::HOST, HeaderName::from_static("priority"), header::COOKIE])
+        .header_order(vec![
+            header::HOST,
+            HeaderName::from_static("priority"),
+            header::COOKIE,
+        ])
         .build()?;
 
     // Use the API you're already familiar with

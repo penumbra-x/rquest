@@ -207,7 +207,7 @@ impl ClientBuilder {
     ///
     /// The host header needs to be manually inserted if you want to modify its order.
     /// Otherwise it will be inserted by hyper after sorting.
-    pub fn header_order(mut self, order: Vec<HeaderName>) -> ClientBuilder {
+    pub fn header_order(self, order: Vec<HeaderName>) -> ClientBuilder {
         self.with_inner(|inner| inner.header_order(order))
     }
 

@@ -24,10 +24,7 @@ impl Resolve for HickoryDnsResolver {
     fn resolve(&self, name: Name) -> Resolving {
         let resolver = self.clone();
         Box::pin(async move {
-            let resolver = resolver
-                .state
-                .get_or_try_init(|| async { new_resolver() })
-                .await?;
+            let resolver = resolver.state.get_or_try_init(new_resolver).await?;
 
             let lookup = resolver.lookup_ip(name.as_str()).await?;
             let addrs: Addrs = Box::new(SocketAddrs {
@@ -48,7 +45,7 @@ impl Iterator for SocketAddrs {
 
 /// Create a new resolver with the default configuration,
 /// which reads from `/etc/resolve.conf`.
-fn new_resolver() -> io::Result<TokioAsyncResolver> {
+async fn new_resolver() -> io::Result<TokioAsyncResolver> {
     let (config, opts) = system_conf::read_system_conf().map_err(|e| {
         io::Error::new(
             io::ErrorKind::Other,
