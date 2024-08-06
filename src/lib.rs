@@ -15,7 +15,7 @@
 //!
 //! - [Impersonate](#impersonate) Chrome / Safari / Edge / OkHttp
 //! - Async and [blocking] Clients
-//! - Plain bodies, [JSON](#json), [urlencoded](#forms), [multipart], [websockets](#websockets)
+//! - Plain bodies, [JSON](#json), [urlencoded](#forms), [multipart], [websocket](#websocket)
 //! - Customizable [redirect policy](#redirect-policies)
 //! - HTTP [Proxies](#proxies)
 //! - Uses BoringSSL [TLS](#tls)
@@ -142,7 +142,7 @@
 //! }
 //! ```
 //!
-//! ## Websockets
+//! ## Websocket
 //!
 //! The `websocket` module provides a way to upgrade a connection to a websocket.
 //!

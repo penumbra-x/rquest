@@ -10,7 +10,7 @@ use http::header::{
     CONTENT_TYPE, LOCATION, PROXY_AUTHORIZATION, RANGE, REFERER, TRANSFER_ENCODING, USER_AGENT,
 };
 use http::uri::Scheme;
-use http::Uri;
+use http::{HeaderName, Uri};
 use hyper::client::{HttpConnector, ResponseFuture as HyperResponseFuture};
 use pin_project_lite::pin_project;
 use std::future::Future;
@@ -72,6 +72,7 @@ struct Config {
     // NOTE: When adding a new field, update `fmt::Debug for ClientBuilder`
     accepts: Accepts,
     headers: HeaderMap,
+    headers_order: Option<Vec<HeaderName>>,
     #[cfg(feature = "__tls")]
     certs_verification: bool,
     #[cfg(feature = "__tls")]
@@ -152,6 +153,7 @@ impl ClientBuilder {
                 error: None,
                 accepts: Accepts::default(),
                 headers,
+                headers_order: None,
                 #[cfg(feature = "__tls")]
                 certs_verification: true,
                 #[cfg(feature = "__tls")]
@@ -214,46 +216,6 @@ impl ClientBuilder {
                 pre_shared_key: false,
             },
         }
-    }
-
-    /// Sets the necessary values to mimic the specified impersonate version.
-    #[cfg(feature = "__impersonate")]
-    pub fn impersonate(mut self, impersonate: Impersonate) -> ClientBuilder {
-        use crate::impersonate::configure_impersonate;
-
-        self.config.impersonate = impersonate;
-        configure_impersonate(impersonate, self)
-    }
-
-    /// Sets the necessary values to mimic the specified impersonate version. (websocket)
-    #[cfg(feature = "__impersonate")]
-    pub fn impersonate_websocket(mut self, impersonate: Impersonate) -> ClientBuilder {
-        use crate::impersonate::configure_impersonate;
-
-        self.config.impersonate = impersonate;
-        self = self.http1_only();
-        configure_impersonate(impersonate, self)
-    }
-
-    /// Enable Encrypted Client Hello (Secure SNI)
-    #[cfg(feature = "__impersonate")]
-    pub fn enable_ech_grease(mut self) -> ClientBuilder {
-        self.config.enable_ech_grease = true;
-        self
-    }
-
-    /// Enable TLS permute_extensions
-    #[cfg(feature = "__impersonate")]
-    pub fn permute_extensions(mut self) -> ClientBuilder {
-        self.config.permute_extensions = true;
-        self
-    }
-
-    /// Enable TLS pre_shared_key
-    #[cfg(feature = "__impersonate")]
-    pub fn pre_shared_key(mut self) -> ClientBuilder {
-        self.config.pre_shared_key = true;
-        self
     }
 
     /// Returns a `Client` that uses this `ClientBuilder` configuration.
@@ -415,6 +377,7 @@ impl ClientBuilder {
                 cookie_store: config.cookie_store,
                 hyper: builder.build(connector),
                 headers: config.headers,
+                headers_order: config.headers_order,
                 redirect_policy: Arc::new(config.redirect_policy),
                 referer: config.referer,
                 request_timeout: config.timeout,
@@ -422,6 +385,46 @@ impl ClientBuilder {
                 https_only: config.https_only,
             }),
         })
+    }
+
+    /// Sets the necessary values to mimic the specified impersonate version.
+    #[cfg(feature = "__impersonate")]
+    pub fn impersonate(mut self, impersonate: Impersonate) -> ClientBuilder {
+        use crate::impersonate::configure_impersonate;
+
+        self.config.impersonate = impersonate;
+        configure_impersonate(impersonate, self)
+    }
+
+    /// Sets the necessary values to mimic the specified impersonate version. (websocket)
+    #[cfg(feature = "__impersonate")]
+    pub fn impersonate_websocket(mut self, impersonate: Impersonate) -> ClientBuilder {
+        use crate::impersonate::configure_impersonate;
+
+        self.config.impersonate = impersonate;
+        self = self.http1_only();
+        configure_impersonate(impersonate, self)
+    }
+
+    /// Enable Encrypted Client Hello (Secure SNI)
+    #[cfg(feature = "__impersonate")]
+    pub fn enable_ech_grease(mut self) -> ClientBuilder {
+        self.config.enable_ech_grease = true;
+        self
+    }
+
+    /// Enable TLS permute_extensions
+    #[cfg(feature = "__impersonate")]
+    pub fn permute_extensions(mut self) -> ClientBuilder {
+        self.config.permute_extensions = true;
+        self
+    }
+
+    /// Enable TLS pre_shared_key
+    #[cfg(feature = "__impersonate")]
+    pub fn pre_shared_key(mut self) -> ClientBuilder {
+        self.config.pre_shared_key = true;
+        self
     }
 
     // Higher-level options
@@ -515,6 +518,17 @@ impl ClientBuilder {
     #[cfg(feature = "__browser_common")]
     pub(crate) fn replace_default_headers(mut self, headers: HeaderMap) -> ClientBuilder {
         self.config.headers = headers;
+        self
+    }
+
+    /// Change the order in which headers will be sent
+    ///
+    /// Warning
+    ///
+    /// The host header needs to be manually inserted if you want to modify its order.
+    /// Otherwise it will be inserted by hyper after sorting.
+    pub fn header_order(mut self, order: Vec<HeaderName>) -> ClientBuilder {
+        self.config.headers_order = Some(order);
         self
     }
 
@@ -1431,6 +1445,27 @@ impl Client {
             }
         }
 
+        // Insert headers in order if enabled
+        if let Some(ref headers_order) = self.inner.headers_order {
+            let mut sorted_headers = HeaderMap::with_capacity(headers.keys_len());
+
+            // First insert headers in order
+            for key in headers_order {
+                if let Some(value) = headers.get(key) {
+                    sorted_headers.insert(key, value.clone());
+                }
+            }
+
+            // Then insert any remaining headers
+            for (name, value) in headers.iter() {
+                if !sorted_headers.contains_key(name) {
+                    sorted_headers.insert(name, value.clone());
+                }
+            }
+
+            headers = sorted_headers;
+        }
+
         let uri = expect_uri(&url);
 
         let (reusable, body) = match body {
@@ -1734,6 +1769,7 @@ struct ClientRef {
     #[cfg(feature = "cookies")]
     cookie_store: Option<Arc<dyn cookie::CookieStore>>,
     headers: HeaderMap,
+    headers_order: Option<Vec<HeaderName>>,
     hyper: HyperClient,
     redirect_policy: Arc<redirect::Policy>,
     referer: bool,

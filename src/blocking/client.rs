@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-use http::header::HeaderValue;
+use http::header::{HeaderName, HeaderValue};
 use log::{error, trace};
 use tokio::sync::{mpsc, oneshot};
 
@@ -199,6 +199,16 @@ impl ClientBuilder {
     /// ```
     pub fn default_headers(self, headers: header::HeaderMap) -> ClientBuilder {
         self.with_inner(move |inner| inner.default_headers(headers))
+    }
+
+    /// Change the order in which headers will be sent
+    ///
+    /// Warning
+    ///
+    /// The host header needs to be manually inserted if you want to modify its order.
+    /// Otherwise it will be inserted by hyper after sorting.
+    pub fn header_order(mut self, order: Vec<HeaderName>) -> ClientBuilder {
+        self.with_inner(|inner| inner.header_order(order))
     }
 
     /// Enable a persistent cookie store for the client.
