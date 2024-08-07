@@ -386,30 +386,28 @@ impl ClientBuilder {
     }
 
     /// Sets the necessary values to mimic the specified impersonate version.
-    #[cfg(feature = "boring-tls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub fn impersonate(mut self, impersonate: Impersonate) -> ClientBuilder {
-        use crate::tls::configure_impersonate;
-
         self.config.tls_context.impersonate = impersonate;
-        configure_impersonate(impersonate, self)
+        crate::tls::configure_impersonate(impersonate, self)
     }
 
     /// Enable Encrypted Client Hello (Secure SNI)
-    #[cfg(feature = "boring-tls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub fn enable_ech_grease(mut self) -> ClientBuilder {
         self.config.tls_context.enable_ech_grease = true;
         self
     }
 
     /// Enable TLS permute_extensions
-    #[cfg(feature = "boring-tls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub fn permute_extensions(mut self) -> ClientBuilder {
         self.config.tls_context.permute_extensions = true;
         self
     }
 
     /// Enable TLS pre_shared_key
-    #[cfg(feature = "boring-tls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub fn pre_shared_key(mut self) -> ClientBuilder {
         self.config.tls_context.pre_shared_key = true;
         self
@@ -505,7 +503,7 @@ impl ClientBuilder {
     }
 
     /// Replace the default headers for every request.
-    #[cfg(feature = "boring-tls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub(crate) fn replace_default_headers(mut self, headers: HeaderMap) -> ClientBuilder {
         self.config.headers = headers;
         self
@@ -1066,7 +1064,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg(feature = "boring-tls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub fn tls_built_in_root_certs(mut self, tls_built_in_root_certs: bool) -> ClientBuilder {
         self.config.tls_built_in_root_certs = tls_built_in_root_certs;
         self
@@ -1087,7 +1085,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg(feature = "boring-tls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub fn danger_accept_invalid_certs(mut self, accept_invalid_certs: bool) -> ClientBuilder {
         self.config.tls_context.certs_verification = !accept_invalid_certs;
         self
@@ -1100,7 +1098,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg(feature = "boring-tls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub fn tls_sni(mut self, tls_sni: bool) -> ClientBuilder {
         self.config.tls_sni = tls_sni;
         self
@@ -1120,7 +1118,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg(feature = "boring-tls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub fn min_tls_version(mut self, version: tls::Version) -> ClientBuilder {
         self.config.tls_context.min_tls_version = Some(version);
         self
@@ -1140,7 +1138,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg(feature = "boring-tls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub fn max_tls_version(mut self, version: tls::Version) -> ClientBuilder {
         self.config.tls_context.max_tls_version = Some(version);
         self
@@ -1154,7 +1152,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// This requires the optional `boring-tls(-...)` feature to be enabled.
-    #[cfg(feature = "boring-tls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub fn use_boring_tls(mut self, connector: crate::tls::BoringTlsConnector) -> ClientBuilder {
         self.config.tls = Some(TlsBackend::BoringTls(connector));
         self
@@ -1165,7 +1163,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg(feature = "boring-tls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub fn tls_info(mut self, tls_info: bool) -> ClientBuilder {
         self.config.tls_info = tls_info;
         self
@@ -1270,9 +1268,9 @@ impl Client {
         ClientBuilder::new().build().expect("Client::new()")
     }
 
-    /// Create a `ClientBuilder` specifically configured for WebSocket connections.  
+    /// Create a `ClientBuilder` specifically configured for WebSocket connections.
     ///
-    /// This method configures the `ClientBuilder` to use HTTP/1.0 only, which is required for certain WebSocket connections.  
+    /// This method configures the `ClientBuilder` to use HTTP/1.0 only, which is required for certain WebSocket connections.
     pub fn builder() -> ClientBuilder {
         ClientBuilder::new()
     }
@@ -1501,7 +1499,7 @@ impl Client {
     }
 
     /// Get the client user agent
-    #[cfg(feature = "boring-tls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub fn user_agent(&self) -> Option<&HeaderValue> {
         self.inner.headers.get(USER_AGENT)
     }
