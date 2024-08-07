@@ -5,8 +5,7 @@
 [![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)
 [![Documentation](https://docs.rs/rquest/badge.svg)](https://docs.rs/rquest)
 
-
-An ergonomic, batteries included `HTTP`/`WebSocket` Rust client with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate
+An ergonomic, batteries included `HTTP`/`WebSocket` Rust client with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate, based on [reqwest](https://github.com/seanmonstar/reqwest).
 
 - Impersonate Chrome / Safari / Edge / OkHttp
 - Plain bodies, JSON, urlencoded, multipart

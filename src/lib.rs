@@ -5,7 +5,7 @@
 
 //! # rquest
 //!
-//! The `rquest` crate provides a convenient, higher-level `HTTP`/`WebSocket`
+//! The `rquest` (based on [reqwest](https://github.com/seanmonstar/reqwest)) crate provides a convenient, higher-level `HTTP`/`WebSocket`
 //! [`Client`][client].
 //!
 //! It handles many of the things that most people just expect an `HTTP`/`WebSocket` client
