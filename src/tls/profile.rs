@@ -21,8 +21,6 @@ pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) ->
         .http2_header_table_size(settings.http2.header_table_size)
         .http2_enable_push(settings.http2.enable_push)
         .replace_default_headers(settings.headers)
-        .brotli(settings.brotli)
-        .gzip(settings.gzip)
 }
 
 macro_rules! impersonate_match {
@@ -274,9 +272,6 @@ pub struct ImpersonateSettings {
     pub tls_connector: BoringTlsConnector,
     pub http2: Http2Settings,
     pub headers: HeaderMap,
-    pub gzip: bool,
-    pub brotli: bool,
-    pub zstd: bool,
 }
 
 /// HTTP/2 settings.
