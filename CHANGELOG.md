@@ -2,11 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.11.100] - 2024-08-05
+## [unreleased]
+
+### 🚀 Features
+
+- *(client)* Allow binding interface (#92)
+- *(tls)* Add zstd support for chrome models and derivatives (#93)
+
+### 🐛 Bug Fixes
+
+- *(proxy)* Make HTTP(S)_PROXY variables take precedence over ALL_PROXY (#87)
+- Fix incorrect Accept-Encoding header combinations in Accepts::as_str (#89)
+- *(client)* `headers_order` error
+
+### 🚜 Refactor
+
+- Change Debug of Error to output url as str (#88)
+- Blocking feature doesn't need multi-threaded tokio runtime (#90)
+- *(tls)* Major module changes (#91)
+- *(websocket)* Major changes, abstract WebSocket message structure (#94)
+
+## [0.11.103] - 2024-08-06
+
+### 🚀 Features
+
+- *(client)* Add custom header order support (#83)
+
+### 🚜 Refactor
+
+- *(hickory-dns)* Async `new_resolver` (#84)
+
+## [0.11.102] - 2024-08-05
 
 ### 🚀 Features
 
 - *(http2)* Optimize http2 frame order settings (#80)
+
+### 📚 Documentation
+
+- Fix docs build (#81)
+- Update docs (#82)
 
 ## [0.11.99] - 2024-08-04
 

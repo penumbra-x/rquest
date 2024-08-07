@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)
 [![Documentation](https://docs.rs/rquest/badge.svg)](https://docs.rs/rquest)
-[![MIT](https://img.shields.io/crates/l/rquest.svg)](./LICENSE)
+[![Apache-2.0](https://img.shields.io/github/license/0x676e67/rquest)](./LICENSE)
 [![CI](https://github.com/0x676e67/rquest/workflows/CI/badge.svg)](https://github.com/0x676e67/rquest/actions?query=workflow%3ACI)
 
 An ergonomic, batteries included `HTTP`/`WebSocket` Rust client with TLS/JA3/JA4/HTTP2 fingerprint impersonate
