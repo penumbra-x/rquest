@@ -21,9 +21,6 @@ pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
             enable_push: Some(false),
         },
         headers: create_headers(headers),
-        gzip: true,
-        brotli: true,
-        zstd: false,
     }
 }
 
