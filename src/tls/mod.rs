@@ -198,18 +198,18 @@ impl Version {
 }
 
 pub(crate) enum TlsBackend {
-    #[cfg(feature = "__boring")]
+    #[cfg(feature = "boring-tls")]
     BoringTls(BoringTlsConnector),
-    #[cfg(not(feature = "__boring"))]
+    #[cfg(not(feature = "boring-tls"))]
     UnknownPreconfigured,
 }
 
 impl fmt::Debug for TlsBackend {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            #[cfg(feature = "__boring")]
+            #[cfg(feature = "boring-tls")]
             TlsBackend::BoringTls(_) => write!(f, "BoringTls"),
-            #[cfg(not(feature = "__boring"))]
+            #[cfg(not(feature = "boring-tls"))]
             TlsBackend::UnknownPreconfigured => write!(f, "UnknownPreconfigured"),
         }
     }
@@ -217,14 +217,14 @@ impl fmt::Debug for TlsBackend {
 
 impl Default for TlsBackend {
     fn default() -> TlsBackend {
-        #[cfg(feature = "__boring")]
+        #[cfg(feature = "boring-tls")]
         {
             use boring::ssl::{SslConnector, SslMethod};
             TlsBackend::BoringTls(BoringTlsConnector::new(|| {
                 SslConnector::builder(SslMethod::tls())
             }))
         }
-        #[cfg(not(feature = "__boring"))]
+        #[cfg(not(feature = "boring-tls"))]
         {
             TlsBackend::UnknownPreconfigured
         }
