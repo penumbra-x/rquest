@@ -23,7 +23,7 @@ default = ["boring-tls", "impersonate"]
 
 boring-tls = ["__boring"]
 
-blocking = ["futures-util/io", "tokio/rt-multi-thread", "tokio/sync"]
+blocking = ["futures-util/io", "tokio/sync"]
 
 impersonate = ["__impersonate"]
 
