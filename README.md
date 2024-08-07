@@ -5,7 +5,7 @@
 [![MIT](https://img.shields.io/crates/l/rquest.svg)](./LICENSE)
 [![CI](https://github.com/0x676e67/rquest/workflows/CI/badge.svg)](https://github.com/0x676e67/rquest/actions?query=workflow%3ACI)
 
-An ergonomic, batteries included `HTTP`/`WebSocket` Rust client with TLS/JA3/JA4/HTTP2 fingerprinting impersonate
+An ergonomic, batteries included `HTTP`/`WebSocket` Rust client with TLS/JA3/JA4/HTTP2 fingerprint impersonate
 
 - Impersonate Chrome / Safari / Edge / OkHttp
 - Plain bodies, JSON, urlencoded, multipart
@@ -17,9 +17,9 @@ An ergonomic, batteries included `HTTP`/`WebSocket` Rust client with TLS/JA3/JA4
 
 Additional learning resources include:
 
- - [The Rust Cookbook](https://rust-lang-nursery.github.io/rust-cookbook/web/clients.html)
- - [Repository Examples](https://github.com/0x676e67/rquest/tree/master/examples)
- - [API Documentation](https://docs.rs/rquest)
+- [The Rust Cookbook](https://rust-lang-nursery.github.io/rust-cookbook/web/clients.html)
+- [Repository Examples](https://github.com/0x676e67/rquest/tree/master/examples)
+- [API Documentation](https://docs.rs/rquest)
 
 
 ### Usage
@@ -66,23 +66,13 @@ rquest = { version = "0.11", features = ["websocket"] }
 ```
 
 ```rust,no_run
-use std::error::Error;
-use tungstenite::Message;
-
 use futures_util::{SinkExt, StreamExt, TryStreamExt};
-use rquest::{impersonate::Impersonate, Client};
+use rquest::{tls::Impersonate, Client, Message};
+use std::error::Error;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let websocket = Client::builder()
-        .impersonate_websocket(Impersonate::Chrome120)
-        .build()?
-        .get("wss://echo.websocket.org")
-        .upgrade()
-        .send()
-        .await?
-        .into_websocket()
-        .await?;
+    let websocket = rquest::websocket("wss://echo.websocket.org").await?;
 
     let (mut tx, mut rx) = websocket.split();
 

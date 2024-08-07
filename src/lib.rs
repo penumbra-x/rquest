@@ -5,13 +5,13 @@
 
 //! # rquest
 //!
-//! The `rquest` crate provides a convenient, higher-level HTTP
+//! The `rquest` crate provides a convenient, higher-level `HTTP`/`WebSocket`
 //! [`Client`][client].
 //!
-//! It handles many of the things that most people just expect an HTTP client
+//! It handles many of the things that most people just expect an `HTTP`/`WebSocket` client
 //! to do for them.
 //!
-//! In addition, it also provides common browser TLS/Http2 fingerprint simulation.
+//! In addition, it also provides common browser TLS/Http2 fingerprint impersonate.
 //!
 //! - [Impersonate](#impersonate) Chrome / Safari / Edge / OkHttp
 //! - Async and [blocking] Clients
@@ -155,8 +155,8 @@
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn Error>> {
-//!     let websocket = Client::builder()
-//!         .impersonate_websocket(Impersonate::Chrome120)
+//!     let websocket = Client::ws_builder()
+//!         .impersonate(Impersonate::Chrome120)
 //!         .build()?
 //!         .get("wss://echo.websocket.org")
 //!         .upgrade()
@@ -313,15 +313,16 @@ pub async fn get<T: IntoUrl>(url: T) -> crate::Result<Response> {
 ///
 /// This is a shorthand for creating a request, sending it, and turning the
 /// response into a websocket.
-#[cfg(all(feature = "websocket", not(target_arch = "wasm32")))]
-pub async fn websocket<T: IntoUrl>(url: T) -> crate::Result<async_impl::websocket::WebSocket> {
-    Ok(Client::new()
+#[cfg(feature = "websocket")]
+pub async fn websocket<T: IntoUrl>(url: T) -> crate::Result<WebSocket> {
+    Client::ws_builder()
+        .build()?
         .get(url)
         .upgrade()
         .send()
         .await?
         .into_websocket()
-        .await?)
+        .await
 }
 
 fn _assert_impls() {
@@ -352,7 +353,7 @@ doc_comment::doctest!("../README.md");
 pub use self::async_impl::multipart;
 #[cfg(feature = "websocket")]
 pub use self::async_impl::websocket::{
-    Message, WebSocket, WebSocketRequestBuilder, WebSocketResponse,
+    CloseCode, Message, WebSocket, WebSocketRequestBuilder, WebSocketResponse,
 };
 pub use self::async_impl::{
     Body, Client, ClientBuilder, Request, RequestBuilder, Response, Upgraded,

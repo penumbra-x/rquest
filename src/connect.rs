@@ -97,7 +97,7 @@ impl Connector {
         interface: Option<&str>,
         nodelay: bool,
         tls_info: bool,
-        impersonate_context: TlsContext,
+        context: TlsContext,
     ) -> Connector {
         match (local_addr_v4, local_addr_v6) {
             (Some(v4), Some(v6)) => http.set_local_addresses(v4, v6),
@@ -119,7 +119,7 @@ impl Connector {
             nodelay,
             user_agent,
             tls_info,
-            context: impersonate_context,
+            context,
         }
     }
 

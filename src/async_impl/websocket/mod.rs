@@ -1,3 +1,7 @@
+#[cfg(feature = "json")]
+mod json;
+mod message;
+
 use std::{
     pin::Pin,
     task::{Context, Poll},
@@ -5,11 +9,12 @@ use std::{
 
 use crate::{error::Kind, RequestBuilder};
 use crate::{Error, Response};
+use async_tungstenite::tungstenite;
 use futures_util::{Sink, SinkExt, Stream, StreamExt};
 use http::{header, HeaderValue, StatusCode, Version};
+pub use message::{CloseCode, Message};
 use tokio_util::compat::TokioAsyncReadCompatExt;
 use tungstenite::protocol::WebSocketConfig;
-pub use tungstenite::Message;
 
 pub type WebSocketStream =
     async_tungstenite::WebSocketStream<tokio_util::compat::Compat<crate::Upgraded>>;
@@ -312,7 +317,7 @@ impl WebSocketResponse {
 
             let inner = async_tungstenite::WebSocketStream::from_raw_socket(
                 self.inner.upgrade().await?.compat(),
-                tungstenite::protocol::Role::Client,
+                async_tungstenite::tungstenite::protocol::Role::Client,
                 Some(self.config),
             )
             .await;
@@ -332,9 +337,31 @@ pub struct WebSocket {
 }
 
 impl WebSocket {
-    /// Returns the subprotocol that the server has accepted.
+    /// Returns the protocol negotiated during the handshake.
     pub fn protocol(&self) -> Option<&str> {
         self.protocol.as_deref()
+    }
+
+    /// Closes the connection with a given code and (optional) reason.
+    ///
+    /// # WASM
+    ///
+    /// On wasm `code` must be [`CloseCode::Normal`], [`CloseCode::Iana(_)`],
+    /// or [`CloseCode::Library(_)`]. Furthermore `reason` must be at most 123
+    /// bytes long. Otherwise the call to [`close`][Self::close] will fail.
+    pub async fn close(self, code: CloseCode, reason: Option<&str>) -> Result<(), Error> {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let mut inner = self.inner;
+            inner
+                .close(Some(tungstenite::protocol::CloseFrame {
+                    code: code.into(),
+                    reason: reason.unwrap_or_default().into(),
+                }))
+                .await?;
+        }
+
+        Ok(())
     }
 }
 
@@ -346,7 +373,17 @@ impl Stream for WebSocket {
             Poll::Pending => Poll::Pending,
             Poll::Ready(None) => Poll::Ready(None),
             Poll::Ready(Some(Err(error))) => Poll::Ready(Some(Err(error.into()))),
-            Poll::Ready(Some(Ok(message))) => Poll::Ready(Some(Ok(message))),
+            Poll::Ready(Some(Ok(message))) => match message.try_into() {
+                Ok(message) => Poll::Ready(Some(Ok(message))),
+                Err(e) => {
+                    // this fails only for raw frames (which are not received)
+                    log::debug!("received invalid frame: {:?}", e);
+                    Poll::Ready(Some(Err(Error::new(
+                        Kind::Body,
+                        Some("unsupported websocket frame"),
+                    ))))
+                }
+            },
         }
     }
 }
@@ -368,5 +405,47 @@ impl Sink<Message> for WebSocket {
 
     fn poll_close(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_close_unpin(cx).map_err(Into::into)
+    }
+}
+
+impl TryFrom<tungstenite::Message> for Message {
+    type Error = tungstenite::Message;
+
+    fn try_from(value: tungstenite::Message) -> Result<Self, Self::Error> {
+        match value {
+            tungstenite::Message::Text(text) => Ok(Self::Text(text)),
+            tungstenite::Message::Binary(data) => Ok(Self::Binary(data)),
+            tungstenite::Message::Ping(data) => Ok(Self::Ping(data)),
+            tungstenite::Message::Pong(data) => Ok(Self::Pong(data)),
+            tungstenite::Message::Close(Some(tungstenite::protocol::CloseFrame {
+                code,
+                reason,
+            })) => Ok(Self::Close {
+                code: code.into(),
+                reason: Some(reason.into_owned()),
+            }),
+            tungstenite::Message::Close(None) => Ok(Self::Close {
+                code: CloseCode::default(),
+                reason: None,
+            }),
+            tungstenite::Message::Frame(_) => Err(value),
+        }
+    }
+}
+
+impl From<Message> for tungstenite::Message {
+    fn from(value: Message) -> Self {
+        match value {
+            Message::Text(text) => Self::Text(text),
+            Message::Binary(data) => Self::Binary(data),
+            Message::Ping(data) => Self::Ping(data),
+            Message::Pong(data) => Self::Pong(data),
+            Message::Close { code, reason } => {
+                Self::Close(Some(tungstenite::protocol::CloseFrame {
+                    code: code.into(),
+                    reason: reason.unwrap_or_default().into(),
+                }))
+            }
+        }
     }
 }
