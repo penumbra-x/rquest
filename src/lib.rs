@@ -232,7 +232,6 @@
 //!
 //! - **boring-tls** *(enabled by default)*: Provides TLS support to connect
 //!   over HTTPS.
-//! - **impersonate** *(enabled by default)*: Provides browser fingerprint
 //! - **websocket**: Provides websocket support.
 //! - **blocking**: Provides the [blocking][] client API.
 //! - **cookies**: Provides cookie session support.
