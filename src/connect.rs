@@ -23,7 +23,7 @@ use crate::dns::DynResolver;
 use crate::error::BoxError;
 use crate::proxy::{Proxy, ProxyScheme};
 #[cfg(feature = "impersonate")]
-use crate::tls::{self, ImpersonateContext};
+use crate::tls::{self, TlsContext};
 
 pub(crate) type HttpConnector = hyper::client::HttpConnector<DynResolver>;
 
@@ -39,8 +39,8 @@ pub(crate) struct Connector {
     tls_info: bool,
     #[cfg(feature = "__tls")]
     user_agent: Option<HeaderValue>,
-    #[cfg(feature = "impersonate")]
-    context: ImpersonateContext,
+    #[cfg(feature = "__tls")]
+    context: TlsContext,
 }
 
 #[derive(Clone)]
@@ -55,6 +55,36 @@ enum Inner {
 }
 
 impl Connector {
+    #[cfg(not(feature = "__tls"))]
+    pub fn new(
+        mut http: HttpConnector,
+        proxies: Arc<Vec<Proxy>>,
+        local_addr_v4: Option<Ipv4Addr>,
+        local_addr_v6: Option<Ipv6Addr>,
+        #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+        interface: Option<&str>,
+        nodelay: bool,
+    ) -> Connector {
+        match (local_addr_v4, local_addr_v6) {
+            (Some(v4), Some(v6)) => http.set_local_addresses(v4, v6),
+            (Some(v4), None) => http.set_local_address(Some(IpAddr::from(v4))),
+            (None, Some(v6)) => http.set_local_address(Some(IpAddr::from(v6))),
+            _ => {}
+        }
+        #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+        if let Some(interface) = interface {
+            http.set_interface(interface);
+        }
+        http.set_nodelay(nodelay);
+
+        Connector {
+            inner: Inner::Http(http),
+            proxies,
+            verbose: verbose::OFF,
+            timeout: None,
+        }
+    }
+
     #[cfg(feature = "__boring")]
     pub(crate) fn new_boring_tls(
         mut http: HttpConnector,
@@ -63,15 +93,21 @@ impl Connector {
         user_agent: Option<HeaderValue>,
         local_addr_v4: Option<Ipv4Addr>,
         local_addr_v6: Option<Ipv6Addr>,
+        #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+        interface: Option<&str>,
         nodelay: bool,
         tls_info: bool,
-        impersonate_context: ImpersonateContext,
+        impersonate_context: TlsContext,
     ) -> Connector {
         match (local_addr_v4, local_addr_v6) {
             (Some(v4), Some(v6)) => http.set_local_addresses(v4, v6),
             (Some(v4), None) => http.set_local_address(Some(IpAddr::from(v4))),
             (None, Some(v6)) => http.set_local_address(Some(IpAddr::from(v6))),
             _ => {}
+        }
+        #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+        if let Some(interface) = interface {
+            http.set_interface(interface);
         }
         http.enforce_http(false);
 
@@ -113,19 +149,31 @@ impl Connector {
     }
 
     pub(crate) fn set_local_address(&mut self, addr: Option<IpAddr>) {
-        #[cfg(feature = "__boring")]
-        {
-            let Inner::BoringTls { http, .. } = &mut self.inner;
-            http.set_local_address(addr);
+        match &mut self.inner {
+            #[cfg(not(feature = "__tls"))]
+            Inner::Http(http) => http.set_local_address(addr),
+            #[cfg(feature = "__boring")]
+            Inner::BoringTls { http, .. } => http.set_local_address(addr),
         }
     }
 
     pub(crate) fn set_local_addresses(&mut self, addr_ipv4: Ipv4Addr, addr_ipv6: Ipv6Addr) {
-        #[cfg(feature = "__boring")]
-        {
-            let Inner::BoringTls { http, .. } = &mut self.inner;
-            http.set_local_addresses(addr_ipv4, addr_ipv6);
+        match &mut self.inner {
+            #[cfg(not(feature = "__tls"))]
+            Inner::Http(http) => http.set_local_addresses(addr_ipv4, addr_ipv6),
+            #[cfg(feature = "__boring")]
+            Inner::BoringTls { http, .. } => http.set_local_addresses(addr_ipv4, addr_ipv6),
         }
+    }
+
+    #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+    pub(crate) fn set_interface(&mut self, interface: &str) {
+        match &mut self.inner {
+            #[cfg(not(feature = "__tls"))]
+            Inner::Http(http) => http.set_interface(interface),
+            #[cfg(feature = "__boring")]
+            Inner::BoringTls { http, .. } => http.set_interface(interface),
+        };
     }
 
     #[cfg(feature = "socks")]

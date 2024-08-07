@@ -34,7 +34,7 @@ use crate::redirect::{self, remove_sensitive_headers};
 #[cfg(feature = "__tls")]
 use crate::tls::{self, TlsBackend};
 #[cfg(feature = "impersonate")]
-use crate::tls::{Impersonate, ImpersonateContext};
+use crate::tls::{Impersonate, TlsContext};
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
 use log::{debug, trace};
 
@@ -116,6 +116,8 @@ struct Config {
     http2_keep_alive_while_idle: bool,
     local_address_ipv6: Option<Ipv6Addr>,
     local_address_ipv4: Option<Ipv4Addr>,
+    #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+    interface: Option<String>,
     nodelay: bool,
     #[cfg(feature = "cookies")]
     cookie_store: Option<Arc<dyn cookie::CookieStore>>,
@@ -199,6 +201,8 @@ impl ClientBuilder {
                 http2_keep_alive_while_idle: false,
                 local_address_ipv6: None,
                 local_address_ipv4: None,
+                #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+                interface: None,
                 nodelay: true,
                 hickory_dns: cfg!(feature = "hickory-dns"),
                 #[cfg(feature = "cookies")]
@@ -272,9 +276,11 @@ impl ClientBuilder {
                     user_agent(&config.headers),
                     config.local_address_ipv4,
                     config.local_address_ipv6,
+                    #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+                    config.interface.as_deref(),
                     config.nodelay,
                     config.tls_info,
-                    ImpersonateContext {
+                    TlsContext {
                         impersonate: config.impersonate,
                         certs_verification: config.certs_verification,
                         enable_ech_grease: config.enable_ech_grease,
@@ -296,7 +302,13 @@ impl ClientBuilder {
             }
 
             #[cfg(not(feature = "__tls"))]
-            Connector::new(http, proxies.clone(), config.local_address, config.nodelay)
+            Connector::new(
+                http,
+                proxies.clone(),
+                config.local_address_ipv4,
+                config.local_address_ipv6,
+                config.nodelay,
+            )
         };
 
         connector.set_timeout(config.connect_timeout);
@@ -343,6 +355,7 @@ impl ClientBuilder {
             builder.http2_keep_alive_while_idle(true);
         }
 
+        #[cfg(feature = "__tls")]
         builder.http2_agent_profile(config.impersonate.profile().into());
         builder.pool_idle_timeout(config.pool_idle_timeout);
         builder.pool_max_idle_per_host(config.pool_max_idle_per_host);
@@ -1040,6 +1053,22 @@ impl ClientBuilder {
         self
     }
 
+    /// Bind to an interface by `SO_BINDTODEVICE`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let interface = "lo";
+    /// let client = reqwest::Client::builder()
+    ///     .interface(interface)
+    ///     .build().unwrap();
+    /// ```
+    #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+    pub fn interface(mut self, interface: &str) -> ClientBuilder {
+        self.config.interface = Some(interface.to_string());
+        self
+    }
+
     /// Set that all sockets have `SO_KEEPALIVE` set with the supplied duration.
     ///
     /// If `None`, the option will not be set.
@@ -1615,6 +1644,15 @@ impl Client {
         Arc::make_mut(&mut self.inner)
             .hyper
             .set_local_addresses(addr_ipv4, addr_ipv6);
+        self.inner.hyper.reset_pool_idle();
+    }
+
+    /// Bind to an interface by `SO_BINDTODEVICE`.
+    #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+    pub fn set_interface(&mut self, interface: &str) {
+        Arc::make_mut(&mut self.inner)
+            .hyper
+            .set_interface(interface);
         self.inner.hyper.reset_pool_idle();
     }
 }

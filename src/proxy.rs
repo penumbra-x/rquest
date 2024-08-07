@@ -874,7 +874,7 @@ fn insert_proxy(proxies: &mut SystemProxyMap, scheme: impl Into<String>, addr: S
 
 fn get_from_environment() -> SystemProxyMap {
     let mut proxies = HashMap::new();
-    
+
     if !(insert_from_env(&mut proxies, "http", "ALL_PROXY")
         && insert_from_env(&mut proxies, "https", "ALL_PROXY"))
     {

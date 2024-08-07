@@ -259,7 +259,9 @@
 //! [cargo-features]: https://doc.rust-lang.org/stable/cargo/reference/manifest.html#the-features-section
 
 /// Re-export of boring to keep versions in check
+#[cfg(feature = "__tls")]
 pub use boring;
+#[cfg(feature = "__tls")]
 pub use boring_sys;
 pub use http::header;
 pub use http::Method;
@@ -366,5 +368,6 @@ pub mod cookie;
 pub mod dns;
 mod proxy;
 pub mod redirect;
+#[cfg(feature = "__tls")]
 pub mod tls;
 mod util;

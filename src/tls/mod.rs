@@ -36,7 +36,7 @@ type Builder = dyn Fn() -> Result<SslConnectorBuilder, ErrorStack> + Send + Sync
 
 /// Context for impersonating a client.
 #[derive(Clone)]
-pub(crate) struct ImpersonateContext {
+pub(crate) struct TlsContext {
     pub impersonate: Impersonate,
     pub enable_ech_grease: bool,
     pub permute_extensions: bool,
@@ -74,7 +74,7 @@ impl BoringTlsConnector {
     #[inline]
     pub(crate) async fn create_connector(
         &self,
-        context: &ImpersonateContext,
+        context: &TlsContext,
         http: HttpConnector,
     ) -> Result<HttpsConnector<HttpConnector>, ErrorStack> {
         // Create the `SslConnectorBuilder` and configure it.
@@ -135,7 +135,7 @@ impl BoringTlsConnector {
     #[inline]
     pub(crate) async fn create_ssl(
         &self,
-        context: &ImpersonateContext,
+        context: &TlsContext,
         http: HttpConnector,
         uri: &http::uri::Uri,
         host: &str,
@@ -146,7 +146,7 @@ impl BoringTlsConnector {
 }
 
 /// Add application settings to the given `ConnectConfiguration`.
-fn configure_ssl_context(conf: &mut ConnectConfiguration, ctx: &ImpersonateContext) {
+fn configure_ssl_context(conf: &mut ConnectConfiguration, ctx: &TlsContext) {
     if matches!(
         ctx.impersonate.profile(),
         ClientProfile::Chrome | ClientProfile::Edge
