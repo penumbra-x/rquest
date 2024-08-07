@@ -1,4 +1,4 @@
-use rquest::impersonate::Impersonate;
+use rquest::tls::Impersonate;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

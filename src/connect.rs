@@ -5,7 +5,7 @@ use http::Uri;
 use hyper::client::connect::{Connected, Connection};
 use hyper::service::Service;
 #[cfg(feature = "__boring")]
-use impersonate::BoringTlsConnector;
+use tls::BoringTlsConnector;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
 use pin_project_lite::pin_project;
@@ -21,9 +21,9 @@ use std::time::Duration;
 use self::boring_tls_conn::BoringTlsConn;
 use crate::dns::DynResolver;
 use crate::error::BoxError;
-#[cfg(feature = "impersonate")]
-use crate::impersonate::{self, ImpersonateContext};
 use crate::proxy::{Proxy, ProxyScheme};
+#[cfg(feature = "impersonate")]
+use crate::tls::{self, ImpersonateContext};
 
 pub(crate) type HttpConnector = hyper::client::HttpConnector<DynResolver>;
 

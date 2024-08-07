@@ -14,10 +14,10 @@ use tokio::sync::{mpsc, oneshot};
 use super::request::{Request, RequestBuilder};
 use super::response::Response;
 use super::wait;
-#[cfg(feature = "__impersonate")]
-use crate::impersonate::Impersonate;
 #[cfg(feature = "__tls")]
 use crate::tls;
+#[cfg(feature = "__impersonate")]
+use crate::tls::Impersonate;
 use crate::{async_impl, header, redirect, IntoUrl, Method, Proxy};
 
 /// A `Client` to make Requests with.

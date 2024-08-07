@@ -37,7 +37,7 @@ rquest = "0.11"
 
 ```rust,no_run
 use std::error::Error;
-use rquest::impersonate::Impersonate;
+use rquest::tls::Impersonate;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

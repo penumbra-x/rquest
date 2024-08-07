@@ -2,7 +2,7 @@ use std::error::Error;
 use tungstenite::Message;
 
 use futures_util::{SinkExt, StreamExt, TryStreamExt};
-use rquest::{impersonate::Impersonate, Client};
+use rquest::{tls::Impersonate, Client};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

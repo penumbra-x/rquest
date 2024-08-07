@@ -122,7 +122,7 @@
 //!
 //! ```rust,no_run
 //! use std::error::Error;
-//! use rquest::impersonate::Impersonate;
+//! use rquest::tls::Impersonate;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn Error>> {
@@ -269,8 +269,6 @@ pub use url::Url;
 // universal mods
 #[macro_use]
 mod error;
-/// HTTP client implementate module
-pub mod impersonate;
 mod into_url;
 mod response;
 

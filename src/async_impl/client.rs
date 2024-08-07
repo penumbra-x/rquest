@@ -29,12 +29,12 @@ use crate::cookie;
 use crate::dns::hickory::HickoryDnsResolver;
 use crate::dns::{gai::GaiResolver, DnsResolverWithOverrides, DynResolver, Resolve};
 use crate::error;
-#[cfg(feature = "impersonate")]
-use crate::impersonate::{Impersonate, ImpersonateContext};
 use crate::into_url::{expect_uri, try_uri};
 use crate::redirect::{self, remove_sensitive_headers};
 #[cfg(feature = "__tls")]
 use crate::tls::{self, TlsBackend};
+#[cfg(feature = "impersonate")]
+use crate::tls::{Impersonate, ImpersonateContext};
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
 use log::{debug, trace};
 
@@ -390,7 +390,7 @@ impl ClientBuilder {
     /// Sets the necessary values to mimic the specified impersonate version.
     #[cfg(feature = "__impersonate")]
     pub fn impersonate(mut self, impersonate: Impersonate) -> ClientBuilder {
-        use crate::impersonate::configure_impersonate;
+        use crate::tls::configure_impersonate;
 
         self.config.impersonate = impersonate;
         configure_impersonate(impersonate, self)
@@ -399,7 +399,7 @@ impl ClientBuilder {
     /// Sets the necessary values to mimic the specified impersonate version. (websocket)
     #[cfg(feature = "__impersonate")]
     pub fn impersonate_websocket(mut self, impersonate: Impersonate) -> ClientBuilder {
-        use crate::impersonate::configure_impersonate;
+        use crate::tls::configure_impersonate;
 
         self.config.impersonate = impersonate;
         self = self.http1_only();
@@ -527,7 +527,7 @@ impl ClientBuilder {
     ///
     /// The host header needs to be manually inserted if you want to modify its order.
     /// Otherwise it will be inserted by hyper after sorting.
-    pub fn header_order(mut self, order: Vec<HeaderName>) -> ClientBuilder {
+    pub fn headers_order(mut self, order: Vec<HeaderName>) -> ClientBuilder {
         self.config.headers_order = Some(order);
         self
     }
@@ -1196,10 +1196,7 @@ impl ClientBuilder {
     /// This requires the optional `boring-tls(-...)` feature to be enabled.
     #[cfg(feature = "__boring")]
     #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
-    pub fn use_boring_tls(
-        mut self,
-        connector: crate::impersonate::BoringTlsConnector,
-    ) -> ClientBuilder {
+    pub fn use_boring_tls(mut self, connector: crate::tls::BoringTlsConnector) -> ClientBuilder {
         self.config.tls = Some(TlsBackend::BoringTls(connector));
         self
     }
