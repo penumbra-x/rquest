@@ -5,11 +5,7 @@
 
 //! # rquest
 //!
-//! The `rquest` (based on [reqwest](https://github.com/seanmonstar/reqwest)) crate provides a convenient, higher-level `HTTP`/`WebSocket`
-//! [`Client`][client].
-//!
-//! It handles many of the things that most people just expect an `HTTP`/`WebSocket` client
-//! to do for them.
+//! An fast asynchronous `Http`/`WebSocket` Rust [`Client`][client] with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate
 //!
 //! In addition, it also provides common browser TLS/Http2 fingerprint impersonate.
 //!

@@ -5,14 +5,15 @@
 [![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)
 [![Documentation](https://docs.rs/rquest/badge.svg)](https://docs.rs/rquest)
 
-An ergonomic, batteries included `HTTP`/`WebSocket` Rust client with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate, based on [reqwest](https://github.com/seanmonstar/reqwest).
+An fast asynchronous `Http`/`WebSocket` Rust Client with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate
 
-- Impersonate Chrome / Safari / Edge / OkHttp
-- Plain bodies, JSON, urlencoded, multipart
-- Customizable redirect policy
-- `HTTP` Proxies
-- `HTTPS`/`WebSocket` via BoringSSL
+- `Async` and `blocking` Clients
+- `Plain`, `JSON`, `urlencoded`, `multipart` bodies
+- Customizable `redirect` policy
 - Cookie Store
+- `HTTP`/`HTTPS`/`SOCKS5` Proxies
+- `HTTPS`/`WebSocket` via [BoringSSL](https://github.com/cloudflare/boring)
+- Impersonate `Chrome`/`Safari`/`Edge`/`OkHttp`
 - [Changelog](CHANGELOG.md)
 
 Additional learning resources include:
@@ -110,10 +111,8 @@ Your question might already be answered on the [issues](https://github.com/0x676
 
 ## License
 
-Apache-2.0 License ([LICENSE](LICENSE)
+Apache-2.0 [LICENSE](LICENSE)
 
-## Sponsors
+## Accolades
 
-Support this project by becoming a [sponsor][].
-
-[sponsor]: https://github.com/0x676e67/0x676e67/blob/main/SPONSOR.md#sponsor-my-open-source-works
+The project is based on a fork of [reqwest](https://github.com/seanmonstar/reqwest).
