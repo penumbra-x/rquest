@@ -19,15 +19,11 @@ rustdoc-args = ["--cfg", "docsrs"]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [features]
-default = ["boring-tls", "impersonate"]
-
-boring-tls = ["__boring"]
+default = ["boring-tls"]
 
 blocking = ["futures-util/io", "tokio/sync"]
 
-impersonate = ["__impersonate"]
-
-websocket = ["async-tungstenite", "tokio-util/compat", "impersonate"]
+websocket = ["async-tungstenite", "tokio-util/compat"]
 
 cookies = ["cookie_crate", "cookie_store"]
 
@@ -53,21 +49,14 @@ socks = ["tokio-socks"]
 # Don't rely on these whatsoever. They may disappear at anytime.
 
 # Enables common types used for TLS. Useless on its own.
-__tls = []
-
-__boring = [
+boring-tls = [
     "boring",
     "tokio-boring",
     "hyper-boring",
-    "__tls",
     "boring-sys",
     "foreign-types",
     "antidote",
 ]
-
-__impersonate = ["__boring", "__browser_common"]
-
-__browser_common = ["brotli", "gzip"]
 
 # When enabled, disable using the cached SYS_PROXIES.
 __internal_proxy_sys_no_cache = []

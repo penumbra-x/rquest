@@ -14,9 +14,9 @@ use tokio::sync::{mpsc, oneshot};
 use super::request::{Request, RequestBuilder};
 use super::response::Response;
 use super::wait;
-#[cfg(feature = "__tls")]
+#[cfg(feature = "boring-tls")]
 use crate::tls;
-#[cfg(feature = "__impersonate")]
+#[cfg(feature = "boring-tls")]
 use crate::tls::Impersonate;
 use crate::{async_impl, header, redirect, IntoUrl, Method, Proxy};
 
@@ -85,25 +85,25 @@ impl ClientBuilder {
     }
 
     /// Sets the necessary values to mimic the specified Chrome version.
-    #[cfg(feature = "__impersonate")]
+    #[cfg(feature = "boring-tls")]
     pub fn impersonate(self, ver: Impersonate) -> ClientBuilder {
         self.with_inner(move |inner| inner.impersonate(ver))
     }
 
     /// Enable Encrypted Client Hello (Secure SNI)
-    #[cfg(feature = "__impersonate")]
+    #[cfg(feature = "boring-tls")]
     pub fn enable_ech_grease(self) -> ClientBuilder {
         self.with_inner(move |inner| inner.enable_ech_grease())
     }
 
     /// Enable TLS permute_extensions
-    #[cfg(feature = "__impersonate")]
+    #[cfg(feature = "boring-tls")]
     pub fn permute_extensions(self) -> ClientBuilder {
         self.with_inner(move |inner| inner.permute_extensions())
     }
 
     /// Enable TLS pre_shared_key
-    #[cfg(feature = "__impersonate")]
+    #[cfg(feature = "boring-tls")]
     pub fn pre_shared_key(self) -> ClientBuilder {
         self.with_inner(move |inner| inner.pre_shared_key())
     }
@@ -635,7 +635,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg(feature = "__tls")]
+    #[cfg(feature = "boring-tls")]
     pub fn tls_built_in_root_certs(self, tls_built_in_root_certs: bool) -> ClientBuilder {
         self.with_inner(move |inner| inner.tls_built_in_root_certs(tls_built_in_root_certs))
     }
@@ -651,7 +651,7 @@ impl ClientBuilder {
     /// will be trusted for use. This includes expired certificates. This
     /// introduces significant vulnerabilities, and should only be used
     /// as a last resort.
-    #[cfg(feature = "__tls")]
+    #[cfg(feature = "boring-tls")]
     pub fn danger_accept_invalid_certs(self, accept_invalid_certs: bool) -> ClientBuilder {
         self.with_inner(|inner| inner.danger_accept_invalid_certs(accept_invalid_certs))
     }
@@ -659,7 +659,7 @@ impl ClientBuilder {
     /// Controls the use of TLS server name indication.
     ///
     /// Defaults to `true`.
-    #[cfg(feature = "__tls")]
+    #[cfg(feature = "boring-tls")]
     pub fn tls_sni(self, tls_sni: bool) -> ClientBuilder {
         self.with_inner(|inner| inner.tls_sni(tls_sni))
     }
@@ -678,7 +678,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg(feature = "__tls")]
+    #[cfg(feature = "boring-tls")]
     pub fn min_tls_version(self, version: tls::Version) -> ClientBuilder {
         self.with_inner(|inner| inner.min_tls_version(version))
     }
@@ -697,7 +697,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg(feature = "__tls")]
+    #[cfg(feature = "boring-tls")]
     pub fn max_tls_version(self, version: tls::Version) -> ClientBuilder {
         self.with_inner(|inner| inner.max_tls_version(version))
     }
@@ -707,7 +707,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg(feature = "__tls")]
+    #[cfg(feature = "boring-tls")]
     pub fn tls_info(self, tls_info: bool) -> ClientBuilder {
         self.with_inner(|inner| inner.tls_info(tls_info))
     }

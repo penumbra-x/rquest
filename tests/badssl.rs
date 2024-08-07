@@ -1,6 +1,6 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-#[cfg(all(feature = "__tls"))]
+#[cfg(all(feature = "__boring"))]
 #[tokio::test]
 async fn test_badssl_modern() {
     let text = rquest::Client::builder()
@@ -18,7 +18,7 @@ async fn test_badssl_modern() {
     assert!(text.contains("<title>mozilla-modern.badssl.com</title>"));
 }
 
-#[cfg(feature = "__tls")]
+#[cfg(feature = "boring-tls")]
 #[tokio::test]
 async fn test_badssl_self_signed() {
     let text = rquest::Client::builder()
@@ -38,7 +38,7 @@ async fn test_badssl_self_signed() {
     assert!(text.contains("<title>self-signed.badssl.com</title>"));
 }
 
-#[cfg(feature = "__tls")]
+#[cfg(feature = "boring-tls")]
 #[tokio::test]
 async fn test_badssl_no_built_in_roots() {
     let result = rquest::Client::builder()
