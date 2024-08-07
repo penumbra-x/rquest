@@ -1,6 +1,5 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-#[cfg(all(feature = "__boring"))]
 #[tokio::test]
 async fn test_badssl_modern() {
     let text = rquest::Client::builder()
