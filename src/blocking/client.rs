@@ -634,7 +634,6 @@ impl ClientBuilder {
     ///
     /// # Optional
     ///
-    /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
     pub fn tls_built_in_root_certs(self, tls_built_in_root_certs: bool) -> ClientBuilder {
@@ -678,7 +677,6 @@ impl ClientBuilder {
     ///
     /// # Optional
     ///
-    /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
     pub fn min_tls_version(self, version: tls::Version) -> ClientBuilder {
@@ -698,7 +696,6 @@ impl ClientBuilder {
     ///
     /// # Optional
     ///
-    /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
     pub fn max_tls_version(self, version: tls::Version) -> ClientBuilder {
@@ -709,7 +706,6 @@ impl ClientBuilder {
     ///
     /// # Optional
     ///
-    /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
     pub fn tls_info(self, tls_info: bool) -> ClientBuilder {
@@ -768,8 +764,6 @@ impl ClientBuilder {
     pub fn resolve_to_addrs(self, domain: &str, addrs: &[SocketAddr]) -> ClientBuilder {
         self.with_inner(|inner| inner.resolve_to_addrs(domain, addrs))
     }
-
-    // private
 
     fn with_inner<F>(mut self, func: F) -> ClientBuilder
     where

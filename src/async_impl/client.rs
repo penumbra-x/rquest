@@ -467,6 +467,7 @@ impl ClientBuilder {
         };
         self
     }
+
     /// Sets the default headers for every request.
     ///
     /// # Example
@@ -518,6 +519,7 @@ impl ClientBuilder {
         self
     }
 
+    /// Replace the default headers for every request.
     #[cfg(feature = "__browser_common")]
     pub(crate) fn replace_default_headers(mut self, headers: HeaderMap) -> ClientBuilder {
         self.config.headers = headers;
@@ -1078,7 +1080,6 @@ impl ClientBuilder {
     ///
     /// # Optional
     ///
-    /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
     pub fn tls_built_in_root_certs(mut self, tls_built_in_root_certs: bool) -> ClientBuilder {
@@ -1133,7 +1134,6 @@ impl ClientBuilder {
     ///
     /// # Optional
     ///
-    /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
     pub fn min_tls_version(mut self, version: tls::Version) -> ClientBuilder {
@@ -1154,7 +1154,6 @@ impl ClientBuilder {
     ///
     /// # Optional
     ///
-    /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
     pub fn max_tls_version(mut self, version: tls::Version) -> ClientBuilder {
@@ -1181,7 +1180,6 @@ impl ClientBuilder {
     ///
     /// # Optional
     ///
-    /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
     pub fn tls_info(mut self, tls_info: bool) -> ClientBuilder {
