@@ -110,7 +110,7 @@ Your question might already be answered on the [issues](https://github.com/0x676
 
 ## License
 
-MIT license ([LICENSE](LICENSE) or <http://opensource.org/licenses/MIT>)
+Apache-2.0 License ([LICENSE](LICENSE)
 
 ## Sponsors
 
