@@ -1072,25 +1072,6 @@ impl ClientBuilder {
 
     // TLS options
 
-    /// Add a custom root certificate.
-    ///
-    /// This can be used to connect to a server that has a self-signed
-    /// certificate for example.
-    ///
-    /// # Optional
-    ///
-    /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
-    /// feature to be enabled.
-    #[cfg(feature = "__tls")]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(any(
-            feature = "default-tls",
-            feature = "native-tls",
-            feature = "rustls-tls"
-        )))
-    )]
-
     /// Controls the use of built-in/preloaded certificates during certificate validation.
     ///
     /// Defaults to `true` -- built-in system certs will be used.
@@ -1100,14 +1081,6 @@ impl ClientBuilder {
     /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(any(
-            feature = "default-tls",
-            feature = "native-tls",
-            feature = "rustls-tls"
-        )))
-    )]
     pub fn tls_built_in_root_certs(mut self, tls_built_in_root_certs: bool) -> ClientBuilder {
         self.config.tls_built_in_root_certs = tls_built_in_root_certs;
         self
@@ -1163,14 +1136,6 @@ impl ClientBuilder {
     /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(any(
-            feature = "default-tls",
-            feature = "native-tls",
-            feature = "rustls-tls"
-        )))
-    )]
     pub fn min_tls_version(mut self, version: tls::Version) -> ClientBuilder {
         self.config.min_tls_version = Some(version);
         self
@@ -1192,14 +1157,6 @@ impl ClientBuilder {
     /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(any(
-            feature = "default-tls",
-            feature = "native-tls",
-            feature = "rustls-tls"
-        )))
-    )]
     pub fn max_tls_version(mut self, version: tls::Version) -> ClientBuilder {
         self.config.max_tls_version = Some(version);
         self
