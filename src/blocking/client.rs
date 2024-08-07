@@ -207,8 +207,8 @@ impl ClientBuilder {
     ///
     /// The host header needs to be manually inserted if you want to modify its order.
     /// Otherwise it will be inserted by hyper after sorting.
-    pub fn header_order(self, order: Vec<HeaderName>) -> ClientBuilder {
-        self.with_inner(|inner| inner.header_order(order))
+    pub fn headers_order(self, order: Vec<HeaderName>) -> ClientBuilder {
+        self.with_inner(|inner| inner.headers_order(order))
     }
 
     /// Enable a persistent cookie store for the client.
