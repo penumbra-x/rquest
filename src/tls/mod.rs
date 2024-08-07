@@ -17,8 +17,6 @@ mod safari;
 use crate::connect::HttpConnector;
 use crate::tls::extension::{SslConnectExtension, SslExtension};
 use antidote::Mutex;
-#[cfg(feature = "socks")]
-use boring::ssl::Ssl;
 use boring::{
     error::ErrorStack,
     ssl::{ConnectConfiguration, SslConnectorBuilder},
@@ -75,7 +73,7 @@ impl BoringTlsConnector {
         }
     }
 
-    /// Create a new `HttpsConnector` with the settings from the `ImpersonateContext`.
+    /// Create a new `HttpsConnector` with the settings from the `TlsContext`.
     #[inline]
     pub(crate) async fn create_connector(
         &self,
@@ -85,7 +83,9 @@ impl BoringTlsConnector {
         // Create the `SslConnectorBuilder` and configure it.
         let builder = (self.builder)()?
             .configure_alpn_protos(context.h2)?
-            .configure_cert_verification(context.certs_verification)?;
+            .configure_cert_verification(context.certs_verification)?
+            .configure_min_tls_version(context.min_tls_version)?
+            .configure_max_tls_version(context.max_tls_version)?;
 
         // Check if the PSK extension should be enabled.
         let psk_extension = matches!(
@@ -133,20 +133,6 @@ impl BoringTlsConnector {
             Ok(())
         });
         Ok(http)
-    }
-
-    /// Create a new `SslConnector` with the settings from the `ImpersonateContext`.
-    #[cfg(feature = "socks")]
-    #[inline]
-    pub(crate) async fn create_ssl(
-        &self,
-        context: &TlsContext,
-        http: HttpConnector,
-        uri: &http::uri::Uri,
-        host: &str,
-    ) -> Result<Ssl, ErrorStack> {
-        let connector = self.create_connector(context, http).await?;
-        connector.setup_ssl(uri, host)
     }
 }
 
