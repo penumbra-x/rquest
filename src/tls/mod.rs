@@ -32,8 +32,6 @@ use std::fmt::{self, Debug};
 use std::sync::Arc;
 use tokio::sync::OnceCell;
 
-type Builder = dyn Fn() -> Result<SslConnectorBuilder, ErrorStack> + Send + Sync;
-
 /// Context for impersonating a client.
 #[derive(Clone)]
 pub(crate) struct TlsContext {
@@ -45,8 +43,13 @@ pub(crate) struct TlsContext {
     pub h2: bool,
 }
 
+/// Default session cache capacity.
 const DEFAULT_SESSION_CACHE_CAPACITY: usize = 8;
 
+/// A builder for a `SslConnectorBuilder`.
+type Builder = dyn Fn() -> Result<SslConnectorBuilder, ErrorStack> + Send + Sync;
+
+/// A TLS session cache.
 type Session = Arc<Mutex<SessionCache>>;
 
 /// A wrapper around a `SslConnectorBuilder` that allows for additional settings.

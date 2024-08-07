@@ -23,6 +23,7 @@ pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
         headers: create_headers(headers),
         gzip: true,
         brotli: true,
+        zstd: true,
     }
 }
 fn create_headers(mut headers: HeaderMap) -> HeaderMap {

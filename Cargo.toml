@@ -206,16 +206,17 @@ required-features = ["blocking", "socks", "zstd"]
 [[example]]
 name = "set_proxies"
 path = "examples/set_proxies.rs"
-required-features = ["blocking", "socks", "zstd", "socks"]
+required-features = ["blocking", "socks", "zstd"]
 
 [[example]]
 name = "set_local_address"
 path = "examples/set_local_address.rs"
 required-features = ["blocking", "socks", "zstd"]
 
-[pexample]
+[[example]]
 name = "set_interface"
 path = "examples/set_interface.rs"
+required-features = ["blocking", "socks", "zstd"]
 
 [[example]]
 name = "websocket"

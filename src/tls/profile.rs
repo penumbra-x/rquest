@@ -276,6 +276,7 @@ pub struct ImpersonateSettings {
     pub headers: HeaderMap,
     pub gzip: bool,
     pub brotli: bool,
+    pub zstd: bool,
 }
 
 /// HTTP/2 settings.
