@@ -74,8 +74,6 @@ struct Config {
     headers: HeaderMap,
     headers_order: Option<Vec<HeaderName>>,
     #[cfg(feature = "__tls")]
-    certs_verification: bool,
-    #[cfg(feature = "__tls")]
     tls_sni: bool,
     connect_timeout: Option<Duration>,
     connection_verbose: bool,
@@ -89,10 +87,6 @@ struct Config {
     timeout: Option<Duration>,
     #[cfg(feature = "__tls")]
     tls_built_in_root_certs: bool,
-    #[cfg(feature = "__tls")]
-    min_tls_version: Option<tls::Version>,
-    #[cfg(feature = "__tls")]
-    max_tls_version: Option<tls::Version>,
     #[cfg(feature = "__tls")]
     tls_info: bool,
     #[cfg(feature = "__tls")]
@@ -126,14 +120,8 @@ struct Config {
     https_only: bool,
     dns_overrides: HashMap<String, Vec<SocketAddr>>,
     dns_resolver: Option<Arc<dyn Resolve>>,
-    #[cfg(feature = "impersonate")]
-    impersonate: Impersonate,
-    #[cfg(feature = "impersonate")]
-    enable_ech_grease: bool,
-    #[cfg(feature = "impersonate")]
-    permute_extensions: bool,
-    #[cfg(feature = "impersonate")]
-    pre_shared_key: bool,
+    #[cfg(feature = "__tls")]
+    tls_context: TlsContext,
 }
 
 impl Default for ClientBuilder {
@@ -157,8 +145,6 @@ impl ClientBuilder {
                 headers,
                 headers_order: None,
                 #[cfg(feature = "__tls")]
-                certs_verification: true,
-                #[cfg(feature = "__tls")]
                 tls_sni: true,
                 connect_timeout: None,
                 connection_verbose: false,
@@ -174,10 +160,6 @@ impl ClientBuilder {
                 timeout: None,
                 #[cfg(feature = "__tls")]
                 tls_built_in_root_certs: true,
-                #[cfg(feature = "__tls")]
-                min_tls_version: None,
-                #[cfg(feature = "__tls")]
-                max_tls_version: None,
                 #[cfg(feature = "__tls")]
                 tls_info: false,
                 #[cfg(feature = "__tls")]
@@ -210,14 +192,16 @@ impl ClientBuilder {
                 https_only: false,
                 dns_overrides: HashMap::new(),
                 dns_resolver: None,
-                #[cfg(feature = "impersonate")]
-                impersonate: Impersonate::default(),
-                #[cfg(feature = "impersonate")]
-                enable_ech_grease: false,
-                #[cfg(feature = "impersonate")]
-                permute_extensions: false,
-                #[cfg(feature = "impersonate")]
-                pre_shared_key: false,
+                tls_context: TlsContext {
+                    min_tls_version: None,
+                    max_tls_version: None,
+                    impersonate: Impersonate::default(),
+                    certs_verification: true,
+                    enable_ech_grease: false,
+                    permute_extensions: false,
+                    pre_shared_key: false,
+                    h2: false,
+                },
             },
         }
     }
@@ -229,7 +213,7 @@ impl ClientBuilder {
     /// This method fails if a TLS backend cannot be initialized, or the resolver
     /// cannot load the system configuration.
     pub fn build(self) -> crate::Result<Client> {
-        let config = self.config;
+        let mut config = self.config;
 
         if let Some(err) = config.error {
             return Err(err);
@@ -240,6 +224,11 @@ impl ClientBuilder {
             proxies.push(Proxy::system());
         }
         let proxies = Arc::new(proxies);
+
+        let proxies_maybe_http_auth = proxies.iter().any(|p| p.maybe_has_http_auth());
+
+        #[cfg(feature = "__tls")]
+        let agent_profile = config.tls_context.impersonate.profile().into();
 
         let mut connector = {
             #[cfg(feature = "__tls")]
@@ -272,7 +261,7 @@ impl ClientBuilder {
                 TlsBackend::BoringTls(tls) => Connector::new_boring_tls(
                     http,
                     tls,
-                    proxies.clone(),
+                    proxies,
                     user_agent(&config.headers),
                     config.local_address_ipv4,
                     config.local_address_ipv6,
@@ -280,16 +269,12 @@ impl ClientBuilder {
                     config.interface.as_deref(),
                     config.nodelay,
                     config.tls_info,
-                    TlsContext {
-                        impersonate: config.impersonate,
-                        certs_verification: config.certs_verification,
-                        enable_ech_grease: config.enable_ech_grease,
-                        permute_extensions: config.permute_extensions,
-                        pre_shared_key: config.pre_shared_key,
-                        h2: match config.http_version_pref {
+                    {
+                        config.tls_context.h2 = match config.http_version_pref {
                             HttpVersionPref::Http1 => false,
                             HttpVersionPref::Http2 | HttpVersionPref::All => true,
-                        },
+                        };
+                        config.tls_context
                     },
                 ),
 
@@ -315,6 +300,10 @@ impl ClientBuilder {
         connector.set_verbose(config.connection_verbose);
 
         let mut builder = hyper::Client::builder();
+
+        #[cfg(feature = "__tls")]
+        builder.http2_agent_profile(agent_profile);
+
         if matches!(config.http_version_pref, HttpVersionPref::Http2) {
             builder.http2_only(true);
         }
@@ -355,8 +344,6 @@ impl ClientBuilder {
             builder.http2_keep_alive_while_idle(true);
         }
 
-        #[cfg(feature = "__tls")]
-        builder.http2_agent_profile(config.impersonate.profile().into());
         builder.pool_idle_timeout(config.pool_idle_timeout);
         builder.pool_max_idle_per_host(config.pool_max_idle_per_host);
         connector.set_keepalive(config.tcp_keepalive);
@@ -381,8 +368,6 @@ impl ClientBuilder {
             builder.http1_allow_spaces_after_header_name_in_responses(true);
         }
 
-        let proxies_maybe_http_auth = proxies.iter().any(|p| p.maybe_has_http_auth());
-
         Ok(Client {
             inner: Arc::new(ClientRef {
                 accepts: config.accepts,
@@ -405,28 +390,28 @@ impl ClientBuilder {
     pub fn impersonate(mut self, impersonate: Impersonate) -> ClientBuilder {
         use crate::tls::configure_impersonate;
 
-        self.config.impersonate = impersonate;
+        self.config.tls_context.impersonate = impersonate;
         configure_impersonate(impersonate, self)
     }
 
     /// Enable Encrypted Client Hello (Secure SNI)
     #[cfg(feature = "__impersonate")]
     pub fn enable_ech_grease(mut self) -> ClientBuilder {
-        self.config.enable_ech_grease = true;
+        self.config.tls_context.enable_ech_grease = true;
         self
     }
 
     /// Enable TLS permute_extensions
     #[cfg(feature = "__impersonate")]
     pub fn permute_extensions(mut self) -> ClientBuilder {
-        self.config.permute_extensions = true;
+        self.config.tls_context.permute_extensions = true;
         self
     }
 
     /// Enable TLS pre_shared_key
     #[cfg(feature = "__impersonate")]
     pub fn pre_shared_key(mut self) -> ClientBuilder {
-        self.config.pre_shared_key = true;
+        self.config.tls_context.pre_shared_key = true;
         self
     }
 
@@ -1104,7 +1089,7 @@ impl ClientBuilder {
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
     pub fn danger_accept_invalid_certs(mut self, accept_invalid_certs: bool) -> ClientBuilder {
-        self.config.certs_verification = !accept_invalid_certs;
+        self.config.tls_context.certs_verification = !accept_invalid_certs;
         self
     }
 
@@ -1137,7 +1122,7 @@ impl ClientBuilder {
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
     pub fn min_tls_version(mut self, version: tls::Version) -> ClientBuilder {
-        self.config.min_tls_version = Some(version);
+        self.config.tls_context.min_tls_version = Some(version);
         self
     }
 
@@ -1157,7 +1142,7 @@ impl ClientBuilder {
     /// feature to be enabled.
     #[cfg(feature = "__tls")]
     pub fn max_tls_version(mut self, version: tls::Version) -> ClientBuilder {
-        self.config.max_tls_version = Some(version);
+        self.config.tls_context.max_tls_version = Some(version);
         self
     }
 
@@ -1727,15 +1712,15 @@ impl Config {
 
         #[cfg(feature = "__tls")]
         {
-            if !self.certs_verification {
+            if !self.tls_context.certs_verification {
                 f.field("danger_accept_invalid_certs", &true);
             }
 
-            if let Some(ref min_tls_version) = self.min_tls_version {
+            if let Some(ref min_tls_version) = self.tls_context.min_tls_version {
                 f.field("min_tls_version", min_tls_version);
             }
 
-            if let Some(ref max_tls_version) = self.max_tls_version {
+            if let Some(ref max_tls_version) = self.tls_context.max_tls_version {
                 f.field("max_tls_version", max_tls_version);
             }
 

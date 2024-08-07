@@ -7,6 +7,8 @@ use boring::ssl::{
 };
 use foreign_types::ForeignTypeRef;
 
+use super::Version;
+
 /// Extension trait for `SslConnector`.
 pub trait Extension {
     /// The signature algorithms list.
@@ -32,6 +34,18 @@ pub trait SslExtension {
 
     /// Configure the cipher list for the given `SslConnectorBuilder`.
     fn configure_cipher_list(self, cipher: &[&str]) -> Result<SslConnectorBuilder, ErrorStack>;
+
+    /// Configure the minimum TLS version for the given `SslConnectorBuilder`.
+    fn configure_min_tls_version(
+        self,
+        min_tls_version: Option<Version>,
+    ) -> Result<SslConnectorBuilder, ErrorStack>;
+
+    /// Configure the maximum TLS version for the given `SslConnectorBuilder`.
+    fn configure_max_tls_version(
+        self,
+        max_tls_version: Option<Version>,
+    ) -> Result<SslConnectorBuilder, ErrorStack>;
 }
 
 /// Context Extension trait for `ConnectConfiguration`.
@@ -220,6 +234,54 @@ impl SslExtension for SslConnectorBuilder {
 
     fn configure_cipher_list(mut self, cipher: &[&str]) -> Result<SslConnectorBuilder, ErrorStack> {
         self.set_cipher_list(&cipher.join(":"))?;
+        Ok(self)
+    }
+
+    fn configure_min_tls_version(
+        mut self,
+        min_tls_version: Option<Version>,
+    ) -> Result<SslConnectorBuilder, ErrorStack> {
+        if let Some(version) = min_tls_version {
+            match version.0 {
+                super::InnerVersion::Tls1_0 => {
+                    self.set_min_proto_version(Some(SslVersion::TLS1))?
+                }
+                super::InnerVersion::Tls1_1 => {
+                    self.set_min_proto_version(Some(SslVersion::TLS1_1))?
+                }
+                super::InnerVersion::Tls1_2 => {
+                    self.set_min_proto_version(Some(SslVersion::TLS1_2))?
+                }
+                super::InnerVersion::Tls1_3 => {
+                    self.set_min_proto_version(Some(SslVersion::TLS1_3))?
+                }
+            }
+        }
+
+        Ok(self)
+    }
+
+    fn configure_max_tls_version(
+        mut self,
+        max_tls_version: Option<Version>,
+    ) -> Result<SslConnectorBuilder, ErrorStack> {
+        if let Some(version) = max_tls_version {
+            match version.0 {
+                super::InnerVersion::Tls1_0 => {
+                    self.set_max_proto_version(Some(SslVersion::TLS1))?
+                }
+                super::InnerVersion::Tls1_1 => {
+                    self.set_max_proto_version(Some(SslVersion::TLS1_1))?
+                }
+                super::InnerVersion::Tls1_2 => {
+                    self.set_max_proto_version(Some(SslVersion::TLS1_2))?
+                }
+                super::InnerVersion::Tls1_3 => {
+                    self.set_max_proto_version(Some(SslVersion::TLS1_3))?
+                }
+            }
+        }
+
         Ok(self)
     }
 }

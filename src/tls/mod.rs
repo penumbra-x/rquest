@@ -35,6 +35,8 @@ use tokio::sync::OnceCell;
 /// Context for impersonating a client.
 #[derive(Clone)]
 pub(crate) struct TlsContext {
+    pub min_tls_version: Option<Version>,
+    pub max_tls_version: Option<Version>,
     pub impersonate: Impersonate,
     pub enable_ech_grease: bool,
     pub permute_extensions: bool,
