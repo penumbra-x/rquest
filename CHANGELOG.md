@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🐛 Bug Fixes
+
+- *(tls)* Fix setting config TLS version
+
+### Deps
+
+- *(system-configuration)* V0.6.0
+- *(winreg)* V0.52.0
+
+## [0.20.0] - 2024-08-07
+
 ### 🚀 Features
 
 - *(client)* Allow binding interface (#92)
@@ -14,6 +25,7 @@ All notable changes to this project will be documented in this file.
 - *(proxy)* Make HTTP(S)_PROXY variables take precedence over ALL_PROXY (#87)
 - Fix incorrect Accept-Encoding header combinations in Accepts::as_str (#89)
 - *(client)* `headers_order` error
+- *(tls)* Fix optional config TLS size version
 
 ### 🚜 Refactor
 
@@ -21,6 +33,12 @@ All notable changes to this project will be documented in this file.
 - Blocking feature doesn't need multi-threaded tokio runtime (#90)
 - *(tls)* Major module changes (#91)
 - *(websocket)* Major changes, abstract WebSocket message structure (#94)
+- Enabling `accept-encoding` will be determined by the feature
+- Enabled `accept-encoding` will be determined by the `feature` (#95)
+
+### ⚙️ Miscellaneous Tasks
+
+- Remove unnecessary tls feature
 
 ## [0.11.103] - 2024-08-06
 
