@@ -19,7 +19,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [features]
-default = ["boring-tls"]
+default = ["boring-tls", "macos-system-configuration"]
 
 blocking = ["futures-util/io", "tokio/sync"]
 
@@ -44,6 +44,9 @@ hickory-dns = ["hickory-resolver"]
 stream = ["tokio/fs", "tokio-util"]
 
 socks = ["tokio-socks"]
+
+# Use the macos system's proxy configuration.
+macos-system-configuration = ["system-configuration"]
 
 # Internal (PRIVATE!) features used to aid testing.
 # Don't rely on these whatsoever. They may disappear at anytime.
@@ -130,6 +133,12 @@ hickory-resolver = { version = "0.24", optional = true, features = [
     "tokio-runtime",
 ] }
 
+[target.'cfg(windows)'.dependencies]
+winreg = "0.50.0"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+system-configuration = { version = "0.6.0", optional = true }
+
 [dev-dependencies]
 env_logger = "0.10.0"
 hyper = { package = "hyper_imp", version = "0.14", default-features = false, features = [
@@ -150,12 +159,6 @@ tokio = { version = "1.0", default-features = false, features = [
     "macros",
     "rt-multi-thread",
 ] }
-
-[target.'cfg(windows)'.dependencies]
-winreg = "0.50.0"
-
-[target.'cfg(target_os = "macos")'.dependencies]
-system-configuration = "0.6.0"
 
 [[example]]
 name = "blocking"
