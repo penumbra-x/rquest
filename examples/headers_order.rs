@@ -8,6 +8,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let client = rquest::Client::builder()
         .impersonate(Impersonate::Edge127)
         .header_order(vec![
+            header::USER_AGENT,
             header::HOST,
             HeaderName::from_static("priority"),
             header::COOKIE,

@@ -874,6 +874,13 @@ fn insert_proxy(proxies: &mut SystemProxyMap, scheme: impl Into<String>, addr: S
 
 fn get_from_environment() -> SystemProxyMap {
     let mut proxies = HashMap::new();
+    
+    if !(insert_from_env(&mut proxies, "http", "ALL_PROXY")
+        && insert_from_env(&mut proxies, "https", "ALL_PROXY"))
+    {
+        insert_from_env(&mut proxies, "http", "all_proxy");
+        insert_from_env(&mut proxies, "https", "all_proxy");
+    }
 
     if is_cgi() {
         if log::log_enabled!(log::Level::Warn) && env::var_os("HTTP_PROXY").is_some() {
@@ -885,13 +892,6 @@ fn get_from_environment() -> SystemProxyMap {
 
     if !insert_from_env(&mut proxies, "https", "HTTPS_PROXY") {
         insert_from_env(&mut proxies, "https", "https_proxy");
-    }
-
-    if !(insert_from_env(&mut proxies, "http", "ALL_PROXY")
-        && insert_from_env(&mut proxies, "https", "ALL_PROXY"))
-    {
-        insert_from_env(&mut proxies, "http", "all_proxy");
-        insert_from_env(&mut proxies, "https", "all_proxy");
     }
 
     proxies
