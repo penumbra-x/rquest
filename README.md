@@ -1,11 +1,12 @@
 # rquest
 
+[![CI](https://github.com/0x676e67/rquest/workflows/CI/badge.svg)](https://github.com/0x676e67/rquest/actions?query=workflow%3ACI)
+[![Apache-2.0](https://img.shields.io/github/license/0x676e67/rquest)](./LICENSE)
 [![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)
 [![Documentation](https://docs.rs/rquest/badge.svg)](https://docs.rs/rquest)
-[![Apache-2.0](https://img.shields.io/github/license/0x676e67/rquest)](./LICENSE)
-[![CI](https://github.com/0x676e67/rquest/workflows/CI/badge.svg)](https://github.com/0x676e67/rquest/actions?query=workflow%3ACI)
 
-An ergonomic, batteries included `HTTP`/`WebSocket` Rust client with TLS/JA3/JA4/HTTP2 fingerprint impersonate
+
+An ergonomic, batteries included `HTTP`/`WebSocket` Rust client with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate
 
 - Impersonate Chrome / Safari / Edge / OkHttp
 - Plain bodies, JSON, urlencoded, multipart
@@ -17,12 +18,11 @@ An ergonomic, batteries included `HTTP`/`WebSocket` Rust client with TLS/JA3/JA4
 
 Additional learning resources include:
 
-- [The Rust Cookbook](https://rust-lang-nursery.github.io/rust-cookbook/web/clients.html)
-- [Repository Examples](https://github.com/0x676e67/rquest/tree/master/examples)
 - [API Documentation](https://docs.rs/rquest)
+- [Repository Examples](https://github.com/0x676e67/rquest/tree/master/examples)
 
 
-### Usage
+## Usage
 
 This asynchronous example uses [Tokio](https://tokio.rs) and enables some
 optional features, so your `Cargo.toml` could look like this:
@@ -95,25 +95,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
-### Requirements
+## Requirement
 
 Install the environment required to build [BoringSSL](https://github.com/google/boringssl/blob/master/BUILDING.md)
 
 Do not compile with crates that depend on OpenSSL; their prefixing symbols are the same and may cause linking [failures](https://github.com/rustls/rustls/issues/2010).
 
-### Contributing
+## Contributing
 
 If you would like to submit your contribution, please open a [Pull Request](https://github.com/0x676e67/rquest/pulls).
 
-### Getting help
+## Getting help
 
 Your question might already be answered on the [issues](https://github.com/0x676e67/rquest/issues)
 
-### License
+## License
 
 MIT license ([LICENSE](LICENSE) or <http://opensource.org/licenses/MIT>)
 
-### Sponsors
+## Sponsors
 
 Support this project by becoming a [sponsor][].
 
