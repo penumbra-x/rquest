@@ -1,7 +1,7 @@
 # rquest
 
 [![CI](https://github.com/0x676e67/rquest/workflows/CI/badge.svg)](https://github.com/0x676e67/rquest/actions?query=workflow%3ACI)
-[![Apache-2.0](https://img.shields.io/github/license/0x676e67/rquest)](./LICENSE)
+[![Apache-2.0](https://img.shields.io/github/license/0x676e67/rquest?color=blue)](./LICENSE)
 [![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)
 [![Documentation](https://docs.rs/rquest/badge.svg)](https://docs.rs/rquest)
 
