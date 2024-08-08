@@ -656,14 +656,6 @@ impl ClientBuilder {
         self.with_inner(|inner| inner.danger_accept_invalid_certs(accept_invalid_certs))
     }
 
-    /// Controls the use of TLS server name indication.
-    ///
-    /// Defaults to `true`.
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
-    pub fn tls_sni(self, tls_sni: bool) -> ClientBuilder {
-        self.with_inner(|inner| inner.tls_sni(tls_sni))
-    }
-
     /// Set the minimum required TLS version for connections.
     ///
     /// By default the TLS backend's own default is used.
