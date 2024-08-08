@@ -1,10 +1,8 @@
 #![allow(missing_docs)]
-
-use super::BoringTlsConnector;
 use crate::tls::{chrome, edge, okhttp, safari};
 use h2::profile::AgentProfile;
 use http::HeaderMap;
-use std::str::FromStr;
+use std::{any::Any, fmt::Debug, str::FromStr, sync::Arc};
 
 macro_rules! impersonate_match {
     ($ver:expr, $headers:expr, $($variant:pat => $path:path),+) => {
@@ -250,10 +248,18 @@ impl From<ClientProfile> for AgentProfile {
 }
 
 /// Connection settings
-#[derive(Debug)]
 pub struct ConnectSettings {
-    pub tls_connector: BoringTlsConnector,
+    pub tls_builder: Arc<super::Builder>,
     pub http2: Http2Settings,
+}
+
+impl Debug for ConnectSettings {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ConnectSettings")
+            .field("tls_builder", &self.tls_builder.type_id())
+            .field("http2", &self.http2)
+            .finish()
+    }
 }
 
 /// HTTP/2 settings.

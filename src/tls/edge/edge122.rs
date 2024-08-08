@@ -1,18 +1,16 @@
 use super::CIPHER_LIST;
 use crate::tls::extension::{EdgeExtension, Extension, SslExtension};
 use crate::tls::profile::{ConnectSettings, Http2Settings};
-use crate::tls::BoringTlsConnector;
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, UPGRADE_INSECURE_REQUESTS, USER_AGENT},
     HeaderMap, HeaderValue,
 };
+use std::sync::Arc;
 
 pub(crate) fn get_settings(headers: &mut HeaderMap) -> ConnectSettings {
     init_headers(headers);
     ConnectSettings {
-        tls_connector: BoringTlsConnector::new(|| {
-            EdgeExtension::builder()?.configure_cipher_list(&CIPHER_LIST)
-        }),
+        tls_builder: Arc::new(|| EdgeExtension::builder()?.configure_cipher_list(&CIPHER_LIST)),
         http2: Http2Settings {
             initial_stream_window_size: Some(6291456),
             initial_connection_window_size: Some(15728640),

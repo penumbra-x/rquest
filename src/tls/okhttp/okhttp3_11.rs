@@ -1,15 +1,15 @@
 use crate::tls::extension::{Extension, OkHttpExtension, SslExtension};
 use crate::tls::profile::{ConnectSettings, Http2Settings};
-use crate::tls::BoringTlsConnector;
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
     HeaderMap, HeaderValue,
 };
+use std::sync::Arc;
 
 pub(crate) fn get_settings(headers: &mut HeaderMap) -> ConnectSettings {
     init_headers(headers);
     ConnectSettings {
-        tls_connector: BoringTlsConnector::new(|| {
+        tls_builder: Arc::new(|| {
             OkHttpExtension::builder()?.configure_cipher_list(&[
                 "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
                 "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",

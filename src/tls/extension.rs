@@ -7,6 +7,8 @@ use boring::ssl::{
 };
 use foreign_types::ForeignTypeRef;
 
+use crate::async_impl::client::HttpVersionPref;
+
 use super::Version;
 
 /// Extension trait for `SslConnector`.
@@ -30,7 +32,10 @@ pub trait SslExtension {
     ) -> Result<SslConnectorBuilder, ErrorStack>;
 
     /// Configure the ALPN and certificate settings for the given `SslConnectorBuilder`.
-    fn configure_alpn_protos(self, h2: bool) -> Result<SslConnectorBuilder, ErrorStack>;
+    fn configure_alpn_protos(
+        self,
+        http_version: HttpVersionPref,
+    ) -> Result<SslConnectorBuilder, ErrorStack>;
 
     /// Configure the cipher list for the given `SslConnectorBuilder`.
     fn configure_cipher_list(self, cipher: &[&str]) -> Result<SslConnectorBuilder, ErrorStack>;
@@ -61,7 +66,10 @@ pub trait SslConnectExtension {
         -> &mut ConnectConfiguration;
 
     /// Configure the add_application_settings for the given `ConnectConfiguration`.
-    fn configure_add_application_settings(&mut self, h2: bool) -> &mut ConnectConfiguration;
+    fn configure_add_application_settings(
+        &mut self,
+        http_version: HttpVersionPref,
+    ) -> &mut ConnectConfiguration;
 }
 
 #[derive(Debug)]
@@ -223,12 +231,19 @@ impl SslExtension for SslConnectorBuilder {
         Ok(self)
     }
 
-    fn configure_alpn_protos(mut self, h2: bool) -> Result<SslConnectorBuilder, ErrorStack> {
-        if h2 {
-            self.set_alpn_protos(b"\x02h2\x08http/1.1")?;
-        } else {
-            self.set_alpn_protos(b"\x08http/1.1")?;
+    fn configure_alpn_protos(
+        mut self,
+        http_version: HttpVersionPref,
+    ) -> Result<SslConnectorBuilder, ErrorStack> {
+        match http_version {
+            HttpVersionPref::Http1 => {
+                self.set_alpn_protos(b"\x08http/1.1")?;
+            }
+            HttpVersionPref::Http2 | HttpVersionPref::All => {
+                self.set_alpn_protos(b"\x02h2\x08http/1.1")?;
+            }
         }
+
         Ok(self)
     }
 
@@ -309,20 +324,27 @@ impl SslConnectExtension for ConnectConfiguration {
         self
     }
 
-    fn configure_add_application_settings(&mut self, h2: bool) -> &mut ConnectConfiguration {
-        if h2 {
-            const ALPN_H2: &str = "h2";
-            const ALPN_H2_LENGTH: usize = 2;
-            unsafe {
-                boring_sys::SSL_add_application_settings(
-                    self.as_ptr(),
-                    ALPN_H2.as_ptr(),
-                    ALPN_H2_LENGTH,
-                    std::ptr::null(),
-                    0,
-                );
-            };
+    fn configure_add_application_settings(
+        &mut self,
+        http_version: HttpVersionPref,
+    ) -> &mut ConnectConfiguration {
+        match http_version {
+            HttpVersionPref::Http1 => {}
+            HttpVersionPref::Http2 | HttpVersionPref::All => {
+                const ALPN_H2: &str = "h2";
+                const ALPN_H2_LENGTH: usize = 2;
+                unsafe {
+                    boring_sys::SSL_add_application_settings(
+                        self.as_ptr(),
+                        ALPN_H2.as_ptr(),
+                        ALPN_H2_LENGTH,
+                        std::ptr::null(),
+                        0,
+                    );
+                };
+            }
         }
+
         self
     }
 }

@@ -15,9 +15,11 @@ mod profile;
 mod safari;
 
 pub(crate) use self::profile::connect_settings;
+use crate::async_impl::client::HttpVersionPref;
 use crate::connect::HttpConnector;
 use crate::tls::extension::{SslConnectExtension, SslExtension};
 use antidote::Mutex;
+use boring::ssl::{SslConnector, SslMethod};
 use boring::{
     error::ErrorStack,
     ssl::{ConnectConfiguration, SslConnectorBuilder},
@@ -30,66 +32,105 @@ use std::fmt::{self, Debug};
 use std::sync::Arc;
 use tokio::sync::OnceCell;
 
-/// Context for impersonating a client.
-#[derive(Clone)]
-pub(crate) struct TlsContext {
-    pub min_tls_version: Option<Version>,
-    pub max_tls_version: Option<Version>,
-    pub impersonate: Impersonate,
-    pub enable_ech_grease: bool,
-    pub permute_extensions: bool,
-    pub certs_verification: bool,
-    pub pre_shared_key: bool,
-    pub h2: bool,
-}
-
 /// Default session cache capacity.
 const DEFAULT_SESSION_CACHE_CAPACITY: usize = 8;
 
 /// A builder for a `SslConnectorBuilder`.
-type Builder = dyn Fn() -> Result<SslConnectorBuilder, ErrorStack> + Send + Sync;
+pub type Builder = dyn Fn() -> Result<SslConnectorBuilder, ErrorStack> + Send + Sync + 'static;
 
 /// A TLS session cache.
 type Session = Arc<Mutex<SessionCache>>;
 
+/// The TLS connector configuration.
+#[derive(Clone)]
+pub struct TlsConnectorBuilder {
+    /// The client to impersonate.
+    pub impersonate: Impersonate,
+    /// The minimum TLS version to use.
+    pub min_tls_version: Option<Version>,
+    /// The maximum TLS version to use.
+    pub max_tls_version: Option<Version>,
+    /// Enable ECH grease.
+    pub enable_ech_grease: bool,
+    /// Permute extensions.
+    pub permute_extensions: bool,
+    /// Verify certificates.
+    pub certs_verification: bool,
+    /// Use a pre-shared key.
+    pub pre_shared_key: bool,
+    /// The HTTP version preference.
+    pub http_version_pref: HttpVersionPref,
+    /// The SSL connector builder.
+    pub builder: Arc<Builder>,
+}
+
+impl Default for TlsConnectorBuilder {
+    fn default() -> Self {
+        Self {
+            min_tls_version: None,
+            max_tls_version: None,
+            impersonate: Default::default(),
+            enable_ech_grease: false,
+            permute_extensions: false,
+            certs_verification: true,
+            pre_shared_key: false,
+            http_version_pref: HttpVersionPref::All,
+            builder: Arc::new(|| SslConnector::builder(SslMethod::tls())),
+        }
+    }
+}
+
+impl Debug for TlsConnectorBuilder {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TlsConnector")
+            .field("min_tls_version", &self.min_tls_version)
+            .field("max_tls_version", &self.max_tls_version)
+            .field("impersonate", &self.impersonate)
+            .field("enable_ech_grease", &self.enable_ech_grease)
+            .field("permute_extensions", &self.permute_extensions)
+            .field("certs_verification", &self.certs_verification)
+            .field("pre_shared_key", &self.pre_shared_key)
+            .field("http_version_pref", &self.http_version_pref)
+            .field("builder", &self.builder.type_id())
+            .finish()
+    }
+}
+
 /// A wrapper around a `SslConnectorBuilder` that allows for additional settings.
 #[derive(Clone)]
-pub struct BoringTlsConnector {
+pub struct TlsConnector {
     /// The inner `SslConnectorBuilder`.
-    builder: Arc<Builder>,
+    tls_connector: TlsConnectorBuilder,
     /// The cached `HttpsConnector` sessions.
     session: Arc<OnceCell<Session>>,
 }
 
-impl BoringTlsConnector {
+impl TlsConnector {
     /// Create a new `BoringTlsConnector` with the given function.
-    pub fn new<F>(builder: F) -> BoringTlsConnector
-    where
-        F: Fn() -> Result<SslConnectorBuilder, ErrorStack> + Send + Sync + 'static,
-    {
+    pub fn new(tls_connector: TlsConnectorBuilder) -> TlsConnector {
         Self {
-            builder: Arc::new(builder),
+            tls_connector,
             session: Arc::new(OnceCell::new()),
         }
     }
 
     /// Create a new `HttpsConnector` with the settings from the `TlsContext`.
     #[inline]
-    pub(crate) async fn create_connector(
+    pub(crate) async fn new_connector(
         &self,
-        context: &TlsContext,
         http: HttpConnector,
     ) -> Result<HttpsConnector<HttpConnector>, ErrorStack> {
+        let tls = &self.tls_connector;
         // Create the `SslConnectorBuilder` and configure it.
-        let builder = (self.builder)()?
-            .configure_alpn_protos(context.h2)?
-            .configure_cert_verification(context.certs_verification)?
-            .configure_min_tls_version(context.min_tls_version)?
-            .configure_max_tls_version(context.max_tls_version)?;
+        let builder = (tls.builder)()?
+            .configure_alpn_protos(tls.http_version_pref.clone())?
+            .configure_cert_verification(tls.certs_verification)?
+            .configure_min_tls_version(tls.min_tls_version)?
+            .configure_max_tls_version(tls.max_tls_version)?;
 
         // Check if the PSK extension should be enabled.
         let psk_extension = matches!(
-            context.impersonate,
+            tls.impersonate,
             Impersonate::Chrome116
                 | Impersonate::Chrome117
                 | Impersonate::Chrome120
@@ -102,7 +143,7 @@ impl BoringTlsConnector {
         );
 
         // Create the `HttpsConnector` with the given settings.
-        let mut http = if psk_extension || context.pre_shared_key {
+        let mut http = if psk_extension || tls.pre_shared_key {
             // Initialize the session cache.
             let session = self
                 .session
@@ -127,7 +168,7 @@ impl BoringTlsConnector {
         };
 
         // Set the callback to add application settings.
-        let context = context.clone();
+        let context = tls.clone();
         http.set_callback(move |conf, _| {
             configure_ssl_context(conf, &context);
             Ok(())
@@ -137,21 +178,21 @@ impl BoringTlsConnector {
 }
 
 /// Add application settings to the given `ConnectConfiguration`.
-fn configure_ssl_context(conf: &mut ConnectConfiguration, ctx: &TlsContext) {
+fn configure_ssl_context(conf: &mut ConnectConfiguration, ctx: &TlsConnectorBuilder) {
     if matches!(
         ctx.impersonate.profile(),
         ClientProfile::Chrome | ClientProfile::Edge
     ) {
         conf.configure_permute_extensions(ctx.permute_extensions)
             .configure_enable_ech_grease(ctx.enable_ech_grease)
-            .configure_add_application_settings(ctx.h2);
+            .configure_add_application_settings(ctx.http_version_pref);
     }
 }
 
-impl Debug for BoringTlsConnector {
+impl Debug for TlsConnector {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("BoringTlsConnector")
-            .field("builder", &self.builder.type_id())
+            .field("builder", &self.tls_connector.type_id())
             .field("session", &self.session.type_id())
             .finish()
     }
@@ -183,39 +224,6 @@ impl Version {
     pub const TLS_1_3: Version = Version(InnerVersion::Tls1_3);
 }
 
-pub(crate) enum TlsBackend {
-    #[cfg(feature = "boring-tls")]
-    BoringTls(BoringTlsConnector),
-    #[cfg(not(feature = "boring-tls"))]
-    UnknownPreconfigured,
-}
-
-impl fmt::Debug for TlsBackend {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            #[cfg(feature = "boring-tls")]
-            TlsBackend::BoringTls(_) => write!(f, "BoringTls"),
-            #[cfg(not(feature = "boring-tls"))]
-            TlsBackend::UnknownPreconfigured => write!(f, "UnknownPreconfigured"),
-        }
-    }
-}
-
-impl Default for TlsBackend {
-    fn default() -> TlsBackend {
-        #[cfg(feature = "boring-tls")]
-        {
-            use boring::ssl::{SslConnector, SslMethod};
-            TlsBackend::BoringTls(BoringTlsConnector::new(|| {
-                SslConnector::builder(SslMethod::tls())
-            }))
-        }
-        #[cfg(not(feature = "boring-tls"))]
-        {
-            TlsBackend::UnknownPreconfigured
-        }
-    }
-}
 /// Hyper extension carrying extra TLS layer information.
 /// Made available to clients on responses when `tls_info` is set.
 #[derive(Clone)]

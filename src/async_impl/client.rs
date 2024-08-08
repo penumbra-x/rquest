@@ -32,9 +32,7 @@ use crate::error;
 use crate::into_url::{expect_uri, try_uri};
 use crate::redirect::{self, remove_sensitive_headers};
 #[cfg(feature = "boring-tls")]
-use crate::tls::{self, TlsBackend};
-#[cfg(feature = "boring-tls")]
-use crate::tls::{Impersonate, TlsContext};
+use crate::tls::{self, Impersonate, TlsConnector, TlsConnectorBuilder};
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
 use log::{debug, trace};
 
@@ -62,7 +60,8 @@ pub struct ClientBuilder {
     config: Config,
 }
 
-enum HttpVersionPref {
+#[derive(Debug, Clone, Copy)]
+pub enum HttpVersionPref {
     Http1,
     Http2,
     All,
@@ -83,12 +82,6 @@ struct Config {
     redirect_policy: redirect::Policy,
     referer: bool,
     timeout: Option<Duration>,
-    #[cfg(feature = "boring-tls")]
-    tls_built_in_root_certs: bool,
-    #[cfg(feature = "boring-tls")]
-    tls_info: bool,
-    #[cfg(feature = "boring-tls")]
-    tls: Option<TlsBackend>,
     http_version_pref: HttpVersionPref,
     http09_responses: bool,
     http1_title_case_headers: bool,
@@ -119,7 +112,11 @@ struct Config {
     dns_overrides: HashMap<String, Vec<SocketAddr>>,
     dns_resolver: Option<Arc<dyn Resolve>>,
     #[cfg(feature = "boring-tls")]
-    tls_context: TlsContext,
+    tls_built_in_root_certs: bool,
+    #[cfg(feature = "boring-tls")]
+    tls_info: bool,
+    #[cfg(feature = "boring-tls")]
+    tls: TlsConnectorBuilder,
 }
 
 impl Default for ClientBuilder {
@@ -154,12 +151,6 @@ impl ClientBuilder {
                 redirect_policy: redirect::Policy::default(),
                 referer: true,
                 timeout: None,
-                #[cfg(feature = "boring-tls")]
-                tls_built_in_root_certs: true,
-                #[cfg(feature = "boring-tls")]
-                tls_info: false,
-                #[cfg(feature = "boring-tls")]
-                tls: None,
                 http_version_pref: HttpVersionPref::All,
                 http09_responses: false,
                 http1_title_case_headers: false,
@@ -188,16 +179,12 @@ impl ClientBuilder {
                 https_only: false,
                 dns_overrides: HashMap::new(),
                 dns_resolver: None,
-                tls_context: TlsContext {
-                    min_tls_version: None,
-                    max_tls_version: None,
-                    impersonate: Impersonate::default(),
-                    certs_verification: true,
-                    enable_ech_grease: false,
-                    permute_extensions: false,
-                    pre_shared_key: false,
-                    h2: false,
-                },
+                #[cfg(feature = "boring-tls")]
+                tls_built_in_root_certs: true,
+                #[cfg(feature = "boring-tls")]
+                tls_info: false,
+                #[cfg(feature = "boring-tls")]
+                tls: Default::default(),
             },
         }
     }
@@ -209,7 +196,7 @@ impl ClientBuilder {
     /// This method fails if a TLS backend cannot be initialized, or the resolver
     /// cannot load the system configuration.
     pub fn build(self) -> crate::Result<Client> {
-        let mut config = self.config;
+        let config = self.config;
 
         if let Some(err) = config.error {
             return Err(err);
@@ -224,7 +211,7 @@ impl ClientBuilder {
         let proxies_maybe_http_auth = proxies.iter().any(|p| p.maybe_has_http_auth());
 
         #[cfg(feature = "boring-tls")]
-        let agent_profile = config.tls_context.impersonate.profile().into();
+        let agent_profile = config.tls.impersonate.profile().into();
 
         let mut connector = {
             #[cfg(feature = "boring-tls")]
@@ -252,11 +239,10 @@ impl ClientBuilder {
             http.set_connect_timeout(config.connect_timeout);
 
             #[cfg(feature = "boring-tls")]
-            match config.tls.unwrap_or_default() {
-                #[cfg(feature = "boring-tls")]
-                TlsBackend::BoringTls(tls) => Connector::new_boring_tls(
+            {
+                Connector::new_boring_tls(
                     http,
-                    tls,
+                    TlsConnector::new(config.tls),
                     proxies,
                     user_agent(&config.headers),
                     config.local_address_ipv4,
@@ -265,31 +251,19 @@ impl ClientBuilder {
                     config.interface.as_deref(),
                     config.nodelay,
                     config.tls_info,
-                    {
-                        config.tls_context.h2 = match config.http_version_pref {
-                            HttpVersionPref::Http1 => false,
-                            HttpVersionPref::Http2 | HttpVersionPref::All => true,
-                        };
-                        config.tls_context
-                    },
-                ),
-
-                #[cfg(not(feature = "boring-tls"))]
-                TlsBackend::UnknownPreconfigured => {
-                    return Err(crate::error::builder(
-                        "Unknown TLS backend passed to `use_preconfigured_tls`",
-                    ));
-                }
+                )
             }
 
             #[cfg(not(feature = "boring-tls"))]
-            Connector::new(
-                http,
-                proxies.clone(),
-                config.local_address_ipv4,
-                config.local_address_ipv6,
-                config.nodelay,
-            )
+            {
+                Connector::new(
+                    http,
+                    proxies.clone(),
+                    config.local_address_ipv4,
+                    config.local_address_ipv6,
+                    config.nodelay,
+                )
+            }
         };
 
         connector.set_timeout(config.connect_timeout);
@@ -382,12 +356,12 @@ impl ClientBuilder {
     }
 
     /// Sets the necessary values to mimic the specified impersonate version.
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    #[cfg(feature = "boring-tls")]
     pub fn impersonate(mut self, impersonate: Impersonate) -> ClientBuilder {
-        self.config.tls_context.impersonate = impersonate;
         let settings = crate::tls::connect_settings(impersonate, &mut self.config.headers);
-        self.use_boring_tls(settings.tls_connector)
-            .http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
+        self.config.tls.impersonate = impersonate;
+        self.config.tls.builder = settings.tls_builder;
+        self.http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
             .http2_initial_connection_window_size(settings.http2.initial_connection_window_size)
             .http2_max_concurrent_streams(settings.http2.max_concurrent_streams)
             .http2_max_header_list_size(settings.http2.max_header_list_size)
@@ -396,23 +370,23 @@ impl ClientBuilder {
     }
 
     /// Enable Encrypted Client Hello (Secure SNI)
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    #[cfg(feature = "boring-tls")]
     pub fn enable_ech_grease(mut self) -> ClientBuilder {
-        self.config.tls_context.enable_ech_grease = true;
+        self.config.tls.enable_ech_grease = true;
         self
     }
 
     /// Enable TLS permute_extensions
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    #[cfg(feature = "boring-tls")]
     pub fn permute_extensions(mut self) -> ClientBuilder {
-        self.config.tls_context.permute_extensions = true;
+        self.config.tls.permute_extensions = true;
         self
     }
 
     /// Enable TLS pre_shared_key
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    #[cfg(feature = "boring-tls")]
     pub fn pre_shared_key(mut self) -> ClientBuilder {
-        self.config.tls_context.pre_shared_key = true;
+        self.config.tls.pre_shared_key = true;
         self
     }
 
@@ -861,6 +835,10 @@ impl ClientBuilder {
 
     /// Only use HTTP/1.
     pub fn http1_only(mut self) -> ClientBuilder {
+        #[cfg(feature = "boring-tls")]
+        {
+            self.config.tls.http_version_pref = HttpVersionPref::Http1;
+        }
         self.config.http_version_pref = HttpVersionPref::Http1;
         self
     }
@@ -873,6 +851,10 @@ impl ClientBuilder {
 
     /// Only use HTTP/2.
     pub fn http2_prior_knowledge(mut self) -> ClientBuilder {
+        #[cfg(feature = "boring-tls")]
+        {
+            self.config.tls.http_version_pref = HttpVersionPref::Http2;
+        }
         self.config.http_version_pref = HttpVersionPref::Http2;
         self
     }
@@ -1060,7 +1042,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    #[cfg(feature = "boring-tls")]
     pub fn tls_built_in_root_certs(mut self, tls_built_in_root_certs: bool) -> ClientBuilder {
         self.config.tls_built_in_root_certs = tls_built_in_root_certs;
         self
@@ -1081,9 +1063,9 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    #[cfg(feature = "boring-tls")]
     pub fn danger_accept_invalid_certs(mut self, accept_invalid_certs: bool) -> ClientBuilder {
-        self.config.tls_context.certs_verification = !accept_invalid_certs;
+        self.config.tls.certs_verification = !accept_invalid_certs;
         self
     }
 
@@ -1101,9 +1083,9 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    #[cfg(feature = "boring-tls")]
     pub fn min_tls_version(mut self, version: tls::Version) -> ClientBuilder {
-        self.config.tls_context.min_tls_version = Some(version);
+        self.config.tls.min_tls_version = Some(version);
         self
     }
 
@@ -1121,23 +1103,9 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    #[cfg(feature = "boring-tls")]
     pub fn max_tls_version(mut self, version: tls::Version) -> ClientBuilder {
-        self.config.tls_context.max_tls_version = Some(version);
-        self
-    }
-
-    /// Force using the Boring TLS backend.
-    ///
-    /// Since multiple TLS backends can be optionally enabled, this option will
-    /// force the `boring` backend to be used for this `Client`.
-    ///
-    /// # Optional
-    ///
-    /// This requires the optional `boring-tls(-...)` feature to be enabled.
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
-    pub fn use_boring_tls(mut self, connector: crate::tls::BoringTlsConnector) -> ClientBuilder {
-        self.config.tls = Some(TlsBackend::BoringTls(connector));
+        self.config.tls.max_tls_version = Some(version);
         self
     }
 
@@ -1146,7 +1114,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    #[cfg(feature = "boring-tls")]
     pub fn tls_info(mut self, tls_info: bool) -> ClientBuilder {
         self.config.tls_info = tls_info;
         self
@@ -1692,15 +1660,15 @@ impl Config {
 
         #[cfg(feature = "boring-tls")]
         {
-            if !self.tls_context.certs_verification {
+            if !self.tls.certs_verification {
                 f.field("danger_accept_invalid_certs", &true);
             }
 
-            if let Some(ref min_tls_version) = self.tls_context.min_tls_version {
+            if let Some(ref min_tls_version) = self.tls.min_tls_version {
                 f.field("min_tls_version", min_tls_version);
             }
 
-            if let Some(ref max_tls_version) = self.tls_context.max_tls_version {
+            if let Some(ref max_tls_version) = self.tls.max_tls_version {
                 f.field("max_tls_version", max_tls_version);
             }
 

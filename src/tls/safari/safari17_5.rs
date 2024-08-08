@@ -1,18 +1,16 @@
 use super::CIPHER_LIST;
 use crate::tls::extension::{Extension, SafariExtension, SslExtension};
 use crate::tls::profile::{ConnectSettings, Http2Settings};
-use crate::tls::BoringTlsConnector;
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
     HeaderMap, HeaderValue,
 };
+use std::sync::Arc;
 
 pub(crate) fn get_settings(headers: &mut HeaderMap) -> ConnectSettings {
     init_headers(headers);
     ConnectSettings {
-        tls_connector: BoringTlsConnector::new(|| {
-            SafariExtension::builder()?.configure_cipher_list(&CIPHER_LIST)
-        }),
+        tls_builder: Arc::new(|| SafariExtension::builder()?.configure_cipher_list(&CIPHER_LIST)),
         http2: Http2Settings {
             initial_stream_window_size: Some(4194304),
             initial_connection_window_size: Some(10551295),

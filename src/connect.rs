@@ -5,7 +5,7 @@ use http::Uri;
 use hyper::client::connect::{Connected, Connection};
 use hyper::service::Service;
 #[cfg(feature = "boring-tls")]
-use tls::BoringTlsConnector;
+use tls::TlsConnector;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
 use pin_project_lite::pin_project;
@@ -23,7 +23,7 @@ use crate::dns::DynResolver;
 use crate::error::BoxError;
 use crate::proxy::{Proxy, ProxyScheme};
 #[cfg(feature = "boring-tls")]
-use crate::tls::{self, TlsContext};
+use crate::tls;
 
 pub(crate) type HttpConnector = hyper::client::HttpConnector<DynResolver>;
 
@@ -39,8 +39,6 @@ pub(crate) struct Connector {
     tls_info: bool,
     #[cfg(feature = "boring-tls")]
     user_agent: Option<HeaderValue>,
-    #[cfg(feature = "boring-tls")]
-    context: TlsContext,
 }
 
 #[derive(Clone)]
@@ -50,7 +48,7 @@ enum Inner {
     #[cfg(feature = "boring-tls")]
     BoringTls {
         http: HttpConnector,
-        tls: BoringTlsConnector,
+        tls: TlsConnector,
     },
 }
 
@@ -88,7 +86,7 @@ impl Connector {
     #[cfg(feature = "boring-tls")]
     pub(crate) fn new_boring_tls(
         mut http: HttpConnector,
-        tls: BoringTlsConnector,
+        tls: TlsConnector,
         proxies: Arc<Vec<Proxy>>,
         user_agent: Option<HeaderValue>,
         local_addr_v4: Option<Ipv4Addr>,
@@ -97,7 +95,6 @@ impl Connector {
         interface: Option<&str>,
         nodelay: bool,
         tls_info: bool,
-        context: TlsContext,
     ) -> Connector {
         match (local_addr_v4, local_addr_v6) {
             (Some(v4), Some(v6)) => http.set_local_addresses(v4, v6),
@@ -119,7 +116,6 @@ impl Connector {
             nodelay,
             user_agent,
             tls_info,
-            context,
         }
     }
 
@@ -196,7 +192,7 @@ impl Connector {
                 if dst.scheme() == Some(&Scheme::HTTPS) {
                     let host = dst.host().ok_or("no host in url")?;
                     let conn = socks::connect(proxy, dst.clone(), dns).await?;
-                    let connector = tls.create_connector(&self.context, http.clone()).await?;
+                    let connector = tls.new_connector(http.clone()).await?;
                     let setup_ssl = connector.setup_ssl(&dst, host)?;
                     let io = tokio_boring::SslStreamBuilder::new(setup_ssl, conn)
                         .connect()
@@ -241,7 +237,7 @@ impl Connector {
                     http.set_nodelay(true);
                 }
 
-                let mut http = tls.create_connector(&self.context, http).await?;
+                let mut http = tls.new_connector(http).await?;
                 let io = http.call(dst).await?;
 
                 if let hyper_boring::MaybeHttpsStream::Https(stream) = io {
@@ -289,7 +285,7 @@ impl Connector {
                     let host = dst.host().ok_or("no host in url")?;
                     let port = dst.port().map(|p| p.as_u16()).unwrap_or(443);
 
-                    let mut http = tls.create_connector(&self.context, http.clone()).await?;
+                    let mut http = tls.new_connector(http.clone()).await?;
                     let conn = http.call(proxy_dst).await?;
                     log::trace!("tunneling HTTPS over proxy");
                     let tunneled = tunnel(conn, host, port, self.user_agent.as_ref(), auth).await?;
