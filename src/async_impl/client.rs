@@ -73,8 +73,6 @@ struct Config {
     accepts: Accepts,
     headers: HeaderMap,
     headers_order: Option<Vec<HeaderName>>,
-    #[cfg(feature = "boring-tls")]
-    tls_sni: bool,
     connect_timeout: Option<Duration>,
     connection_verbose: bool,
     pool_idle_timeout: Option<Duration>,
@@ -144,8 +142,6 @@ impl ClientBuilder {
                 accepts: Accepts::default(),
                 headers,
                 headers_order: None,
-                #[cfg(feature = "boring-tls")]
-                tls_sni: true,
                 connect_timeout: None,
                 connection_verbose: false,
                 pool_idle_timeout: Some(Duration::from_secs(90)),
@@ -1091,19 +1087,6 @@ impl ClientBuilder {
         self
     }
 
-    /// Controls the use of TLS server name indication.
-    ///
-    /// Defaults to `true`.
-    ///
-    /// # Optional
-    ///
-    /// feature to be enabled.
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
-    pub fn tls_sni(mut self, tls_sni: bool) -> ClientBuilder {
-        self.config.tls_sni = tls_sni;
-        self
-    }
-
     /// Set the minimum required TLS version for connections.
     ///
     /// By default the TLS backend's own default is used.
@@ -1720,8 +1703,6 @@ impl Config {
             if let Some(ref max_tls_version) = self.tls_context.max_tls_version {
                 f.field("max_tls_version", max_tls_version);
             }
-
-            f.field("tls_sni", &self.tls_sni);
 
             f.field("tls_info", &self.tls_info);
         }
