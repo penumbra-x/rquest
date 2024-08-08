@@ -21,6 +21,19 @@ targets = ["x86_64-unknown-linux-gnu"]
 [features]
 default = ["boring-tls", "macos-system-configuration"]
 
+full = [
+    "boring-tls",
+    "macos-system-configuration",
+    "gzip",
+    "brotli",
+    "zstd",
+    "deflate",
+    "json",
+    "stream",
+    "cookies",
+    "socks",
+]
+
 blocking = ["futures-util/io", "tokio/sync"]
 
 websocket = ["async-tungstenite", "tokio-util/compat"]
