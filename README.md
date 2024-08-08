@@ -5,7 +5,7 @@
 [![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)
 [![Documentation](https://docs.rs/rquest/badge.svg)](https://docs.rs/rquest)
 
-An fast asynchronous `Http`/`WebSocket` Rust Client with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate
+An fast asynchronous Rust `Http`/`WebSocket` Client with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate
 
 - `Async` and `blocking` Clients
 - `Plain`, `JSON`, `urlencoded`, `multipart` bodies
