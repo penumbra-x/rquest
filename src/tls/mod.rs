@@ -14,6 +14,7 @@ mod okhttp;
 mod profile;
 mod safari;
 
+pub(crate) use self::profile::connect_settings;
 use crate::connect::HttpConnector;
 use crate::tls::extension::{SslConnectExtension, SslExtension};
 use antidote::Mutex;
@@ -22,9 +23,8 @@ use boring::{
     ssl::{ConnectConfiguration, SslConnectorBuilder},
 };
 use hyper_boring::{HttpsConnector, HttpsLayerSettings, SessionCache};
-pub(crate) use profile::configure_impersonate;
 use profile::ClientProfile;
-pub use profile::{Http2Settings, Impersonate, ImpersonateSettings};
+pub use profile::{ConnectSettings, Http2Settings, Impersonate};
 use std::any::Any;
 use std::fmt::{self, Debug};
 use std::sync::Arc;

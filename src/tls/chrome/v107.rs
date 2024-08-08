@@ -1,6 +1,6 @@
 use super::CIPHER_LIST;
 use crate::tls::extension::{ChromeExtension, Extension, SslExtension};
-use crate::tls::profile::{Http2Settings, ImpersonateSettings};
+use crate::tls::profile::{ConnectSettings, Http2Settings};
 use crate::tls::BoringTlsConnector;
 use http::{
     header::{
@@ -9,8 +9,9 @@ use http::{
     HeaderMap, HeaderValue,
 };
 
-pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
-    ImpersonateSettings {
+pub(crate) fn get_settings(headers: &mut HeaderMap) -> ConnectSettings {
+    init_headers(headers);
+    ConnectSettings {
         tls_connector: BoringTlsConnector::new(|| {
             ChromeExtension::builder()?.configure_cipher_list(&CIPHER_LIST)
         }),
@@ -22,16 +23,15 @@ pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
             header_table_size: Some(65536),
             enable_push: Some(false),
         },
-        headers: create_headers(headers),
     }
 }
 
-fn create_headers(mut headers: HeaderMap) -> HeaderMap {
+fn init_headers(headers: &mut HeaderMap) {
     headers.insert(
         "sec-ch-ua",
-        "\"Chromium\";v=\"107\", \"Google Chrome\";v=\"107\", \"Not;A=Brand\";v=\"99\""
-            .parse()
-            .unwrap(),
+        HeaderValue::from_static(
+            "\"Chromium\";v=\"107\", \"Google Chrome\";v=\"107\", \"Not;A=Brand\";v=\"99\"",
+        ),
     );
     headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
     headers.insert(
@@ -51,6 +51,4 @@ fn create_headers(mut headers: HeaderMap) -> HeaderMap {
         HeaderValue::from_static("gzip, deflate, br"),
     );
     headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
-
-    headers
 }

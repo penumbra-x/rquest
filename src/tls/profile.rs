@@ -1,27 +1,10 @@
 #![allow(missing_docs)]
 
 use super::BoringTlsConnector;
-use crate::{
-    tls::{chrome, edge, okhttp, safari},
-    ClientBuilder,
-};
+use crate::tls::{chrome, edge, okhttp, safari};
 use h2::profile::AgentProfile;
 use http::HeaderMap;
 use std::str::FromStr;
-
-/// Configure the client to impersonate the given version
-pub(crate) fn configure_impersonate(ver: Impersonate, builder: ClientBuilder) -> ClientBuilder {
-    let settings = get_settings(ver);
-    builder
-        .use_boring_tls(settings.tls_connector)
-        .http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
-        .http2_initial_connection_window_size(settings.http2.initial_connection_window_size)
-        .http2_max_concurrent_streams(settings.http2.max_concurrent_streams)
-        .http2_max_header_list_size(settings.http2.max_header_list_size)
-        .http2_header_table_size(settings.http2.header_table_size)
-        .http2_enable_push(settings.http2.enable_push)
-        .replace_default_headers(settings.headers)
-}
 
 macro_rules! impersonate_match {
     ($ver:expr, $headers:expr, $($variant:pat => $path:path),+) => {
@@ -33,11 +16,11 @@ macro_rules! impersonate_match {
     }
 }
 
-/// Get the settings for the given impersonate version
-fn get_settings(ver: Impersonate) -> ImpersonateSettings {
+/// Get the connection settings for the given impersonate version
+pub fn connect_settings(ver: Impersonate, headers: &mut HeaderMap) -> ConnectSettings {
     impersonate_match!(
         ver,
-        HeaderMap::new(),
+        headers,
         Impersonate::Chrome100 => chrome::v100::get_settings,
         Impersonate::Chrome101 => chrome::v101::get_settings,
         Impersonate::Chrome104 => chrome::v104::get_settings,
@@ -266,12 +249,11 @@ impl From<ClientProfile> for AgentProfile {
     }
 }
 
-/// Create a new `BoringTlsConnector` with the given function.
+/// Connection settings
 #[derive(Debug)]
-pub struct ImpersonateSettings {
+pub struct ConnectSettings {
     pub tls_connector: BoringTlsConnector,
     pub http2: Http2Settings,
-    pub headers: HeaderMap,
 }
 
 /// HTTP/2 settings.

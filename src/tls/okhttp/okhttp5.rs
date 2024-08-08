@@ -1,13 +1,14 @@
 use crate::tls::extension::{Extension, OkHttpExtension, SslExtension};
-use crate::tls::profile::{Http2Settings, ImpersonateSettings};
+use crate::tls::profile::{ConnectSettings, Http2Settings};
 use crate::tls::BoringTlsConnector;
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
     HeaderMap, HeaderValue,
 };
 
-pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
-    ImpersonateSettings {
+pub(crate) fn get_settings(headers: &mut HeaderMap) -> ConnectSettings {
+    init_headers(headers);
+    ConnectSettings {
         tls_connector: BoringTlsConnector::new(|| {
             OkHttpExtension::builder()?.configure_cipher_list(&[
                 "TLS_AES_128_GCM_SHA256",
@@ -36,11 +37,10 @@ pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
             header_table_size: None,
             enable_push: None,
         },
-        headers: create_headers(headers),
     }
 }
 
-fn create_headers(mut headers: HeaderMap) -> HeaderMap {
+fn init_headers(headers: &mut HeaderMap) {
     headers.insert(ACCEPT, HeaderValue::from_static("*/*"));
     headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
     headers.insert(USER_AGENT, HeaderValue::from_static("NRC Audio/2.0.6 (nl.nrc.audio; build:36; Android 14; Sdk:34; Manufacturer:OnePlus; Model: CPH2609) OkHttp/5.0.0-alpha2"));
@@ -48,6 +48,4 @@ fn create_headers(mut headers: HeaderMap) -> HeaderMap {
         ACCEPT_ENCODING,
         HeaderValue::from_static("gzip, deflate, br"),
     );
-
-    headers
 }
