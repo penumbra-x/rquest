@@ -1,7 +1,7 @@
 [package]
 name = "rquest"
 version = "0.20.0"
-description = "An fast asynchronous `Http`/`WebSocket` Rust Client with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate"
+description = "An fast asynchronous Rust `Http`/`WebSocket` Client with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate"
 keywords = ["http", "request", "client", "websocket", "ja3"]
 categories = ["web-programming::http-client"]
 repository = "https://github.com/0x676e67/rquest"
@@ -20,6 +20,19 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [features]
 default = ["boring-tls", "macos-system-configuration"]
+
+full = [
+    "boring-tls",
+    "macos-system-configuration",
+    "gzip",
+    "brotli",
+    "zstd",
+    "deflate",
+    "json",
+    "stream",
+    "cookies",
+    "socks",
+]
 
 blocking = ["futures-util/io", "tokio/sync"]
 

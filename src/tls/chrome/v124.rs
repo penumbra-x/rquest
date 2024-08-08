@@ -1,14 +1,15 @@
 use super::CIPHER_LIST;
 use crate::tls::extension::{ChromeExtension, Extension};
-use crate::tls::profile::{Http2Settings, ImpersonateSettings};
+use crate::tls::profile::{ConnectSettings, Http2Settings};
 use crate::tls::{extension::SslExtension, BoringTlsConnector};
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, UPGRADE_INSECURE_REQUESTS, USER_AGENT},
     HeaderMap, HeaderValue,
 };
 
-pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
-    ImpersonateSettings {
+pub(crate) fn get_settings(headers: &mut HeaderMap) -> ConnectSettings {
+    init_headers(headers);
+    ConnectSettings {
         tls_connector: BoringTlsConnector::new(|| {
             ChromeExtension::builder()?
                 .configure_cipher_list(&CIPHER_LIST)?
@@ -22,11 +23,10 @@ pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
             header_table_size: Some(65536),
             enable_push: Some(false),
         },
-        headers: create_headers(headers),
     }
 }
 
-fn create_headers(mut headers: HeaderMap) -> HeaderMap {
+fn init_headers(headers: &mut HeaderMap) {
     headers.insert(
         "sec-ch-ua",
         HeaderValue::from_static(
@@ -47,6 +47,4 @@ fn create_headers(mut headers: HeaderMap) -> HeaderMap {
         HeaderValue::from_static("gzip, deflate, br, zstd"),
     );
     headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US;q=1.0"));
-
-    headers
 }

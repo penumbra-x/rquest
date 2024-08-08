@@ -389,7 +389,14 @@ impl ClientBuilder {
     #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub fn impersonate(mut self, impersonate: Impersonate) -> ClientBuilder {
         self.config.tls_context.impersonate = impersonate;
-        crate::tls::configure_impersonate(impersonate, self)
+        let settings = crate::tls::connect_settings(impersonate, &mut self.config.headers);
+        self.use_boring_tls(settings.tls_connector)
+            .http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
+            .http2_initial_connection_window_size(settings.http2.initial_connection_window_size)
+            .http2_max_concurrent_streams(settings.http2.max_concurrent_streams)
+            .http2_max_header_list_size(settings.http2.max_header_list_size)
+            .http2_header_table_size(settings.http2.header_table_size)
+            .http2_enable_push(settings.http2.enable_push)
     }
 
     /// Enable Encrypted Client Hello (Secure SNI)
@@ -499,13 +506,6 @@ impl ClientBuilder {
         for (key, value) in headers.iter() {
             self.config.headers.insert(key, value.clone());
         }
-        self
-    }
-
-    /// Replace the default headers for every request.
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
-    pub(crate) fn replace_default_headers(mut self, headers: HeaderMap) -> ClientBuilder {
-        self.config.headers = headers;
         self
     }
 

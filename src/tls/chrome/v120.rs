@@ -1,6 +1,6 @@
 use super::CIPHER_LIST;
 use crate::tls::extension::{ChromeExtension, Extension, SslExtension};
-use crate::tls::profile::{Http2Settings, ImpersonateSettings};
+use crate::tls::profile::{ConnectSettings, Http2Settings};
 use crate::tls::BoringTlsConnector;
 use http::{
     header::{
@@ -10,8 +10,9 @@ use http::{
     HeaderMap, HeaderValue,
 };
 
-pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
-    ImpersonateSettings {
+pub(crate) fn get_settings(headers: &mut HeaderMap) -> ConnectSettings {
+    init_headers(headers);
+    ConnectSettings {
         tls_connector: BoringTlsConnector::new(|| {
             ChromeExtension::builder()?.configure_cipher_list(&CIPHER_LIST)
         }),
@@ -23,11 +24,10 @@ pub(crate) fn get_settings(headers: HeaderMap) -> ImpersonateSettings {
             header_table_size: Some(65536),
             enable_push: Some(false),
         },
-        headers: create_headers(headers),
     }
 }
 
-fn create_headers(mut headers: HeaderMap) -> HeaderMap {
+fn init_headers(headers: &mut HeaderMap) {
     headers.insert(CACHE_CONTROL, HeaderValue::from_static("max-age=0"));
     headers.insert(
         "sec-ch-ua",
@@ -56,6 +56,4 @@ fn create_headers(mut headers: HeaderMap) -> HeaderMap {
         ACCEPT_LANGUAGE,
         HeaderValue::from_static("en;q=0.8,en-GB;q=0.7,en-US;q=0.6"),
     );
-
-    headers
 }
