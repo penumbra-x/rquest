@@ -257,20 +257,13 @@ impl SslExtension for SslConnectorBuilder {
         min_tls_version: Option<Version>,
     ) -> Result<SslConnectorBuilder, ErrorStack> {
         if let Some(version) = min_tls_version {
-            match version.0 {
-                super::InnerVersion::Tls1_0 => {
-                    self.set_min_proto_version(Some(SslVersion::TLS1))?
-                }
-                super::InnerVersion::Tls1_1 => {
-                    self.set_min_proto_version(Some(SslVersion::TLS1_1))?
-                }
-                super::InnerVersion::Tls1_2 => {
-                    self.set_min_proto_version(Some(SslVersion::TLS1_2))?
-                }
-                super::InnerVersion::Tls1_3 => {
-                    self.set_min_proto_version(Some(SslVersion::TLS1_3))?
-                }
-            }
+            let ssl_version = match version.0 {
+                super::InnerVersion::Tls1_0 => SslVersion::TLS1,
+                super::InnerVersion::Tls1_1 => SslVersion::TLS1_1,
+                super::InnerVersion::Tls1_2 => SslVersion::TLS1_2,
+                super::InnerVersion::Tls1_3 => SslVersion::TLS1_3,
+            };
+            self.set_min_proto_version(Some(ssl_version))?
         }
 
         Ok(self)
@@ -281,20 +274,14 @@ impl SslExtension for SslConnectorBuilder {
         max_tls_version: Option<Version>,
     ) -> Result<SslConnectorBuilder, ErrorStack> {
         if let Some(version) = max_tls_version {
-            match version.0 {
-                super::InnerVersion::Tls1_0 => {
-                    self.set_max_proto_version(Some(SslVersion::TLS1))?
-                }
-                super::InnerVersion::Tls1_1 => {
-                    self.set_max_proto_version(Some(SslVersion::TLS1_1))?
-                }
-                super::InnerVersion::Tls1_2 => {
-                    self.set_max_proto_version(Some(SslVersion::TLS1_2))?
-                }
-                super::InnerVersion::Tls1_3 => {
-                    self.set_max_proto_version(Some(SslVersion::TLS1_3))?
-                }
-            }
+            let ssl_version = match version.0 {
+                super::InnerVersion::Tls1_0 => SslVersion::TLS1,
+                super::InnerVersion::Tls1_1 => SslVersion::TLS1_1,
+                super::InnerVersion::Tls1_2 => SslVersion::TLS1_2,
+                super::InnerVersion::Tls1_3 => SslVersion::TLS1_3,
+            };
+
+            self.set_max_proto_version(Some(ssl_version))?
         }
 
         Ok(self)
@@ -328,21 +315,19 @@ impl SslConnectExtension for ConnectConfiguration {
         &mut self,
         http_version: HttpVersionPref,
     ) -> &mut ConnectConfiguration {
-        match http_version {
-            HttpVersionPref::Http1 => {}
-            HttpVersionPref::Http2 | HttpVersionPref::All => {
-                const ALPN_H2: &str = "h2";
-                const ALPN_H2_LENGTH: usize = 2;
-                unsafe {
-                    boring_sys::SSL_add_application_settings(
-                        self.as_ptr(),
-                        ALPN_H2.as_ptr(),
-                        ALPN_H2_LENGTH,
-                        std::ptr::null(),
-                        0,
-                    );
-                };
-            }
+        let (alpn, alpn_len) = match http_version {
+            HttpVersionPref::Http1 => ("http/1.1", 8),
+            HttpVersionPref::Http2 | HttpVersionPref::All => ("h2", 2),
+        };
+
+        unsafe {
+            boring_sys::SSL_add_application_settings(
+                self.as_ptr(),
+                alpn.as_ptr(),
+                alpn_len,
+                std::ptr::null(),
+                0,
+            );
         }
 
         self
