@@ -626,20 +626,6 @@ impl ClientBuilder {
         self.with_inner(move |inner| inner.tcp_keepalive(val))
     }
 
-    // TLS options
-
-    /// Controls the use of built-in system certificates during certificate validation.
-    ///
-    /// Defaults to `true` -- built-in system certs will be used.
-    ///
-    /// # Optional
-    ///
-    /// feature to be enabled.
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
-    pub fn tls_built_in_root_certs(self, tls_built_in_root_certs: bool) -> ClientBuilder {
-        self.with_inner(move |inner| inner.tls_built_in_root_certs(tls_built_in_root_certs))
-    }
-
     /// Controls the use of certificate validation.
     ///
     /// Defaults to `false`.

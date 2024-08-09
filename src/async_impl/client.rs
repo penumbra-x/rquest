@@ -112,8 +112,6 @@ struct Config {
     dns_overrides: HashMap<String, Vec<SocketAddr>>,
     dns_resolver: Option<Arc<dyn Resolve>>,
     #[cfg(feature = "boring-tls")]
-    tls_built_in_root_certs: bool,
-    #[cfg(feature = "boring-tls")]
     tls_info: bool,
     #[cfg(feature = "boring-tls")]
     tls: TlsConnectorBuilder,
@@ -179,8 +177,6 @@ impl ClientBuilder {
                 https_only: false,
                 dns_overrides: HashMap::new(),
                 dns_resolver: None,
-                #[cfg(feature = "boring-tls")]
-                tls_built_in_root_certs: true,
                 #[cfg(feature = "boring-tls")]
                 tls_info: false,
                 #[cfg(feature = "boring-tls")]
@@ -1030,21 +1026,6 @@ impl ClientBuilder {
         D: Into<Option<Duration>>,
     {
         self.config.tcp_keepalive = val.into();
-        self
-    }
-
-    // TLS options
-
-    /// Controls the use of built-in/preloaded certificates during certificate validation.
-    ///
-    /// Defaults to `true` -- built-in system certs will be used.
-    ///
-    /// # Optional
-    ///
-    /// feature to be enabled.
-    #[cfg(feature = "boring-tls")]
-    pub fn tls_built_in_root_certs(mut self, tls_built_in_root_certs: bool) -> ClientBuilder {
-        self.config.tls_built_in_root_certs = tls_built_in_root_certs;
         self
     }
 

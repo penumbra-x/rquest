@@ -36,18 +36,3 @@ async fn test_badssl_self_signed() {
 
     assert!(text.contains("<title>self-signed.badssl.com</title>"));
 }
-
-#[cfg(feature = "boring-tls")]
-#[tokio::test]
-async fn test_badssl_no_built_in_roots() {
-    let result = rquest::Client::builder()
-        .tls_built_in_root_certs(false)
-        .no_proxy()
-        .build()
-        .unwrap()
-        .get("https://untrusted-root.badssl.com/")
-        .send()
-        .await;
-
-    assert!(result.is_err());
-}

@@ -1,15 +1,13 @@
 #![allow(missing_docs)]
 
+use super::Version;
+use crate::async_impl::client::HttpVersionPref;
 use boring::error::ErrorStack;
 use boring::ssl::{
     CertCompressionAlgorithm, ConnectConfiguration, SslConnector, SslConnectorBuilder, SslCurve,
     SslMethod, SslOptions, SslVersion,
 };
 use foreign_types::ForeignTypeRef;
-
-use crate::async_impl::client::HttpVersionPref;
-
-use super::Version;
 
 /// Extension trait for `SslConnector`.
 pub trait Extension {
