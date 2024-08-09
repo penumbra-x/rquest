@@ -123,7 +123,7 @@ impl TlsConnector {
         let tls = &self.tls_connector;
         // Create the `SslConnectorBuilder` and configure it.
         let builder = (tls.builder)()?
-            .configure_alpn_protos(tls.http_version_pref.clone())?
+            .configure_alpn_protos(&tls.http_version_pref)?
             .configure_cert_verification(tls.certs_verification)?
             .configure_min_tls_version(tls.min_tls_version)?
             .configure_max_tls_version(tls.max_tls_version)?;

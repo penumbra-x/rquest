@@ -5,7 +5,7 @@ use crate::async_impl::client::HttpVersionPref;
 use boring::error::ErrorStack;
 use boring::ssl::{
     CertCompressionAlgorithm, ConnectConfiguration, SslConnector, SslConnectorBuilder, SslCurve,
-    SslMethod, SslOptions, SslVersion,
+    SslMethod, SslOptions, SslVerifyMode, SslVersion,
 };
 use foreign_types::ForeignTypeRef;
 
@@ -32,7 +32,7 @@ pub trait SslExtension {
     /// Configure the ALPN and certificate settings for the given `SslConnectorBuilder`.
     fn configure_alpn_protos(
         self,
-        http_version: HttpVersionPref,
+        http_version: &HttpVersionPref,
     ) -> Result<SslConnectorBuilder, ErrorStack>;
 
     /// Configure the cipher list for the given `SslConnectorBuilder`.
@@ -224,14 +224,16 @@ impl SslExtension for SslConnectorBuilder {
         certs_verification: bool,
     ) -> Result<SslConnectorBuilder, ErrorStack> {
         if !certs_verification {
-            self.set_verify(boring::ssl::SslVerifyMode::NONE);
+            self.set_verify(SslVerifyMode::NONE);
+        } else {
+            self.set_verify(SslVerifyMode::PEER);
         }
         Ok(self)
     }
 
     fn configure_alpn_protos(
         mut self,
-        http_version: HttpVersionPref,
+        http_version: &HttpVersionPref,
     ) -> Result<SslConnectorBuilder, ErrorStack> {
         match http_version {
             HttpVersionPref::Http1 => {
