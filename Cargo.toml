@@ -1,6 +1,6 @@
 [package]
 name = "rquest"
-version = "0.20.2"
+version = "0.20.10"
 description = "An fast asynchronous Rust Http/WebSocket Client with TLS/JA3/JA4/HTTP2 fingerprint impersonate"
 keywords = ["http", "request", "client", "websocket", "ja3"]
 categories = ["web-programming::http-client"]
@@ -19,7 +19,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [features]
-default = ["full"]
+default = ["boring-tls"]
 
 full = [
     "boring-tls",
