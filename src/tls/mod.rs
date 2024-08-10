@@ -123,7 +123,7 @@ impl TlsConnector {
         // Get the `HttpsLayer` or create it if it doesn't exist.
         let layer = self
             .inner
-            .get_or_try_init(|| async { self.build_layer().await })
+            .get_or_try_init(|| self.build_layer())
             .await
             .map(Clone::clone)?;
 
