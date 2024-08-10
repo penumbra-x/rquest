@@ -24,7 +24,7 @@ use boring::{
     error::ErrorStack,
     ssl::{ConnectConfiguration, SslConnectorBuilder},
 };
-use hyper_boring::{HttpsConnector, HttpsLayerSettings, SessionCache};
+use hyper_boring::{HttpsConnector, HttpsLayer, HttpsLayerSettings, SessionCache};
 use profile::ClientProfile;
 pub use profile::{ConnectSettings, Http2Settings, Impersonate};
 use std::any::Any;
@@ -35,11 +35,11 @@ use tokio::sync::OnceCell;
 /// Default session cache capacity.
 const DEFAULT_SESSION_CACHE_CAPACITY: usize = 8;
 
-/// A builder for a `SslConnectorBuilder`.
-pub type Builder = dyn Fn() -> Result<SslConnectorBuilder, ErrorStack> + Send + Sync + 'static;
-
 /// A TLS session cache.
 type Session = Arc<Mutex<SessionCache>>;
+
+/// A TLS connector builder.
+type Builder = dyn Fn() -> Result<SslConnectorBuilder, ErrorStack> + Send + Sync + 'static;
 
 /// The TLS connector configuration.
 #[derive(Clone)]
@@ -100,17 +100,17 @@ impl Debug for TlsConnectorBuilder {
 #[derive(Clone)]
 pub struct TlsConnector {
     /// The inner `SslConnectorBuilder`.
-    tls_connector: TlsConnectorBuilder,
-    /// The cached `HttpsConnector` sessions.
-    session: Arc<OnceCell<Session>>,
+    builder: TlsConnectorBuilder,
+    /// The TLS connector layer.
+    inner: Arc<OnceCell<HttpsLayer>>,
 }
 
 impl TlsConnector {
     /// Create a new `BoringTlsConnector` with the given function.
-    pub fn new(tls_connector: TlsConnectorBuilder) -> TlsConnector {
+    pub fn new(builder: TlsConnectorBuilder) -> TlsConnector {
         Self {
-            tls_connector,
-            session: Arc::new(OnceCell::new()),
+            builder,
+            inner: Arc::new(OnceCell::new()),
         }
     }
 
@@ -120,7 +120,28 @@ impl TlsConnector {
         &self,
         http: HttpConnector,
     ) -> Result<HttpsConnector<HttpConnector>, ErrorStack> {
-        let tls = &self.tls_connector;
+        // Get the `HttpsLayer` or create it if it doesn't exist.
+        let layer = self
+            .inner
+            .get_or_try_init(|| async { self.build_layer().await })
+            .await
+            .map(Clone::clone)?;
+
+        // Create the `HttpsConnector` with the given `HttpConnector` and `HttpsLayer`.
+        let mut http = HttpsConnector::with_connector_layer(http, layer);
+
+        // Set the callback to add application settings.
+        let builder = self.builder.clone();
+        http.set_callback(move |conf, _| {
+            configure_ssl_context(conf, &builder);
+            Ok(())
+        });
+
+        Ok(http)
+    }
+
+    async fn build_layer(&self) -> Result<HttpsLayer, ErrorStack> {
+        let tls = &self.builder;
         // Create the `SslConnectorBuilder` and configure it.
         let builder = (tls.builder)()?
             .configure_alpn_protos(&tls.http_version_pref)?
@@ -142,38 +163,19 @@ impl TlsConnector {
                 | Impersonate::Edge127
         );
 
-        // Create the `HttpsConnector` with the given settings.
-        let mut http = if psk_extension || tls.pre_shared_key {
-            // Initialize the session cache.
-            let session = self
-                .session
-                .get_or_init(|| async {
-                    Session::new(Mutex::new(SessionCache::with_capacity(
-                        DEFAULT_SESSION_CACHE_CAPACITY,
-                    )))
-                })
-                .await
-                .clone();
-
-            HttpsConnector::with_connector_and_settings(
-                http,
+        if psk_extension || tls.pre_shared_key {
+            HttpsLayer::with_connector_and_settings(
                 builder,
                 HttpsLayerSettings::builder()
                     .session_cache_capacity(DEFAULT_SESSION_CACHE_CAPACITY)
-                    .session_cache(session)
+                    .session_cache(Session::new(Mutex::new(SessionCache::with_capacity(
+                        DEFAULT_SESSION_CACHE_CAPACITY,
+                    ))))
                     .build(),
-            )?
+            )
         } else {
-            HttpsConnector::with_connector(http, builder)?
-        };
-
-        // Set the callback to add application settings.
-        let context = tls.clone();
-        http.set_callback(move |conf, _| {
-            configure_ssl_context(conf, &context);
-            Ok(())
-        });
-        Ok(http)
+            HttpsLayer::with_connector(builder)
+        }
     }
 }
 
@@ -192,8 +194,8 @@ fn configure_ssl_context(conf: &mut ConnectConfiguration, ctx: &TlsConnectorBuil
 impl Debug for TlsConnector {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("BoringTlsConnector")
-            .field("builder", &self.tls_connector.type_id())
-            .field("session", &self.session.type_id())
+            .field("builder", &self.builder.type_id())
+            .field("connector", &self.type_id())
             .finish()
     }
 }

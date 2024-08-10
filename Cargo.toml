@@ -8,7 +8,7 @@ repository = "https://github.com/0x676e67/rquest"
 documentation = "https://docs.rs/rquest"
 authors = ["0x676e67 <gngppz@gmail.com>"]
 readme = "README.md"
-license = "MIT"
+license = "Apache-2.0"
 edition = "2021"
 rust-version = "1.80"
 autotests = true
@@ -100,7 +100,7 @@ hyper = { package = "hyper_imp", version = "0.14", default-features = false, fea
     "client",
     "runtime",
 ] }
-h2 = { package = "h2_imp", version = "0.5.6" }
+h2 = { package = "h2_imp", version = "0.5" }
 log = "0.4"
 mime = "0.3.17"
 percent-encoding = "2.3"

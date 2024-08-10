@@ -89,7 +89,6 @@ impl Extension for ChromeExtension {
         ];
 
         let mut builder = SslConnector::builder(SslMethod::tls_client())?;
-        builder.set_default_verify_paths()?;
         builder.set_grease_enabled(true);
         builder.enable_ocsp_stapling();
         builder.set_curves(&[SslCurve::X25519, SslCurve::SECP256R1, SslCurve::SECP384R1])?;
@@ -122,7 +121,6 @@ impl Extension for EdgeExtension {
         ];
 
         let mut builder = SslConnector::builder(SslMethod::tls_client())?;
-        builder.set_default_verify_paths()?;
         builder.set_grease_enabled(true);
         builder.enable_ocsp_stapling();
         builder.set_curves(&[SslCurve::X25519, SslCurve::SECP256R1, SslCurve::SECP384R1])?;
@@ -158,7 +156,6 @@ impl Extension for SafariExtension {
         ];
 
         let mut builder = SslConnector::builder(SslMethod::tls_client())?;
-        builder.set_default_verify_paths()?;
         builder.set_options(SslOptions::NO_TICKET);
         builder.set_grease_enabled(true);
         builder.enable_ocsp_stapling();
@@ -197,7 +194,6 @@ impl Extension for OkHttpExtension {
         ];
 
         let mut builder = SslConnector::builder(SslMethod::tls_client())?;
-        builder.set_default_verify_paths()?;
         builder.enable_ocsp_stapling();
         builder.set_curves(&[SslCurve::X25519, SslCurve::SECP256R1, SslCurve::SECP384R1])?;
         builder.set_sigalgs_list(&SIGALGS_LIST.join(":"))?;
