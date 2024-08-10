@@ -67,7 +67,6 @@ boring-tls = [
     "hyper-boring",
     "boring-sys",
     "foreign-types",
-    "antidote",
 ]
 
 # When enabled, disable using the cached SYS_PROXIES.
@@ -93,14 +92,14 @@ mime_guess = { version = "2.0", default-features = false, optional = true }
 
 encoding_rs = "0.8"
 http-body = "0.4.6"
-hyper = { package = "hyper_imp", version = "0.14", default-features = false, features = [
+hyper = { package = "hyper-patch", version = "0.14", default-features = false, features = [
     "tcp",
     "http1",
     "http2",
     "client",
     "runtime",
 ] }
-h2 = { package = "h2_imp", version = "0.5" }
+h2 = { package = "h2-patch", version = "0.5" }
 log = "0.4"
 mime = "0.3.17"
 percent-encoding = "2.3"
@@ -111,12 +110,11 @@ ipnet = "2.9.0"
 # Optional deps...
 
 ## boring-tls
-boring = { package = "boring-imp", version = "4", optional = true }
-boring-sys = { package = "boring-sys-imp", version = "4", optional = true }
-hyper-boring = { package = "hyper-boring-imp", version = "4", optional = true }
-tokio-boring = { package = "tokio-boring-imp", version = "4", optional = true }
+boring = { package = "boring-patch", version = "4", optional = true }
+boring-sys = { package = "boring-sys-patch", version = "4", optional = true }
+hyper-boring = { package = "hyper-boring-patch", version = "4", optional = true }
+tokio-boring = { package = "tokio-boring-patch", version = "4", optional = true }
 foreign-types = { version = "0.5.0", optional = true }
-antidote = { version = "1.0.0", optional = true }
 
 ## cookies
 cookie_crate = { version = "0.18", package = "cookie", optional = true }
@@ -150,7 +148,7 @@ system-configuration = "0.6.0"
 
 [dev-dependencies]
 env_logger = "0.10.0"
-hyper = { package = "hyper_imp", version = "0.14", default-features = false, features = [
+hyper = { package = "hyper-patch", version = "0.14", default-features = false, features = [
     "tcp",
     "stream",
     "http1",

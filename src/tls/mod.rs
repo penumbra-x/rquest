@@ -18,13 +18,12 @@ pub(crate) use self::profile::connect_settings;
 use crate::async_impl::client::HttpVersionPref;
 use crate::connect::HttpConnector;
 use crate::tls::extension::{SslConnectExtension, SslExtension};
-use antidote::Mutex;
 use boring::ssl::{SslConnector, SslMethod};
 use boring::{
     error::ErrorStack,
     ssl::{ConnectConfiguration, SslConnectorBuilder},
 };
-use hyper_boring::{HttpsConnector, HttpsLayer, HttpsLayerSettings, SessionCache};
+use hyper_boring::{HttpsConnector, HttpsLayer, HttpsLayerSettings};
 use profile::ClientProfile;
 pub use profile::{ConnectSettings, Http2Settings, Impersonate};
 use std::any::Any;
@@ -34,9 +33,6 @@ use tokio::sync::OnceCell;
 
 /// Default session cache capacity.
 const DEFAULT_SESSION_CACHE_CAPACITY: usize = 8;
-
-/// A TLS session cache.
-type Session = Arc<Mutex<SessionCache>>;
 
 /// A TLS connector builder.
 type Builder = dyn Fn() -> Result<SslConnectorBuilder, ErrorStack> + Send + Sync + 'static;
@@ -168,9 +164,6 @@ impl TlsConnector {
                 builder,
                 HttpsLayerSettings::builder()
                     .session_cache_capacity(DEFAULT_SESSION_CACHE_CAPACITY)
-                    .session_cache(Session::new(Mutex::new(SessionCache::with_capacity(
-                        DEFAULT_SESSION_CACHE_CAPACITY,
-                    ))))
                     .build(),
             )
         } else {

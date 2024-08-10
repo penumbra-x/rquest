@@ -1,7 +1,7 @@
 #![allow(missing_docs)]
 use crate::tls::{chrome, edge, okhttp, safari};
-use h2::profile::AgentProfile;
 use http::HeaderMap;
+use hyper::AgentProfile;
 use std::{any::Any, fmt::Debug, str::FromStr, sync::Arc};
 
 macro_rules! impersonate_match {
