@@ -82,23 +82,6 @@ struct Config {
     redirect_policy: redirect::Policy,
     referer: bool,
     timeout: Option<Duration>,
-    http_version_pref: HttpVersionPref,
-    http09_responses: bool,
-    http1_title_case_headers: bool,
-    http1_allow_obsolete_multiline_headers_in_responses: bool,
-    http1_ignore_invalid_headers_in_responses: bool,
-    http1_allow_spaces_after_header_name_in_responses: bool,
-    http2_initial_stream_window_size: Option<u32>,
-    http2_initial_connection_window_size: Option<u32>,
-    http2_adaptive_window: bool,
-    http2_max_frame_size: Option<u32>,
-    http2_max_concurrent_streams: Option<u32>,
-    http2_max_header_list_size: Option<u32>,
-    http2_enable_push: Option<bool>,
-    http2_header_table_size: Option<u32>,
-    http2_keep_alive_interval: Option<Duration>,
-    http2_keep_alive_timeout: Option<Duration>,
-    http2_keep_alive_while_idle: bool,
     local_address_ipv6: Option<Ipv6Addr>,
     local_address_ipv4: Option<Ipv4Addr>,
     #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
@@ -111,6 +94,7 @@ struct Config {
     https_only: bool,
     dns_overrides: HashMap<String, Vec<SocketAddr>>,
     dns_resolver: Option<Arc<dyn Resolve>>,
+    builder: hyper::client::Builder,
     #[cfg(feature = "boring-tls")]
     tls_info: bool,
     #[cfg(feature = "boring-tls")]
@@ -149,23 +133,6 @@ impl ClientBuilder {
                 redirect_policy: redirect::Policy::default(),
                 referer: true,
                 timeout: None,
-                http_version_pref: HttpVersionPref::All,
-                http09_responses: false,
-                http1_title_case_headers: false,
-                http1_allow_obsolete_multiline_headers_in_responses: false,
-                http1_ignore_invalid_headers_in_responses: false,
-                http1_allow_spaces_after_header_name_in_responses: false,
-                http2_initial_stream_window_size: None,
-                http2_initial_connection_window_size: None,
-                http2_adaptive_window: false,
-                http2_max_frame_size: None,
-                http2_max_concurrent_streams: None,
-                http2_max_header_list_size: None,
-                http2_enable_push: None,
-                http2_header_table_size: None,
-                http2_keep_alive_interval: None,
-                http2_keep_alive_timeout: None,
-                http2_keep_alive_while_idle: false,
                 local_address_ipv6: None,
                 local_address_ipv4: None,
                 #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
@@ -177,6 +144,7 @@ impl ClientBuilder {
                 https_only: false,
                 dns_overrides: HashMap::new(),
                 dns_resolver: None,
+                builder: hyper::Client::builder(),
                 #[cfg(feature = "boring-tls")]
                 tls_info: false,
                 #[cfg(feature = "boring-tls")]
@@ -192,7 +160,7 @@ impl ClientBuilder {
     /// This method fails if a TLS backend cannot be initialized, or the resolver
     /// cannot load the system configuration.
     pub fn build(self) -> crate::Result<Client> {
-        let config = self.config;
+        let mut config = self.config;
 
         if let Some(err) = config.error {
             return Err(err);
@@ -206,8 +174,7 @@ impl ClientBuilder {
 
         let proxies_maybe_http_auth = proxies.iter().any(|p| p.maybe_has_http_auth());
 
-        #[cfg(feature = "boring-tls")]
-        let agent_profile = config.tls.impersonate.profile().into();
+    
 
         let mut connector = {
             #[cfg(feature = "boring-tls")]
@@ -264,82 +231,19 @@ impl ClientBuilder {
 
         connector.set_timeout(config.connect_timeout);
         connector.set_verbose(config.connection_verbose);
-
-        let mut builder = hyper::Client::builder();
-
-        #[cfg(feature = "boring-tls")]
-        builder.http2_agent_profile(agent_profile);
-
-        if matches!(config.http_version_pref, HttpVersionPref::Http2) {
-            builder.http2_only(true);
-        }
-
-        if let Some(http2_initial_stream_window_size) = config.http2_initial_stream_window_size {
-            builder.http2_initial_stream_window_size(http2_initial_stream_window_size);
-        }
-        if let Some(http2_initial_connection_window_size) =
-            config.http2_initial_connection_window_size
-        {
-            builder.http2_initial_connection_window_size(http2_initial_connection_window_size);
-        }
-        if config.http2_adaptive_window {
-            builder.http2_adaptive_window(true);
-        }
-        if let Some(http2_max_frame_size) = config.http2_max_frame_size {
-            builder.http2_max_frame_size(http2_max_frame_size);
-        }
-        if let Some(max) = config.http2_max_concurrent_streams {
-            builder.http2_max_concurrent_streams(max);
-        }
-        if let Some(max) = config.http2_max_header_list_size {
-            builder.http2_max_header_list_size(max);
-        }
-        if let Some(opt) = config.http2_enable_push {
-            builder.http2_enable_push(opt);
-        }
-        if let Some(max) = config.http2_header_table_size {
-            builder.http2_header_table_size(max);
-        }
-        if let Some(http2_keep_alive_interval) = config.http2_keep_alive_interval {
-            builder.http2_keep_alive_interval(http2_keep_alive_interval);
-        }
-        if let Some(http2_keep_alive_timeout) = config.http2_keep_alive_timeout {
-            builder.http2_keep_alive_timeout(http2_keep_alive_timeout);
-        }
-        if config.http2_keep_alive_while_idle {
-            builder.http2_keep_alive_while_idle(true);
-        }
-
-        builder.pool_idle_timeout(config.pool_idle_timeout);
-        builder.pool_max_idle_per_host(config.pool_max_idle_per_host);
         connector.set_keepalive(config.tcp_keepalive);
 
-        if config.http09_responses {
-            builder.http09_responses(true);
-        }
-
-        if config.http1_title_case_headers {
-            builder.http1_title_case_headers(true);
-        }
-
-        if config.http1_allow_obsolete_multiline_headers_in_responses {
-            builder.http1_allow_obsolete_multiline_headers_in_responses(true);
-        }
-
-        if config.http1_ignore_invalid_headers_in_responses {
-            builder.http1_ignore_invalid_headers_in_responses(true);
-        }
-
-        if config.http1_allow_spaces_after_header_name_in_responses {
-            builder.http1_allow_spaces_after_header_name_in_responses(true);
-        }
+        config.builder.pool_idle_timeout(config.pool_idle_timeout);
+        config
+            .builder
+            .pool_max_idle_per_host(config.pool_max_idle_per_host);
 
         Ok(Client {
             inner: Arc::new(ClientRef {
                 accepts: config.accepts,
                 #[cfg(feature = "cookies")]
                 cookie_store: config.cookie_store,
-                hyper: builder.build(connector),
+                hyper: config.builder.build(connector),
                 headers: config.headers,
                 headers_order: config.headers_order,
                 redirect_policy: Arc::new(config.redirect_policy),
@@ -357,6 +261,7 @@ impl ClientBuilder {
         let settings = crate::tls::connect_settings(impersonate, &mut self.config.headers);
         self.config.tls.impersonate = impersonate;
         self.config.tls.builder = settings.tls_builder;
+        self.config.builder.http2_agent_profile(impersonate.profile().into());
         self.http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
             .http2_initial_connection_window_size(settings.http2.initial_connection_window_size)
             .http2_max_concurrent_streams(settings.http2.max_concurrent_streams)
@@ -791,7 +696,7 @@ impl ClientBuilder {
 
     /// Send headers as title case instead of lowercase.
     pub fn http1_title_case_headers(mut self) -> ClientBuilder {
-        self.config.http1_title_case_headers = true;
+        self.config.builder.http1_title_case_headers(true);
         self
     }
 
@@ -805,13 +710,16 @@ impl ClientBuilder {
         value: bool,
     ) -> ClientBuilder {
         self.config
-            .http1_allow_obsolete_multiline_headers_in_responses = value;
+            .builder
+            .http1_allow_obsolete_multiline_headers_in_responses(value);
         self
     }
 
     /// Sets whether invalid header lines should be silently ignored in HTTP/1 responses.
     pub fn http1_ignore_invalid_headers_in_responses(mut self, value: bool) -> ClientBuilder {
-        self.config.http1_ignore_invalid_headers_in_responses = value;
+        self.config
+            .builder
+            .http1_ignore_invalid_headers_in_responses(value);
         self
     }
 
@@ -825,7 +733,8 @@ impl ClientBuilder {
         value: bool,
     ) -> ClientBuilder {
         self.config
-            .http1_allow_spaces_after_header_name_in_responses = value;
+            .builder
+            .http1_allow_spaces_after_header_name_in_responses(value);
         self
     }
 
@@ -835,13 +744,12 @@ impl ClientBuilder {
         {
             self.config.tls.http_version_pref = HttpVersionPref::Http1;
         }
-        self.config.http_version_pref = HttpVersionPref::Http1;
         self
     }
 
     /// Allow HTTP/0.9 responses
     pub fn http09_responses(mut self) -> ClientBuilder {
-        self.config.http09_responses = true;
+        self.config.builder.http09_responses(true);
         self
     }
 
@@ -851,7 +759,7 @@ impl ClientBuilder {
         {
             self.config.tls.http_version_pref = HttpVersionPref::Http2;
         }
-        self.config.http_version_pref = HttpVersionPref::Http2;
+        self.config.builder.http2_only(true);
         self
     }
 
@@ -859,7 +767,9 @@ impl ClientBuilder {
     ///
     /// Default is currently 65,535 but may change internally to optimize for common uses.
     pub fn http2_initial_stream_window_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
-        self.config.http2_initial_stream_window_size = sz.into();
+        self.config
+            .builder
+            .http2_initial_stream_window_size(sz.into());
         self
     }
 
@@ -870,7 +780,9 @@ impl ClientBuilder {
         mut self,
         sz: impl Into<Option<u32>>,
     ) -> ClientBuilder {
-        self.config.http2_initial_connection_window_size = sz.into();
+        self.config
+            .builder
+            .http2_initial_connection_window_size(sz.into());
         self
     }
 
@@ -879,7 +791,7 @@ impl ClientBuilder {
     /// Enabling this will override the limits set in `http2_initial_stream_window_size` and
     /// `http2_initial_connection_window_size`.
     pub fn http2_adaptive_window(mut self, enabled: bool) -> ClientBuilder {
-        self.config.http2_adaptive_window = enabled;
+        self.config.builder.http2_adaptive_window(enabled);
         self
     }
 
@@ -887,7 +799,7 @@ impl ClientBuilder {
     ///
     /// Default is currently 16,384 but may change internally to optimize for common uses.
     pub fn http2_max_frame_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
-        self.config.http2_max_frame_size = sz.into();
+        self.config.builder.http2_max_frame_size(sz.into());
         self
     }
 
@@ -895,7 +807,9 @@ impl ClientBuilder {
     ///
     /// Passing `None` will do nothing.
     pub fn http2_max_concurrent_streams(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
-        self.config.http2_max_concurrent_streams = sz.into();
+        if let Some(max) = sz.into() {
+            self.config.builder.http2_max_concurrent_streams(max);
+        }
         self
     }
 
@@ -903,7 +817,9 @@ impl ClientBuilder {
     ///
     /// Passing `None` will do nothing.
     pub fn http2_max_header_list_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
-        self.config.http2_max_header_list_size = sz.into();
+        if let Some(sz) = sz.into() {
+            self.config.builder.http2_max_header_list_size(sz);
+        }
         self
     }
 
@@ -911,7 +827,9 @@ impl ClientBuilder {
     ///
     /// Passing `None` will do nothing.
     pub fn http2_enable_push(mut self, sz: impl Into<Option<bool>>) -> ClientBuilder {
-        self.config.http2_enable_push = sz.into();
+        if let Some(sz) = sz.into() {
+            self.config.builder.http2_enable_push(sz);
+        }
         self
     }
 
@@ -920,7 +838,9 @@ impl ClientBuilder {
     /// Passing `None` will do nothing.
 
     pub fn http2_header_table_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
-        self.config.http2_header_table_size = sz.into();
+        if let Some(sz) = sz.into() {
+            self.config.builder.http2_header_table_size(sz);
+        }
         self
     }
 
@@ -932,7 +852,9 @@ impl ClientBuilder {
         mut self,
         interval: impl Into<Option<Duration>>,
     ) -> ClientBuilder {
-        self.config.http2_keep_alive_interval = interval.into();
+        self.config
+            .builder
+            .http2_keep_alive_interval(interval.into());
         self
     }
 
@@ -942,7 +864,7 @@ impl ClientBuilder {
     /// Does nothing if `http2_keep_alive_interval` is disabled.
     /// Default is currently disabled.
     pub fn http2_keep_alive_timeout(mut self, timeout: Duration) -> ClientBuilder {
-        self.config.http2_keep_alive_timeout = Some(timeout);
+        self.config.builder.http2_keep_alive_timeout(timeout);
         self
     }
 
@@ -953,7 +875,7 @@ impl ClientBuilder {
     /// Does nothing if `http2_keep_alive_interval` is disabled.
     /// Default is `false`.
     pub fn http2_keep_alive_while_idle(mut self, enabled: bool) -> ClientBuilder {
-        self.config.http2_keep_alive_while_idle = enabled;
+        self.config.builder.http2_keep_alive_while_idle(enabled);
         self
     }
 
@@ -1595,30 +1517,6 @@ impl Config {
 
         f.field("default_headers", &self.headers);
 
-        if self.http1_title_case_headers {
-            f.field("http1_title_case_headers", &true);
-        }
-
-        if self.http1_allow_obsolete_multiline_headers_in_responses {
-            f.field("http1_allow_obsolete_multiline_headers_in_responses", &true);
-        }
-
-        if self.http1_ignore_invalid_headers_in_responses {
-            f.field("http1_ignore_invalid_headers_in_responses", &true);
-        }
-
-        if self.http1_allow_spaces_after_header_name_in_responses {
-            f.field("http1_allow_spaces_after_header_name_in_responses", &true);
-        }
-
-        if matches!(self.http_version_pref, HttpVersionPref::Http1) {
-            f.field("http1_only", &true);
-        }
-
-        if matches!(self.http_version_pref, HttpVersionPref::Http2) {
-            f.field("http2_prior_knowledge", &true);
-        }
-
         if let Some(ref d) = self.connect_timeout {
             f.field("connect_timeout", d);
         }
@@ -1656,9 +1554,15 @@ impl Config {
             f.field("tls_info", &self.tls_info);
         }
 
+        if self.https_only {
+            f.field("https_only", &true);
+        }
+
         if !self.dns_overrides.is_empty() {
             f.field("dns_overrides", &self.dns_overrides);
         }
+
+        f.field("builder", &self.builder);
     }
 }
 

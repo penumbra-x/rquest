@@ -1,8 +1,6 @@
 //! TLS configuration
 //!
-//! By default, a `Client` will make use of system-native transport layer
-//! security to connect to HTTPS destinations. This means schannel on Windows,
-//! Security-Framework on macOS, and OpenSSL on Linux.
+//! By default, a `Client` will make use of BoringSSL for TLS.
 //!
 //! - Various parts of TLS can also be configured or even disabled on the
 //!   `ClientBuilder`.
