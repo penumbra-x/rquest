@@ -1,11 +1,11 @@
 #[cfg(feature = "boring-tls")]
+use crate::tls::{connector, TlsConnector};
+#[cfg(feature = "boring-tls")]
 use http::header::HeaderValue;
 use http::uri::{Authority, Scheme};
 use http::Uri;
 use hyper::client::connect::{Connected, Connection};
 use hyper::service::Service;
-#[cfg(feature = "boring-tls")]
-use tls::TlsConnector;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
 use pin_project_lite::pin_project;
@@ -22,8 +22,6 @@ use self::boring_tls_conn::BoringTlsConn;
 use crate::dns::DynResolver;
 use crate::error::BoxError;
 use crate::proxy::{Proxy, ProxyScheme};
-#[cfg(feature = "boring-tls")]
-use crate::tls;
 
 pub(crate) type HttpConnector = hyper::client::HttpConnector<DynResolver>;
 
@@ -240,7 +238,7 @@ impl Connector {
                 let mut http = tls.new_connector(http).await?;
                 let io = http.call(dst).await?;
 
-                if let hyper_boring::MaybeHttpsStream::Https(stream) = io {
+                if let connector::MaybeHttpsStream::Https(stream) = io {
                     if !self.nodelay {
                         let stream_ref = stream.get_ref();
                         stream_ref.set_nodelay(false)?;
@@ -381,27 +379,27 @@ impl TlsInfoFactory for BoringTlsConn<tokio::net::TcpStream> {
 }
 
 #[cfg(feature = "boring-tls")]
-impl TlsInfoFactory for hyper_boring::MaybeHttpsStream<tokio::net::TcpStream> {
+impl TlsInfoFactory for connector::MaybeHttpsStream<tokio::net::TcpStream> {
     fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
         match self {
-            hyper_boring::MaybeHttpsStream::Https(tls) => {
+            connector::MaybeHttpsStream::Https(tls) => {
                 let peer_certificate = tls.ssl().peer_certificate().and_then(|c| c.to_der().ok());
                 Some(crate::tls::TlsInfo { peer_certificate })
             }
-            hyper_boring::MaybeHttpsStream::Http(_) => None,
+            connector::MaybeHttpsStream::Http(_) => None,
         }
     }
 }
 
 #[cfg(feature = "boring-tls")]
-impl TlsInfoFactory for BoringTlsConn<hyper_boring::MaybeHttpsStream<tokio::net::TcpStream>> {
+impl TlsInfoFactory for BoringTlsConn<connector::MaybeHttpsStream<tokio::net::TcpStream>> {
     fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
         match self.inner.get_ref() {
-            hyper_boring::MaybeHttpsStream::Https(ref tls) => {
+            connector::MaybeHttpsStream::Https(ref tls) => {
                 let peer_certificate = tls.ssl().peer_certificate().and_then(|c| c.to_der().ok());
                 Some(crate::tls::TlsInfo { peer_certificate })
             }
-            hyper_boring::MaybeHttpsStream::Http(_) => None,
+            connector::MaybeHttpsStream::Http(_) => None,
         }
     }
 }

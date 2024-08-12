@@ -4,6 +4,9 @@ use std::time::Duration;
 use std::{collections::HashMap, convert::TryInto, net::SocketAddr};
 use std::{fmt, str};
 
+#[cfg(feature = "boring-tls")]
+use boring::ssl::SslConnectorBuilder;
+
 use bytes::Bytes;
 use http::header::{
     Entry, HeaderMap, HeaderValue, ACCEPT, ACCEPT_ENCODING, CONTENT_ENCODING, CONTENT_LENGTH,
@@ -12,6 +15,8 @@ use http::header::{
 use http::uri::Scheme;
 use http::{HeaderName, Uri};
 use hyper::client::{HttpConnector, ResponseFuture as HyperResponseFuture};
+#[cfg(feature = "http2")]
+use hyper::{PseudoOrder, SettingsOrder, StreamDependency};
 use pin_project_lite::pin_project;
 use std::future::Future;
 use std::pin::Pin;
@@ -32,7 +37,7 @@ use crate::error;
 use crate::into_url::{expect_uri, try_uri};
 use crate::redirect::{self, remove_sensitive_headers};
 #[cfg(feature = "boring-tls")]
-use crate::tls::{self, Impersonate, TlsConnector, TlsConnectorBuilder};
+use crate::tls::{self, Impersonate, SslSettings, TlsConnector};
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
 use log::{debug, trace};
 
@@ -63,6 +68,7 @@ pub struct ClientBuilder {
 #[derive(Debug, Clone, Copy)]
 pub enum HttpVersionPref {
     Http1,
+    #[cfg(feature = "http2")]
     Http2,
     All,
 }
@@ -92,13 +98,16 @@ struct Config {
     hickory_dns: bool,
     error: Option<crate::Error>,
     https_only: bool,
+    http_version_pref: HttpVersionPref,
     dns_overrides: HashMap<String, Vec<SocketAddr>>,
     dns_resolver: Option<Arc<dyn Resolve>>,
     builder: hyper::client::Builder,
     #[cfg(feature = "boring-tls")]
     tls_info: bool,
     #[cfg(feature = "boring-tls")]
-    tls: TlsConnectorBuilder,
+    ssl_settings: SslSettings,
+    #[cfg(feature = "boring-tls")]
+    ssl_builder: Option<SslConnectorBuilder>,
 }
 
 impl Default for ClientBuilder {
@@ -142,13 +151,16 @@ impl ClientBuilder {
                 #[cfg(feature = "cookies")]
                 cookie_store: None,
                 https_only: false,
+                http_version_pref: HttpVersionPref::All,
                 dns_overrides: HashMap::new(),
                 dns_resolver: None,
                 builder: hyper::Client::builder(),
                 #[cfg(feature = "boring-tls")]
                 tls_info: false,
                 #[cfg(feature = "boring-tls")]
-                tls: Default::default(),
+                ssl_settings: Default::default(),
+                #[cfg(feature = "boring-tls")]
+                ssl_builder: None,
             },
         }
     }
@@ -173,8 +185,6 @@ impl ClientBuilder {
         let proxies = Arc::new(proxies);
 
         let proxies_maybe_http_auth = proxies.iter().any(|p| p.maybe_has_http_auth());
-
-    
 
         let mut connector = {
             #[cfg(feature = "boring-tls")]
@@ -205,7 +215,7 @@ impl ClientBuilder {
             {
                 Connector::new_boring_tls(
                     http,
-                    TlsConnector::new(config.tls),
+                    TlsConnector::new(config.ssl_settings, config.ssl_builder)?,
                     proxies,
                     user_agent(&config.headers),
                     config.local_address_ipv4,
@@ -233,10 +243,14 @@ impl ClientBuilder {
         connector.set_verbose(config.connection_verbose);
         connector.set_keepalive(config.tcp_keepalive);
 
-        config.builder.pool_idle_timeout(config.pool_idle_timeout);
         config
             .builder
+            .pool_idle_timeout(config.pool_idle_timeout)
             .pool_max_idle_per_host(config.pool_max_idle_per_host);
+        #[cfg(feature = "http2")]
+        if matches!(config.http_version_pref, HttpVersionPref::Http2) {
+            config.builder.http2_only(true);
+        }
 
         Ok(Client {
             inner: Arc::new(ClientRef {
@@ -249,45 +263,67 @@ impl ClientBuilder {
                 redirect_policy: Arc::new(config.redirect_policy),
                 referer: config.referer,
                 request_timeout: config.timeout,
-                proxies_maybe_http_auth,
                 https_only: config.https_only,
+                proxies_maybe_http_auth,
             }),
         })
     }
 
     /// Sets the necessary values to mimic the specified impersonate version.
+    /// This will set the necessary headers and TLS settings.
+    /// This is only available with the `boring-tls` feature.
     #[cfg(feature = "boring-tls")]
     pub fn impersonate(mut self, impersonate: Impersonate) -> ClientBuilder {
-        let settings = crate::tls::connect_settings(impersonate, &mut self.config.headers);
-        self.config.tls.impersonate = impersonate;
-        self.config.tls.builder = settings.tls_builder;
-        self.config.builder.http2_agent_profile(impersonate.profile().into());
-        self.http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
-            .http2_initial_connection_window_size(settings.http2.initial_connection_window_size)
-            .http2_max_concurrent_streams(settings.http2.max_concurrent_streams)
-            .http2_max_header_list_size(settings.http2.max_header_list_size)
-            .http2_header_table_size(settings.http2.header_table_size)
-            .http2_enable_push(settings.http2.enable_push)
+        if let Ok(settings) = crate::tls::tls_settings(impersonate, &mut self.config.headers) {
+            // Set the TLS settings
+            self.config.ssl_settings.impersonate = impersonate;
+            self.config.ssl_builder = Some(settings.ssl_builder);
+            self = self.pre_shared_key(settings.enable_psk);
+
+            // Set the http2 version preference
+            #[cfg(feature = "http2")]
+            {
+                return self
+                    .http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
+                    .http2_initial_connection_window_size(
+                        settings.http2.initial_connection_window_size,
+                    )
+                    .http2_max_concurrent_streams(settings.http2.max_concurrent_streams)
+                    .http2_max_header_list_size(settings.http2.max_header_list_size)
+                    .http2_header_table_size(settings.http2.header_table_size)
+                    .http2_enable_push(settings.http2.enable_push)
+                    .http2_headers_priority(settings.http2.headers_priority)
+                    .http2_headers_pseudo_order(settings.http2.headers_pseudo_header)
+                    .http2_settings_order(settings.http2.settings_order);
+            }
+
+            #[cfg(not(feature = "http2"))]
+            {
+                return self;
+            }
+        }
+
+        self
     }
 
     /// Enable Encrypted Client Hello (Secure SNI)
     #[cfg(feature = "boring-tls")]
     pub fn enable_ech_grease(mut self) -> ClientBuilder {
-        self.config.tls.enable_ech_grease = true;
+        self.config.ssl_settings.enable_ech_grease = true;
         self
     }
 
     /// Enable TLS permute_extensions
     #[cfg(feature = "boring-tls")]
     pub fn permute_extensions(mut self) -> ClientBuilder {
-        self.config.tls.permute_extensions = true;
+        self.config.ssl_settings.permute_extensions = true;
         self
     }
 
     /// Enable TLS pre_shared_key
     #[cfg(feature = "boring-tls")]
-    pub fn pre_shared_key(mut self) -> ClientBuilder {
-        self.config.tls.pre_shared_key = true;
+    pub fn pre_shared_key(mut self, enable: bool) -> ClientBuilder {
+        self.config.ssl_settings.pre_shared_key = enable;
         self
     }
 
@@ -742,22 +778,25 @@ impl ClientBuilder {
     pub fn http1_only(mut self) -> ClientBuilder {
         #[cfg(feature = "boring-tls")]
         {
-            self.config.tls.http_version_pref = HttpVersionPref::Http1;
+            self.config.ssl_settings.http_version_pref = HttpVersionPref::Http1;
         }
+        self.config.http_version_pref = HttpVersionPref::Http1;
         self
     }
 
     /// Allow HTTP/0.9 responses
+    #[cfg(feature = "http2")]
     pub fn http09_responses(mut self) -> ClientBuilder {
         self.config.builder.http09_responses(true);
         self
     }
 
     /// Only use HTTP/2.
+    #[cfg(feature = "http2")]
     pub fn http2_prior_knowledge(mut self) -> ClientBuilder {
         #[cfg(feature = "boring-tls")]
         {
-            self.config.tls.http_version_pref = HttpVersionPref::Http2;
+            self.config.ssl_settings.http_version_pref = HttpVersionPref::Http2;
         }
         self.config.builder.http2_only(true);
         self
@@ -766,6 +805,7 @@ impl ClientBuilder {
     /// Sets the `SETTINGS_INITIAL_WINDOW_SIZE` option for HTTP2 stream-level flow control.
     ///
     /// Default is currently 65,535 but may change internally to optimize for common uses.
+    #[cfg(feature = "http2")]
     pub fn http2_initial_stream_window_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
         self.config
             .builder
@@ -776,6 +816,7 @@ impl ClientBuilder {
     /// Sets the max connection-level flow control for HTTP2
     ///
     /// Default is currently 65,535 but may change internally to optimize for common uses.
+    #[cfg(feature = "http2")]
     pub fn http2_initial_connection_window_size(
         mut self,
         sz: impl Into<Option<u32>>,
@@ -790,6 +831,7 @@ impl ClientBuilder {
     ///
     /// Enabling this will override the limits set in `http2_initial_stream_window_size` and
     /// `http2_initial_connection_window_size`.
+    #[cfg(feature = "http2")]
     pub fn http2_adaptive_window(mut self, enabled: bool) -> ClientBuilder {
         self.config.builder.http2_adaptive_window(enabled);
         self
@@ -798,6 +840,7 @@ impl ClientBuilder {
     /// Sets the maximum frame size to use for HTTP2.
     ///
     /// Default is currently 16,384 but may change internally to optimize for common uses.
+    #[cfg(feature = "http2")]
     pub fn http2_max_frame_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
         self.config.builder.http2_max_frame_size(sz.into());
         self
@@ -806,6 +849,7 @@ impl ClientBuilder {
     /// Sets the maximum concurrent streams to use for HTTP2.
     ///
     /// Passing `None` will do nothing.
+    #[cfg(feature = "http2")]
     pub fn http2_max_concurrent_streams(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
         if let Some(max) = sz.into() {
             self.config.builder.http2_max_concurrent_streams(max);
@@ -816,6 +860,7 @@ impl ClientBuilder {
     /// Sets the max header list size to use for HTTP2.
     ///
     /// Passing `None` will do nothing.
+    #[cfg(feature = "http2")]
     pub fn http2_max_header_list_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
         if let Some(sz) = sz.into() {
             self.config.builder.http2_max_header_list_size(sz);
@@ -826,6 +871,7 @@ impl ClientBuilder {
     /// Enables and disables the push feature for HTTP2.
     ///
     /// Passing `None` will do nothing.
+    #[cfg(feature = "http2")]
     pub fn http2_enable_push(mut self, sz: impl Into<Option<bool>>) -> ClientBuilder {
         if let Some(sz) = sz.into() {
             self.config.builder.http2_enable_push(sz);
@@ -836,7 +882,7 @@ impl ClientBuilder {
     /// Sets the header table size to use for HTTP2.
     ///
     /// Passing `None` will do nothing.
-
+    #[cfg(feature = "http2")]
     pub fn http2_header_table_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
         if let Some(sz) = sz.into() {
             self.config.builder.http2_header_table_size(sz);
@@ -844,10 +890,46 @@ impl ClientBuilder {
         self
     }
 
+    /// Sets the pseudo header order for HTTP2.
+    /// This is an array of 4 elements, each element is a `PseudoOrder` enum.
+    /// Default is `None`.
+    #[cfg(feature = "http2")]
+    pub fn http2_headers_pseudo_order(
+        mut self,
+        order: impl Into<Option<[PseudoOrder; 4]>>,
+    ) -> ClientBuilder {
+        self.config.builder.http2_headers_pseudo_order(order.into());
+        self
+    }
+
+    /// Sets the priority for HTTP2 headers.
+    /// Default is `None`.
+    #[cfg(feature = "http2")]
+    pub fn http2_headers_priority(
+        mut self,
+        priority: impl Into<Option<StreamDependency>>,
+    ) -> ClientBuilder {
+        self.config.builder.http2_headers_priority(priority.into());
+        self
+    }
+
+    /// Sets the settings order for HTTP2.
+    /// This is an array of 2 elements, each element is a `SettingsOrder` enum.
+    /// Default is `None`.
+    #[cfg(feature = "http2")]
+    pub fn http2_settings_order(
+        mut self,
+        order: impl Into<Option<[SettingsOrder; 2]>>,
+    ) -> ClientBuilder {
+        self.config.builder.http2_settings_order(order.into());
+        self
+    }
+
     /// Sets an interval for HTTP2 Ping frames should be sent to keep a connection alive.
     ///
     /// Pass `None` to disable HTTP2 keep-alive.
     /// Default is currently disabled.
+    #[cfg(feature = "http2")]
     pub fn http2_keep_alive_interval(
         mut self,
         interval: impl Into<Option<Duration>>,
@@ -863,6 +945,7 @@ impl ClientBuilder {
     /// If the ping is not acknowledged within the timeout, the connection will be closed.
     /// Does nothing if `http2_keep_alive_interval` is disabled.
     /// Default is currently disabled.
+    #[cfg(feature = "http2")]
     pub fn http2_keep_alive_timeout(mut self, timeout: Duration) -> ClientBuilder {
         self.config.builder.http2_keep_alive_timeout(timeout);
         self
@@ -874,6 +957,7 @@ impl ClientBuilder {
     /// If enabled, pings are also sent when no streams are active.
     /// Does nothing if `http2_keep_alive_interval` is disabled.
     /// Default is `false`.
+    #[cfg(feature = "http2")]
     pub fn http2_keep_alive_while_idle(mut self, enabled: bool) -> ClientBuilder {
         self.config.builder.http2_keep_alive_while_idle(enabled);
         self
@@ -968,7 +1052,7 @@ impl ClientBuilder {
     /// feature to be enabled.
     #[cfg(feature = "boring-tls")]
     pub fn danger_accept_invalid_certs(mut self, accept_invalid_certs: bool) -> ClientBuilder {
-        self.config.tls.certs_verification = !accept_invalid_certs;
+        self.config.ssl_settings.certs_verification = !accept_invalid_certs;
         self
     }
 
@@ -988,7 +1072,7 @@ impl ClientBuilder {
     /// feature to be enabled.
     #[cfg(feature = "boring-tls")]
     pub fn min_tls_version(mut self, version: tls::Version) -> ClientBuilder {
-        self.config.tls.min_tls_version = Some(version);
+        self.config.ssl_settings.min_tls_version = Some(version);
         self
     }
 
@@ -1008,7 +1092,7 @@ impl ClientBuilder {
     /// feature to be enabled.
     #[cfg(feature = "boring-tls")]
     pub fn max_tls_version(mut self, version: tls::Version) -> ClientBuilder {
-        self.config.tls.max_tls_version = Some(version);
+        self.config.ssl_settings.max_tls_version = Some(version);
         self
     }
 
@@ -1539,15 +1623,15 @@ impl Config {
 
         #[cfg(feature = "boring-tls")]
         {
-            if !self.tls.certs_verification {
+            if !self.ssl_settings.certs_verification {
                 f.field("danger_accept_invalid_certs", &true);
             }
 
-            if let Some(ref min_tls_version) = self.tls.min_tls_version {
+            if let Some(ref min_tls_version) = self.ssl_settings.min_tls_version {
                 f.field("min_tls_version", min_tls_version);
             }
 
-            if let Some(ref max_tls_version) = self.tls.max_tls_version {
+            if let Some(ref max_tls_version) = self.ssl_settings.max_tls_version {
                 f.field("max_tls_version", max_tls_version);
             }
 
@@ -1670,6 +1754,7 @@ impl PendingRequest {
     }
 
     fn retry_error(mut self: Pin<&mut Self>, err: &(dyn std::error::Error + 'static)) -> bool {
+        #[cfg(feature = "http2")]
         if !is_retryable_error(err) {
             return false;
         }
@@ -1709,6 +1794,7 @@ impl PendingRequest {
     }
 }
 
+#[cfg(feature = "http2")]
 fn is_retryable_error(err: &(dyn std::error::Error + 'static)) -> bool {
     if let Some(cause) = err.source() {
         if let Some(err) = cause.downcast_ref::<h2::Error>() {

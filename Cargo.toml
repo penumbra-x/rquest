@@ -19,7 +19,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [features]
-default = ["boring-tls"]
+default = ["boring-tls", "http2"]
 
 full = [
     "boring-tls",
@@ -31,7 +31,10 @@ full = [
     "stream",
     "cookies",
     "socks",
+    "http2"
 ]
+
+http2 = ["h2", "hyper/http2"]
 
 blocking = ["futures-util/io", "tokio/sync"]
 
@@ -62,11 +65,16 @@ socks = ["tokio-socks"]
 
 # Enables common types used for TLS. Useless on its own.
 boring-tls = [
-    "boring",
-    "tokio-boring",
-    "hyper-boring",
-    "boring-sys",
-    "foreign-types",
+    "dep:boring",
+    "dep:tokio-boring",
+    "dep:boring-sys",
+    "dep:foreign-types",
+    "dep:flate2",
+    "dep:brotli_crate",
+    "dep:libc",
+    "dep:linked_hash_set",
+    "dep:tower-layer",
+    "dep:antidote",
 ]
 
 # When enabled, disable using the cached SYS_PROXIES.
@@ -92,14 +100,13 @@ mime_guess = { version = "2.0", default-features = false, optional = true }
 
 encoding_rs = "0.8"
 http-body = "0.4.6"
-hyper = { package = "hyper-patch", version = "0.14", default-features = false, features = [
+hyper = { package = "rhyper", version = "0.14", default-features = false, features = [
     "tcp",
     "http1",
-    "http2",
     "client",
     "runtime",
 ] }
-h2 = { package = "h2-patch", version = "0.5" }
+h2 = { package = "rh2", version = "0.3", optional = true}
 log = "0.4"
 mime = "0.3.17"
 percent-encoding = "2.3"
@@ -110,11 +117,18 @@ ipnet = "2.9.0"
 # Optional deps...
 
 ## boring-tls
-boring = { package = "boring-patch", version = "4", optional = true }
-boring-sys = { package = "boring-sys-patch", version = "4", optional = true }
-hyper-boring = { package = "hyper-boring-patch", version = "4", optional = true }
-tokio-boring = { package = "tokio-boring-patch", version = "4", optional = true }
+boring = { package = "rboring", version = "4", optional = true }
+boring-sys = { package = "rboring-sys", version = "4", optional = true }
+tokio-boring = { package = "tokio-rboring", version = "4", optional = true }
 foreign-types = { version = "0.5.0", optional = true }
+brotli_crate = { package = "brotli", version = "6", optional = true }
+flate2 = { version = "1", optional = true }
+libc = { version = "0.2", optional = true }
+
+# boring-tls session cache
+linked_hash_set = { version = "0.1", optional = true }
+tower-layer = { version = "0.3", optional = true }
+antidote = { version = "1", optional = true }
 
 ## cookies
 cookie_crate = { version = "0.18", package = "cookie", optional = true }
@@ -148,7 +162,7 @@ system-configuration = "0.6.0"
 
 [dev-dependencies]
 env_logger = "0.10.0"
-hyper = { package = "hyper-patch", version = "0.14", default-features = false, features = [
+hyper = { package = "rhyper", version = "0.14", default-features = false, features = [
     "tcp",
     "stream",
     "http1",
@@ -159,7 +173,6 @@ hyper = { package = "hyper-patch", version = "0.14", default-features = false, f
 ] }
 serde = { version = "1.0", features = ["derive"] }
 libflate = "2.0.0"
-brotli_crate = { package = "brotli", version = "3.3.0" }
 zstd_crate = { package = "zstd", version = "0.13" }
 doc-comment = "0.3"
 tokio = { version = "1.0", default-features = false, features = [
