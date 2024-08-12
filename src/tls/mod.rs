@@ -21,10 +21,10 @@ use boring::{
 };
 use connector::{HttpsConnector, HttpsLayer, HttpsLayerSettings};
 pub(crate) use profile::tls_settings;
-pub use profile::Impersonate;
-use profile::TypedImpersonate;
-
-pub use settings::{Http2Settings, SslBuilderSettings, SslContextSettings, SslSettings};
+pub use profile::{Impersonate, TypedImpersonate};
+pub use settings::{
+    Http2Settings, ImpersonateSettings, SslBuilderSettings, SslContextSettings, SslSettings,
+};
 use std::any::Any;
 use std::fmt::{self, Debug};
 

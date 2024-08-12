@@ -31,7 +31,7 @@ full = [
     "stream",
     "cookies",
     "socks",
-    "http2"
+    "http2",
 ]
 
 http2 = ["h2", "hyper/http2"]
@@ -106,7 +106,7 @@ hyper = { package = "rhyper", version = "0.14", default-features = false, featur
     "client",
     "runtime",
 ] }
-h2 = { package = "rh2", version = "0.3", optional = true}
+h2 = { package = "rh2", version = "0.3", optional = true }
 log = "0.4"
 mime = "0.3.17"
 percent-encoding = "2.3"
@@ -179,6 +179,7 @@ tokio = { version = "1.0", default-features = false, features = [
     "macros",
     "rt-multi-thread",
 ] }
+futures = { version = "0.3.0", default-features = false }
 
 [[example]]
 name = "blocking"

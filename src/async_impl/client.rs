@@ -293,7 +293,7 @@ impl ClientBuilder {
                     .http2_header_table_size(settings.http2.header_table_size)
                     .http2_enable_push(settings.http2.enable_push)
                     .http2_headers_priority(settings.http2.headers_priority)
-                    .http2_headers_pseudo_order(settings.http2.headers_pseudo_header)
+                    .http2_headers_pseudo_order(settings.http2.headers_pseudo_order)
                     .http2_settings_order(settings.http2.settings_order);
             }
 

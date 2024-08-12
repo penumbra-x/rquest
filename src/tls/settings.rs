@@ -4,9 +4,12 @@ use super::{
 };
 use crate::async_impl::client::HttpVersionPref;
 use boring::ssl::SslConnectorBuilder;
-use hyper::{PseudoOrder, SettingsOrder, StreamDependency};
+use hyper::{PseudoOrder, SettingsOrder, StreamDependency, StreamId};
 use std::fmt::Debug;
 use std::{any::Any, path::PathBuf};
+use PseudoOrder::*;
+use SettingsOrder::*;
+use TypedImpersonate::*;
 
 /// The TLS connector configuration.
 #[derive(Debug)]
@@ -72,8 +75,21 @@ pub struct Http2Settings {
     /// The priority of the headers.
     pub headers_priority: Option<StreamDependency>,
     /// The pseudo header order.
-    pub headers_pseudo_header: Option<[PseudoOrder; 4]>,
+    pub headers_pseudo_order: Option<[PseudoOrder; 4]>,
     /// The settings order.
+    pub settings_order: Option<[SettingsOrder; 2]>,
+}
+
+/// Impersonate extension settings.
+#[derive(Debug)]
+pub struct ImpersonateSettings {
+    /// Enable pre-shared key.
+    pub pre_share_key: bool,
+    /// Headers frame priority.
+    pub headers_priority: Option<StreamDependency>,
+    /// Headers frame pseudo order.
+    pub headers_pseudo_order: Option<[PseudoOrder; 4]>,
+    /// Settings frame order.
     pub settings_order: Option<[SettingsOrder; 2]>,
 }
 
@@ -110,10 +126,50 @@ impl Default for SslSettings {
 impl From<&SslSettings> for SslContextSettings {
     fn from(settings: &SslSettings) -> Self {
         Self {
-            typed: settings.impersonate.profile(),
+            typed: settings.impersonate.typed(),
             enable_ech_grease: settings.enable_ech_grease,
             permute_extensions: settings.permute_extensions,
             http_version_pref: settings.http_version_pref,
+        }
+    }
+}
+
+// ============= ImpersonateSettings impls =============
+impl From<Impersonate> for ImpersonateSettings {
+    fn from(impersonate: Impersonate) -> Self {
+        let typed = impersonate.typed();
+
+        // The headers frame priority.
+        let headers_priority = {
+            let (weight, exclusive) = match typed {
+                TypedImpersonate::Safari => (254, false),
+                _ => (255, true),
+            };
+            StreamDependency::new(StreamId::zero(), weight, exclusive)
+        };
+
+        // The headers frame pseudo order.
+        let headers_pseudo_order = {
+            match typed {
+                Chrome | Edge => [Method, Authority, Scheme, Path],
+                OkHttp => [Method, Path, Authority, Scheme],
+                Safari => [Method, Scheme, Path, Authority],
+            }
+        };
+
+        // The settings frame order.
+        let settings_order = {
+            match typed {
+                TypedImpersonate::Safari => [InitialWindowSize, MaxConcurrentStreams],
+                _ => [MaxConcurrentStreams, InitialWindowSize],
+            }
+        };
+
+        Self {
+            pre_share_key: impersonate.pre_share_key(),
+            headers_priority: Some(headers_priority),
+            headers_pseudo_order: Some(headers_pseudo_order),
+            settings_order: Some(settings_order),
         }
     }
 }

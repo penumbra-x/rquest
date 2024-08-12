@@ -2,14 +2,14 @@ use super::CIPHER_LIST;
 use crate::tls::extension::SslExtension;
 use crate::tls::extension::{ChromeExtension, Extension};
 use crate::tls::{Http2Settings, SslBuilderSettings};
-use crate::tls::{Impersonate, TlsResult};
+use crate::tls::{ImpersonateSettings, TlsResult};
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, UPGRADE_INSECURE_REQUESTS, USER_AGENT},
     HeaderMap, HeaderValue,
 };
 
 pub(crate) fn get_settings(
-    impersonate: Impersonate,
+    settings: ImpersonateSettings,
     headers: &mut HeaderMap,
 ) -> TlsResult<SslBuilderSettings> {
     init_headers(headers);
@@ -17,7 +17,7 @@ pub(crate) fn get_settings(
         ssl_builder: ChromeExtension::builder()?
             .configure_cipher_list(&CIPHER_LIST)?
             .configure_chrome_new_curves()?,
-        enable_psk: impersonate.psk_extension(),
+        enable_psk: settings.pre_share_key,
         http2: Http2Settings {
             initial_stream_window_size: Some(6291456),
             initial_connection_window_size: Some(15728640),
@@ -25,9 +25,9 @@ pub(crate) fn get_settings(
             max_header_list_size: Some(262144),
             header_table_size: Some(65536),
             enable_push: Some(false),
-            headers_priority: impersonate.headers_priority(),
-            headers_pseudo_header: impersonate.headers_pseudo_order(),
-            settings_order: impersonate.settings_order(),
+            headers_priority: settings.headers_priority,
+            headers_pseudo_order: settings.headers_pseudo_order,
+            settings_order: settings.settings_order,
         },
     })
 }

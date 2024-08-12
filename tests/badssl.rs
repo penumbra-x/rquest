@@ -21,7 +21,7 @@ async fn test_badssl_modern() {
 #[tokio::test]
 async fn test_badssl_self_signed() {
     let text = rquest::Client::builder()
-        .impersonate(rquest::tls::Impersonate::OkHttp4_9)
+        .impersonate(rquest::tls::OkHttp4_9)
         .danger_accept_invalid_certs(true)
         .no_proxy()
         .build()
