@@ -7,20 +7,20 @@
 
 An fast asynchronous Rust `Http`/`WebSocket` Client with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate
 
-- `Async` and `blocking` Clients
+- `Async` or `blocking` Clients
 - `Plain`, `JSON`, `urlencoded`, `multipart` bodies
+- Customizable `headers` order
 - Customizable `redirect` policy
 - Cookie Store
 - `HTTP`/`HTTPS`/`SOCKS5` Proxies
 - `HTTPS`/`WebSocket` via [BoringSSL](https://github.com/cloudflare/boring)
+- `JA3`/`JA4`/`HTTP2` fingerprint
 - Impersonate `Chrome`/`Safari`/`Edge`/`OkHttp`
-- [Changelog](CHANGELOG.md)
 
 Additional learning resources include:
 
 - [API Documentation](https://docs.rs/rquest)
 - [Repository Examples](https://github.com/0x676e67/rquest/tree/master/examples)
-
 
 ## Usage
 
@@ -32,7 +32,7 @@ optional features, so your `Cargo.toml` could look like this:
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.11"
+rquest = "0.20"
 ```
 
 ```rust,no_run
@@ -41,9 +41,9 @@ use rquest::tls::Impersonate;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    // Build a client to mimic Chrome123
+    // Build a client to mimic Edge127
     let client = rquest::Client::builder()
-        .impersonate(Impersonate::Chrome123)
+        .impersonate(Impersonate::Edge127)
         .enable_ech_grease()
         .permute_extensions()
         .cookie_store(true)
@@ -62,7 +62,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = { version = "0.11", features = ["websocket"] }
+rquest = { version = "0.20", features = ["websocket"] }
 ```
 
 ```rust,no_run

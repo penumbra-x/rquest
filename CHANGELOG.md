@@ -4,9 +4,52 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- *(client)* Simplify client configuration (#110)
+- *(tls)* Add `CA Certificate` settings (#112)
+
+### 🚜 Refactor
+
+- *(tls)* Refactor TLS connection layer configuration (#111)
+
+### Deps
+
+- *(boring/hyper/h2)* Migration patch crate name (#109)
+
+## [0.20.10] - 2024-08-10
+
+### 🚀 Features
+
+- *(http2)* Add headers frame default priority (#106)
+- *(tls)* Reuse https connector layer (#107)
+
+### 🎨 Styling
+
+- *(tls)* Remove unused closure
+
+### ◀️ Revert
+
+- *(tls)* Revert tls_built_in_root_certs option (#105)
+
+## [0.20.1] - 2024-08-08
+
+### 🚀 Features
+
+- *(client)* Simplify the header configuration process
+- *(extension)* Set application protocol (ALPN) for http1 (#104)
+
 ### 🐛 Bug Fixes
 
 - *(tls)* Fix setting config TLS version
+
+### 🚜 Refactor
+
+- *(tls)* Simplify TLS connector configuration (#103)
+
+### ◀️ Revert
+
+- *(client)* Remove use of unused TLS Server Name Indication
 
 ### Deps
 
