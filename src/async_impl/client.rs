@@ -97,11 +97,11 @@ struct Config {
     cookie_store: Option<Arc<dyn cookie::CookieStore>>,
     hickory_dns: bool,
     error: Option<crate::Error>,
-    https_only: bool,
     http_version_pref: HttpVersionPref,
     dns_overrides: HashMap<String, Vec<SocketAddr>>,
     dns_resolver: Option<Arc<dyn Resolve>>,
     builder: hyper::client::Builder,
+    https_only: bool,
     #[cfg(feature = "boring-tls")]
     tls_info: bool,
     #[cfg(feature = "boring-tls")]
@@ -150,11 +150,11 @@ impl ClientBuilder {
                 hickory_dns: cfg!(feature = "hickory-dns"),
                 #[cfg(feature = "cookies")]
                 cookie_store: None,
-                https_only: false,
                 http_version_pref: HttpVersionPref::All,
                 dns_overrides: HashMap::new(),
                 dns_resolver: None,
                 builder: hyper::Client::builder(),
+                https_only: false,
                 #[cfg(feature = "boring-tls")]
                 tls_info: false,
                 #[cfg(feature = "boring-tls")]
@@ -1112,6 +1112,13 @@ impl ClientBuilder {
     /// Defaults to false.
     pub fn https_only(mut self, enabled: bool) -> ClientBuilder {
         self.config.https_only = enabled;
+        self
+    }
+
+    /// Set CA certificate file path.
+    #[cfg(feature = "boring-tls")]
+    pub fn ca_cert_file<P: AsRef<std::path::Path>>(mut self, ca_cert_file: P) -> ClientBuilder {
+        self.config.ssl_settings.ca_cert_file = Some(ca_cert_file.as_ref().to_path_buf());
         self
     }
 

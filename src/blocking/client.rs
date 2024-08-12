@@ -19,6 +19,8 @@ use crate::tls;
 #[cfg(feature = "boring-tls")]
 use crate::tls::Impersonate;
 use crate::{async_impl, header, redirect, IntoUrl, Method, Proxy};
+#[cfg(feature = "http2")]
+use hyper::{PseudoOrder, SettingsOrder, StreamDependency};
 
 /// A `Client` to make Requests with.
 ///
@@ -119,8 +121,8 @@ impl ClientBuilder {
 
     /// Enable TLS pre_shared_key
     #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
-    pub fn pre_shared_key(self) -> ClientBuilder {
-        self.with_inner(move |inner| inner.pre_shared_key())
+    pub fn pre_shared_key(self, enable: bool) -> ClientBuilder {
+        self.with_inner(move |inner| inner.pre_shared_key(enable))
     }
 
     // Higher-level options
@@ -568,6 +570,38 @@ impl ClientBuilder {
         self.with_inner(|inner| inner.http2_header_table_size(sz))
     }
 
+    /// Sets the pseudo header order for HTTP2.
+    /// This is an array of 4 elements, each element is a `PseudoOrder` enum.
+    /// Default is `None`.
+    #[cfg(feature = "http2")]
+    pub fn http2_headers_pseudo_order(
+        self,
+        order: impl Into<Option<[PseudoOrder; 4]>>,
+    ) -> ClientBuilder {
+        self.with_inner(|inner| inner.http2_headers_pseudo_order(order))
+    }
+
+    /// Sets the priority for HTTP2 headers.
+    /// Default is `None`.
+    #[cfg(feature = "http2")]
+    pub fn http2_headers_priority(
+        self,
+        priority: impl Into<Option<StreamDependency>>,
+    ) -> ClientBuilder {
+        self.with_inner(|inner| inner.http2_headers_priority(priority))
+    }
+
+    /// Sets the settings order for HTTP2.
+    /// This is an array of 2 elements, each element is a `SettingsOrder` enum.
+    /// Default is `None`.
+    #[cfg(feature = "http2")]
+    pub fn http2_settings_order(
+        self,
+        order: impl Into<Option<[SettingsOrder; 2]>>,
+    ) -> ClientBuilder {
+        self.with_inner(|inner| inner.http2_settings_order(order))
+    }
+
     // TCP options
 
     /// Set whether sockets have `TCP_NODELAY` enabled.
@@ -688,6 +722,12 @@ impl ClientBuilder {
     #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
     pub fn tls_info(self, tls_info: bool) -> ClientBuilder {
         self.with_inner(|inner| inner.tls_info(tls_info))
+    }
+
+    /// Set CA certificate file path.
+    #[cfg(feature = "boring-tls")]
+    pub fn ca_cert_file<P: AsRef<std::path::Path>>(self, path: P) -> ClientBuilder {
+        self.with_inner(|inner| inner.ca_cert_file(path))
     }
 
     /// Enables the [hickory-dns](hickory-dns) async resolver instead of a default threadpool using `getaddrinfo`.

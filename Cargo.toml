@@ -230,6 +230,10 @@ name = "set_interface"
 path = "examples/set_interface.rs"
 
 [[example]]
+name = "set_ca_cert"
+path = "examples/set_ca_cert.rs"
+
+[[example]]
 name = "websocket"
 path = "examples/websocket.rs"
 required-features = ["websocket"]

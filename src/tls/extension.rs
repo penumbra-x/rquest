@@ -7,6 +7,7 @@ use boring::ssl::{
     SslVerifyMode, SslVersion,
 };
 use foreign_types::ForeignTypeRef;
+use std::path::Path;
 
 fn sv_handler(r: c_int) -> Result<c_int, ErrorStack> {
     if r == 0 {
@@ -61,6 +62,12 @@ pub trait SslExtension {
     fn configure_add_cert_compression_alg(
         self,
         cert_compression_alg: CertCompressionAlgorithm,
+    ) -> TlsResult<SslConnectorBuilder>;
+
+    /// Configure the ca certificate file for the given `SslConnectorBuilder`.
+    fn configure_ca_cert_file<P: AsRef<Path>>(
+        self,
+        ca_cert_file: Option<P>,
     ) -> TlsResult<SslConnectorBuilder>;
 }
 
@@ -309,6 +316,16 @@ impl SslExtension for SslConnectorBuilder {
             ))
             .map(|_| self)
         }
+    }
+
+    fn configure_ca_cert_file<P: AsRef<Path>>(
+        mut self,
+        ca_cert_file: Option<P>,
+    ) -> TlsResult<SslConnectorBuilder> {
+        if let Some(file) = ca_cert_file {
+            self.set_ca_file(file)?;
+        }
+        Ok(self)
     }
 }
 

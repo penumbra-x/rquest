@@ -72,7 +72,6 @@ pub fn tls_settings(ver: Impersonate, headers: &mut HeaderMap) -> TlsResult<SslB
     )
 }
 
-#[allow(missing_docs)]
 #[derive(Clone, Copy, Debug, Default)]
 pub enum Impersonate {
     Chrome100,
@@ -254,7 +253,7 @@ impl Impersonate {
 
 /// Client profile to impersonate
 #[derive(Debug, Clone, Copy)]
-pub(super) enum TypedImpersonate {
+pub enum TypedImpersonate {
     /// Chrome impersonate client profile
     Chrome,
     /// OkHttp impersonate client profile
