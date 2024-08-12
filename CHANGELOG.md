@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.21] - 2024-08-12
+
+### 🚀 Features
+
+- *(tls)* Optimize tls configuration process (#113)
+
 ## [0.20.20] - 2024-08-12
 
 ### 🚀 Features
