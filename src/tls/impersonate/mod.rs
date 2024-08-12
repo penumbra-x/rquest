@@ -225,15 +225,10 @@ impl Impersonate {
     }
 }
 
-/// Client profile to impersonate
 #[derive(Debug, Clone, Copy)]
 pub enum TypedImpersonate {
-    /// Chrome impersonate client profile
     Chrome,
-    /// OkHttp impersonate client profile
     OkHttp,
-    /// Safari impersonate client profile
     Safari,
-    /// Edge impersonate client profile
     Edge,
 }

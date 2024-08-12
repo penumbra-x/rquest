@@ -52,7 +52,7 @@ pub struct SslBuilderSettings {
     /// The SSL connector builder.
     pub ssl_builder: SslConnectorBuilder,
     /// Enable PSK.
-    pub enable_psk: bool,
+    pub pre_shared_key: bool,
     /// HTTP/2 settings.
     pub http2: Http2Settings,
 }

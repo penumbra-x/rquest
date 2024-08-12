@@ -17,7 +17,7 @@ pub(crate) fn get_settings(
     init_headers(headers);
     Ok(SslBuilderSettings {
         ssl_builder: ChromeExtension::builder()?.configure_cipher_list(&CIPHER_LIST)?,
-        enable_psk: settings.pre_share_key,
+        pre_shared_key: settings.pre_share_key,
         http2: Http2Settings {
             initial_stream_window_size: Some(6291456),
             initial_connection_window_size: Some(15728640),

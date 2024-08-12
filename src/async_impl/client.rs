@@ -278,7 +278,7 @@ impl ClientBuilder {
             // Set the TLS settings
             self.config.ssl_settings.impersonate = impersonate;
             self.config.ssl_builder = Some(settings.ssl_builder);
-            self = self.pre_shared_key(settings.enable_psk);
+            self = self.pre_shared_key(settings.pre_shared_key);
 
             // Set the http2 version preference
             #[cfg(feature = "http2")]

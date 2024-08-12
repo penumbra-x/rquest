@@ -27,7 +27,7 @@ pub(crate) fn get_settings(
             "TLS_RSA_WITH_AES_256_CBC_SHA",
             "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
         ])?,
-        enable_psk: settings.pre_share_key,
+        pre_shared_key: settings.pre_share_key,
         http2: Http2Settings {
             initial_stream_window_size: Some(16777216),
             initial_connection_window_size: Some(16777216),
