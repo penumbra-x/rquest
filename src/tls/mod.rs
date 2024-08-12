@@ -9,7 +9,7 @@
 mod cert_compression;
 pub mod connector;
 pub mod extension;
-mod profile;
+mod impersonate;
 mod settings;
 
 use crate::connect::HttpConnector;
@@ -20,8 +20,8 @@ use boring::{
     ssl::{ConnectConfiguration, SslConnectorBuilder},
 };
 use connector::{HttpsConnector, HttpsLayer, HttpsLayerSettings};
-pub(crate) use profile::tls_settings;
-pub use profile::{Impersonate, TypedImpersonate};
+pub(crate) use impersonate::tls_settings;
+pub use impersonate::{Impersonate, TypedImpersonate};
 pub use settings::{
     Http2Settings, ImpersonateSettings, SslBuilderSettings, SslContextSettings, SslSettings,
 };

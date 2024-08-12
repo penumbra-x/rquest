@@ -1,7 +1,6 @@
 pub mod edge101;
 pub mod edge122;
 pub mod edge127;
-pub mod edge99;
 
 const CIPHER_LIST: [&str; 15] = [
     "TLS_AES_128_GCM_SHA256",

@@ -70,7 +70,6 @@ pub fn tls_settings(ver: Impersonate, headers: &mut HeaderMap) -> TlsResult<SslB
         OkHttp5 => okhttp::okhttp5::get_settings,
 
         // Edge
-        Edge99 => edge::edge99::get_settings,
         Edge101 => edge::edge101::get_settings,
         Edge122 => edge::edge122::get_settings,
         Edge127 => edge::edge127::get_settings
@@ -122,9 +121,8 @@ pub enum Impersonate {
     OkHttp4_9,
     OkHttp4_10,
     OkHttp5,
-    
+
     // Edge
-    Edge99,
     Edge101,
     Edge122,
     Edge127,
@@ -180,7 +178,6 @@ impl FromStr for Impersonate {
             "okhttp_5" => Ok(OkHttp5),
 
             // Edge
-            "edge_99" => Ok(Edge99),
             "edge_101" => Ok(Edge101),
             "edge_122" => Ok(Edge122),
             "edge_127" => Ok(Edge127),
@@ -223,7 +220,7 @@ impl Impersonate {
             }
 
             // Edge
-            Edge99 | Edge101 | Edge122 | Edge127 => TypedImpersonate::Edge,
+            Edge101 | Edge122 | Edge127 => TypedImpersonate::Edge,
         }
     }
 }

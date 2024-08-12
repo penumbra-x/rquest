@@ -1,5 +1,5 @@
 use super::{
-    profile::{Impersonate, TypedImpersonate},
+    impersonate::{Impersonate, TypedImpersonate},
     Version,
 };
 use crate::async_impl::client::HttpVersionPref;
