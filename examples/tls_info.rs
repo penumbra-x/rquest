@@ -15,7 +15,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let resp = client.get("https://tls.peet.ws/api/all").send().await?;
     if let Some(val) = resp.extensions().get::<rquest::tls::TlsInfo>() {
         if let Some(peer_cert_der) = val.peer_certificate() {
-            assert!(peer_cert_der.len() > 0);
+            assert!(!peer_cert_der.is_empty());
         }
     }
 

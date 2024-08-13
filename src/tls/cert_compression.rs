@@ -90,7 +90,7 @@ unsafe extern "C" fn brotli_decompressor(
 
     *out = buffer;
 
-    return 1;
+    1
 }
 
 unsafe extern "C" fn zlib_decompressor(
@@ -120,5 +120,5 @@ unsafe extern "C" fn zlib_decompressor(
 
     *out = buffer;
 
-    return 1;
+    1
 }

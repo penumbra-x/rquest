@@ -149,14 +149,12 @@ impl From<Impersonate> for ImpersonateSettings {
         // The headers frame priority.
         let headers_priority = {
             let set = match cluster {
-                0 | 1 | 2 => Some((255, true)),
+                0..=2 => Some((255, true)),
                 3 => Some((254, false)),
                 _ => None,
             };
 
-            set.map_or(None, |(weight, exclusive)| {
-                Some(StreamDependency::new(StreamId::zero(), weight, exclusive))
-            })
+            set.map(|(weight, exclusive)| StreamDependency::new(StreamId::zero(), weight, exclusive))
         };
 
         // The headers frame pseudo order.
@@ -172,7 +170,7 @@ impl From<Impersonate> for ImpersonateSettings {
         // The settings frame order.
         let settings_order = {
             match cluster {
-                0 | 1 | 2 => Some([MaxConcurrentStreams, InitialWindowSize]),
+                0..=2 => Some([MaxConcurrentStreams, InitialWindowSize]),
                 3 => Some([InitialWindowSize, MaxConcurrentStreams]),
                 _ => None,
             }
