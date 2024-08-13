@@ -9,7 +9,7 @@ use boring::ssl::{
     ConnectConfiguration, Ssl, SslConnector, SslConnectorBuilder, SslRef, SslSessionCacheMode,
 };
 
-use super::TlsResult;
+use super::SslResult;
 ///! Hyper SSL support via OpenSSL.
 use cache::{SessionCache, SessionKey};
 use http::uri::Scheme;
@@ -28,8 +28,8 @@ use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use tokio_boring::SslStream;
 use tower_layer::Layer;
 
-fn key_index() -> TlsResult<Index<Ssl, SessionKey>> {
-    static IDX: LazyLock<TlsResult<Index<Ssl, SessionKey>>> = LazyLock::new(Ssl::new_ex_index);
+fn key_index() -> SslResult<Index<Ssl, SessionKey>> {
+    static IDX: LazyLock<SslResult<Index<Ssl, SessionKey>>> = LazyLock::new(Ssl::new_ex_index);
     IDX.clone()
 }
 
@@ -41,11 +41,11 @@ struct Inner {
     ssl_callback: Option<SslCallback>,
 }
 
-type Callback = Arc<dyn Fn(&mut ConnectConfiguration, &Uri) -> TlsResult<()> + Sync + Send>;
-type SslCallback = Arc<dyn Fn(&mut SslRef, &Uri) -> TlsResult<()> + Sync + Send>;
+type Callback = Arc<dyn Fn(&mut ConnectConfiguration, &Uri) -> SslResult<()> + Sync + Send>;
+type SslCallback = Arc<dyn Fn(&mut SslRef, &Uri) -> SslResult<()> + Sync + Send>;
 
 impl Inner {
-    fn setup_ssl(&self, uri: &Uri, host: &str) -> TlsResult<Ssl> {
+    fn setup_ssl(&self, uri: &Uri, host: &str) -> SslResult<Ssl> {
         let mut conf = self.ssl.configure()?;
 
         if let Some(ref callback) = self.callback {
@@ -133,7 +133,7 @@ impl HttpsLayer {
     /// Creates a new `HttpsLayer`.
     ///
     /// The session cache configuration of `ssl` will be overwritten.
-    pub fn with_connector(ssl: SslConnectorBuilder) -> TlsResult<HttpsLayer> {
+    pub fn with_connector(ssl: SslConnectorBuilder) -> SslResult<HttpsLayer> {
         Self::with_connector_and_settings(ssl, Default::default())
     }
 
@@ -141,7 +141,7 @@ impl HttpsLayer {
     pub fn with_connector_and_settings(
         mut ssl: SslConnectorBuilder,
         settings: HttpsLayerSettings,
-    ) -> TlsResult<HttpsLayer> {
+    ) -> SslResult<HttpsLayer> {
         // If the session cache is disabled, we don't need to set up any callbacks.
         let cache = if settings.session_cache {
             let cache = Arc::new(Mutex::new(SessionCache::with_capacity(
@@ -181,7 +181,7 @@ impl HttpsLayer {
     /// instead.
     pub fn set_callback<F>(&mut self, callback: F)
     where
-        F: Fn(&mut ConnectConfiguration, &Uri) -> TlsResult<()> + 'static + Sync + Send,
+        F: Fn(&mut ConnectConfiguration, &Uri) -> SslResult<()> + 'static + Sync + Send,
     {
         self.inner.callback = Some(Arc::new(callback));
     }
@@ -189,7 +189,7 @@ impl HttpsLayer {
     /// Registers a callback which can customize the `Ssl` of each connection.
     pub fn set_ssl_callback<F>(&mut self, callback: F)
     where
-        F: Fn(&mut SslRef, &Uri) -> TlsResult<()> + 'static + Sync + Send,
+        F: Fn(&mut SslRef, &Uri) -> SslResult<()> + 'static + Sync + Send,
     {
         self.inner.ssl_callback = Some(Arc::new(callback));
     }
@@ -228,26 +228,8 @@ where
         }
     }
 
-    /// Creates a new `HttpsConnector`.
-    ///
-    /// The session cache configuration of `ssl` will be overwritten.
-    pub fn with_connector(http: S, ssl: SslConnectorBuilder) -> TlsResult<HttpsConnector<S>> {
-        HttpsLayer::with_connector(ssl).map(|l| l.layer(http))
-    }
-
-    /// Creates a new `HttpsConnector` with settings
-    ///
-    /// The session cache configuration of `ssl` will be overwritten.
-    pub fn with_connector_and_settings(
-        http: S,
-        ssl: SslConnectorBuilder,
-        settings: HttpsLayerSettings,
-    ) -> TlsResult<HttpsConnector<S>> {
-        HttpsLayer::with_connector_and_settings(ssl, settings).map(|l| l.layer(http))
-    }
-
     /// Configures the SSL context for a given URI.
-    pub fn setup_ssl(&self, uri: &Uri, host: &str) -> TlsResult<Ssl> {
+    pub fn setup_ssl(&self, uri: &Uri, host: &str) -> SslResult<Ssl> {
         self.inner.setup_ssl(uri, host)
     }
 
@@ -258,7 +240,7 @@ where
     /// instead.
     pub fn set_callback<F>(&mut self, callback: F)
     where
-        F: Fn(&mut ConnectConfiguration, &Uri) -> TlsResult<()> + 'static + Sync + Send,
+        F: Fn(&mut ConnectConfiguration, &Uri) -> SslResult<()> + 'static + Sync + Send,
     {
         self.inner.callback = Some(Arc::new(callback));
     }
@@ -266,7 +248,7 @@ where
     /// Registers a callback which can customize the `Ssl` of each connection.
     pub fn set_ssl_callback<F>(&mut self, callback: F)
     where
-        F: Fn(&mut SslRef, &Uri) -> TlsResult<()> + 'static + Sync + Send,
+        F: Fn(&mut SslRef, &Uri) -> SslResult<()> + 'static + Sync + Send,
     {
         self.inner.ssl_callback = Some(Arc::new(callback));
     }

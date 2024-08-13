@@ -1,7 +1,7 @@
 use super::CIPHER_LIST;
 use crate::tls::extension::{ChromeExtension, Extension, SslExtension};
-use crate::tls::{Http2Settings, SslBuilderSettings};
-use crate::tls::{ImpersonateSettings, TlsResult};
+use crate::tls::{Http2Settings, SslImpersonateSettings};
+use crate::tls::{ImpersonateSettings, SslResult};
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, UPGRADE_INSECURE_REQUESTS, USER_AGENT},
     HeaderMap, HeaderValue,
@@ -10,13 +10,13 @@ use http::{
 pub(crate) fn get_settings(
     settings: ImpersonateSettings,
     headers: &mut HeaderMap,
-) -> TlsResult<SslBuilderSettings> {
+) -> SslResult<SslImpersonateSettings> {
     init_headers(headers);
-    Ok(SslBuilderSettings {
+    Ok(SslImpersonateSettings {
         ssl_builder: ChromeExtension::builder()?
             .configure_cipher_list(&CIPHER_LIST)?
             .configure_chrome_new_curves()?,
-        pre_shared_key: settings.pre_share_key,
+        extension: settings.extension,
         http2: Http2Settings {
             initial_stream_window_size: Some(6291456),
             initial_connection_window_size: Some(15728640),

@@ -1,5 +1,5 @@
 #[cfg(feature = "boring-tls")]
-use crate::tls::{connector, TlsConnector};
+use crate::tls::{connector, BoringTlsConnector};
 #[cfg(feature = "boring-tls")]
 use http::header::HeaderValue;
 use http::uri::{Authority, Scheme};
@@ -46,7 +46,7 @@ enum Inner {
     #[cfg(feature = "boring-tls")]
     BoringTls {
         http: HttpConnector,
-        tls: TlsConnector,
+        tls: BoringTlsConnector,
     },
 }
 
@@ -84,7 +84,7 @@ impl Connector {
     #[cfg(feature = "boring-tls")]
     pub(crate) fn new_boring_tls(
         mut http: HttpConnector,
-        tls: TlsConnector,
+        tls: BoringTlsConnector,
         proxies: Arc<Vec<Proxy>>,
         user_agent: Option<HeaderValue>,
         local_addr_v4: Option<Ipv4Addr>,

@@ -121,8 +121,8 @@ impl ClientBuilder {
 
     /// Enable TLS pre_shared_key
     #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
-    pub fn pre_shared_key(self, enable: bool) -> ClientBuilder {
-        self.with_inner(move |inner| inner.pre_shared_key(enable))
+    pub fn pre_shared_key(self) -> ClientBuilder {
+        self.with_inner(move |inner| inner.pre_shared_key())
     }
 
     // Higher-level options
@@ -671,9 +671,17 @@ impl ClientBuilder {
     /// will be trusted for use. This includes expired certificates. This
     /// introduces significant vulnerabilities, and should only be used
     /// as a last resort.
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    #[cfg(feature = "boring-tls")]
     pub fn danger_accept_invalid_certs(self, accept_invalid_certs: bool) -> ClientBuilder {
         self.with_inner(|inner| inner.danger_accept_invalid_certs(accept_invalid_certs))
+    }
+
+    /// Controls the use of TLS server name indication.
+    ///
+    /// Defaults to `true`.
+    #[cfg(feature = "boring-tls")]
+    pub fn tls_sni(self, tls_sni: bool) -> ClientBuilder {
+        self.with_inner(|inner| inner.tls_sni(tls_sni))
     }
 
     /// Set the minimum required TLS version for connections.
@@ -690,7 +698,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    #[cfg(feature = "boring-tls")]
     pub fn min_tls_version(self, version: tls::Version) -> ClientBuilder {
         self.with_inner(|inner| inner.min_tls_version(version))
     }
@@ -709,7 +717,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    #[cfg(feature = "boring-tls")]
     pub fn max_tls_version(self, version: tls::Version) -> ClientBuilder {
         self.with_inner(|inner| inner.max_tls_version(version))
     }
@@ -719,7 +727,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    #[cfg(feature = "boring-tls")]
     pub fn tls_info(self, tls_info: bool) -> ClientBuilder {
         self.with_inner(|inner| inner.tls_info(tls_info))
     }

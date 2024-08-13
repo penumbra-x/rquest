@@ -1,64 +1,56 @@
-use super::{
-    impersonate::{Impersonate, TypedImpersonate},
-    Version,
-};
+#![allow(missing_debug_implementations)]
+use super::{impersonate::Impersonate, Version};
 use crate::async_impl::client::HttpVersionPref;
 use boring::ssl::SslConnectorBuilder;
 use hyper::{PseudoOrder, SettingsOrder, StreamDependency, StreamId};
-use std::fmt::Debug;
-use std::{any::Any, path::PathBuf};
+use std::path::PathBuf;
+use Impersonate::*;
 use PseudoOrder::*;
 use SettingsOrder::*;
-use TypedImpersonate::*;
 
 /// The TLS connector configuration.
-#[derive(Debug)]
 pub struct SslSettings {
-    /// The client to impersonate.
-    pub impersonate: Impersonate,
-    /// The minimum TLS version to use.
-    pub min_tls_version: Option<Version>,
-    /// The maximum TLS version to use.
-    pub max_tls_version: Option<Version>,
-    /// Enable ECH grease.
-    pub enable_ech_grease: bool,
-    /// Permute extensions.
-    pub permute_extensions: bool,
     /// Verify certificates.
     pub certs_verification: bool,
     /// CA certificates file path.
     pub ca_cert_file: Option<PathBuf>,
-    /// Use a pre-shared key.
-    pub pre_shared_key: bool,
-    /// The HTTP version preference.
-    pub http_version_pref: HttpVersionPref,
-}
-
-/// The TLS context settings.
-#[derive(Debug, Clone, Copy)]
-pub struct SslContextSettings {
-    /// The client to impersonate.
-    pub typed: TypedImpersonate,
-    /// Enable ECH grease.
-    pub enable_ech_grease: bool,
-    /// Permute extensions.
-    pub permute_extensions: bool,
-    /// The HTTP version preference.
-    pub http_version_pref: HttpVersionPref,
+    /// The Tls extension settings.
+    pub extension: SslExtensionSettings,
+    /// The SSL connector builder.
+    pub ssl_builder: Option<SslConnectorBuilder>,
 }
 
 /// Connection settings
-pub struct SslBuilderSettings {
+pub struct SslImpersonateSettings {
     /// The SSL connector builder.
     pub ssl_builder: SslConnectorBuilder,
-    /// Enable PSK.
-    pub pre_shared_key: bool,
+    /// TLS extension settings.
+    pub extension: SslExtensionSettings,
     /// HTTP/2 settings.
     pub http2: Http2Settings,
 }
 
+/// Extension settings.
+#[derive(Clone, Copy)]
+pub struct SslExtensionSettings {
+    pub tls_sni: bool,
+    /// The HTTP version preference (setting alpn).
+    pub http_version_pref: HttpVersionPref,
+    /// The minimum TLS version to use.
+    pub min_tls_version: Option<Version>,
+    /// The maximum TLS version to use.
+    pub max_tls_version: Option<Version>,
+    /// Enable application settings.
+    pub application_settings: bool,
+    /// Enable PSK.
+    pub pre_shared_key: bool,
+    /// Enable ECH grease.
+    pub enable_ech_grease: bool,
+    /// Permute extensions.
+    pub permute_extensions: bool,
+}
+
 /// HTTP/2 settings.
-#[derive(Debug)]
 pub struct Http2Settings {
     /// The initial stream window size.
     pub initial_stream_window_size: Option<u32>,
@@ -81,10 +73,9 @@ pub struct Http2Settings {
 }
 
 /// Impersonate extension settings.
-#[derive(Debug)]
 pub struct ImpersonateSettings {
-    /// Enable pre-shared key.
-    pub pre_share_key: bool,
+    /// TLS extension settings.
+    pub extension: SslExtensionSettings,
     /// Headers frame priority.
     pub headers_priority: Option<StreamDependency>,
     /// Headers frame pseudo order.
@@ -93,43 +84,24 @@ pub struct ImpersonateSettings {
     pub settings_order: Option<[SettingsOrder; 2]>,
 }
 
-// ============= SslBuilderSettings impls =============
-
-impl Debug for SslBuilderSettings {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TlsSettings")
-            .field("tls_builder", &self.ssl_builder.type_id())
-            .field("http2", &self.http2)
-            .finish()
-    }
-}
-
 // ============= SslSettings impls =============
 
 impl Default for SslSettings {
     fn default() -> Self {
         Self {
-            min_tls_version: None,
-            max_tls_version: None,
-            impersonate: Default::default(),
-            enable_ech_grease: false,
-            permute_extensions: false,
             certs_verification: true,
             ca_cert_file: None,
-            pre_shared_key: false,
-            http_version_pref: HttpVersionPref::All,
-        }
-    }
-}
-
-// ============= SslContextSettings impls =============
-impl From<&SslSettings> for SslContextSettings {
-    fn from(settings: &SslSettings) -> Self {
-        Self {
-            typed: settings.impersonate.typed(),
-            enable_ech_grease: settings.enable_ech_grease,
-            permute_extensions: settings.permute_extensions,
-            http_version_pref: settings.http_version_pref,
+            extension: SslExtensionSettings {
+                tls_sni: true,
+                http_version_pref: HttpVersionPref::All,
+                min_tls_version: None,
+                max_tls_version: None,
+                pre_shared_key: false,
+                application_settings: false,
+                enable_ech_grease: false,
+                permute_extensions: false,
+            },
+            ssl_builder: None,
         }
     }
 }
@@ -137,39 +109,89 @@ impl From<&SslSettings> for SslContextSettings {
 // ============= ImpersonateSettings impls =============
 impl From<Impersonate> for ImpersonateSettings {
     fn from(impersonate: Impersonate) -> Self {
-        let typed = impersonate.typed();
+        let cluster = match impersonate {
+            // Chrome
+            Chrome100 | Chrome101 | Chrome104 | Chrome105 | Chrome106 | Chrome107 | Chrome108
+            | Chrome109 | Chrome114 | Chrome116 | Chrome117 | Chrome118 | Chrome119 | Chrome120
+            | Chrome123 | Chrome124 | Chrome126 | Chrome127 => 0,
+
+            // Edge
+            Edge101 | Edge122 | Edge127 => 1,
+
+            // OkHttp
+            OkHttp3_9 | OkHttp3_11 | OkHttp3_13 | OkHttp3_14 | OkHttp4_9 | OkHttp4_10 | OkHttp5 => {
+                2
+            }
+
+            // Safari
+            SafariIos17_2 | SafariIos16_5 | SafariIos17_4_1 | Safari15_3 | Safari15_5
+            | Safari15_6_1 | Safari16 | Safari16_5 | Safari17_0 | Safari17_2_1 | Safari17_4_1
+            | Safari17_5 => 3,
+        };
+
+        // Enable application settings.
+        let application_settings = matches!(cluster, 0 | 1);
+
+        // Enable pre-shared key.
+        let pre_shared_key = matches!(
+            impersonate,
+            Chrome116
+                | Chrome117
+                | Chrome120
+                | Chrome123
+                | Chrome124
+                | Chrome126
+                | Chrome127
+                | Edge122
+                | Edge127
+        );
 
         // The headers frame priority.
         let headers_priority = {
-            let (weight, exclusive) = match typed {
-                TypedImpersonate::Safari => (254, false),
-                _ => (255, true),
+            let set = match cluster {
+                0 | 1 | 2 => Some((255, true)),
+                3 => Some((254, false)),
+                _ => None,
             };
-            StreamDependency::new(StreamId::zero(), weight, exclusive)
+
+            set.map_or(None, |(weight, exclusive)| {
+                Some(StreamDependency::new(StreamId::zero(), weight, exclusive))
+            })
         };
 
         // The headers frame pseudo order.
         let headers_pseudo_order = {
-            match typed {
-                Chrome | Edge => [Method, Authority, Scheme, Path],
-                OkHttp => [Method, Path, Authority, Scheme],
-                Safari => [Method, Scheme, Path, Authority],
+            match cluster {
+                0 | 1 => Some([Method, Authority, Scheme, Path]),
+                2 => Some([Method, Path, Authority, Scheme]),
+                3 => Some([Method, Scheme, Path, Authority]),
+                _ => None,
             }
         };
 
         // The settings frame order.
         let settings_order = {
-            match typed {
-                TypedImpersonate::Safari => [InitialWindowSize, MaxConcurrentStreams],
-                _ => [MaxConcurrentStreams, InitialWindowSize],
+            match cluster {
+                0 | 1 | 2 => Some([MaxConcurrentStreams, InitialWindowSize]),
+                3 => Some([InitialWindowSize, MaxConcurrentStreams]),
+                _ => None,
             }
         };
 
         Self {
-            pre_share_key: impersonate.pre_share_key(),
-            headers_priority: Some(headers_priority),
-            headers_pseudo_order: Some(headers_pseudo_order),
-            settings_order: Some(settings_order),
+            extension: SslExtensionSettings {
+                tls_sni: true,
+                http_version_pref: HttpVersionPref::All,
+                min_tls_version: None,
+                max_tls_version: None,
+                application_settings,
+                pre_shared_key,
+                enable_ech_grease: false,
+                permute_extensions: false,
+            },
+            headers_priority,
+            headers_pseudo_order,
+            settings_order,
         }
     }
 }

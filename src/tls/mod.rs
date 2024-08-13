@@ -13,42 +13,35 @@ mod impersonate;
 mod settings;
 
 use crate::connect::HttpConnector;
-use crate::tls::extension::{SslConnectExtension, SslExtension};
-use boring::ssl::{SslConnector, SslMethod};
 use boring::{
     error::ErrorStack,
-    ssl::{ConnectConfiguration, SslConnectorBuilder},
+    ssl::{ConnectConfiguration, SslConnector, SslMethod},
 };
 use connector::{HttpsConnector, HttpsLayer, HttpsLayerSettings};
-pub(crate) use impersonate::tls_settings;
-pub use impersonate::{Impersonate, TypedImpersonate};
+use extension::{SslConnectExtension, SslExtension};
+pub use impersonate::{tls_settings, Impersonate};
 pub use settings::{
-    Http2Settings, ImpersonateSettings, SslBuilderSettings, SslContextSettings, SslSettings,
+    Http2Settings, ImpersonateSettings, SslExtensionSettings, SslImpersonateSettings, SslSettings,
 };
-use std::any::Any;
-use std::fmt::{self, Debug};
 
-type TlsResult<T> = std::result::Result<T, ErrorStack>;
+type SslResult<T> = std::result::Result<T, ErrorStack>;
 
 /// A wrapper around a `SslConnectorBuilder` that allows for additional settings.
 #[derive(Clone)]
-pub struct TlsConnector {
+#[allow(missing_debug_implementations)]
+pub struct BoringTlsConnector {
     /// The TLS connector context settings.
-    settings: SslContextSettings,
+    extension: SslExtensionSettings,
     /// The TLS connector layer.
     layer: HttpsLayer,
 }
 
-impl TlsConnector {
+impl BoringTlsConnector {
     /// Create a new `BoringTlsConnector` with the given function.
-    pub fn new(settings: SslSettings, ssl: Option<SslConnectorBuilder>) -> TlsResult<TlsConnector> {
-        let ssl = match ssl {
-            Some(ssl) => ssl,
-            None => SslConnector::builder(SslMethod::tls_client())?,
-        };
+    pub fn new(settings: SslSettings) -> SslResult<BoringTlsConnector> {
         Ok(Self {
-            settings: SslContextSettings::from(&settings),
-            layer: Self::build_layer(settings, ssl)?,
+            extension: settings.extension,
+            layer: Self::build_layer(settings)?,
         })
     }
 
@@ -57,29 +50,40 @@ impl TlsConnector {
     pub(crate) async fn new_connector(
         &self,
         http: HttpConnector,
-    ) -> TlsResult<HttpsConnector<HttpConnector>> {
+    ) -> SslResult<HttpsConnector<HttpConnector>> {
         // Create the `HttpsConnector` with the given `HttpConnector` and `HttpsLayer`.
         let mut http = HttpsConnector::with_connector_layer(http, self.layer.clone());
 
         // Set the callback to add application settings.
-        let ctx = self.settings.clone();
-        http.set_callback(move |conf, _| configure_ssl_context(conf, &ctx));
+        let extension = self.extension;
+        http.set_callback(move |conf, _| configure_ssl_context(conf, extension));
 
         Ok(http)
     }
 
-    fn build_layer(settings: SslSettings, ssl: SslConnectorBuilder) -> TlsResult<HttpsLayer> {
+    fn build_layer(settings: SslSettings) -> SslResult<HttpsLayer> {
+        let ssl = match settings.ssl_builder {
+            Some(ssl) => ssl,
+            None => SslConnector::builder(SslMethod::tls_client())?,
+        };
+
         // Create the `SslConnectorBuilder` and configure it.
         let builder = ssl
-            .configure_alpn_protos(&settings.http_version_pref)?
+            .configure_ca_cert_file(settings.ca_cert_file)?
             .configure_cert_verification(settings.certs_verification)?
-            .configure_min_tls_version(settings.min_tls_version)?
-            .configure_max_tls_version(settings.max_tls_version)?
-            .configure_ca_cert_file(settings.ca_cert_file.as_deref())?;
+            .configure_alpn_protos(settings.extension.http_version_pref)?
+            .configure_min_tls_version(settings.extension.min_tls_version)?
+            .configure_max_tls_version(settings.extension.max_tls_version)?
+            .configure_permute_extensions(
+                settings.extension.application_settings,
+                settings.extension.permute_extensions,
+            )?;
 
         // Create the `HttpsLayerSettings` with the default session cache capacity.
         let settings = HttpsLayerSettings::builder()
-            .session_cache(settings.pre_shared_key)
+            .session_cache(
+                settings.extension.application_settings && settings.extension.pre_shared_key,
+            )
             .build();
 
         HttpsLayer::with_connector_and_settings(builder, settings)
@@ -89,26 +93,13 @@ impl TlsConnector {
 /// Add application settings to the given `ConnectConfiguration`.
 fn configure_ssl_context(
     conf: &mut ConnectConfiguration,
-    ctx: &SslContextSettings,
-) -> TlsResult<()> {
-    if matches!(ctx.typed, TypedImpersonate::Chrome | TypedImpersonate::Edge) {
-        conf.configure_permute_extensions(ctx.permute_extensions)?
-            .configure_enable_ech_grease(ctx.enable_ech_grease)?
-            .configure_add_application_settings(ctx.http_version_pref)?;
-    }
-
+    ext: SslExtensionSettings,
+) -> SslResult<()> {
+    conf.configure_enable_ech_grease(ext.application_settings, ext.enable_ech_grease)?
+        .configure_add_application_settings(ext.application_settings, ext.http_version_pref)?
+        .set_use_server_name_indication(ext.tls_sni);
     Ok(())
 }
-
-impl Debug for TlsConnector {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("BoringTlsConnector")
-            .field("builder", &self.settings.type_id())
-            .field("connector", &self.type_id())
-            .finish()
-    }
-}
-
 /// A TLS protocol version.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Version(InnerVersion);

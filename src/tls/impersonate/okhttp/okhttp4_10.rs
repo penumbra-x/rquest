@@ -1,6 +1,6 @@
 use crate::tls::extension::{Extension, OkHttpExtension, SslExtension};
-use crate::tls::{Http2Settings, SslBuilderSettings};
-use crate::tls::{ImpersonateSettings, TlsResult};
+use crate::tls::{Http2Settings, SslImpersonateSettings};
+use crate::tls::{ImpersonateSettings, SslResult};
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
     HeaderMap, HeaderValue,
@@ -9,9 +9,9 @@ use http::{
 pub(crate) fn get_settings(
     settings: ImpersonateSettings,
     headers: &mut HeaderMap,
-) -> TlsResult<SslBuilderSettings> {
+) -> SslResult<SslImpersonateSettings> {
     init_headers(headers);
-    Ok(SslBuilderSettings {
+    Ok(SslImpersonateSettings {
         ssl_builder: OkHttpExtension::builder()?.configure_cipher_list(&[
             "TLS_AES_128_GCM_SHA256",
             "TLS_AES_256_GCM_SHA384",
@@ -30,7 +30,7 @@ pub(crate) fn get_settings(
             "TLS_RSA_WITH_AES_256_CBC_SHA",
             "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
         ])?,
-        pre_shared_key: settings.pre_share_key,
+        extension: settings.extension,
         http2: Http2Settings {
             initial_stream_window_size: Some(16777216),
             initial_connection_window_size: Some(16777216),

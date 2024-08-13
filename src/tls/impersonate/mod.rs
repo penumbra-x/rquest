@@ -5,9 +5,13 @@ mod edge;
 mod okhttp;
 mod safari;
 
-use super::{SslBuilderSettings, TlsResult};
+use super::{SslImpersonateSettings, SslResult};
 use crate::tls::ImpersonateSettings;
+use chrome::*;
+use edge::*;
 use http::HeaderMap;
+use okhttp::*;
+use safari::*;
 use std::{fmt::Debug, str::FromStr};
 use Impersonate::*;
 
@@ -22,57 +26,60 @@ macro_rules! impersonate_match {
 }
 
 /// Get the connection settings for the given impersonate version
-pub fn tls_settings(ver: Impersonate, headers: &mut HeaderMap) -> TlsResult<SslBuilderSettings> {
+pub fn tls_settings(
+    ver: Impersonate,
+    headers: &mut HeaderMap,
+) -> SslResult<SslImpersonateSettings> {
     impersonate_match!(
         ver,
         headers,
         // Chrome
-        Chrome100 => chrome::v100::get_settings,
-        Chrome101 => chrome::v101::get_settings,
-        Chrome104 => chrome::v104::get_settings,
-        Chrome105 => chrome::v105::get_settings,
-        Chrome106 => chrome::v106::get_settings,
-        Chrome107 => chrome::v107::get_settings,
-        Chrome108 => chrome::v108::get_settings,
-        Chrome109 => chrome::v109::get_settings,
-        Chrome114 => chrome::v114::get_settings,
-        Chrome116 => chrome::v116::get_settings,
-        Chrome117 => chrome::v117::get_settings,
-        Chrome118 => chrome::v118::get_settings,
-        Chrome119 => chrome::v119::get_settings,
-        Chrome120 => chrome::v120::get_settings,
-        Chrome123 => chrome::v123::get_settings,
-        Chrome124 => chrome::v124::get_settings,
-        Chrome126 => chrome::v126::get_settings,
-        Chrome127 => chrome::v127::get_settings,
+        Chrome100 => v100::get_settings,
+        Chrome101 => v101::get_settings,
+        Chrome104 => v104::get_settings,
+        Chrome105 => v105::get_settings,
+        Chrome106 => v106::get_settings,
+        Chrome107 => v107::get_settings,
+        Chrome108 => v108::get_settings,
+        Chrome109 => v109::get_settings,
+        Chrome114 => v114::get_settings,
+        Chrome116 => v116::get_settings,
+        Chrome117 => v117::get_settings,
+        Chrome118 => v118::get_settings,
+        Chrome119 => v119::get_settings,
+        Chrome120 => v120::get_settings,
+        Chrome123 => v123::get_settings,
+        Chrome124 => v124::get_settings,
+        Chrome126 => v126::get_settings,
+        Chrome127 => v127::get_settings,
 
         // Safari
-        SafariIos17_2 => safari::safari_ios_17_2::get_settings,
-        SafariIos17_4_1 => safari::safari_ios_17_4_1::get_settings,
-        SafariIos16_5 => safari::safari_ios_16_5::get_settings,
-        Safari15_3 => safari::safari15_3::get_settings,
-        Safari15_5 => safari::safari15_5::get_settings,
-        Safari15_6_1 => safari::safari15_6_1::get_settings,
-        Safari16 => safari::safari16::get_settings,
-        Safari16_5 => safari::safari16_5::get_settings,
-        Safari17_0 => safari::safari17_0::get_settings,
-        Safari17_2_1 => safari::safari17_2_1::get_settings,
-        Safari17_4_1 => safari::safari17_4_1::get_settings,
-        Safari17_5 => safari::safari17_5::get_settings,
+        SafariIos17_2 => safari_ios_17_2::get_settings,
+        SafariIos17_4_1 => safari_ios_17_4_1::get_settings,
+        SafariIos16_5 => safari_ios_16_5::get_settings,
+        Safari15_3 => safari15_3::get_settings,
+        Safari15_5 => safari15_5::get_settings,
+        Safari15_6_1 => safari15_6_1::get_settings,
+        Safari16 => safari16::get_settings,
+        Safari16_5 => safari16_5::get_settings,
+        Safari17_0 => safari17_0::get_settings,
+        Safari17_2_1 => safari17_2_1::get_settings,
+        Safari17_4_1 => safari17_4_1::get_settings,
+        Safari17_5 => safari17_5::get_settings,
 
         // OkHttp
-        OkHttp3_9 => okhttp::okhttp3_9::get_settings,
-        OkHttp3_11 => okhttp::okhttp3_11::get_settings,
-        OkHttp3_13 => okhttp::okhttp3_13::get_settings,
-        OkHttp3_14 => okhttp::okhttp3_14::get_settings,
-        OkHttp4_9 => okhttp::okhttp4_9::get_settings,
-        OkHttp4_10 => okhttp::okhttp4_10::get_settings,
-        OkHttp5 => okhttp::okhttp5::get_settings,
+        OkHttp3_9 => okhttp3_9::get_settings,
+        OkHttp3_11 => okhttp3_11::get_settings,
+        OkHttp3_13 => okhttp3_13::get_settings,
+        OkHttp3_14 => okhttp3_14::get_settings,
+        OkHttp4_9 => okhttp4_9::get_settings,
+        OkHttp4_10 => okhttp4_10::get_settings,
+        OkHttp5 => okhttp5::get_settings,
 
         // Edge
-        Edge101 => edge::edge101::get_settings,
-        Edge122 => edge::edge122::get_settings,
-        Edge127 => edge::edge127::get_settings
+        Edge101 => edge101::get_settings,
+        Edge122 => edge122::get_settings,
+        Edge127 => edge127::get_settings
     )
 }
 
@@ -184,51 +191,4 @@ impl FromStr for Impersonate {
             _ => Err(format!("Unknown impersonate version: {}", s)),
         }
     }
-}
-
-impl Impersonate {
-    pub(super) fn pre_share_key(&self) -> bool {
-        matches!(
-            self,
-            Chrome116
-                | Chrome117
-                | Chrome120
-                | Chrome123
-                | Chrome124
-                | Chrome126
-                | Chrome127
-                | Edge122
-                | Edge127
-        )
-    }
-
-    pub(super) fn typed(&self) -> TypedImpersonate {
-        match self {
-            // Chrome
-            Chrome100 | Chrome101 | Chrome104 | Chrome105 | Chrome106 | Chrome107 | Chrome108
-            | Chrome109 | Chrome114 | Chrome116 | Chrome117 | Chrome118 | Chrome119 | Chrome120
-            | Chrome123 | Chrome124 | Chrome126 | Chrome127 => TypedImpersonate::Chrome,
-
-            // Safari
-            SafariIos17_2 | SafariIos16_5 | SafariIos17_4_1 | Safari15_3 | Safari15_5
-            | Safari15_6_1 | Safari16 | Safari16_5 | Safari17_0 | Safari17_2_1 | Safari17_4_1
-            | Safari17_5 => TypedImpersonate::Safari,
-
-            // OkHttp
-            OkHttp3_9 | OkHttp3_11 | OkHttp3_13 | OkHttp3_14 | OkHttp4_9 | OkHttp4_10 | OkHttp5 => {
-                TypedImpersonate::OkHttp
-            }
-
-            // Edge
-            Edge101 | Edge122 | Edge127 => TypedImpersonate::Edge,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum TypedImpersonate {
-    Chrome,
-    OkHttp,
-    Safari,
-    Edge,
 }
