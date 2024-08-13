@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.22] - 2024-08-13
+
+### 🚀 Features
+
+- *(dns)* Enable happy eyeballs when using hickory-dns (#115)
+- *(proxy)* Use  instead of  for reading proxy settings on Windows (#116)
+- *(tls)* Add option to configure TLS server name indication (SNI) (#117)
+
 ## [0.20.21] - 2024-08-12
 
 ### 🚀 Features
