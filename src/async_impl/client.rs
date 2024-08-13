@@ -1486,10 +1486,7 @@ impl Client {
             .cookie_store
             .as_ref()
             .and_then(|cookie_store| cookie_store.cookies(&target_url))
-            .as_ref()
-            .and_then(|header| header.to_str().ok())
-            .map(|cookies_str| Some(cookies_str.to_owned()))
-            .flatten();
+            .and_then(|header| header.to_str().map(ToOwned::to_owned).ok());
 
         Ok(result)
     }
