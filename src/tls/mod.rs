@@ -6,9 +6,9 @@
 //!   `ClientBuilder`.
 
 #![allow(missing_docs)]
+pub mod builder;
 mod cert_compression;
-pub mod connector;
-pub mod extension;
+mod connector;
 mod impersonate;
 mod settings;
 
@@ -17,40 +17,39 @@ use boring::{
     error::ErrorStack,
     ssl::{ConnectConfiguration, SslConnector, SslMethod},
 };
+use builder::{TlsConnectExtension, TlsExtension};
 use connector::{HttpsConnector, HttpsLayer, HttpsLayerSettings};
-use extension::{SslConnectExtension, SslExtension};
+
+pub use connector::MaybeHttpsStream;
 pub use impersonate::{tls_settings, Impersonate};
 pub use settings::{
-    Http2Settings, ImpersonateSettings, SslExtensionSettings, SslImpersonateSettings, SslSettings,
+    Http2FrameSettings, ImpersonateSettings, Tls, TlsExtensionSettings, TlsSettings,
 };
 
-type SslResult<T> = std::result::Result<T, ErrorStack>;
+type TlsResult<T> = std::result::Result<T, ErrorStack>;
 
 /// A wrapper around a `SslConnectorBuilder` that allows for additional settings.
 #[derive(Clone)]
 #[allow(missing_debug_implementations)]
 pub struct BoringTlsConnector {
     /// The TLS connector context settings.
-    extension: SslExtensionSettings,
+    extension: TlsExtensionSettings,
     /// The TLS connector layer.
     layer: HttpsLayer,
 }
 
 impl BoringTlsConnector {
     /// Create a new `BoringTlsConnector` with the given function.
-    pub fn new(settings: SslSettings) -> SslResult<BoringTlsConnector> {
+    pub fn new(settings: Tls) -> TlsResult<BoringTlsConnector> {
         Ok(Self {
             extension: settings.extension,
-            layer: Self::build_layer(settings)?,
+            layer: Self::layer(settings)?,
         })
     }
 
     /// Create a new `HttpsConnector` with the settings from the `TlsContext`.
     #[inline]
-    pub(crate) async fn new_connector(
-        &self,
-        http: HttpConnector,
-    ) -> SslResult<HttpsConnector<HttpConnector>> {
+    pub(crate) async fn from(&self, http: HttpConnector) -> HttpsConnector<HttpConnector> {
         // Create the `HttpsConnector` with the given `HttpConnector` and `HttpsLayer`.
         let mut http = HttpsConnector::with_connector_layer(http, self.layer.clone());
 
@@ -58,11 +57,13 @@ impl BoringTlsConnector {
         let extension = self.extension;
         http.set_callback(move |conf, _| configure_ssl_context(conf, extension));
 
-        Ok(http)
+        http
     }
 
-    fn build_layer(settings: SslSettings) -> SslResult<HttpsLayer> {
-        let ssl = match settings.ssl_builder {
+    /// Create a new `HttpsLayer` with the given `Tls` settings.
+    fn layer(settings: Tls) -> TlsResult<HttpsLayer> {
+        // If the builder is set, use it. Otherwise, create a new one.
+        let ssl = match settings.builder {
             Some(ssl) => ssl,
             None => SslConnector::builder(SslMethod::tls_client())?,
         };
@@ -93,8 +94,8 @@ impl BoringTlsConnector {
 /// Add application settings to the given `ConnectConfiguration`.
 fn configure_ssl_context(
     conf: &mut ConnectConfiguration,
-    ext: SslExtensionSettings,
-) -> SslResult<()> {
+    ext: TlsExtensionSettings,
+) -> TlsResult<()> {
     conf.configure_enable_ech_grease(ext.application_settings, ext.enable_ech_grease)?
         .configure_add_application_settings(ext.application_settings, ext.http_version_pref)?
         .set_use_server_name_indication(ext.tls_sni);

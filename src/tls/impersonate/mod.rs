@@ -5,7 +5,7 @@ mod edge;
 mod okhttp;
 mod safari;
 
-use super::{SslImpersonateSettings, SslResult};
+use super::{TlsResult, TlsSettings};
 use crate::tls::ImpersonateSettings;
 use chrome::*;
 use edge::*;
@@ -26,10 +26,7 @@ macro_rules! impersonate_match {
 }
 
 /// Get the connection settings for the given impersonate version
-pub fn tls_settings(
-    ver: Impersonate,
-    headers: &mut HeaderMap,
-) -> SslResult<SslImpersonateSettings> {
+pub fn tls_settings(ver: Impersonate, headers: &mut HeaderMap) -> TlsResult<TlsSettings> {
     impersonate_match!(
         ver,
         headers,
@@ -78,7 +75,7 @@ pub fn tls_settings(
 
         // Edge
         Edge101 => edge101::get_settings,
-        Edge122 => edge122::get_settings,
+        Edge122 => edge122::tls_settings,
         Edge127 => edge127::get_settings
     )
 }

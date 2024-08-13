@@ -34,7 +34,7 @@ use crate::error;
 use crate::into_url::{expect_uri, try_uri};
 use crate::redirect::{self, remove_sensitive_headers};
 #[cfg(feature = "boring-tls")]
-use crate::tls::{self, BoringTlsConnector, Impersonate, SslSettings};
+use crate::tls::{self, BoringTlsConnector, Impersonate, Tls};
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
 use log::{debug, trace};
 
@@ -102,7 +102,7 @@ struct Config {
     #[cfg(feature = "boring-tls")]
     tls_info: bool,
     #[cfg(feature = "boring-tls")]
-    ssl_settings: SslSettings,
+    tls: Tls,
 }
 
 impl Default for ClientBuilder {
@@ -153,7 +153,7 @@ impl ClientBuilder {
                 #[cfg(feature = "boring-tls")]
                 tls_info: false,
                 #[cfg(feature = "boring-tls")]
-                ssl_settings: Default::default(),
+                tls: Default::default(),
             },
         }
     }
@@ -208,7 +208,7 @@ impl ClientBuilder {
             {
                 Connector::new_boring_tls(
                     http,
-                    BoringTlsConnector::new(config.ssl_settings)?,
+                    BoringTlsConnector::new(config.tls)?,
                     proxies,
                     user_agent(&config.headers),
                     config.local_address_ipv4,
@@ -269,8 +269,8 @@ impl ClientBuilder {
     pub fn impersonate(mut self, impersonate: Impersonate) -> ClientBuilder {
         if let Ok(settings) = tls::tls_settings(impersonate, &mut self.config.headers) {
             // Set the TLS settings
-            self.config.ssl_settings.ssl_builder = Some(settings.ssl_builder);
-            self.config.ssl_settings.extension = settings.extension;
+            self.config.tls.builder = Some(settings.builder);
+            self.config.tls.extension = settings.extension;
 
             // Set the http2 version preference
             #[cfg(feature = "http2")]
@@ -301,21 +301,21 @@ impl ClientBuilder {
     /// Enable Encrypted Client Hello (Secure SNI)
     #[cfg(feature = "boring-tls")]
     pub fn enable_ech_grease(mut self) -> ClientBuilder {
-        self.config.ssl_settings.extension.enable_ech_grease = true;
+        self.config.tls.extension.enable_ech_grease = true;
         self
     }
 
     /// Enable TLS permute_extensions
     #[cfg(feature = "boring-tls")]
     pub fn permute_extensions(mut self) -> ClientBuilder {
-        self.config.ssl_settings.extension.permute_extensions = true;
+        self.config.tls.extension.permute_extensions = true;
         self
     }
 
     /// Enable TLS pre_shared_key
     #[cfg(feature = "boring-tls")]
     pub fn pre_shared_key(mut self) -> ClientBuilder {
-        self.config.ssl_settings.extension.pre_shared_key = true;
+        self.config.tls.extension.pre_shared_key = true;
         self
     }
 
@@ -770,7 +770,7 @@ impl ClientBuilder {
     pub fn http1_only(mut self) -> ClientBuilder {
         #[cfg(feature = "boring-tls")]
         {
-            self.config.ssl_settings.extension.http_version_pref = HttpVersionPref::Http1;
+            self.config.tls.extension.http_version_pref = HttpVersionPref::Http1;
         }
         self.config.http_version_pref = HttpVersionPref::Http1;
         self
@@ -788,7 +788,7 @@ impl ClientBuilder {
     pub fn http2_prior_knowledge(mut self) -> ClientBuilder {
         #[cfg(feature = "boring-tls")]
         {
-            self.config.ssl_settings.extension.http_version_pref = HttpVersionPref::Http2;
+            self.config.tls.extension.http_version_pref = HttpVersionPref::Http2;
         }
         self.config.builder.http2_only(true);
         self
@@ -1044,7 +1044,7 @@ impl ClientBuilder {
     /// feature to be enabled.
     #[cfg(feature = "boring-tls")]
     pub fn danger_accept_invalid_certs(mut self, accept_invalid_certs: bool) -> ClientBuilder {
-        self.config.ssl_settings.certs_verification = !accept_invalid_certs;
+        self.config.tls.certs_verification = !accept_invalid_certs;
         self
     }
 
@@ -1057,7 +1057,7 @@ impl ClientBuilder {
     /// feature to be enabled.
     #[cfg(feature = "boring-tls")]
     pub fn tls_sni(mut self, tls_sni: bool) -> ClientBuilder {
-        self.config.ssl_settings.extension.tls_sni = tls_sni;
+        self.config.tls.extension.tls_sni = tls_sni;
         self
     }
 
@@ -1077,7 +1077,7 @@ impl ClientBuilder {
     /// feature to be enabled.
     #[cfg(feature = "boring-tls")]
     pub fn min_tls_version(mut self, version: tls::Version) -> ClientBuilder {
-        self.config.ssl_settings.extension.min_tls_version = Some(version);
+        self.config.tls.extension.min_tls_version = Some(version);
         self
     }
 
@@ -1097,7 +1097,7 @@ impl ClientBuilder {
     /// feature to be enabled.
     #[cfg(feature = "boring-tls")]
     pub fn max_tls_version(mut self, version: tls::Version) -> ClientBuilder {
-        self.config.ssl_settings.extension.max_tls_version = Some(version);
+        self.config.tls.extension.max_tls_version = Some(version);
         self
     }
 
@@ -1123,7 +1123,7 @@ impl ClientBuilder {
     /// Set CA certificate file path.
     #[cfg(feature = "boring-tls")]
     pub fn ca_cert_file<P: AsRef<std::path::Path>>(mut self, ca_cert_file: P) -> ClientBuilder {
-        self.config.ssl_settings.ca_cert_file = Some(ca_cert_file.as_ref().to_path_buf());
+        self.config.tls.ca_cert_file = Some(ca_cert_file.as_ref().to_path_buf());
         self
     }
 
@@ -1635,15 +1635,15 @@ impl Config {
 
         #[cfg(feature = "boring-tls")]
         {
-            if !self.ssl_settings.certs_verification {
+            if !self.tls.certs_verification {
                 f.field("danger_accept_invalid_certs", &true);
             }
 
-            if let Some(ref min_tls_version) = self.ssl_settings.extension.min_tls_version {
+            if let Some(ref min_tls_version) = self.tls.extension.min_tls_version {
                 f.field("min_tls_version", min_tls_version);
             }
 
-            if let Some(ref max_tls_version) = self.ssl_settings.extension.max_tls_version {
+            if let Some(ref max_tls_version) = self.tls.extension.max_tls_version {
                 f.field("max_tls_version", max_tls_version);
             }
 

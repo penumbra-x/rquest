@@ -1,5 +1,7 @@
 #[cfg(feature = "boring-tls")]
-use crate::tls::{connector, BoringTlsConnector};
+use self::boring_tls_conn::BoringTlsConn;
+#[cfg(feature = "boring-tls")]
+use crate::tls::{BoringTlsConnector, MaybeHttpsStream};
 #[cfg(feature = "boring-tls")]
 use http::header::HeaderValue;
 use http::uri::{Authority, Scheme};
@@ -17,8 +19,6 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 use std::time::Duration;
 
-#[cfg(feature = "boring-tls")]
-use self::boring_tls_conn::BoringTlsConn;
 use crate::dns::DynResolver;
 use crate::error::BoxError;
 use crate::proxy::{Proxy, ProxyScheme};
@@ -190,7 +190,7 @@ impl Connector {
                 if dst.scheme() == Some(&Scheme::HTTPS) {
                     let host = dst.host().ok_or("no host in url")?;
                     let conn = socks::connect(proxy, dst.clone(), dns).await?;
-                    let connector = tls.new_connector(http.clone()).await?;
+                    let connector = tls.from(http.clone()).await;
                     let setup_ssl = connector.setup_ssl(&dst, host)?;
                     let io = tokio_boring::SslStreamBuilder::new(setup_ssl, conn)
                         .connect()
@@ -235,10 +235,10 @@ impl Connector {
                     http.set_nodelay(true);
                 }
 
-                let mut http = tls.new_connector(http).await?;
+                let mut http = tls.from(http).await;
                 let io = http.call(dst).await?;
 
-                if let connector::MaybeHttpsStream::Https(stream) = io {
+                if let MaybeHttpsStream::Https(stream) = io {
                     if !self.nodelay {
                         let stream_ref = stream.get_ref();
                         stream_ref.set_nodelay(false)?;
@@ -283,7 +283,7 @@ impl Connector {
                     let host = dst.host().ok_or("no host in url")?;
                     let port = dst.port().map(|p| p.as_u16()).unwrap_or(443);
 
-                    let mut http = tls.new_connector(http.clone()).await?;
+                    let mut http = tls.from(http.clone()).await;
                     let conn = http.call(proxy_dst).await?;
                     log::trace!("tunneling HTTPS over proxy");
                     let tunneled = tunnel(conn, host, port, self.user_agent.as_ref(), auth).await?;
@@ -379,27 +379,27 @@ impl TlsInfoFactory for BoringTlsConn<tokio::net::TcpStream> {
 }
 
 #[cfg(feature = "boring-tls")]
-impl TlsInfoFactory for connector::MaybeHttpsStream<tokio::net::TcpStream> {
+impl TlsInfoFactory for MaybeHttpsStream<tokio::net::TcpStream> {
     fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
         match self {
-            connector::MaybeHttpsStream::Https(tls) => {
+            MaybeHttpsStream::Https(tls) => {
                 let peer_certificate = tls.ssl().peer_certificate().and_then(|c| c.to_der().ok());
                 Some(crate::tls::TlsInfo { peer_certificate })
             }
-            connector::MaybeHttpsStream::Http(_) => None,
+            MaybeHttpsStream::Http(_) => None,
         }
     }
 }
 
 #[cfg(feature = "boring-tls")]
-impl TlsInfoFactory for BoringTlsConn<connector::MaybeHttpsStream<tokio::net::TcpStream>> {
+impl TlsInfoFactory for BoringTlsConn<MaybeHttpsStream<tokio::net::TcpStream>> {
     fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
         match self.inner.get_ref() {
-            connector::MaybeHttpsStream::Https(ref tls) => {
+            MaybeHttpsStream::Https(ref tls) => {
                 let peer_certificate = tls.ssl().peer_certificate().and_then(|c| c.to_der().ok());
                 Some(crate::tls::TlsInfo { peer_certificate })
             }
-            connector::MaybeHttpsStream::Http(_) => None,
+            MaybeHttpsStream::Http(_) => None,
         }
     }
 }

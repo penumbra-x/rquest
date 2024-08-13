@@ -9,30 +9,30 @@ use PseudoOrder::*;
 use SettingsOrder::*;
 
 /// The TLS connector configuration.
-pub struct SslSettings {
+pub struct Tls {
     /// Verify certificates.
     pub certs_verification: bool,
     /// CA certificates file path.
     pub ca_cert_file: Option<PathBuf>,
     /// The Tls extension settings.
-    pub extension: SslExtensionSettings,
+    pub extension: TlsExtensionSettings,
     /// The SSL connector builder.
-    pub ssl_builder: Option<SslConnectorBuilder>,
+    pub builder: Option<SslConnectorBuilder>,
 }
 
-/// Connection settings
-pub struct SslImpersonateSettings {
+/// The TLS settings.
+pub struct TlsSettings {
     /// The SSL connector builder.
-    pub ssl_builder: SslConnectorBuilder,
+    pub builder: SslConnectorBuilder,
     /// TLS extension settings.
-    pub extension: SslExtensionSettings,
+    pub extension: TlsExtensionSettings,
     /// HTTP/2 settings.
-    pub http2: Http2Settings,
+    pub http2: Http2FrameSettings,
 }
 
 /// Extension settings.
 #[derive(Clone, Copy)]
-pub struct SslExtensionSettings {
+pub struct TlsExtensionSettings {
     pub tls_sni: bool,
     /// The HTTP version preference (setting alpn).
     pub http_version_pref: HttpVersionPref,
@@ -51,7 +51,7 @@ pub struct SslExtensionSettings {
 }
 
 /// HTTP/2 settings.
-pub struct Http2Settings {
+pub struct Http2FrameSettings {
     /// The initial stream window size.
     pub initial_stream_window_size: Option<u32>,
     /// The initial connection window size.
@@ -75,7 +75,7 @@ pub struct Http2Settings {
 /// Impersonate extension settings.
 pub struct ImpersonateSettings {
     /// TLS extension settings.
-    pub extension: SslExtensionSettings,
+    pub extension: TlsExtensionSettings,
     /// Headers frame priority.
     pub headers_priority: Option<StreamDependency>,
     /// Headers frame pseudo order.
@@ -86,12 +86,12 @@ pub struct ImpersonateSettings {
 
 // ============= SslSettings impls =============
 
-impl Default for SslSettings {
+impl Default for Tls {
     fn default() -> Self {
         Self {
             certs_verification: true,
             ca_cert_file: None,
-            extension: SslExtensionSettings {
+            extension: TlsExtensionSettings {
                 tls_sni: true,
                 http_version_pref: HttpVersionPref::All,
                 min_tls_version: None,
@@ -101,7 +101,7 @@ impl Default for SslSettings {
                 enable_ech_grease: false,
                 permute_extensions: false,
             },
-            ssl_builder: None,
+            builder: None,
         }
     }
 }
@@ -154,7 +154,9 @@ impl From<Impersonate> for ImpersonateSettings {
                 _ => None,
             };
 
-            set.map(|(weight, exclusive)| StreamDependency::new(StreamId::zero(), weight, exclusive))
+            set.map(|(weight, exclusive)| {
+                StreamDependency::new(StreamId::zero(), weight, exclusive)
+            })
         };
 
         // The headers frame pseudo order.
@@ -177,7 +179,7 @@ impl From<Impersonate> for ImpersonateSettings {
         };
 
         Self {
-            extension: SslExtensionSettings {
+            extension: TlsExtensionSettings {
                 tls_sni: true,
                 http_version_pref: HttpVersionPref::All,
                 min_tls_version: None,
