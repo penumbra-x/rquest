@@ -205,7 +205,7 @@ impl ClientBuilder {
                     config.dns_overrides,
                 ));
             }
-            let mut http = HttpConnector::new_with_resolver(DynResolver::new(resolver.clone()));
+            let mut http = HttpConnector::new_with_resolver(DynResolver::new(resolver));
             http.set_connect_timeout(config.connect_timeout);
 
             #[cfg(feature = "boring-tls")]
@@ -296,6 +296,7 @@ impl ClientBuilder {
         func(&mut self.config.headers);
         self.config.tls.builder = Some(settings.builder);
         self.config.tls.extension = settings.extension;
+        self.config.tls.extension.http_version_pref = self.config.http_version_pref;
 
         // Set the http2 version preference
         #[cfg(feature = "http2")]
@@ -787,10 +788,6 @@ impl ClientBuilder {
 
     /// Only use HTTP/1.
     pub fn http1_only(mut self) -> ClientBuilder {
-        #[cfg(feature = "boring-tls")]
-        {
-            self.config.tls.extension.http_version_pref = HttpVersionPref::Http1;
-        }
         self.config.http_version_pref = HttpVersionPref::Http1;
         self
     }

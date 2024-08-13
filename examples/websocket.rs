@@ -2,10 +2,10 @@ use futures_util::{SinkExt, StreamExt, TryStreamExt};
 use rquest::{tls::Impersonate, Client, Message};
 use std::error::Error;
 
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let websocket = Client::ws_builder()
-        .impersonate(Impersonate::Chrome120)
+        .impersonate(Impersonate::Chrome127)
         .build()?
         .get("wss://echo.websocket.org")
         .upgrade()
