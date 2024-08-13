@@ -1,7 +1,9 @@
 //! DNS resolution via the [hickory-resolver](https://github.com/hickory-dns/hickory-dns) crate
 
 use super::{Addrs, Name, Resolve, Resolving};
-use hickory_resolver::{lookup_ip::LookupIpIntoIter, system_conf, TokioAsyncResolver};
+use hickory_resolver::{
+    config::LookupIpStrategy, lookup_ip::LookupIpIntoIter, system_conf, TokioAsyncResolver,
+};
 use std::io;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -44,13 +46,16 @@ impl Iterator for SocketAddrs {
 }
 
 /// Create a new resolver with the default configuration,
-/// which reads from `/etc/resolve.conf`.
+/// which reads from `/etc/resolve.conf`. The options are
+/// overriden to look up for both IPv4 and IPv6 addresses
+/// to work with "happy eyeballs" algorithm.
 async fn new_resolver() -> io::Result<TokioAsyncResolver> {
-    let (config, opts) = system_conf::read_system_conf().map_err(|e| {
+    let (config, mut opts) = system_conf::read_system_conf().map_err(|e| {
         io::Error::new(
             io::ErrorKind::Other,
             format!("error reading DNS system conf: {}", e),
         )
     })?;
+    opts.ip_strategy = LookupIpStrategy::Ipv4AndIpv6;
     Ok(TokioAsyncResolver::tokio(config, opts))
 }

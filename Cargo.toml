@@ -32,6 +32,7 @@ full = [
     "cookies",
     "socks",
     "http2",
+    "hickory-dns",
 ]
 
 http2 = ["h2", "hyper/http2"]
