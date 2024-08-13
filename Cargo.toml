@@ -1,8 +1,8 @@
 [package]
 name = "rquest"
-version = "0.20.21"
+version = "0.20.22"
 description = "An fast asynchronous Rust Http/WebSocket Client with TLS/JA3/JA4/HTTP2 fingerprint impersonate"
-keywords = ["http", "request", "client", "websocket", "ja3"]
+keywords = ["http", "client", "websocket", "ja3", "ja4"]
 categories = ["web-programming::http-client"]
 repository = "https://github.com/0x676e67/rquest"
 documentation = "https://docs.rs/rquest"
