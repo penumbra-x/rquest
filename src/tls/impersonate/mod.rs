@@ -16,20 +16,22 @@ use std::{fmt::Debug, str::FromStr};
 use Impersonate::*;
 
 macro_rules! impersonate_match {
-    ($ver:expr, $headers:expr, $($variant:pat => $path:path),+) => {
+    ($ver:expr, $($variant:pat => $path:path),+) => {
         match $ver {
             $(
-                $variant => $path(ImpersonateSettings::from($ver), $headers),
+                $variant => {
+                    let (settings, func) = $path(ImpersonateSettings::from($ver))?;
+                    Ok((settings, Box::new(func)))
+                },
             )+
         }
     }
 }
 
 /// Get the connection settings for the given impersonate version
-pub fn tls_settings(ver: Impersonate, headers: &mut HeaderMap) -> TlsResult<TlsSettings> {
+pub fn tls_settings(ver: Impersonate) -> TlsResult<(TlsSettings, Box<dyn FnOnce(&mut HeaderMap)>)> {
     impersonate_match!(
         ver,
-        headers,
         // Chrome
         Chrome100 => v100::get_settings,
         Chrome101 => v101::get_settings,
@@ -75,7 +77,7 @@ pub fn tls_settings(ver: Impersonate, headers: &mut HeaderMap) -> TlsResult<TlsS
 
         // Edge
         Edge101 => edge101::get_settings,
-        Edge122 => edge122::tls_settings,
+        Edge122 => edge122::get_settings,
         Edge127 => edge127::get_settings
     )
 }

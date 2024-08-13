@@ -34,7 +34,7 @@ use crate::error;
 use crate::into_url::{expect_uri, try_uri};
 use crate::redirect::{self, remove_sensitive_headers};
 #[cfg(feature = "boring-tls")]
-use crate::tls::{self, BoringTlsConnector, Impersonate, Tls};
+use crate::tls::{self, BoringTlsConnector, Impersonate, Tls, TlsSettings};
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
 use log::{debug, trace};
 
@@ -62,11 +62,15 @@ pub struct ClientBuilder {
     config: Config,
 }
 
+/// A `HttpVersionPref` is used to set the HTTP version preference.
 #[derive(Debug, Clone, Copy)]
 pub enum HttpVersionPref {
+    /// Prefer HTTP/1.1
     Http1,
+    /// Prefer HTTP/2
     #[cfg(feature = "http2")]
     Http2,
+    /// Prefer HTTP/1 and HTTP/2
     All,
 }
 
@@ -266,36 +270,51 @@ impl ClientBuilder {
     /// This will set the necessary headers and TLS settings.
     /// This is only available with the `boring-tls` feature.
     #[cfg(feature = "boring-tls")]
-    pub fn impersonate(mut self, impersonate: Impersonate) -> ClientBuilder {
-        if let Ok(settings) = tls::tls_settings(impersonate, &mut self.config.headers) {
-            // Set the TLS settings
-            self.config.tls.builder = Some(settings.builder);
-            self.config.tls.extension = settings.extension;
+    pub fn impersonate(self, impersonate: Impersonate) -> ClientBuilder {
+        // Try to get the settings for the impersonate version
+        if let Ok((settings, func)) = tls::tls_settings(impersonate) {
+            return self.apply_tls_settings(settings, func);
+        }
+        self
+    }
 
-            // Set the http2 version preference
-            #[cfg(feature = "http2")]
-            {
-                return self
-                    .http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
-                    .http2_initial_connection_window_size(
-                        settings.http2.initial_connection_window_size,
-                    )
-                    .http2_max_concurrent_streams(settings.http2.max_concurrent_streams)
-                    .http2_max_header_list_size(settings.http2.max_header_list_size)
-                    .http2_header_table_size(settings.http2.header_table_size)
-                    .http2_enable_push(settings.http2.enable_push)
-                    .http2_headers_priority(settings.http2.headers_priority)
-                    .http2_headers_pseudo_order(settings.http2.headers_pseudo_order)
-                    .http2_settings_order(settings.http2.settings_order);
-            }
+    /// Use the preconfigured TLS settings.
+    #[cfg(feature = "boring-tls")]
+    pub fn use_preconfigured_tls<F>(self, settings: TlsSettings, func: F) -> ClientBuilder
+    where
+        F: FnOnce(&mut HeaderMap),
+    {
+        self.apply_tls_settings(settings, func)
+    }
 
-            #[cfg(not(feature = "http2"))]
-            {
-                return self;
-            }
+    /// Apply the given TLS settings and header function.
+    #[cfg(feature = "boring-tls")]
+    fn apply_tls_settings<F>(mut self, settings: TlsSettings, func: F) -> ClientBuilder
+    where
+        F: FnOnce(&mut HeaderMap),
+    {
+        func(&mut self.config.headers);
+        self.config.tls.builder = Some(settings.builder);
+        self.config.tls.extension = settings.extension;
+
+        // Set the http2 version preference
+        #[cfg(feature = "http2")]
+        {
+            self.http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
+                .http2_initial_connection_window_size(settings.http2.initial_connection_window_size)
+                .http2_max_concurrent_streams(settings.http2.max_concurrent_streams)
+                .http2_max_header_list_size(settings.http2.max_header_list_size)
+                .http2_header_table_size(settings.http2.header_table_size)
+                .http2_enable_push(settings.http2.enable_push)
+                .http2_headers_priority(settings.http2.headers_priority)
+                .http2_headers_pseudo_order(settings.http2.headers_pseudo_order)
+                .http2_settings_order(settings.http2.settings_order)
         }
 
-        self
+        #[cfg(not(feature = "http2"))]
+        {
+            self
+        }
     }
 
     /// Enable Encrypted Client Hello (Secure SNI)

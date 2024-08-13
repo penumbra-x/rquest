@@ -11,27 +11,28 @@ use http::{
 
 pub(crate) fn get_settings(
     settings: ImpersonateSettings,
-    headers: &mut HeaderMap,
-) -> TlsResult<TlsSettings> {
-    init_headers(headers);
-    Ok(TlsSettings {
-        builder: ChromeTlsBuilder::new(&CIPHER_LIST)?,
-        extension: settings.extension,
-        http2: Http2FrameSettings {
-            initial_stream_window_size: Some(6291456),
-            initial_connection_window_size: Some(15728640),
-            max_concurrent_streams: Some(1000),
-            max_header_list_size: Some(262144),
-            header_table_size: Some(65536),
-            enable_push: None,
-            headers_priority: settings.headers_priority,
-            headers_pseudo_order: settings.headers_pseudo_order,
-            settings_order: settings.settings_order,
+) -> TlsResult<(TlsSettings, impl FnOnce(&mut HeaderMap))> {
+    Ok((
+        TlsSettings {
+            builder: ChromeTlsBuilder::new(&CIPHER_LIST)?,
+            extension: settings.extension,
+            http2: Http2FrameSettings {
+                initial_stream_window_size: Some(6291456),
+                initial_connection_window_size: Some(15728640),
+                max_concurrent_streams: Some(1000),
+                max_header_list_size: Some(262144),
+                header_table_size: Some(65536),
+                enable_push: None,
+                headers_priority: settings.headers_priority,
+                headers_pseudo_order: settings.headers_pseudo_order,
+                settings_order: settings.settings_order,
+            },
         },
-    })
+        header_initializer,
+    ))
 }
 
-fn init_headers(headers: &mut HeaderMap) {
+fn header_initializer(headers: &mut HeaderMap) {
     headers.insert(
         "sec-ch-ua",
         HeaderValue::from_static(

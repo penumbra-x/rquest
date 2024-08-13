@@ -9,27 +9,28 @@ use http::{
 
 pub(crate) fn get_settings(
     settings: ImpersonateSettings,
-    headers: &mut HeaderMap,
-) -> TlsResult<TlsSettings> {
-    init_headers(headers);
-    Ok(TlsSettings {
-        builder: SafariTlsBuilder::new(&CIPHER_LIST)?,
-        extension: settings.extension,
-        http2: Http2FrameSettings {
-            initial_stream_window_size: Some(4194304),
-            initial_connection_window_size: Some(10551295),
-            max_concurrent_streams: Some(100),
-            max_header_list_size: None,
-            header_table_size: None,
-            enable_push: Some(false),
-            headers_priority: settings.headers_priority,
-            headers_pseudo_order: settings.headers_pseudo_order,
-            settings_order: settings.settings_order,
+) -> TlsResult<(TlsSettings, impl FnOnce(&mut HeaderMap))> {
+    Ok((
+        TlsSettings {
+            builder: SafariTlsBuilder::new(&CIPHER_LIST)?,
+            extension: settings.extension,
+            http2: Http2FrameSettings {
+                initial_stream_window_size: Some(4194304),
+                initial_connection_window_size: Some(10551295),
+                max_concurrent_streams: Some(100),
+                max_header_list_size: None,
+                header_table_size: None,
+                enable_push: Some(false),
+                headers_priority: settings.headers_priority,
+                headers_pseudo_order: settings.headers_pseudo_order,
+                settings_order: settings.settings_order,
+            },
         },
-    })
+        header_initializer,
+    ))
 }
 
-fn init_headers(headers: &mut HeaderMap) {
+fn header_initializer(headers: &mut HeaderMap) {
     headers.insert(
         ACCEPT,
         HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),

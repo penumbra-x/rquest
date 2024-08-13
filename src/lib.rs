@@ -9,14 +9,14 @@
 //!
 //! - Async and [blocking] Clients
 //! - Plain bodies, [JSON](#json), [urlencoded](#forms), [multipart], [websocket](#websocket)
-//! - Customizable `headers` order
+//! - Headers Order
 //! - Customizable [redirect policy](#redirect-policies)
+//! - Cookies Store
 //! - HTTP [Proxies](#proxies)
 //! - Uses BoringSSL [TLS](#tls)
-//! - [Impersonate](#impersonate) Chrome / Safari / Edge / OkHttp
-//! - Cookies
 //! - `JA3`/`JA4`/`HTTP2` fingerprint
-//! - Bespoke headers order configuration
+//! - [Preconfigured][Preconfigured] `TLS`/`HTTP2` settings
+//! - Chrome / Safari / Edge / OkHttp [Fingerprint](#impersonate)
 //! - [Changelog](https://github.com/0x676e67/rquest/blob/main/CHANGELOG.md)
 //!
 //! Additional learning resources include:
@@ -253,6 +253,7 @@
 //! [serde]: http://serde.rs
 //! [redirect]: crate::redirect
 //! [Proxy]: ./struct.Proxy.html
+//! [preconfigured]: ./struct.ClientBuilder.html#method.use_preconfigured_tls
 //! [cargo-features]: https://doc.rust-lang.org/stable/cargo/reference/manifest.html#the-features-section
 
 /// Re-export of boring to keep versions in check
@@ -353,9 +354,13 @@ pub use self::async_impl::websocket::{
     CloseCode, Message, WebSocket, WebSocketRequestBuilder, WebSocketResponse,
 };
 pub use self::async_impl::{
-    Body, Client, ClientBuilder, Request, RequestBuilder, Response, Upgraded,
+    client::HttpVersionPref, Body, Client, ClientBuilder, Request, RequestBuilder, Response,
+    Upgraded,
 };
 pub use self::proxy::{NoProxy, Proxy};
+
+#[cfg(all(feature = "boring-tls", feature = "http2"))]
+pub use hyper::{PseudoOrder, SettingsOrder, StreamDependency, StreamId};
 
 mod async_impl;
 #[cfg(feature = "blocking")]
