@@ -13,7 +13,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", resp.text().await?);
 
     let proxy = rquest::Proxy::all("socks5h://127.0.0.1:1080")?;
-    client.set_proxies(vec![proxy]);
+    client.set_proxies(&[proxy]);
 
     let resp = client.get("https://api.ip.sb/ip").send().await?;
     println!("{}", resp.text().await?);

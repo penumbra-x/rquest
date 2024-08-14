@@ -138,8 +138,8 @@ impl Connector {
         self.proxies.clone()
     }
 
-    pub(crate) fn set_proxies(&mut self, proxies: Vec<Proxy>) {
-        Arc::make_mut(&mut self.proxies).clone_from_slice(&proxies);
+    pub(crate) fn set_proxies(&mut self, proxies: &[Proxy]) {
+        Arc::make_mut(&mut self.proxies).clone_from_slice(proxies);
     }
 
     pub(crate) fn set_local_address(&mut self, addr: Option<IpAddr>) {

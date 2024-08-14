@@ -1515,7 +1515,7 @@ impl Client {
     }
 
     /// Set the proxies for this client.
-    pub fn set_proxies(&mut self, proxies: Vec<Proxy>) {
+    pub fn set_proxies(&mut self, proxies: &[Proxy]) {
         Arc::make_mut(&mut self.inner).hyper.set_proxies(proxies);
         self.inner.hyper.reset_pool_idle();
     }
