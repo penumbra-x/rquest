@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use boring::ssl::{SslConnector, SslMethod};
 use http::HeaderValue;
 use rquest::{
@@ -7,9 +5,11 @@ use rquest::{
     HttpVersionPref,
 };
 use rquest::{PseudoOrder, SettingsOrder, StreamDependency, StreamId};
+use std::error::Error;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Create a pre-configured TLS settings
     let settings = TlsSettings::builder()
         .builder(SslConnector::builder(SslMethod::tls_client())?)
         .extension(
