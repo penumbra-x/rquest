@@ -34,8 +34,6 @@ full = [
     "hickory-dns",
 ]
 
-blocking = ["futures-util/io", "tokio/sync"]
-
 websocket = ["async-tungstenite", "tokio-util/compat"]
 
 cookies = ["cookie_crate", "cookie_store"]
@@ -185,11 +183,6 @@ tokio = { version = "1.0", default-features = false, features = [
 futures = { version = "0.3.0", default-features = false }
 
 [[example]]
-name = "blocking"
-path = "examples/blocking.rs"
-required-features = ["blocking"]
-
-[[example]]
 name = "json_dynamic"
 path = "examples/json_dynamic.rs"
 required-features = ["json"]
@@ -241,11 +234,6 @@ path = "examples/set_ca_cert.rs"
 name = "websocket"
 path = "examples/websocket.rs"
 required-features = ["websocket"]
-
-[[test]]
-name = "blocking"
-path = "tests/blocking.rs"
-required-features = ["blocking"]
 
 [[test]]
 name = "cookie"

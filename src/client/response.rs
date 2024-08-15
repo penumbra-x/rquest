@@ -372,18 +372,6 @@ impl Response {
             Ok(self)
         }
     }
-
-    // private
-
-    // The Response's body is an implementation detail.
-    // You no longer need to get a reference to it, there are async methods
-    // on the `Response` itself.
-    //
-    // This method is just used by the blocking API.
-    #[cfg(feature = "blocking")]
-    pub(crate) fn body_mut(&mut self) -> &mut Decoder {
-        self.res.body_mut()
-    }
 }
 
 impl fmt::Debug for Response {

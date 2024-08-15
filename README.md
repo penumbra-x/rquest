@@ -8,7 +8,7 @@
 
 An fast asynchronous Rust `Http`/`WebSocket` Client with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate
 
-- `Async` or `blocking` Clients
+- `Async` Client
 - `Plain`, `JSON`, `urlencoded`, `multipart` bodies
 - Headers Order
 - Customizable redirect policy

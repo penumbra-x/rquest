@@ -117,16 +117,6 @@ impl Body {
         }
     }
 
-    #[cfg(feature = "blocking")]
-    pub(crate) fn wrap(body: hyper::Body) -> Body {
-        Body {
-            inner: Inner::Streaming {
-                body: Box::pin(WrapHyper(body)),
-                timeout: None,
-            },
-        }
-    }
-
     pub(crate) fn empty() -> Body {
         Body::reusable(Bytes::new())
     }

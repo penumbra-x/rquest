@@ -1,6 +1,6 @@
 #![allow(missing_debug_implementations)]
 use super::{cert_compression::CertCompressionAlgorithm, TlsResult, Version};
-use crate::async_impl::client::HttpVersionPref;
+use crate::client::client::HttpVersionPref;
 use ::std::os::raw::c_int;
 use boring::error::ErrorStack;
 use boring::ssl::{

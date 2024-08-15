@@ -116,13 +116,6 @@ impl fmt::Debug for Decoder {
 }
 
 impl Decoder {
-    #[cfg(feature = "blocking")]
-    pub(crate) fn empty() -> Decoder {
-        Decoder {
-            inner: Inner::PlainText(Body::empty().into_stream()),
-        }
-    }
-
     /// A plain text decoder.
     ///
     /// This decoder will emit the underlying chunks as-is.

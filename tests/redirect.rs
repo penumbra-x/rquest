@@ -118,39 +118,6 @@ async fn test_redirect_307_and_308_tries_to_post_again() {
     }
 }
 
-#[cfg(feature = "blocking")]
-#[test]
-fn test_redirect_307_does_not_try_if_reader_cannot_reset() {
-    let client = rquest::blocking::Client::new();
-    let codes = [307u16, 308];
-    for &code in &codes {
-        let redirect = server::http(move |mut req| async move {
-            assert_eq!(req.method(), "POST");
-            assert_eq!(req.uri(), &*format!("/{}", code));
-            assert_eq!(req.headers()["transfer-encoding"], "chunked");
-
-            let data = req.body_mut().next().await.unwrap().unwrap();
-            assert_eq!(&*data, b"Hello");
-
-            http::Response::builder()
-                .status(code)
-                .header("location", "/dst")
-                .header("server", "test-redirect")
-                .body(Body::default())
-                .unwrap()
-        });
-
-        let url = format!("http://{}/{}", redirect.addr(), code);
-        let res = client
-            .post(&url)
-            .body(rquest::blocking::Body::new(&b"Hello"[..]))
-            .send()
-            .unwrap();
-        assert_eq!(res.url().as_str(), url);
-        assert_eq!(res.status(), code);
-    }
-}
-
 #[tokio::test]
 async fn test_redirect_removes_sensitive_headers() {
     use tokio::sync::watch;

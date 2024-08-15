@@ -7,7 +7,7 @@
 //!
 //! An fast asynchronous Rust `Http`/`WebSocket` [`Client`][client] with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate
 //!
-//! - Async and [blocking] Clients
+//! - Async Client
 //! - Plain bodies, [JSON](#json), [urlencoded](#forms), [multipart], [websocket](#websocket)
 //! - Headers Order
 //! - Customizable [redirect policy](#redirect-policies)
@@ -300,7 +300,6 @@
 //! - **boring-tls** *(enabled by default)*: Provides TLS support to connect
 //!   over HTTPS.
 //! - **websocket**: Provides websocket support.
-//! - **blocking**: Provides the [blocking][] client API.
 //! - **cookies**: Provides cookie session support.
 //! - **gzip**: Provides response body gzip decompression.
 //! - **brotli**: Provides response body brotli decompression.
@@ -314,7 +313,6 @@
 //!   threadpool using `getaddrinfo`.
 //!
 //! [hyper]: http://hyper.rs
-//! [blocking]: ./blocking/index.html
 //! [client]: ./struct.Client.html
 //! [response]: ./struct.Response.html
 //! [get]: ./fn.get.html
@@ -417,12 +415,12 @@ fn _assert_impls() {
 doc_comment::doctest!("../README.md");
 
 #[cfg(feature = "multipart")]
-pub use self::async_impl::multipart;
+pub use self::client::multipart;
 #[cfg(feature = "websocket")]
-pub use self::async_impl::websocket::{
+pub use self::client::websocket::{
     CloseCode, Message, WebSocket, WebSocketRequestBuilder, WebSocketResponse,
 };
-pub use self::async_impl::{
+pub use self::client::{
     client::HttpVersionPref, Body, Client, ClientBuilder, Request, RequestBuilder, Response,
     Upgraded,
 };
@@ -431,9 +429,7 @@ pub use self::proxy::{NoProxy, Proxy};
 #[cfg(feature = "boring-tls")]
 pub use hyper::{PseudoOrder, SettingsOrder, StreamDependency, StreamId};
 
-mod async_impl;
-#[cfg(feature = "blocking")]
-pub mod blocking;
+mod client;
 mod connect;
 #[cfg(feature = "cookies")]
 pub mod cookie;
