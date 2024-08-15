@@ -773,7 +773,12 @@ impl ClientBuilder {
     /// Only use HTTP/1.
     /// Default is Http/1.
     pub fn http1_only(mut self) -> ClientBuilder {
-        self.config.tls.extension.http_version_pref = HttpVersionPref::Http1;
+        #[cfg(feature = "boring-tls")]
+        {
+            self.config.tls.extension.http_version_pref = HttpVersionPref::Http1;
+        }
+
+        self.config.builder.http2_only(false);
         self
     }
 
@@ -788,9 +793,9 @@ impl ClientBuilder {
         #[cfg(feature = "boring-tls")]
         {
             self.config.tls.extension.http_version_pref = HttpVersionPref::Http2;
-            self.config.builder.http2_only(true);
         }
 
+        self.config.builder.http2_only(true);
         self
     }
 
@@ -877,6 +882,7 @@ impl ClientBuilder {
     /// Sets the pseudo header order for HTTP2.
     /// This is an array of 4 elements, each element is a `PseudoOrder` enum.
     /// Default is `None`.
+    #[cfg(feature = "boring-tls")]
     pub fn http2_headers_pseudo_order(
         mut self,
         order: impl Into<Option<[PseudoOrder; 4]>>,
@@ -887,6 +893,7 @@ impl ClientBuilder {
 
     /// Sets the priority for HTTP2 headers.
     /// Default is `None`.
+    #[cfg(feature = "boring-tls")]
     pub fn http2_headers_priority(
         mut self,
         priority: impl Into<Option<StreamDependency>>,
@@ -898,6 +905,7 @@ impl ClientBuilder {
     /// Sets the settings order for HTTP2.
     /// This is an array of 2 elements, each element is a `SettingsOrder` enum.
     /// Default is `None`.
+    #[cfg(feature = "boring-tls")]
     pub fn http2_settings_order(
         mut self,
         order: impl Into<Option<[SettingsOrder; 2]>>,
@@ -1214,6 +1222,7 @@ impl Client {
     /// Create a `ClientBuilder` to configure a `Client`.
     ///
     /// This is required http1 only.
+    #[cfg(feature = "boring-tls")]
     pub fn ws_builder() -> ClientBuilder {
         Self::builder().http1_only()
     }
