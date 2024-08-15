@@ -1494,6 +1494,7 @@ impl Client {
     }
 
     /// Set the proxies for this client.
+    #[inline]
     pub fn set_proxies(&mut self, proxies: &[Proxy]) {
         Arc::make_mut(&mut self.inner).hyper.set_proxies(proxies);
         self.inner.hyper.reset_pool_idle();
@@ -1504,6 +1505,7 @@ impl Client {
     /// If `None`, the sockets will not be bound.
     ///
     /// Default is `None`.
+    #[inline]
     pub fn set_local_address<T>(&mut self, addr: T)
     where
         T: Into<Option<IpAddr>>,
@@ -1516,6 +1518,7 @@ impl Client {
 
     /// Set that all sockets are bound to the configured IPv4 or IPv6 address (depending on host's
     /// preferences) before connection.
+    #[inline]
     pub fn set_local_addresses(&mut self, addr_ipv4: Ipv4Addr, addr_ipv6: Ipv6Addr) {
         Arc::make_mut(&mut self.inner)
             .hyper
@@ -1525,6 +1528,7 @@ impl Client {
 
     /// Bind to an interface by `SO_BINDTODEVICE`.
     #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+    #[inline]
     pub fn set_interface(&mut self, interface: &str) {
         Arc::make_mut(&mut self.inner)
             .hyper

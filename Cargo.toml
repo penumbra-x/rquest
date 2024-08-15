@@ -73,7 +73,7 @@ boring-tls = [
     "dep:linked_hash_set",
     "dep:tower-layer",
     "dep:antidote",
-    "dep:typed-builder"
+    "dep:typed-builder",
 ]
 
 # When enabled, disable using the cached SYS_PROXIES.
