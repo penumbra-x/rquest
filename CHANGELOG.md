@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🚀 Features
+
+- *(client)* Suggest `inline` to the compiler (#122)
+
+### Remove
+
+- *(client)* Remove blocking client support (#123) (#124) (#125)
+
+## [0.20.30] - 2024-08-15
+
+### Build
+
+- Fix `--no-default-features` build
+
+## [0.20.25] - 2024-08-15
+
+### 🐛 Bug Fixes
+
+- *(client)* Fix http version setting order (#120)
+
+### Refractor
+
+- *(tls/settings)* Generate configuration using builder mode (#121)
+
+## [0.20.23] - 2024-08-14
+
+### 🚀 Features
+
+- *(tls)* Add preconfigured TLS settings (#118)
+
+### 🚜 Refactor
+
+- *(client)* Set_proxies accepts an slice of references (#119)
+
 ## [0.20.22] - 2024-08-13
 
 ### 🚀 Features

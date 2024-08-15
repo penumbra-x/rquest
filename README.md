@@ -13,10 +13,11 @@ An fast asynchronous Rust `Http`/`WebSocket` Client with `TLS`/`JA3`/`JA4`/`HTTP
 - Headers Order
 - Customizable redirect policy
 - Cookie Store
-- `HTTP`/`HTTPS`/`SOCKS5` Proxies
-- `HTTPS`/`WebSocket` via BoringSSL
+- `Http`/`Https`/`Socks5`/`Socks5h` Proxies
+- `Https`/`WebSocket` via BoringSSL
 - Preconfigured `TLS`/`HTTP2` settings
 - `Chrome`/`Safari`/`Edge`/`OkHttp` Fingerprint
+[Changelog](https://github.com/0x676e67/rquest/blob/main/CHANGELOG.md)
 
 Additional learning resources include:
 
@@ -28,7 +29,7 @@ Additional learning resources include:
 This asynchronous example uses [Tokio](https://tokio.rs) and enables some
 optional features, so your `Cargo.toml` could look like this:
 
-- HTTP
+HTTP
 
 ```toml
 [dependencies]
@@ -58,7 +59,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
-- WebSocket
+WebSocket
 
 ```toml
 [dependencies]
@@ -96,7 +97,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
-- Preconfigured `TLS`/`HTTP2`
+Preconfigured `TLS`/`HTTP2`
 
 ```toml
 [dependencies]
