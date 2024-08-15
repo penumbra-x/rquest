@@ -15,7 +15,7 @@
 //! - HTTP [Proxies](#proxies)
 //! - Uses BoringSSL [TLS](#tls)
 //! - `JA3`/`JA4`/`HTTP2` fingerprint
-//! - [Preconfigured](#Preconfigured-TLS) `TLS`/`HTTP2` settings
+//! - [Preconfigured](#preconfigured-tls) `TLS`/`HTTP2` settings
 //! - Chrome / Safari / Edge / OkHttp [Fingerprint](#impersonate)
 //! - [Changelog](https://github.com/0x676e67/rquest/blob/main/CHANGELOG.md)
 //!
