@@ -4,6 +4,7 @@ use crate::async_impl::client::HttpVersionPref;
 use boring::ssl::SslConnectorBuilder;
 use hyper::{PseudoOrder, SettingsOrder, StreamDependency, StreamId};
 use std::path::PathBuf;
+use typed_builder::TypedBuilder;
 use Impersonate::*;
 use PseudoOrder::*;
 use SettingsOrder::*;
@@ -11,77 +12,119 @@ use SettingsOrder::*;
 /// The TLS connector configuration.
 pub struct Tls {
     /// Verify certificates.
-    pub certs_verification: bool,
+    pub(crate) certs_verification: bool,
+
     /// CA certificates file path.
-    pub ca_cert_file: Option<PathBuf>,
+    pub(crate) ca_cert_file: Option<PathBuf>,
+
     /// The Tls extension settings.
-    pub extension: TlsExtensionSettings,
+    pub(crate) extension: TlsExtensionSettings,
+
     /// The SSL connector builder.
-    pub builder: Option<SslConnectorBuilder>,
+    pub(crate) builder: Option<SslConnectorBuilder>,
 }
 
 /// The TLS settings.
+#[derive(TypedBuilder)]
 pub struct TlsSettings {
     /// The SSL connector builder.
-    pub builder: SslConnectorBuilder,
+    pub(crate) builder: SslConnectorBuilder,
+
     /// TLS extension settings.
-    pub extension: TlsExtensionSettings,
+    pub(crate) extension: TlsExtensionSettings,
+
     /// HTTP/2 settings.
-    pub http2: Http2FrameSettings,
+    pub(crate) http2: Http2FrameSettings,
 }
 
 /// Extension settings.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, TypedBuilder)]
 pub struct TlsExtensionSettings {
-    pub tls_sni: bool,
+    #[builder(default = true)]
+    pub(crate) tls_sni: bool,
+
     /// The HTTP version preference (setting alpn).
-    pub http_version_pref: HttpVersionPref,
+    #[builder(default = HttpVersionPref::All)]
+    pub(crate) http_version_pref: HttpVersionPref,
+
     /// The minimum TLS version to use.
-    pub min_tls_version: Option<Version>,
+    #[builder(default)]
+    pub(crate) min_tls_version: Option<Version>,
+
     /// The maximum TLS version to use.
-    pub max_tls_version: Option<Version>,
+    #[builder(default)]
+    pub(crate) max_tls_version: Option<Version>,
+
     /// Enable application settings.
-    pub application_settings: bool,
+    #[builder(default = true)]
+    pub(crate) application_settings: bool,
+
     /// Enable PSK.
-    pub pre_shared_key: bool,
+    #[builder(default = true)]
+    pub(crate) pre_shared_key: bool,
+
     /// Enable ECH grease.
-    pub enable_ech_grease: bool,
+    #[builder(default = true)]
+    pub(crate) enable_ech_grease: bool,
+
     /// Permute extensions.
-    pub permute_extensions: bool,
+    #[builder(default = true)]
+    pub(crate) permute_extensions: bool,
 }
 
 /// HTTP/2 settings.
+#[derive(TypedBuilder)]
 pub struct Http2FrameSettings {
     /// The initial stream window size.
-    pub initial_stream_window_size: Option<u32>,
+    #[builder(default, setter(strip_option))]
+    pub(crate) initial_stream_window_size: Option<u32>,
+
     /// The initial connection window size.
-    pub initial_connection_window_size: Option<u32>,
+    #[builder(default, setter(strip_option))]
+    pub(crate) initial_connection_window_size: Option<u32>,
+
     /// The maximum concurrent streams.
-    pub max_concurrent_streams: Option<u32>,
+    #[builder(default, setter(strip_option))]
+    pub(crate) max_concurrent_streams: Option<u32>,
+
     /// The maximum header list size.
-    pub max_header_list_size: Option<u32>,
+    #[builder(default, setter(strip_option))]
+    pub(crate) max_header_list_size: Option<u32>,
+
     /// The header table size.
-    pub header_table_size: Option<u32>,
+    #[builder(default, setter(strip_option))]
+    pub(crate) header_table_size: Option<u32>,
+
     /// Enable push.
-    pub enable_push: Option<bool>,
+    #[builder(default)]
+    pub(crate) enable_push: Option<bool>,
+
     /// The priority of the headers.
-    pub headers_priority: Option<StreamDependency>,
+    #[builder(default, setter(strip_option))]
+    pub(crate) headers_priority: Option<StreamDependency>,
+
     /// The pseudo header order.
-    pub headers_pseudo_order: Option<[PseudoOrder; 4]>,
+    #[builder(default, setter(strip_option))]
+    pub(crate) headers_pseudo_order: Option<[PseudoOrder; 4]>,
+
     /// The settings order.
-    pub settings_order: Option<[SettingsOrder; 2]>,
+    #[builder(default, setter(strip_option))]
+    pub(crate) settings_order: Option<[SettingsOrder; 2]>,
 }
 
 /// Impersonate extension settings.
 pub struct ImpersonateSettings {
     /// TLS extension settings.
-    pub extension: TlsExtensionSettings,
+    pub(crate) extension: TlsExtensionSettings,
+
     /// Headers frame priority.
-    pub headers_priority: Option<StreamDependency>,
+    pub(crate) headers_priority: Option<StreamDependency>,
+
     /// Headers frame pseudo order.
-    pub headers_pseudo_order: Option<[PseudoOrder; 4]>,
+    pub(crate) headers_pseudo_order: Option<[PseudoOrder; 4]>,
+
     /// Settings frame order.
-    pub settings_order: Option<[SettingsOrder; 2]>,
+    pub(crate) settings_order: Option<[SettingsOrder; 2]>,
 }
 
 // ============= SslSettings impls =============
@@ -179,16 +222,16 @@ impl From<Impersonate> for ImpersonateSettings {
         };
 
         Self {
-            extension: TlsExtensionSettings {
-                tls_sni: true,
-                http_version_pref: HttpVersionPref::All,
-                min_tls_version: None,
-                max_tls_version: None,
-                application_settings,
-                pre_shared_key,
-                enable_ech_grease: false,
-                permute_extensions: false,
-            },
+            extension: TlsExtensionSettings::builder()
+                .tls_sni(true)
+                .http_version_pref(HttpVersionPref::All)
+                .max_tls_version(None)
+                .min_tls_version(None)
+                .application_settings(application_settings)
+                .pre_shared_key(pre_shared_key)
+                .permute_extensions(false)
+                .enable_ech_grease(false)
+                .build(),
             headers_priority,
             headers_pseudo_order,
             settings_order,
