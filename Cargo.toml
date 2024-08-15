@@ -19,7 +19,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [features]
-default = ["boring-tls", "http2"]
+default = ["boring-tls"]
 
 full = [
     "boring-tls",
@@ -31,11 +31,8 @@ full = [
     "stream",
     "cookies",
     "socks",
-    "http2",
     "hickory-dns",
 ]
-
-http2 = ["h2", "hyper/http2"]
 
 blocking = ["futures-util/io", "tokio/sync"]
 
@@ -76,6 +73,7 @@ boring-tls = [
     "dep:linked_hash_set",
     "dep:tower-layer",
     "dep:antidote",
+    "dep:typed-builder"
 ]
 
 # When enabled, disable using the cached SYS_PROXIES.
@@ -104,10 +102,11 @@ http-body = "0.4.6"
 hyper = { package = "rhyper", version = "0.14", default-features = false, features = [
     "tcp",
     "http1",
+    "http2",
     "client",
     "runtime",
 ] }
-h2 = { package = "rh2", version = "0.3", optional = true }
+h2 = { package = "rh2", version = "0.3" }
 log = "0.4"
 mime = "0.3.17"
 percent-encoding = "2.3"
@@ -130,6 +129,9 @@ libc = { version = "0.2", optional = true }
 linked_hash_set = { version = "0.1", optional = true }
 tower-layer = { version = "0.3", optional = true }
 antidote = { version = "1", optional = true }
+
+# boring-tls extension builder
+typed-builder = { version = "0.19", optional = true }
 
 ## cookies
 cookie_crate = { version = "0.18", package = "cookie", optional = true }

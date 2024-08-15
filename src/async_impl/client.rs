@@ -12,7 +12,7 @@ use http::header::{
 use http::uri::Scheme;
 use http::{HeaderName, Uri};
 use hyper::client::{HttpConnector, ResponseFuture as HyperResponseFuture};
-#[cfg(feature = "http2")]
+#[cfg(feature = "boring-tls")]
 use hyper::{PseudoOrder, SettingsOrder, StreamDependency};
 use pin_project_lite::pin_project;
 use std::future::Future;
@@ -68,7 +68,6 @@ pub enum HttpVersionPref {
     /// Prefer HTTP/1.1
     Http1,
     /// Prefer HTTP/2
-    #[cfg(feature = "http2")]
     Http2,
     /// Prefer HTTP/1 and HTTP/2
     All,
@@ -98,7 +97,6 @@ struct Config {
     cookie_store: Option<Arc<dyn cookie::CookieStore>>,
     hickory_dns: bool,
     error: Option<crate::Error>,
-    http_version_pref: HttpVersionPref,
     dns_overrides: HashMap<String, Vec<SocketAddr>>,
     dns_resolver: Option<Arc<dyn Resolve>>,
     builder: hyper::client::Builder,
@@ -149,7 +147,6 @@ impl ClientBuilder {
                 hickory_dns: cfg!(feature = "hickory-dns"),
                 #[cfg(feature = "cookies")]
                 cookie_store: None,
-                http_version_pref: HttpVersionPref::All,
                 dns_overrides: HashMap::new(),
                 dns_resolver: None,
                 builder: hyper::Client::builder(),
@@ -244,10 +241,6 @@ impl ClientBuilder {
             .builder
             .pool_idle_timeout(config.pool_idle_timeout)
             .pool_max_idle_per_host(config.pool_max_idle_per_host);
-        #[cfg(feature = "http2")]
-        if matches!(config.http_version_pref, HttpVersionPref::Http2) {
-            config.builder.http2_only(true);
-        }
 
         Ok(Client {
             inner: Arc::new(ClientRef {
@@ -296,26 +289,17 @@ impl ClientBuilder {
         func(&mut self.config.headers);
         self.config.tls.builder = Some(settings.builder);
         self.config.tls.extension = settings.extension;
-        self.config.tls.extension.http_version_pref = self.config.http_version_pref;
 
         // Set the http2 version preference
-        #[cfg(feature = "http2")]
-        {
-            self.http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
-                .http2_initial_connection_window_size(settings.http2.initial_connection_window_size)
-                .http2_max_concurrent_streams(settings.http2.max_concurrent_streams)
-                .http2_max_header_list_size(settings.http2.max_header_list_size)
-                .http2_header_table_size(settings.http2.header_table_size)
-                .http2_enable_push(settings.http2.enable_push)
-                .http2_headers_priority(settings.http2.headers_priority)
-                .http2_headers_pseudo_order(settings.http2.headers_pseudo_order)
-                .http2_settings_order(settings.http2.settings_order)
-        }
-
-        #[cfg(not(feature = "http2"))]
-        {
-            self
-        }
+        self.http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
+            .http2_initial_connection_window_size(settings.http2.initial_connection_window_size)
+            .http2_max_concurrent_streams(settings.http2.max_concurrent_streams)
+            .http2_max_header_list_size(settings.http2.max_header_list_size)
+            .http2_header_table_size(settings.http2.header_table_size)
+            .http2_enable_push(settings.http2.enable_push)
+            .http2_headers_priority(settings.http2.headers_priority)
+            .http2_headers_pseudo_order(settings.http2.headers_pseudo_order)
+            .http2_settings_order(settings.http2.settings_order)
     }
 
     /// Enable Encrypted Client Hello (Secure SNI)
@@ -787,33 +771,32 @@ impl ClientBuilder {
     }
 
     /// Only use HTTP/1.
+    /// Default is Http/1.
     pub fn http1_only(mut self) -> ClientBuilder {
-        self.config.http_version_pref = HttpVersionPref::Http1;
+        self.config.tls.extension.http_version_pref = HttpVersionPref::Http1;
         self
     }
 
     /// Allow HTTP/0.9 responses
-    #[cfg(feature = "http2")]
     pub fn http09_responses(mut self) -> ClientBuilder {
         self.config.builder.http09_responses(true);
         self
     }
 
     /// Only use HTTP/2.
-    #[cfg(feature = "http2")]
-    pub fn http2_prior_knowledge(mut self) -> ClientBuilder {
+    pub fn http2_only(mut self) -> ClientBuilder {
         #[cfg(feature = "boring-tls")]
         {
             self.config.tls.extension.http_version_pref = HttpVersionPref::Http2;
+            self.config.builder.http2_only(true);
         }
-        self.config.builder.http2_only(true);
+
         self
     }
 
     /// Sets the `SETTINGS_INITIAL_WINDOW_SIZE` option for HTTP2 stream-level flow control.
     ///
     /// Default is currently 65,535 but may change internally to optimize for common uses.
-    #[cfg(feature = "http2")]
     pub fn http2_initial_stream_window_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
         self.config
             .builder
@@ -824,7 +807,6 @@ impl ClientBuilder {
     /// Sets the max connection-level flow control for HTTP2
     ///
     /// Default is currently 65,535 but may change internally to optimize for common uses.
-    #[cfg(feature = "http2")]
     pub fn http2_initial_connection_window_size(
         mut self,
         sz: impl Into<Option<u32>>,
@@ -839,7 +821,6 @@ impl ClientBuilder {
     ///
     /// Enabling this will override the limits set in `http2_initial_stream_window_size` and
     /// `http2_initial_connection_window_size`.
-    #[cfg(feature = "http2")]
     pub fn http2_adaptive_window(mut self, enabled: bool) -> ClientBuilder {
         self.config.builder.http2_adaptive_window(enabled);
         self
@@ -848,7 +829,6 @@ impl ClientBuilder {
     /// Sets the maximum frame size to use for HTTP2.
     ///
     /// Default is currently 16,384 but may change internally to optimize for common uses.
-    #[cfg(feature = "http2")]
     pub fn http2_max_frame_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
         self.config.builder.http2_max_frame_size(sz.into());
         self
@@ -857,7 +837,6 @@ impl ClientBuilder {
     /// Sets the maximum concurrent streams to use for HTTP2.
     ///
     /// Passing `None` will do nothing.
-    #[cfg(feature = "http2")]
     pub fn http2_max_concurrent_streams(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
         if let Some(max) = sz.into() {
             self.config.builder.http2_max_concurrent_streams(max);
@@ -868,7 +847,6 @@ impl ClientBuilder {
     /// Sets the max header list size to use for HTTP2.
     ///
     /// Passing `None` will do nothing.
-    #[cfg(feature = "http2")]
     pub fn http2_max_header_list_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
         if let Some(sz) = sz.into() {
             self.config.builder.http2_max_header_list_size(sz);
@@ -879,7 +857,6 @@ impl ClientBuilder {
     /// Enables and disables the push feature for HTTP2.
     ///
     /// Passing `None` will do nothing.
-    #[cfg(feature = "http2")]
     pub fn http2_enable_push(mut self, sz: impl Into<Option<bool>>) -> ClientBuilder {
         if let Some(sz) = sz.into() {
             self.config.builder.http2_enable_push(sz);
@@ -890,7 +867,6 @@ impl ClientBuilder {
     /// Sets the header table size to use for HTTP2.
     ///
     /// Passing `None` will do nothing.
-    #[cfg(feature = "http2")]
     pub fn http2_header_table_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
         if let Some(sz) = sz.into() {
             self.config.builder.http2_header_table_size(sz);
@@ -901,7 +877,6 @@ impl ClientBuilder {
     /// Sets the pseudo header order for HTTP2.
     /// This is an array of 4 elements, each element is a `PseudoOrder` enum.
     /// Default is `None`.
-    #[cfg(feature = "http2")]
     pub fn http2_headers_pseudo_order(
         mut self,
         order: impl Into<Option<[PseudoOrder; 4]>>,
@@ -912,7 +887,6 @@ impl ClientBuilder {
 
     /// Sets the priority for HTTP2 headers.
     /// Default is `None`.
-    #[cfg(feature = "http2")]
     pub fn http2_headers_priority(
         mut self,
         priority: impl Into<Option<StreamDependency>>,
@@ -924,7 +898,6 @@ impl ClientBuilder {
     /// Sets the settings order for HTTP2.
     /// This is an array of 2 elements, each element is a `SettingsOrder` enum.
     /// Default is `None`.
-    #[cfg(feature = "http2")]
     pub fn http2_settings_order(
         mut self,
         order: impl Into<Option<[SettingsOrder; 2]>>,
@@ -937,7 +910,6 @@ impl ClientBuilder {
     ///
     /// Pass `None` to disable HTTP2 keep-alive.
     /// Default is currently disabled.
-    #[cfg(feature = "http2")]
     pub fn http2_keep_alive_interval(
         mut self,
         interval: impl Into<Option<Duration>>,
@@ -953,7 +925,6 @@ impl ClientBuilder {
     /// If the ping is not acknowledged within the timeout, the connection will be closed.
     /// Does nothing if `http2_keep_alive_interval` is disabled.
     /// Default is currently disabled.
-    #[cfg(feature = "http2")]
     pub fn http2_keep_alive_timeout(mut self, timeout: Duration) -> ClientBuilder {
         self.config.builder.http2_keep_alive_timeout(timeout);
         self
@@ -965,7 +936,6 @@ impl ClientBuilder {
     /// If enabled, pings are also sent when no streams are active.
     /// Does nothing if `http2_keep_alive_interval` is disabled.
     /// Default is `false`.
-    #[cfg(feature = "http2")]
     pub fn http2_keep_alive_while_idle(mut self, enabled: bool) -> ClientBuilder {
         self.config.builder.http2_keep_alive_while_idle(enabled);
         self
@@ -1779,7 +1749,6 @@ impl PendingRequest {
     }
 
     fn retry_error(mut self: Pin<&mut Self>, err: &(dyn std::error::Error + 'static)) -> bool {
-        #[cfg(feature = "http2")]
         if !is_retryable_error(err) {
             return false;
         }
@@ -1819,7 +1788,6 @@ impl PendingRequest {
     }
 }
 
-#[cfg(feature = "http2")]
 fn is_retryable_error(err: &(dyn std::error::Error + 'static)) -> bool {
     if let Some(cause) = err.source() {
         if let Some(err) = cause.downcast_ref::<h2::Error>() {
