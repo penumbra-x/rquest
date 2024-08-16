@@ -9,14 +9,13 @@
 An fast asynchronous Rust `Http`/`WebSocket` Client with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate
 
 - `Async` Client
-- `Plain`, `JSON`, `urlencoded`, `multipart` bodies
+- Plain, JSON, urlencoded, multipart bodies
 - Headers Order
 - Customizable redirect policy
 - Cookie Store
-- `Http`/`Https`/`Socks5`/`Socks5h` Proxies
-- `Https`/`WebSocket` via BoringSSL
-- Preconfigured `TLS`/`HTTP2` settings
-- `Chrome`/`Safari`/`Edge`/`OkHttp` Fingerprint
+- `HTTP`/`WebSocket` Proxies
+- `HTTPS`/`WebSocket` via BoringSSL
+- Preconfigured `TLS`/`HTTP2`/`Headers` settings
 - [Changelog](https://github.com/0x676e67/rquest/blob/main/CHANGELOG.md)
 
 Additional learning resources include:

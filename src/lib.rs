@@ -12,10 +12,10 @@
 //! - Headers Order
 //! - Customizable [redirect policy](#redirect-policies)
 //! - Cookies Store
-//! - HTTP [Proxies](#proxies)
-//! - Uses BoringSSL [TLS](#tls)
+//! - `HTTP`/`WebSocket` [Proxies](#proxies)
+//! - Uses [BoringSSL](#tls)
 //! - `JA3`/`JA4`/`HTTP2` fingerprint
-//! - [Preconfigured](#preconfigured-tls) `TLS`/`HTTP2` settings
+//! - [Preconfigured](#preconfigured-tls) `TLS`/`HTTP2`/`Headers` settings
 //! - Chrome / Safari / Edge / OkHttp [Fingerprint](#impersonate)
 //! - [Changelog](https://github.com/0x676e67/rquest/blob/main/CHANGELOG.md)
 //!
