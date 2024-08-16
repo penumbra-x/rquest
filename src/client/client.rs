@@ -13,7 +13,7 @@ use http::uri::Scheme;
 use http::{HeaderName, Uri};
 use hyper::client::{HttpConnector, ResponseFuture as HyperResponseFuture};
 #[cfg(feature = "boring-tls")]
-use hyper::{PseudoOrder, SettingsOrder, StreamDependency};
+use hyper::{PseudoOrder, SettingsOrder, StreamDependency, StreamId};
 use pin_project_lite::pin_project;
 use std::future::Future;
 use std::pin::Pin;
@@ -297,7 +297,12 @@ impl ClientBuilder {
             .http2_max_header_list_size(settings.http2.max_header_list_size)
             .http2_header_table_size(settings.http2.header_table_size)
             .http2_enable_push(settings.http2.enable_push)
-            .http2_headers_priority(settings.http2.headers_priority)
+            .http2_headers_priority(
+                settings
+                    .http2
+                    .headers_priority
+                    .map(|(a, b, c)| StreamDependency::new(StreamId::from(a), b, c)),
+            )
             .http2_headers_pseudo_order(settings.http2.headers_pseudo_order)
             .http2_settings_order(settings.http2.settings_order)
     }

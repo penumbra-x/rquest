@@ -4,7 +4,7 @@ use rquest::{
     tls::{Http2FrameSettings, TlsExtensionSettings, TlsSettings},
     HttpVersionPref,
 };
-use rquest::{PseudoOrder, SettingsOrder, StreamDependency, StreamId};
+use rquest::{PseudoOrder, SettingsOrder};
 use std::error::Error;
 
 #[tokio::main]
@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .max_header_list_size(262144)
                 .header_table_size(65536)
                 .enable_push(None)
-                .headers_priority(StreamDependency::new(StreamId::zero(), 255, true))
+                .headers_priority((0, 255, true))
                 .headers_pseudo_order([
                     PseudoOrder::Method,
                     PseudoOrder::Scheme,

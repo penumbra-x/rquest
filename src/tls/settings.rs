@@ -2,7 +2,7 @@
 use super::{impersonate::Impersonate, Version};
 use crate::client::client::HttpVersionPref;
 use boring::ssl::SslConnectorBuilder;
-use hyper::{PseudoOrder, SettingsOrder, StreamDependency, StreamId};
+use hyper::{PseudoOrder, SettingsOrder};
 use std::path::PathBuf;
 use typed_builder::TypedBuilder;
 use Impersonate::*;
@@ -101,7 +101,7 @@ pub struct Http2FrameSettings {
 
     /// The priority of the headers.
     #[builder(default, setter(strip_option))]
-    pub(crate) headers_priority: Option<StreamDependency>,
+    pub(crate) headers_priority: Option<(u32, u8, bool)>,
 
     /// The pseudo header order.
     #[builder(default, setter(strip_option))]
@@ -118,7 +118,7 @@ pub struct ImpersonateSettings {
     pub(crate) extension: TlsExtensionSettings,
 
     /// Headers frame priority.
-    pub(crate) headers_priority: Option<StreamDependency>,
+    pub(crate) headers_priority: Option<(u32, u8, bool)>,
 
     /// Headers frame pseudo order.
     pub(crate) headers_pseudo_order: Option<[PseudoOrder; 4]>,
@@ -197,9 +197,7 @@ impl From<Impersonate> for ImpersonateSettings {
                 _ => None,
             };
 
-            set.map(|(weight, exclusive)| {
-                StreamDependency::new(StreamId::zero(), weight, exclusive)
-            })
+            set.map(|(stream_id, exclusive)| (0, stream_id, exclusive))
         };
 
         // The headers frame pseudo order.

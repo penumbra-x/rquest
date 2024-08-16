@@ -17,7 +17,7 @@ An fast asynchronous Rust `Http`/`WebSocket` Client with `TLS`/`JA3`/`JA4`/`HTTP
 - `Https`/`WebSocket` via BoringSSL
 - Preconfigured `TLS`/`HTTP2` settings
 - `Chrome`/`Safari`/`Edge`/`OkHttp` Fingerprint
-[Changelog](https://github.com/0x676e67/rquest/blob/main/CHANGELOG.md)
+- [Changelog](https://github.com/0x676e67/rquest/blob/main/CHANGELOG.md)
 
 Additional learning resources include:
 
