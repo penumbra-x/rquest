@@ -210,6 +210,10 @@ name = "impersonate"
 path = "examples/impersonate.rs"
 
 [[example]]
+name = "impersonate_with_headers"
+path = "examples/impersonate_with_headers.rs"
+
+[[example]]
 name = "psk_impersonate"
 path = "examples/psk_impersonate.rs"
 
