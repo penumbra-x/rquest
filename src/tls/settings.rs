@@ -156,7 +156,7 @@ impl From<Impersonate> for ImpersonateSettings {
             // Chrome
             Chrome100 | Chrome101 | Chrome104 | Chrome105 | Chrome106 | Chrome107 | Chrome108
             | Chrome109 | Chrome114 | Chrome116 | Chrome117 | Chrome118 | Chrome119 | Chrome120
-            | Chrome123 | Chrome124 | Chrome126 | Chrome127 => 0,
+            | Chrome123 | Chrome124 | Chrome126 | Chrome127 | Chrome128 => 0,
 
             // Edge
             Edge101 | Edge122 | Edge127 => 1,
@@ -185,6 +185,7 @@ impl From<Impersonate> for ImpersonateSettings {
                 | Chrome124
                 | Chrome126
                 | Chrome127
+                | Chrome128
                 | Edge122
                 | Edge127
         );

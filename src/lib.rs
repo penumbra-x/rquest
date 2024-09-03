@@ -34,9 +34,9 @@
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn Error>> {
-//!     // Build a client to mimic Chrome127
+//!     // Build a client to mimic Chrome128
 //!     let client = rquest::Client::builder()
-//!         .impersonate(Impersonate::Chrome127)
+//!         .impersonate(Impersonate::Chrome128)
 //!         .enable_ech_grease()
 //!         .permute_extensions()
 //!         .cookie_store(true)

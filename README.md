@@ -43,9 +43,9 @@ use rquest::tls::Impersonate;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    // Build a client to mimic Edge127
+    // Build a client to mimic Chrome128
     let client = rquest::Client::builder()
-        .impersonate(Impersonate::Edge127)
+        .impersonate(Impersonate::Chrome128)
         .enable_ech_grease()
         .permute_extensions()
         .cookie_store(true)
