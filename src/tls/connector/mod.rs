@@ -130,13 +130,6 @@ impl HttpsLayerSettingsBuilder {
 }
 
 impl HttpsLayer {
-    /// Creates a new `HttpsLayer`.
-    ///
-    /// The session cache configuration of `ssl` will be overwritten.
-    pub fn with_connector(ssl: SslConnectorBuilder) -> TlsResult<HttpsLayer> {
-        Self::with_connector_and_settings(ssl, Default::default())
-    }
-
     /// Creates a new `HttpsLayer` with settings
     pub fn with_connector_and_settings(
         mut ssl: SslConnectorBuilder,
@@ -172,26 +165,6 @@ impl HttpsLayer {
                 ssl_callback: None,
             },
         })
-    }
-
-    /// Registers a callback which can customize the configuration of each connection.
-    ///
-    /// Unsuitable to change verify hostflags (with `config.param_mut().set_hostflags(…)`),
-    /// as they are reset after the callback is executed. Use [`Self::set_ssl_callback`]
-    /// instead.
-    pub fn set_callback<F>(&mut self, callback: F)
-    where
-        F: Fn(&mut ConnectConfiguration, &Uri) -> TlsResult<()> + 'static + Sync + Send,
-    {
-        self.inner.callback = Some(Arc::new(callback));
-    }
-
-    /// Registers a callback which can customize the `Ssl` of each connection.
-    pub fn set_ssl_callback<F>(&mut self, callback: F)
-    where
-        F: Fn(&mut SslRef, &Uri) -> TlsResult<()> + 'static + Sync + Send,
-    {
-        self.inner.ssl_callback = Some(Arc::new(callback));
     }
 }
 
@@ -243,14 +216,6 @@ where
         F: Fn(&mut ConnectConfiguration, &Uri) -> TlsResult<()> + 'static + Sync + Send,
     {
         self.inner.callback = Some(Arc::new(callback));
-    }
-
-    /// Registers a callback which can customize the `Ssl` of each connection.
-    pub fn set_ssl_callback<F>(&mut self, callback: F)
-    where
-        F: Fn(&mut SslRef, &Uri) -> TlsResult<()> + 'static + Sync + Send,
-    {
-        self.inner.ssl_callback = Some(Arc::new(callback));
     }
 }
 

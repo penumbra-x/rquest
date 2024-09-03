@@ -82,6 +82,7 @@ impl BoringTlsConnector {
 
         // Create the `HttpsLayerSettings` with the default session cache capacity.
         let settings = HttpsLayerSettings::builder()
+            .session_cache_capacity(8)
             .session_cache(
                 settings.extension.application_settings && settings.extension.pre_shared_key,
             )
