@@ -118,14 +118,11 @@ impl ClientBuilder {
     ///
     /// This is the same as `Client::builder()`.
     pub fn new() -> ClientBuilder {
-        let mut headers: HeaderMap<HeaderValue> = HeaderMap::with_capacity(2);
-        headers.insert(ACCEPT, HeaderValue::from_static("*/*"));
-
         ClientBuilder {
             config: Config {
                 error: None,
                 accepts: Accepts::default(),
-                headers,
+                headers: HeaderMap::with_capacity(1),
                 headers_order: None,
                 connect_timeout: None,
                 connection_verbose: false,
@@ -1352,12 +1349,20 @@ impl Client {
             return Pending::new_err(error::url_bad_scheme(url));
         }
 
+        let mut accept = false;
+
         // insert default headers in the request headers
         // without overwriting already appended headers.
         for (key, value) in &self.inner.headers {
             if let Entry::Vacant(entry) = headers.entry(key) {
+                accept = ACCEPT.eq(key);
                 entry.insert(value.clone());
             }
+        }
+
+        // Default accpet
+        if accept || headers.is_empty() {
+            headers.insert(ACCEPT, HeaderValue::from_static("*/*"));
         }
 
         // Add cookies from the cookie store.
