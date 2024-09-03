@@ -1,6 +1,6 @@
 # rquest
 
-[![Email Badge](https://img.shields.io/badge/Gmail-Contact_Me-green?logo=gmail&logoColor=FFFFFF&labelColor=3A3B3C&color=62F1CD)](mailto:gngppz@gmail.com)
+[![Email Badge](https://img.shields.io/badge/Gmail-Contact_Me-green?logo=gmail)](mailto:gngppz@gmail.com)
 [![Website](https://img.shields.io/website?url=https%3A%2F%2Fgithub.com%2F0x676e67%2Frquest)](https://github.com/0x676e67/rquest)
 [![Crates.io License](https://img.shields.io/crates/l/rquest)](./LICENSE)
 [![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)

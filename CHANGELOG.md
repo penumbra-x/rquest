@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🚀 Features
+
+- *(impersonate)* Add Chrome 128 impersonate (#130)
+
+### 🐛 Bug Fixes
+
+- *(client)* Fix the header sending order, set accept before request (#131)
+
+## [0.20.49] - 2024-08-16
+
+### 🚀 Features
+
+- *(client)* Add `impersonate_with_headers` allows optionally setting request headers (#128)
+
+### 🚜 Refactor
+
+- *(client)* Simplify Headers Frame priority settings (#126)
+
 ## [0.20.35] - 2024-08-15
 
 ### 🚀 Features
