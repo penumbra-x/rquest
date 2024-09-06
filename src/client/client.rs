@@ -448,6 +448,14 @@ impl ClientBuilder {
         self
     }
 
+    /// Default accpet
+    pub fn default_accpet(mut self) -> ClientBuilder {
+        self.config
+            .headers
+            .insert(ACCEPT, HeaderValue::from_static("*/*"));
+        self
+    }
+
     /// Enable a persistent cookie store for the client.
     ///
     /// Cookies received in responses will be preserved and included in
@@ -1349,20 +1357,12 @@ impl Client {
             return Pending::new_err(error::url_bad_scheme(url));
         }
 
-        let mut accept = false;
-
         // insert default headers in the request headers
         // without overwriting already appended headers.
         for (key, value) in &self.inner.headers {
             if let Entry::Vacant(entry) = headers.entry(key) {
-                accept = ACCEPT.eq(key);
                 entry.insert(value.clone());
             }
-        }
-
-        // Default accpet
-        if accept || headers.is_empty() {
-            headers.insert(ACCEPT, HeaderValue::from_static("*/*"));
         }
 
         // Add cookies from the cookie store.

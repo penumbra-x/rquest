@@ -51,7 +51,7 @@ pub fn tls_settings(ver: Impersonate) -> TlsResult<(TlsSettings, Box<dyn FnOnce(
         Chrome124 => v124::get_settings,
         Chrome126 => v126::get_settings,
         Chrome127 => v127::get_settings,
-        Chrome128 => v128::get_settings, 
+        Chrome128 => v128::get_settings,
 
         // Safari
         SafariIos17_2 => safari_ios_17_2::get_settings,
