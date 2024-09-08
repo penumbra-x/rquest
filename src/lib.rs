@@ -63,8 +63,9 @@
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn Error>> {
-//!     let websocket = Client::ws_builder()
+//!     let websocket = Client::builder()
 //!         .impersonate(Impersonate::Chrome127)
+//!         
 //!         .build()?
 //!         .get("wss://echo.websocket.org")
 //!         .upgrade()
@@ -380,7 +381,8 @@ pub async fn get<T: IntoUrl>(url: T) -> crate::Result<Response> {
 /// response into a websocket.
 #[cfg(feature = "websocket")]
 pub async fn websocket<T: IntoUrl>(url: T) -> crate::Result<WebSocket> {
-    Client::ws_builder()
+    Client::builder()
+        .http1_only()
         .build()?
         .get(url)
         .upgrade()

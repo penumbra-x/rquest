@@ -3,6 +3,7 @@ mod json;
 mod message;
 
 use std::{
+    ops::{Deref, DerefMut},
     pin::Pin,
     task::{Context, Poll},
 };
@@ -181,11 +182,17 @@ pub struct WebSocketResponse {
     config: WebSocketConfig,
 }
 
-impl std::ops::Deref for WebSocketResponse {
+impl Deref for WebSocketResponse {
     type Target = Response;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
+    }
+}
+
+impl DerefMut for WebSocketResponse {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
     }
 }
 

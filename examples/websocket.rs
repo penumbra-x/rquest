@@ -4,8 +4,9 @@ use std::error::Error;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let websocket = Client::ws_builder()
+    let websocket = Client::builder()
         .impersonate(Impersonate::Chrome127)
+        .http1_only()
         .build()?
         .get("wss://echo.websocket.org")
         .upgrade()

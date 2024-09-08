@@ -1252,14 +1252,6 @@ impl Client {
         ClientBuilder::new()
     }
 
-    /// Create a `ClientBuilder` to configure a `Client`.
-    ///
-    /// This is required http1 only.
-    #[cfg(feature = "boring-tls")]
-    pub fn ws_builder() -> ClientBuilder {
-        Self::builder().http1_only()
-    }
-
     /// Convenience method to make a `GET` request to a URL.
     ///
     /// # Errors
