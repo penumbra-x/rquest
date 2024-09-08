@@ -55,17 +55,15 @@
 //! The `websocket` module provides a way to upgrade a connection to a websocket.
 //!
 //! ```rust,no_run
-//! use std::error::Error;
-//! use tungstenite::Message;
-//!
 //! use futures_util::{SinkExt, StreamExt, TryStreamExt};
-//! use rquest::{impersonate::Impersonate, Client};
+//! use rquest::{tls::Impersonate, Client, Message};
+//! use std::error::Error;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn Error>> {
 //!     let websocket = Client::builder()
 //!         .impersonate(Impersonate::Chrome127)
-//!         
+//!         .http1_only()
 //!         .build()?
 //!         .get("wss://echo.websocket.org")
 //!         .upgrade()
