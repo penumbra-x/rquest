@@ -2,7 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.20.85] - 2024-09-08
+
+### 🐛 Bug Fixes
+
+- *(client)* Optional setting of default accept (#133)
+- *(websocket)* Fix websocket upgrade builder (#134)
+
+## [0.20.80] - 2024-09-03
 
 ### 🚀 Features
 
