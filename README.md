@@ -6,7 +6,7 @@
 [![Documentation](https://docs.rs/rquest/badge.svg)](https://docs.rs/rquest)
 [![Crates.io Total Downloads](https://img.shields.io/crates/d/rquest)](https://crates.io/crates/rquest)
 
-An fast asynchronous Rust `Http`/`WebSocket` Client with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate
+An fast asynchronous Rust `HTTP`/`WebSocket` Client with `TLS`/`JA3`/`JA4`/`HTTP2` fingerprint impersonate
 
 - `Async` Client
 - Plain, JSON, urlencoded, multipart bodies
