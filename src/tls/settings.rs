@@ -1,6 +1,6 @@
 #![allow(missing_debug_implementations)]
 use super::{impersonate::Impersonate, Version};
-use crate::client::client::HttpVersionPref;
+use crate::client::http::HttpVersionPref;
 use boring::ssl::SslConnectorBuilder;
 use hyper::{PseudoOrder, SettingsOrder};
 use std::path::PathBuf;

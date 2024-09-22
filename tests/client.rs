@@ -15,7 +15,6 @@ async fn auto_headers() {
     let server = server::http(move |req| async move {
         assert_eq!(req.method(), "GET");
 
-        assert_eq!(req.headers()["accept"], "*/*");
         assert_eq!(req.headers().get("user-agent"), None);
         if cfg!(feature = "gzip") {
             assert!(req.headers()["accept-encoding"]

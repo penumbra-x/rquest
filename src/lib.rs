@@ -421,8 +421,7 @@ pub use self::client::websocket::{
     CloseCode, Message, WebSocket, WebSocketRequestBuilder, WebSocketResponse,
 };
 pub use self::client::{
-    client::HttpVersionPref, Body, Client, ClientBuilder, Request, RequestBuilder, Response,
-    Upgraded,
+    Body, Client, ClientBuilder, HttpVersionPref, Request, RequestBuilder, Response, Upgraded,
 };
 pub use self::proxy::{NoProxy, Proxy};
 

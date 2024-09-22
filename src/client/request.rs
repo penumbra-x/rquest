@@ -8,7 +8,7 @@ use serde::Serialize;
 use serde_json;
 
 use super::body::Body;
-use super::client::{Client, Pending};
+use super::http::{Client, Pending};
 #[cfg(feature = "multipart")]
 use super::multipart;
 use super::response::Response;
