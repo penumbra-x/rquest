@@ -1,33 +1,28 @@
 use super::CIPHER_LIST;
 use crate::tls::builder::{SafariTlsBuilder, TlsBuilder};
-use crate::tls::{Http2FrameSettings, TlsSettings};
-use crate::tls::{ImpersonateSettings, TlsResult};
+use crate::tls::{Http2Settings, ImpersonateSettings};
+use crate::tls::{ImpersonateConfig, TlsResult};
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
     HeaderMap, HeaderValue,
 };
 
-pub(crate) fn get_settings(
-    settings: ImpersonateSettings,
-) -> TlsResult<(TlsSettings, impl FnOnce(&mut HeaderMap))> {
-    Ok((
-        TlsSettings {
-            builder: SafariTlsBuilder::new(&CIPHER_LIST)?,
-            extension: settings.extension,
-            http2: Http2FrameSettings {
-                initial_stream_window_size: Some(4194304),
-                initial_connection_window_size: Some(10551295),
-                max_concurrent_streams: Some(100),
-                max_header_list_size: None,
-                header_table_size: None,
-                enable_push: Some(false),
-                headers_priority: settings.headers_priority,
-                headers_pseudo_order: settings.headers_pseudo_order,
-                settings_order: settings.settings_order,
-            },
-        },
-        header_initializer,
-    ))
+pub(crate) fn get_settings(settings: ImpersonateConfig) -> TlsResult<ImpersonateSettings> {
+    Ok(ImpersonateSettings::builder()
+        .tls((SafariTlsBuilder::new(&CIPHER_LIST)?, settings.tls_extension))
+        .http2(
+            Http2Settings::builder()
+                .initial_stream_window_size(4194304)
+                .initial_connection_window_size(10551295)
+                .max_concurrent_streams(100)
+                .enable_push(false)
+                .headers_priority(settings.http2_headers_priority)
+                .headers_pseudo_order(settings.http2_headers_pseudo_order)
+                .settings_order(settings.http2_settings_order)
+                .build(),
+        )
+        .headers(Box::new(header_initializer))
+        .build())
 }
 
 fn header_initializer(headers: &mut HeaderMap) {
