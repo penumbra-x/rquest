@@ -325,6 +325,8 @@ impl ClientBuilder {
             )
             .http2_headers_pseudo_order(settings.http2.headers_pseudo_order)
             .http2_settings_order(settings.http2.settings_order)
+            .http2_unknown_setting8(true)
+            .http2_unknown_setting9(true)
     }
 
     /// Enable Encrypted Client Hello (Secure SNI)
@@ -902,6 +904,22 @@ impl ClientBuilder {
         self
     }
 
+    /// Http2 unknown_setting8
+    pub fn http2_unknown_setting8(mut self, sz: impl Into<Option<bool>>) -> ClientBuilder {
+        if let Some(sz) = sz.into() {
+            self.config.builder.http2_unknown_setting8(sz);
+        }
+        self
+    }
+
+    /// Http2 unknown_setting9
+    pub fn http2_unknown_setting9(mut self, sz: impl Into<Option<bool>>) -> ClientBuilder {
+        if let Some(sz) = sz.into() {
+            self.config.builder.http2_unknown_setting9(sz);
+        }
+        self
+    }
+
     /// Sets the header table size to use for HTTP2.
     ///
     /// Passing `None` will do nothing.
@@ -941,7 +959,7 @@ impl ClientBuilder {
     #[cfg(feature = "boring-tls")]
     pub fn http2_settings_order(
         mut self,
-        order: impl Into<Option<[SettingsOrder; 2]>>,
+        order: impl Into<Option<Vec<SettingsOrder>>>,
     ) -> ClientBuilder {
         self.config.builder.http2_settings_order(order.into());
         self

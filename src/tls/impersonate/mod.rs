@@ -66,6 +66,7 @@ pub fn tls_settings(ver: Impersonate) -> TlsResult<(TlsSettings, Box<dyn FnOnce(
         Safari17_2_1 => safari17_2_1::get_settings,
         Safari17_4_1 => safari17_4_1::get_settings,
         Safari17_5 => safari17_5::get_settings,
+        Safari18 => safari18::get_settings,
 
         // OkHttp
         OkHttp3_9 => okhttp3_9::get_settings,
@@ -120,6 +121,7 @@ pub enum Impersonate {
     Safari17_2_1,
     Safari17_4_1,
     Safari17_5,
+    Safari18,
 
     // OkHttp
     OkHttp3_9,

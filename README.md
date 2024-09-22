@@ -71,7 +71,7 @@ use futures_util::{SinkExt, StreamExt, TryStreamExt};
 use rquest::{tls::Impersonate, Client, Message};
 use std::error::Error;
 
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let websocket = rquest::websocket("wss://echo.websocket.org").await?;
 
@@ -111,7 +111,7 @@ use rquest::{
     tls::{Http2FrameSettings, TlsExtensionSettings, TlsSettings},
     HttpVersionPref,
 };
-use rquest::{PseudoOrder, SettingsOrder};
+use rquest::{PseudoOrder::*, SettingsOrder::*};
 use std::error::Error;
 
 #[tokio::main]
@@ -138,15 +138,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .header_table_size(65536)
                 .enable_push(None)
                 .headers_priority((0, 255, true))
-                .headers_pseudo_order([
-                    PseudoOrder::Method,
-                    PseudoOrder::Scheme,
-                    PseudoOrder::Authority,
-                    PseudoOrder::Path,
-                ])
-                .settings_order([
-                    SettingsOrder::InitialWindowSize,
-                    SettingsOrder::MaxConcurrentStreams,
+                .headers_pseudo_order([Method, Scheme, Authority, Path])
+                .settings_order(vec![
+                    HeaderTableSize,
+                    EnablePush,
+                    MaxConcurrentStreams,
+                    InitialWindowSize,
+                    MaxFrameSize,
+                    MaxHeaderListSize,
+                    EnableConnectProtocol,
                 ])
                 .build(),
         )
@@ -167,6 +167,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
 
 ```
 

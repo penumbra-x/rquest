@@ -103,7 +103,7 @@
 //!     tls::{Http2FrameSettings, TlsExtensionSettings, TlsSettings},
 //!     HttpVersionPref,
 //! };
-//! use rquest::{PseudoOrder, SettingsOrder};
+//! use rquest::{PseudoOrder::*, SettingsOrder::*};
 //! use std::error::Error;
 //!
 //! #[tokio::main]
@@ -131,14 +131,19 @@
 //!                 .enable_push(None)
 //!                 .headers_priority((0, 255, true))
 //!                 .headers_pseudo_order([
-//!                     PseudoOrder::Method,
-//!                     PseudoOrder::Scheme,
-//!                     PseudoOrder::Authority,
-//!                     PseudoOrder::Path,
+//!                     Method,
+//!                     Scheme,
+//!                     Authority,
+//!                     Path,
 //!                 ])
-//!                 .settings_order([
-//!                     SettingsOrder::InitialWindowSize,
-//!                     SettingsOrder::MaxConcurrentStreams,
+//!                 .settings_order(vec![
+//!                     HeaderTableSize,
+//!                     EnablePush,
+//!                     MaxConcurrentStreams,
+//!                     InitialWindowSize,
+//!                     MaxFrameSize,
+//!                     MaxHeaderListSize,
+//!                     EnableConnectProtocol,
 //!                 ])
 //!                 .build(),
 //!         )

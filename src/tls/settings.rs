@@ -109,7 +109,7 @@ pub struct Http2FrameSettings {
 
     /// The settings order.
     #[builder(default, setter(strip_option))]
-    pub(crate) settings_order: Option<[SettingsOrder; 2]>,
+    pub(crate) settings_order: Option<Vec<SettingsOrder>>,
 }
 
 /// Impersonate extension settings.
@@ -124,7 +124,7 @@ pub struct ImpersonateSettings {
     pub(crate) headers_pseudo_order: Option<[PseudoOrder; 4]>,
 
     /// Settings frame order.
-    pub(crate) settings_order: Option<[SettingsOrder; 2]>,
+    pub(crate) settings_order: Option<Vec<SettingsOrder>>,
 }
 
 // ============= SslSettings impls =============
@@ -170,6 +170,9 @@ impl From<Impersonate> for ImpersonateSettings {
             SafariIos17_2 | SafariIos16_5 | SafariIos17_4_1 | Safari15_3 | Safari15_5
             | Safari15_6_1 | Safari16 | Safari16_5 | Safari17_0 | Safari17_2_1 | Safari17_4_1
             | Safari17_5 => 3,
+
+            // Safari18
+            Safari18 => 4,
         };
 
         // Enable application settings.
@@ -193,7 +196,7 @@ impl From<Impersonate> for ImpersonateSettings {
         // The headers frame priority.
         let headers_priority = {
             let set = match cluster {
-                0..=2 => Some((255, true)),
+                0..=2 | 4 => Some((255, true)),
                 3 => Some((254, false)),
                 _ => None,
             };
@@ -207,6 +210,7 @@ impl From<Impersonate> for ImpersonateSettings {
                 0 | 1 => Some([Method, Authority, Scheme, Path]),
                 2 => Some([Method, Path, Authority, Scheme]),
                 3 => Some([Method, Scheme, Path, Authority]),
+                4 => Some([Method, Scheme, Authority, Path]),
                 _ => None,
             }
         };
@@ -214,8 +218,35 @@ impl From<Impersonate> for ImpersonateSettings {
         // The settings frame order.
         let settings_order = {
             match cluster {
-                0..=2 => Some([MaxConcurrentStreams, InitialWindowSize]),
-                3 => Some([InitialWindowSize, MaxConcurrentStreams]),
+                0..=2 => Some(vec![
+                    HeaderTableSize,
+                    EnablePush,
+                    MaxConcurrentStreams,
+                    InitialWindowSize,
+                    MaxFrameSize,
+                    MaxHeaderListSize,
+                    EnableConnectProtocol,
+                ]),
+                3 => Some(vec![
+                    HeaderTableSize,
+                    EnablePush,
+                    InitialWindowSize,
+                    MaxConcurrentStreams,
+                    MaxFrameSize,
+                    MaxHeaderListSize,
+                    EnableConnectProtocol,
+                ]),
+                4 => Some(vec![
+                    HeaderTableSize,
+                    EnablePush,
+                    MaxConcurrentStreams,
+                    InitialWindowSize,
+                    MaxFrameSize,
+                    MaxHeaderListSize,
+                    EnableConnectProtocol,
+                    UnknownSetting8,
+                    UnknownSetting9,
+                ]),
                 _ => None,
             }
         };
