@@ -5,11 +5,10 @@ mod edge;
 mod okhttp;
 mod safari;
 
-use super::{TlsResult, TlsSettings};
-use crate::tls::ImpersonateSettings;
+use super::{ImpersonateSettings, TlsResult};
+use crate::tls::ImpersonateConfig;
 use chrome::*;
 use edge::*;
-use http::HeaderMap;
 use okhttp::*;
 use safari::*;
 use std::{fmt::Debug, str::FromStr};
@@ -20,8 +19,7 @@ macro_rules! impersonate_match {
         match $ver {
             $(
                 $variant => {
-                    let (settings, func) = $path(ImpersonateSettings::from($ver))?;
-                    Ok((settings, Box::new(func)))
+                    $path(ImpersonateConfig::from($ver))
                 },
             )+
         }
@@ -29,7 +27,7 @@ macro_rules! impersonate_match {
 }
 
 /// Get the connection settings for the given impersonate version
-pub fn tls_settings(ver: Impersonate) -> TlsResult<(TlsSettings, Box<dyn FnOnce(&mut HeaderMap)>)> {
+pub fn tls_settings(ver: Impersonate) -> TlsResult<ImpersonateSettings> {
     impersonate_match!(
         ver,
         // Chrome
@@ -178,6 +176,7 @@ impl FromStr for Impersonate {
             "safari_17.2.1" => Ok(Safari17_2_1),
             "safari_17.4.1" => Ok(Safari17_4_1),
             "safari_17.5" => Ok(Safari17_5),
+            "safari_18" => Ok(Safari18),
 
             // OkHttp
             "okhttp_3.9" => Ok(OkHttp3_9),

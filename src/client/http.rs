@@ -34,7 +34,7 @@ use crate::error;
 use crate::into_url::{expect_uri, try_uri};
 use crate::redirect::{self, remove_sensitive_headers};
 #[cfg(feature = "boring-tls")]
-use crate::tls::{self, BoringTlsConnector, Impersonate, Tls, TlsSettings};
+use crate::tls::{self, BoringTlsConnector, Impersonate, ImpersonateSettings, Tls};
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
 use log::{debug, trace};
 
@@ -274,41 +274,33 @@ impl ClientBuilder {
         set_headers: bool,
     ) -> ClientBuilder {
         // Try to get the settings for the impersonate version
-        if let Ok((settings, header_initializer)) = tls::tls_settings(impersonate) {
-            return self.apply_tls_settings(settings, header_initializer, set_headers);
+        if let Ok(settings) = tls::tls_settings(impersonate) {
+            return self.apply_tls_settings(settings, set_headers);
         }
         self
     }
 
     /// Use the preconfigured TLS settings.
     #[cfg(feature = "boring-tls")]
-    pub fn use_preconfigured_tls<F>(
-        self,
-        settings: TlsSettings,
-        header_initializer: F,
-    ) -> ClientBuilder
-    where
-        F: FnOnce(&mut HeaderMap),
-    {
-        self.apply_tls_settings(settings, header_initializer, true)
+    pub fn use_preconfigured_tls(self, settings: ImpersonateSettings) -> ClientBuilder {
+        self.apply_tls_settings(settings, true)
     }
 
     /// Apply the given TLS settings and header function.
     #[cfg(feature = "boring-tls")]
-    fn apply_tls_settings<F>(
+    fn apply_tls_settings(
         mut self,
-        settings: TlsSettings,
-        header_initializer: F,
+        settings: ImpersonateSettings,
         set_headers: bool,
-    ) -> ClientBuilder
-    where
-        F: FnOnce(&mut HeaderMap),
-    {
+    ) -> ClientBuilder {
         if set_headers {
-            header_initializer(&mut self.config.headers);
+            (settings.headers)(&mut self.config.headers);
         }
-        self.config.tls.builder = Some(settings.builder);
-        self.config.tls.extension = settings.extension;
+        self.config.tls.builder = Some(settings.tls);
+        let http2_headers_priority = settings
+            .http2
+            .headers_priority
+            .map(|(a, b, c)| StreamDependency::new(StreamId::from(a), b, c));
 
         // Set the http2 version preference
         self.http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
@@ -317,36 +309,31 @@ impl ClientBuilder {
             .http2_max_header_list_size(settings.http2.max_header_list_size)
             .http2_header_table_size(settings.http2.header_table_size)
             .http2_enable_push(settings.http2.enable_push)
-            .http2_headers_priority(
-                settings
-                    .http2
-                    .headers_priority
-                    .map(|(a, b, c)| StreamDependency::new(StreamId::from(a), b, c)),
-            )
+            .http2_headers_priority(http2_headers_priority)
             .http2_headers_pseudo_order(settings.http2.headers_pseudo_order)
             .http2_settings_order(settings.http2.settings_order)
-            .http2_unknown_setting8(true)
-            .http2_unknown_setting9(true)
+            .http2_unknown_setting8(settings.http2.unknown_setting8)
+            .http2_unknown_setting9(settings.http2.unknown_setting9)
     }
 
     /// Enable Encrypted Client Hello (Secure SNI)
     #[cfg(feature = "boring-tls")]
     pub fn enable_ech_grease(mut self) -> ClientBuilder {
-        self.config.tls.extension.enable_ech_grease = true;
+        self.config.tls.enable_ech_grease();
         self
     }
 
     /// Enable TLS permute_extensions
     #[cfg(feature = "boring-tls")]
     pub fn permute_extensions(mut self) -> ClientBuilder {
-        self.config.tls.extension.permute_extensions = true;
+        self.config.tls.permute_extensions();
         self
     }
 
     /// Enable TLS pre_shared_key
     #[cfg(feature = "boring-tls")]
     pub fn pre_shared_key(mut self) -> ClientBuilder {
-        self.config.tls.extension.pre_shared_key = true;
+        self.config.tls.pre_shared_key();
         self
     }
 
@@ -810,7 +797,7 @@ impl ClientBuilder {
     pub fn http1_only(mut self) -> ClientBuilder {
         #[cfg(feature = "boring-tls")]
         {
-            self.config.tls.extension.http_version_pref = HttpVersionPref::Http1;
+            self.config.tls.http_version_pref(HttpVersionPref::Http1);
         }
 
         self.config.builder.http2_only(false);
@@ -827,7 +814,7 @@ impl ClientBuilder {
     pub fn http2_only(mut self) -> ClientBuilder {
         #[cfg(feature = "boring-tls")]
         {
-            self.config.tls.extension.http_version_pref = HttpVersionPref::Http2;
+            self.config.tls.http_version_pref(HttpVersionPref::Http2);
         }
 
         self.config.builder.http2_only(true);
@@ -1102,7 +1089,7 @@ impl ClientBuilder {
     /// feature to be enabled.
     #[cfg(feature = "boring-tls")]
     pub fn tls_sni(mut self, tls_sni: bool) -> ClientBuilder {
-        self.config.tls.extension.tls_sni = tls_sni;
+        self.config.tls.tls_sni(tls_sni);
         self
     }
 
@@ -1122,7 +1109,7 @@ impl ClientBuilder {
     /// feature to be enabled.
     #[cfg(feature = "boring-tls")]
     pub fn min_tls_version(mut self, version: tls::Version) -> ClientBuilder {
-        self.config.tls.extension.min_tls_version = Some(version);
+        self.config.tls.min_tls_version(version);
         self
     }
 
@@ -1142,7 +1129,7 @@ impl ClientBuilder {
     /// feature to be enabled.
     #[cfg(feature = "boring-tls")]
     pub fn max_tls_version(mut self, version: tls::Version) -> ClientBuilder {
-        self.config.tls.extension.max_tls_version = Some(version);
+        self.config.tls.max_tls_version(version);
         self
     }
 
@@ -1676,14 +1663,6 @@ impl Config {
         {
             if !self.tls.certs_verification {
                 f.field("danger_accept_invalid_certs", &true);
-            }
-
-            if let Some(ref min_tls_version) = self.tls.extension.min_tls_version {
-                f.field("min_tls_version", min_tls_version);
-            }
-
-            if let Some(ref max_tls_version) = self.tls.extension.max_tls_version {
-                f.field("max_tls_version", max_tls_version);
             }
 
             f.field("tls_info", &self.tls_info);

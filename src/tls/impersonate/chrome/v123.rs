@@ -1,33 +1,29 @@
 use super::CIPHER_LIST;
 use crate::tls::builder::{ChromeTlsBuilder, TlsBuilder};
-use crate::tls::{Http2FrameSettings, TlsSettings};
-use crate::tls::{ImpersonateSettings, TlsResult};
+use crate::tls::{Http2Settings, ImpersonateSettings};
+use crate::tls::{ImpersonateConfig, TlsResult};
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, UPGRADE_INSECURE_REQUESTS, USER_AGENT},
     HeaderMap, HeaderValue,
 };
 
-pub(crate) fn get_settings(
-    settings: ImpersonateSettings,
-) -> TlsResult<(TlsSettings, impl FnOnce(&mut HeaderMap))> {
-    Ok((
-        TlsSettings {
-            builder: ChromeTlsBuilder::new(&CIPHER_LIST)?,
-            extension: settings.extension,
-            http2: Http2FrameSettings {
-                initial_stream_window_size: Some(6291456),
-                initial_connection_window_size: Some(15728640),
-                max_concurrent_streams: None,
-                max_header_list_size: Some(262144),
-                header_table_size: Some(65536),
-                enable_push: Some(false),
-                headers_priority: settings.headers_priority,
-                headers_pseudo_order: settings.headers_pseudo_order,
-                settings_order: settings.settings_order,
-            },
-        },
-        header_initializer,
-    ))
+pub(crate) fn get_settings(settings: ImpersonateConfig) -> TlsResult<ImpersonateSettings> {
+    Ok(ImpersonateSettings::builder()
+        .tls((ChromeTlsBuilder::new(&CIPHER_LIST)?, settings.tls_extension))
+        .http2(
+            Http2Settings::builder()
+                .initial_stream_window_size(6291456)
+                .initial_connection_window_size(15728640)
+                .max_header_list_size(262144)
+                .header_table_size(65536)
+                .enable_push(false)
+                .headers_priority(settings.http2_headers_priority)
+                .headers_pseudo_order(settings.http2_headers_pseudo_order)
+                .settings_order(settings.http2_settings_order)
+                .build(),
+        )
+        .headers(Box::new(header_initializer))
+        .build())
 }
 fn header_initializer(headers: &mut HeaderMap) {
     headers.insert(

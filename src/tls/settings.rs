@@ -2,6 +2,7 @@
 use super::{impersonate::Impersonate, Version};
 use crate::client::http::HttpVersionPref;
 use boring::ssl::SslConnectorBuilder;
+use http::HeaderMap;
 use hyper::{PseudoOrder, SettingsOrder};
 use std::path::PathBuf;
 use typed_builder::TypedBuilder;
@@ -17,29 +18,56 @@ pub struct Tls {
     /// CA certificates file path.
     pub(crate) ca_cert_file: Option<PathBuf>,
 
-    /// The Tls extension settings.
-    pub(crate) extension: TlsExtensionSettings,
-
     /// The SSL connector builder.
-    pub(crate) builder: Option<SslConnectorBuilder>,
+    pub(crate) builder: Option<(SslConnectorBuilder, SslExtension)>,
 }
 
-/// The TLS settings.
-#[derive(TypedBuilder)]
-pub struct TlsSettings {
-    /// The SSL connector builder.
-    pub(crate) builder: SslConnectorBuilder,
+// ============= Tls impls =============
+impl Tls {
+    pub fn permute_extensions(&mut self) {
+        self.builder
+            .as_mut()
+            .map(|(_, ext)| ext.permute_extensions = true);
+    }
 
-    /// TLS extension settings.
-    pub(crate) extension: TlsExtensionSettings,
+    pub fn pre_shared_key(&mut self) {
+        self.builder
+            .as_mut()
+            .map(|(_, ext)| ext.pre_shared_key = true);
+    }
 
-    /// HTTP/2 settings.
-    pub(crate) http2: Http2FrameSettings,
+    pub fn enable_ech_grease(&mut self) {
+        self.builder
+            .as_mut()
+            .map(|(_, ext)| ext.enable_ech_grease = true);
+    }
+
+    pub fn http_version_pref(&mut self, version: HttpVersionPref) {
+        self.builder
+            .as_mut()
+            .map(|(_, ext)| ext.http_version_pref = version);
+    }
+
+    pub fn min_tls_version(&mut self, version: Version) {
+        self.builder
+            .as_mut()
+            .map(|(_, ext)| ext.min_tls_version = Some(version));
+    }
+
+    pub fn max_tls_version(&mut self, version: Version) {
+        self.builder
+            .as_mut()
+            .map(|(_, ext)| ext.max_tls_version = Some(version));
+    }
+
+    pub fn tls_sni(&mut self, tls_sni: bool) {
+        self.builder.as_mut().map(|(_, ext)| ext.tls_sni = tls_sni);
+    }
 }
 
 /// Extension settings.
 #[derive(Clone, Copy, TypedBuilder)]
-pub struct TlsExtensionSettings {
+pub struct SslExtension {
     #[builder(default = true)]
     pub(crate) tls_sni: bool,
 
@@ -56,101 +84,112 @@ pub struct TlsExtensionSettings {
     pub(crate) max_tls_version: Option<Version>,
 
     /// Enable application settings.
-    #[builder(default = true)]
+    #[builder(default = false)]
     pub(crate) application_settings: bool,
 
     /// Enable PSK.
-    #[builder(default = true)]
+    #[builder(default = false)]
     pub(crate) pre_shared_key: bool,
 
     /// Enable ECH grease.
-    #[builder(default = true)]
+    #[builder(default = false)]
     pub(crate) enable_ech_grease: bool,
 
     /// Permute extensions.
-    #[builder(default = true)]
+    #[builder(default = false)]
     pub(crate) permute_extensions: bool,
 }
 
 /// HTTP/2 settings.
 #[derive(TypedBuilder)]
-pub struct Http2FrameSettings {
+pub struct Http2Settings {
     /// The initial stream window size.
-    #[builder(default, setter(strip_option))]
+    #[builder(default, setter(into))]
     pub(crate) initial_stream_window_size: Option<u32>,
 
     /// The initial connection window size.
-    #[builder(default, setter(strip_option))]
+    #[builder(default, setter(into))]
     pub(crate) initial_connection_window_size: Option<u32>,
 
     /// The maximum concurrent streams.
-    #[builder(default, setter(strip_option))]
+    #[builder(default, setter(into))]
     pub(crate) max_concurrent_streams: Option<u32>,
 
     /// The maximum header list size.
-    #[builder(default, setter(strip_option))]
+    #[builder(default, setter(into))]
     pub(crate) max_header_list_size: Option<u32>,
 
     /// The header table size.
-    #[builder(default, setter(strip_option))]
+    #[builder(default, setter(into))]
     pub(crate) header_table_size: Option<u32>,
 
     /// Enable push.
-    #[builder(default)]
+    #[builder(default, setter(into))]
     pub(crate) enable_push: Option<bool>,
 
+    /// Unknown setting8.
+    #[builder(default, setter(into))]
+    pub(crate) unknown_setting8: Option<bool>,
+
+    /// Unknown setting9.
+    #[builder(default, setter(into))]
+    pub(crate) unknown_setting9: Option<bool>,
+
     /// The priority of the headers.
-    #[builder(default, setter(strip_option))]
+    #[builder(default, setter(into))]
     pub(crate) headers_priority: Option<(u32, u8, bool)>,
 
     /// The pseudo header order.
-    #[builder(default, setter(strip_option))]
+    #[builder(default, setter(into))]
     pub(crate) headers_pseudo_order: Option<[PseudoOrder; 4]>,
 
     /// The settings order.
-    #[builder(default, setter(strip_option))]
+    #[builder(default, setter(into))]
     pub(crate) settings_order: Option<Vec<SettingsOrder>>,
 }
 
-/// Impersonate extension settings.
+/// Impersonate Settings.
+#[derive(TypedBuilder)]
 pub struct ImpersonateSettings {
+    /// The SSL connector builder.
+    pub(crate) tls: (SslConnectorBuilder, SslExtension),
+
+    /// HTTP/2 settings.
+    pub(crate) http2: Http2Settings,
+
+    /// Http headers
+    pub(crate) headers: Box<dyn FnOnce(&mut HeaderMap)>,
+}
+
+/// Impersonate config.
+#[derive(TypedBuilder)]
+pub struct ImpersonateConfig {
     /// TLS extension settings.
-    pub(crate) extension: TlsExtensionSettings,
+    pub(crate) tls_extension: SslExtension,
 
     /// Headers frame priority.
-    pub(crate) headers_priority: Option<(u32, u8, bool)>,
+    pub(crate) http2_headers_priority: Option<(u32, u8, bool)>,
 
     /// Headers frame pseudo order.
-    pub(crate) headers_pseudo_order: Option<[PseudoOrder; 4]>,
+    pub(crate) http2_headers_pseudo_order: Option<[PseudoOrder; 4]>,
 
     /// Settings frame order.
-    pub(crate) settings_order: Option<Vec<SettingsOrder>>,
+    pub(crate) http2_settings_order: Option<Vec<SettingsOrder>>,
 }
 
 // ============= SslSettings impls =============
-
 impl Default for Tls {
     fn default() -> Self {
         Self {
             certs_verification: true,
             ca_cert_file: None,
-            extension: TlsExtensionSettings {
-                tls_sni: true,
-                http_version_pref: HttpVersionPref::All,
-                min_tls_version: None,
-                max_tls_version: None,
-                pre_shared_key: false,
-                application_settings: false,
-                enable_ech_grease: false,
-                permute_extensions: false,
-            },
             builder: None,
         }
     }
 }
 
-// ============= ImpersonateSettings impls =============
-impl From<Impersonate> for ImpersonateSettings {
+// ============= ImpersonateConfig impls =============
+impl From<Impersonate> for ImpersonateConfig {
     fn from(impersonate: Impersonate) -> Self {
         let cluster = match impersonate {
             // Chrome
@@ -251,20 +290,20 @@ impl From<Impersonate> for ImpersonateSettings {
             }
         };
 
-        Self {
-            extension: TlsExtensionSettings::builder()
-                .tls_sni(true)
-                .http_version_pref(HttpVersionPref::All)
-                .max_tls_version(None)
-                .min_tls_version(None)
-                .application_settings(application_settings)
-                .pre_shared_key(pre_shared_key)
-                .permute_extensions(false)
-                .enable_ech_grease(false)
-                .build(),
-            headers_priority,
-            headers_pseudo_order,
-            settings_order,
-        }
+        Self::builder()
+            .tls_extension(
+                SslExtension::builder()
+                    .tls_sni(true)
+                    .http_version_pref(HttpVersionPref::All)
+                    .application_settings(application_settings)
+                    .pre_shared_key(pre_shared_key)
+                    .permute_extensions(false)
+                    .enable_ech_grease(false)
+                    .build(),
+            )
+            .http2_settings_order(settings_order)
+            .http2_headers_priority(headers_priority)
+            .http2_headers_pseudo_order(headers_pseudo_order)
+            .build()
     }
 }
