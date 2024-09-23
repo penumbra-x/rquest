@@ -1,5 +1,4 @@
-use super::CIPHER_LIST;
-use crate::tls::builder::{EdgeTlsBuilder, TlsBuilder, TlsExtension};
+use super::{EdgeTlsSettings, NEW_CURVES};
 use crate::tls::{Http2Settings, ImpersonateSettings};
 use crate::tls::{ImpersonateConfig, TlsResult};
 use http::{
@@ -9,10 +8,13 @@ use http::{
 
 pub(crate) fn get_settings(settings: ImpersonateConfig) -> TlsResult<ImpersonateSettings> {
     Ok(ImpersonateSettings::builder()
-        .tls((
-            EdgeTlsBuilder::new(&CIPHER_LIST)?.configure_chrome_new_curves()?,
-            settings.tls_extension,
-        ))
+        .tls(
+            EdgeTlsSettings::builder()
+                .curves(NEW_CURVES)
+                .extension(settings.tls_extension)
+                .build()
+                .try_into()?,
+        )
         .http2(
             Http2Settings::builder()
                 .initial_stream_window_size(6291456)

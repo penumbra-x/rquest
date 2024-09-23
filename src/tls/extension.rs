@@ -3,10 +3,7 @@ use super::{cert_compression::CertCompressionAlgorithm, TlsResult, Version};
 use crate::client::http::HttpVersionPref;
 use ::std::os::raw::c_int;
 use boring::error::ErrorStack;
-use boring::ssl::{
-    ConnectConfiguration, SslConnector, SslConnectorBuilder, SslCurve, SslMethod, SslOptions,
-    SslVerifyMode, SslVersion,
-};
+use boring::ssl::{ConnectConfiguration, SslConnectorBuilder, SslVerifyMode, SslVersion};
 use foreign_types::ForeignTypeRef;
 use std::path::Path;
 
@@ -19,20 +16,8 @@ fn sv_handler(r: c_int) -> Result<c_int, ErrorStack> {
     }
 }
 
-/// TlsBuilder trait for `SslConnectorBuilder`.
-pub trait TlsBuilder {
-    /// The signature algorithms list.
-    type SigalgsList;
-
-    /// Create a new `SslConnectorBuilder`.
-    fn new(cipher: &[&str]) -> TlsResult<SslConnectorBuilder>;
-}
-
 /// TlsExtension trait for `SslConnectorBuilder`.
 pub trait TlsExtension {
-    /// Configure chrome to use the curves. (Chrome 123+)
-    fn configure_chrome_new_curves(self) -> TlsResult<SslConnectorBuilder>;
-
     /// Configure the certificate verification for the given `SslConnectorBuilder`.
     fn configure_cert_verification(
         self,
@@ -92,145 +77,7 @@ pub trait TlsConnectExtension {
     ) -> TlsResult<&mut ConnectConfiguration>;
 }
 
-pub struct ChromeTlsBuilder;
-
-impl TlsBuilder for ChromeTlsBuilder {
-    type SigalgsList = [&'static str; 8];
-
-    fn new(cipher: &[&str]) -> TlsResult<SslConnectorBuilder> {
-        const SIGALGS_LIST: <ChromeTlsBuilder as TlsBuilder>::SigalgsList = [
-            "ecdsa_secp256r1_sha256",
-            "rsa_pss_rsae_sha256",
-            "rsa_pkcs1_sha256",
-            "ecdsa_secp384r1_sha384",
-            "rsa_pss_rsae_sha384",
-            "rsa_pkcs1_sha384",
-            "rsa_pss_rsae_sha512",
-            "rsa_pkcs1_sha512",
-        ];
-
-        let mut builder = SslConnector::builder(SslMethod::tls_client())?;
-        builder.set_grease_enabled(true);
-        builder.enable_ocsp_stapling();
-        builder.set_curves(&[SslCurve::X25519, SslCurve::SECP256R1, SslCurve::SECP384R1])?;
-        builder.set_sigalgs_list(&SIGALGS_LIST.join(":"))?;
-        builder.set_cipher_list(&cipher.join(":"))?;
-        builder.enable_signed_cert_timestamps();
-        builder.set_min_proto_version(Some(SslVersion::TLS1_2))?;
-        builder.set_max_proto_version(Some(SslVersion::TLS1_3))?;
-        builder.configure_add_cert_compression_alg(CertCompressionAlgorithm::Brotli)
-    }
-}
-
-pub struct EdgeTlsBuilder;
-
-impl TlsBuilder for EdgeTlsBuilder {
-    type SigalgsList = [&'static str; 8];
-
-    fn new(cipher: &[&str]) -> TlsResult<SslConnectorBuilder> {
-        const SIGALGS_LIST: <EdgeTlsBuilder as TlsBuilder>::SigalgsList = [
-            "ecdsa_secp256r1_sha256",
-            "rsa_pss_rsae_sha256",
-            "rsa_pkcs1_sha256",
-            "ecdsa_secp384r1_sha384",
-            "rsa_pss_rsae_sha384",
-            "rsa_pkcs1_sha384",
-            "rsa_pss_rsae_sha512",
-            "rsa_pkcs1_sha512",
-        ];
-
-        let mut builder = SslConnector::builder(SslMethod::tls_client())?;
-        builder.set_grease_enabled(true);
-        builder.enable_ocsp_stapling();
-        builder.set_curves(&[SslCurve::X25519, SslCurve::SECP256R1, SslCurve::SECP384R1])?;
-        builder.set_sigalgs_list(&SIGALGS_LIST.join(":"))?;
-        builder.set_cipher_list(&cipher.join(":"))?;
-        builder.enable_signed_cert_timestamps();
-        builder.set_min_proto_version(Some(SslVersion::TLS1_2))?;
-        builder.set_max_proto_version(Some(SslVersion::TLS1_3))?;
-        builder.configure_add_cert_compression_alg(CertCompressionAlgorithm::Brotli)
-    }
-}
-
-pub struct OkHttpTlsBuilder;
-
-impl TlsBuilder for OkHttpTlsBuilder {
-    type SigalgsList = [&'static str; 9];
-
-    fn new(cipher: &[&str]) -> TlsResult<SslConnectorBuilder> {
-        const SIGALGS_LIST: <OkHttpTlsBuilder as TlsBuilder>::SigalgsList = [
-            "ecdsa_secp256r1_sha256",
-            "rsa_pss_rsae_sha256",
-            "rsa_pkcs1_sha256",
-            "ecdsa_secp384r1_sha384",
-            "rsa_pss_rsae_sha384",
-            "rsa_pkcs1_sha384",
-            "rsa_pss_rsae_sha512",
-            "rsa_pkcs1_sha512",
-            "rsa_pkcs1_sha1",
-        ];
-
-        let mut builder = SslConnector::builder(SslMethod::tls_client())?;
-        builder.enable_ocsp_stapling();
-        builder.set_curves(&[SslCurve::X25519, SslCurve::SECP256R1, SslCurve::SECP384R1])?;
-        builder.set_sigalgs_list(&SIGALGS_LIST.join(":"))?;
-        builder.set_cipher_list(&cipher.join(":"))?;
-        builder.set_min_proto_version(Some(SslVersion::TLS1_2))?;
-        builder.set_max_proto_version(Some(SslVersion::TLS1_3))?;
-
-        Ok(builder)
-    }
-}
-
-pub struct SafariTlsBuilder;
-
-impl TlsBuilder for SafariTlsBuilder {
-    type SigalgsList = [&'static str; 11];
-
-    fn new(cipher: &[&str]) -> TlsResult<SslConnectorBuilder> {
-        const SIGALGS_LIST: <SafariTlsBuilder as TlsBuilder>::SigalgsList = [
-            "ecdsa_secp256r1_sha256",
-            "rsa_pss_rsae_sha256",
-            "rsa_pkcs1_sha256",
-            "ecdsa_secp384r1_sha384",
-            "ecdsa_sha1",
-            "rsa_pss_rsae_sha384",
-            "rsa_pss_rsae_sha384",
-            "rsa_pkcs1_sha384",
-            "rsa_pss_rsae_sha512",
-            "rsa_pkcs1_sha512",
-            "rsa_pkcs1_sha1",
-        ];
-
-        let mut builder = SslConnector::builder(SslMethod::tls_client())?;
-        builder.set_options(SslOptions::NO_TICKET);
-        builder.set_grease_enabled(true);
-        builder.enable_ocsp_stapling();
-        builder.set_sigalgs_list(&SIGALGS_LIST.join(":"))?;
-        builder.set_cipher_list(&cipher.join(":"))?;
-        builder.set_curves(&[
-            SslCurve::X25519,
-            SslCurve::SECP256R1,
-            SslCurve::SECP384R1,
-            SslCurve::SECP521R1,
-        ])?;
-        builder.enable_signed_cert_timestamps();
-        builder.set_min_proto_version(Some(SslVersion::TLS1))?;
-        builder.configure_add_cert_compression_alg(CertCompressionAlgorithm::Zlib)
-    }
-}
-
 impl TlsExtension for SslConnectorBuilder {
-    fn configure_chrome_new_curves(mut self) -> TlsResult<SslConnectorBuilder> {
-        self.set_curves(&[
-            SslCurve::X25519_KYBER768_DRAFT00,
-            SslCurve::X25519,
-            SslCurve::SECP256R1,
-            SslCurve::SECP384R1,
-        ])?;
-        Ok(self)
-    }
-
     fn configure_cert_verification(
         mut self,
         certs_verification: bool,
