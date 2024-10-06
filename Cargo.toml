@@ -1,6 +1,6 @@
 [package]
 name = "rquest"
-version = "0.21.11"
+version = "0.21.12"
 description = "An fast asynchronous Rust HTTP/WebSocket Client with TLS/JA3/JA4/HTTP2 fingerprint impersonate"
 keywords = ["http", "client", "websocket", "ja3", "ja4"]
 categories = ["web-programming::http-client"]
