@@ -12,8 +12,8 @@
 //! - Headers Order
 //! - Customizable [redirect policy](#redirect-policies)
 //! - Cookies Store
-//! - `HTTP`/`WebSocket` [Proxies](#proxies)
 //! - Uses [BoringSSL](#tls)
+//! - `HTTP`, `HTTPS`, (`SOCKS4`, `SOCKS5`, `SOCKS5H`) [Proxies](#proxies)
 //! - `JA3`/`JA4`/`HTTP2` fingerprint
 //! - [Preconfigured](#preconfigured-tls) `TLS`/`HTTP2`/`Headers` settings
 //! - Chrome / Safari / Edge / OkHttp [Fingerprint](#impersonate)

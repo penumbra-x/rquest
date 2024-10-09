@@ -13,8 +13,8 @@ An fast asynchronous Rust `HTTP`/`WebSocket` Client with `TLS`/`JA3`/`JA4`/`HTTP
 - Headers Order
 - Customizable redirect policy
 - Cookie Store
-- `HTTP`/`WebSocket` Proxies
 - `HTTPS`/`WebSocket` via BoringSSL
+- `HTTP`, `HTTPS`, (`SOCKS4`, `SOCKS5`, `SOCKS5H`) Proxies
 - Preconfigured `TLS`/`HTTP2`/`Headers` settings
 - [Changelog](https://github.com/penumbra-x/rquest/blob/main/CHANGELOG.md)
 
