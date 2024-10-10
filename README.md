@@ -70,11 +70,14 @@ use std::error::Error;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let websocket = Client::builder()
-        .impersonate(Impersonate::Chrome127)
+    // Build a client to mimic Chrome129
+    let client = Client::builder()
+        .impersonate(Impersonate::Chrome129)
         .http1_only()
-        .build()?
-        .get("wss://echo.websocket.org")
+        .build()?;
+
+    // Use the API you're already familiar with
+    let websocket = client.get("wss://echo.websocket.org")
         .upgrade()
         .send()
         .await?
