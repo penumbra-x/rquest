@@ -210,7 +210,7 @@ sudo apt-get install build-essential cmake perl pkg-config libclang-dev musl-too
 cargo build --release
 ```
 
-You can also use [this GitHub Actions](https://github.com/penumbra-x/rquest/blob/main/.github/compilation-guide/build.yml) to compile your project.
+You can also use [this GitHub Actions workflow](https://github.com/penumbra-x/rquest/blob/main/.github/compilation-guide/build.yml) to compile your project on **Linux**, **Windows**, and **macOS**.
 
 ## Contributing
 
