@@ -2,6 +2,71 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.21.20] - 2024-10-10
+
+### 🚀 Features
+
+- *(proxy)* Add support for SOCKS4 (#27)
+
+### 🐛 Bug Fixes
+
+- *(tls)* Fix default tls configuration to use websocket (#30)
+
+### 🚜 Refactor
+
+- *(proxy)* Remove internal proxy sys cache (#26)
+
+## [0.21.15] - 2024-10-09
+
+### Deps
+
+- *(brotli)* 7.0.0 (#22)
+- *(tokio-socks)* 0.5.2 (#23)
+- *(async-tungstenite)* 0.28.0 (#24)
+- *(windows-registry)* 0.3.0 (#25)
+
+## [0.21.12] - 2024-10-06
+
+### Deps
+
+- *(ipnet)* 2.10.0 (#15)
+
+### Dpes
+
+- *(typed-builder)* V0.20.0 (#16)
+
+## [0.21.11] - 2024-09-27
+
+### 🐛 Bug Fixes
+
+- *(tls)* Fix default TLS SNI context configuration conflict (#13)
+
+## [0.21.10] - 2024-09-23
+
+### 🚀 Features
+
+- *(tls)* Enable permute extensions for `Chrome`/`Edge` 106 and above (#6)
+- *(tls)* Some `Chrome`/`Edge` versions have `ECH` enabled by default (#8)
+- *(tls)* Some `Chrome`/`Edge` versions have `ECH` enabled by default (#9)
+- *(impersonate)* Add `Safari iPad 18` impersonate (#10)
+
+### 🚜 Refactor
+
+- *(client)* Turn off default redirect (#4)
+- *(tls)* Simplify TLS configuration (#5)
+- *(tls)* Simplify TLS/HTTP2 configuration (#7)
+
+## [0.21.1] - 2024-09-22
+
+### 🚀 Features
+
+- *(impersonate)* Add Safari 18 impersonate
+
+### 🚜 Refactor
+
+- Rename the `client` module to `http`
+- *(tls)* Refactored changes and refactored TLS build
+
 ## [0.20.85] - 2024-09-08
 
 ### 🐛 Bug Fixes
