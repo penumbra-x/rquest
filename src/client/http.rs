@@ -1177,7 +1177,7 @@ impl ClientBuilder {
     /// Requires the `hickory-dns` feature to be enabled.
     #[cfg(feature = "hickory-dns")]
     #[cfg_attr(docsrs, doc(cfg(feature = "hickory-dns")))]
-    pub fn hickory_strategy(mut self, strategy: LookupIpStrategy) -> ClientBuilder {
+    pub fn hickory_dns_strategy(mut self, strategy: LookupIpStrategy) -> ClientBuilder {
         self.config.dns_strategy = Some(strategy);
         self
     }

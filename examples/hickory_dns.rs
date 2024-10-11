@@ -6,7 +6,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Build a client to mimic Chrome129
     let client = rquest::Client::builder()
         .impersonate(Impersonate::Chrome129)
-        .hickory_strategy(LookupIpStrategy::Ipv4Only)
+        .hickory_dns_strategy(LookupIpStrategy::Ipv4Only)
         .build()?;
 
     // Use the API you're already familiar with
