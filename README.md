@@ -1,6 +1,5 @@
 # rquest
 
-[![Email Badge](https://img.shields.io/badge/Gmail-Contact_Me-green?logo=gmail)](mailto:gngppz@gmail.com)
 [![Crates.io License](https://img.shields.io/crates/l/rquest)](./LICENSE)
 [![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)
 [![Documentation](https://docs.rs/rquest/badge.svg)](https://docs.rs/rquest)
@@ -33,7 +32,7 @@ HTTP
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.21"
+rquest = "0.22"
 ```
 
 ```rust,no_run
@@ -60,7 +59,7 @@ WebSocket
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = { version = "0.21", features = ["websocket"] }
+rquest = { version = "0.22", features = ["websocket"] }
 ```
 
 ```rust,no_run
@@ -111,7 +110,7 @@ Preconfigured `TLS`/`HTTP2`
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.21"
+rquest = "0.22"
 ```
 
 ```rust
