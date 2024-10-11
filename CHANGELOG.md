@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.0] - 2024-10-11
+
+### 🚀 Features
+
+- Add file function to async::multipart (#32)
+- *(dns)* Optional `LookupIpStrategy` for `hickory_dns` (#33)
+
+### 🚜 Refactor
+
+- *(client)* Removed confusing way to enable `hickory-dns` (#34)
+
 ## [0.21.20] - 2024-10-10
 
 ### 🚀 Features
