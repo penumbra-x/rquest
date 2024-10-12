@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.2] - 2024-10-12
+
+### 🚀 Features
+
+- *(tls)* Avoid repeated loading of native root CA (#37)
+
+### 🚜 Refactor
+
+- Refactor custom root CA certificate loading source (#38)
+
+## [0.22.1] - 2024-10-12
+
+### 🚀 Features
+
+- *(tls)* Optional built-in root certificates feature (#36)
+
 ## [0.22.0] - 2024-10-11
 
 ### 🚀 Features
