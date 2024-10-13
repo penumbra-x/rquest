@@ -99,38 +99,31 @@ fn layer(tls: TlsConnectorBuilder) -> TlsResult<HttpsLayer> {
     // Conditionally configure the TLS builder based on the "boring-tls-native-roots" feature.
     // If no custom CA cert store, use the system's native certificate store if the feature is enabled.
     let builder = if tls.ca_cert_store.is_none() {
-        if cfg!(any(
+        #[cfg(feature = "boring-tls-webpki-roots")]
+        {
+            // WebPKI root certificates are enabled (regardless of whether native-roots is also enabled).
+            builder.configure_set_webpki_verify_cert_store()?
+        }
+
+        #[cfg(all(
+            feature = "boring-tls-native-roots",
+            not(feature = "boring-tls-webpki-roots")
+        ))]
+        {
+            // Only native-roots is enabled, WebPKI is not enabled.
+            builder.configure_set_native_verify_cert_store()?
+        }
+
+        #[cfg(not(any(
             feature = "boring-tls-native-roots",
             feature = "boring-tls-webpki-roots"
-        )) {
-            #[cfg(all(
-                feature = "boring-tls-native-roots",
-                not(feature = "boring-tls-webpki-roots")
-            ))]
-            {
-                builder.configure_set_native_verify_cert_store()?
-            }
-
-            #[cfg(all(
-                feature = "boring-tls-webpki-roots",
-                not(feature = "boring-tls-native-roots")
-            ))]
-            {
-                builder.configure_set_webpki_verify_cert_store()?
-            }
-
-            #[cfg(all(
-                feature = "boring-tls-webpki-roots",
-                feature = "boring-tls-native-roots"
-            ))]
-            {
-                builder.configure_set_webpki_verify_cert_store()?
-            }
-        } else {
+        )))]
+        {
+            // Neither native-roots nor WebPKI roots are enabled, proceed with the default builder.
             builder
         }
     } else {
-        // If a custom CA cert store is provided, configure it.
+        // If a custom CA certificate store is provided, configure it.
         builder.configure_ca_cert_store(tls.ca_cert_store)?
     };
 
