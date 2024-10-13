@@ -9,8 +9,8 @@ use http::{
 
 pub(crate) fn get_settings() -> TlsResult<ImpersonateSettings> {
     Ok(ImpersonateSettings::builder()
-        .tls(super::chrome_tls_template_1()?)
-        .http2(super::chrome_http2_template_1())
+        .tls(super::tls_template_1()?)
+        .http2(super::http2_template_1())
         .headers(Box::new(header_initializer))
         .build())
 }

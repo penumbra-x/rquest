@@ -6,8 +6,8 @@ use std::error::Error;
 async fn main() -> Result<(), Box<dyn Error>> {
     // Create a pre-configured TLS settings
     let settings = ImpersonateSettings::builder()
-        .tls(chrome::chrome_tls_template_1()?)
-        .http2(chrome::chrome_http2_template_1())
+        .tls(chrome::tls_template_1()?)
+        .http2(chrome::http2_template_1())
         .headers(Box::new(|headers| {
             headers.insert(header::USER_AGENT, HeaderValue::from_static("rquest"));
         }))

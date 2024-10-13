@@ -7,8 +7,8 @@ use http::{
 
 pub(crate) fn get_settings() -> TlsResult<ImpersonateSettings> {
     Ok(ImpersonateSettings::builder()
-        .tls(super::safari_tls_template_1()?)
-        .http2(super::safari_http2_template_5())
+        .tls(super::tls_template_1()?)
+        .http2(super::http2_template_5())
         .headers(Box::new(header_initializer))
         .build())
 }

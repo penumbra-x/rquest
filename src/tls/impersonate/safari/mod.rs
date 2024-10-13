@@ -24,7 +24,7 @@ use http2::{
 use tls::{SafariTlsSettings, CIPHER_LIST, NEW_CIPHER_LIST};
 
 // ============== TLS template ==============
-pub fn safari_tls_template_1() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
+pub fn tls_template_1() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
     SafariTlsSettings::builder()
         .cipher_list(&NEW_CIPHER_LIST)
         .build()
@@ -32,7 +32,7 @@ pub fn safari_tls_template_1() -> TlsResult<(SslConnectorBuilder, TlsExtensionSe
         .map_err(Into::into)
 }
 
-pub fn safari_tls_template_2() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
+pub fn tls_template_2() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
     SafariTlsSettings::builder()
         .cipher_list(&CIPHER_LIST)
         .build()
@@ -41,7 +41,7 @@ pub fn safari_tls_template_2() -> TlsResult<(SslConnectorBuilder, TlsExtensionSe
 }
 
 // ============== HTTP template ==============
-pub fn safari_http2_template_1() -> Http2Settings {
+pub fn http2_template_1() -> Http2Settings {
     Http2Settings::builder()
         .initial_stream_window_size(2097152)
         .initial_connection_window_size(10551295)
@@ -52,7 +52,7 @@ pub fn safari_http2_template_1() -> Http2Settings {
         .build()
 }
 
-pub fn safari_http2_template_2() -> Http2Settings {
+pub fn http2_template_2() -> Http2Settings {
     Http2Settings::builder()
         .initial_stream_window_size(2097152)
         .initial_connection_window_size(10551295)
@@ -64,7 +64,7 @@ pub fn safari_http2_template_2() -> Http2Settings {
         .build()
 }
 
-pub fn safari_http2_template_3() -> Http2Settings {
+pub fn http2_template_3() -> Http2Settings {
     Http2Settings::builder()
         .initial_stream_window_size(2097152)
         .initial_connection_window_size(10485760)
@@ -78,7 +78,7 @@ pub fn safari_http2_template_3() -> Http2Settings {
         .build()
 }
 
-pub fn safari_http2_template_4() -> Http2Settings {
+pub fn http2_template_4() -> Http2Settings {
     Http2Settings::builder()
         .initial_stream_window_size(4194304)
         .initial_connection_window_size(10551295)
@@ -89,7 +89,7 @@ pub fn safari_http2_template_4() -> Http2Settings {
         .build()
 }
 
-pub fn safari_http2_template_5() -> Http2Settings {
+pub fn http2_template_5() -> Http2Settings {
     Http2Settings::builder()
         .initial_stream_window_size(4194304)
         .initial_connection_window_size(10551295)

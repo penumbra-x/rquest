@@ -27,14 +27,14 @@ use http2::{HEADERS_PSEUDO_ORDER, HEADER_PRORIORITY, SETTINGS_ORDER};
 use tls::{ChromeTlsSettings, NEW_CURVES};
 
 // ============== TLS template ==============
-pub fn chrome_tls_template_1() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
+pub fn tls_template_1() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
     ChromeTlsSettings::builder()
         .build()
         .try_into()
         .map_err(Into::into)
 }
 
-pub fn chrome_tls_template_2() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
+pub fn tls_template_2() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
     ChromeTlsSettings::builder()
         .enable_ech_grease(true)
         .build()
@@ -42,7 +42,7 @@ pub fn chrome_tls_template_2() -> TlsResult<(SslConnectorBuilder, TlsExtensionSe
         .map_err(Into::into)
 }
 
-pub fn chrome_tls_template_3() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
+pub fn tls_template_3() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
     ChromeTlsSettings::builder()
         .permute_extensions(true)
         .build()
@@ -50,7 +50,7 @@ pub fn chrome_tls_template_3() -> TlsResult<(SslConnectorBuilder, TlsExtensionSe
         .map_err(Into::into)
 }
 
-pub fn chrome_tls_template_4() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
+pub fn tls_template_4() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
     ChromeTlsSettings::builder()
         .permute_extensions(true)
         .enable_ech_grease(true)
@@ -59,7 +59,7 @@ pub fn chrome_tls_template_4() -> TlsResult<(SslConnectorBuilder, TlsExtensionSe
         .map_err(Into::into)
 }
 
-pub fn chrome_tls_template_5() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
+pub fn tls_template_5() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
     ChromeTlsSettings::builder()
         .permute_extensions(true)
         .enable_ech_grease(true)
@@ -69,7 +69,7 @@ pub fn chrome_tls_template_5() -> TlsResult<(SslConnectorBuilder, TlsExtensionSe
         .map_err(Into::into)
 }
 
-pub fn chrome_tls_template_6() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
+pub fn tls_template_6() -> TlsResult<(SslConnectorBuilder, TlsExtensionSettings)> {
     ChromeTlsSettings::builder()
         .curves(NEW_CURVES)
         .permute_extensions(true)
@@ -81,7 +81,7 @@ pub fn chrome_tls_template_6() -> TlsResult<(SslConnectorBuilder, TlsExtensionSe
 }
 
 // ============== HTTP template ==============
-pub fn chrome_http2_template_1() -> Http2Settings {
+pub fn http2_template_1() -> Http2Settings {
     Http2Settings::builder()
         .initial_stream_window_size(6291456)
         .initial_connection_window_size(15728640)
@@ -94,7 +94,7 @@ pub fn chrome_http2_template_1() -> Http2Settings {
         .build()
 }
 
-pub fn chrome_http2_template_2() -> Http2Settings {
+pub fn http2_template_2() -> Http2Settings {
     Http2Settings::builder()
         .initial_stream_window_size(6291456)
         .initial_connection_window_size(15728640)
@@ -108,7 +108,7 @@ pub fn chrome_http2_template_2() -> Http2Settings {
         .build()
 }
 
-pub fn chrome_http2_template_3() -> Http2Settings {
+pub fn http2_template_3() -> Http2Settings {
     Http2Settings::builder()
         .initial_stream_window_size(6291456)
         .initial_connection_window_size(15728640)

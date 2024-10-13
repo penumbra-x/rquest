@@ -31,7 +31,7 @@ pub(crate) fn get_settings() -> TlsResult<ImpersonateSettings> {
                 .build()
                 .try_into()?,
         )
-        .http2(super::okhttp_http2_template_1())
+        .http2(super::http2_template_1())
         .headers(Box::new(header_initializer))
         .build())
 }

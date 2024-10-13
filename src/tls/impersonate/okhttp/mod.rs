@@ -12,7 +12,7 @@ use crate::tls::Http2Settings;
 use http2::{HEADERS_PSEUDO_ORDER, HEADER_PRORIORITY, SETTINGS_ORDER};
 
 // ============== HTTP template ==============
-pub fn okhttp_http2_template_1() -> Http2Settings {
+pub fn http2_template_1() -> Http2Settings {
     Http2Settings::builder()
         .initial_stream_window_size(6291456)
         .initial_connection_window_size(15728640)
