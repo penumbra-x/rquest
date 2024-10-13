@@ -6,8 +6,8 @@ use std::error::Error;
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut verify_store = X509StoreBuilder::new()?;
     for cert in webpki_root_certs::TLS_SERVER_ROOT_CERTS {
-        let x509 = X509::from_der(&*cert)?;
-        verify_store.add_cert(x509).unwrap();
+        let x509 = X509::from_der(cert)?;
+        verify_store.add_cert(x509)?;
     }
 
     // Build a client to mimic Edge127

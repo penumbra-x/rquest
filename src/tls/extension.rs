@@ -217,7 +217,7 @@ impl TlsExtension for SslConnectorBuilder {
             load_certs_from_source(
                 webpki_root_certs::TLS_SERVER_ROOT_CERTS
                     .iter()
-                    .map(|c| X509::from_der(c.as_ref())),
+                    .map(|c| X509::from_der(c)),
             )
         });
 
