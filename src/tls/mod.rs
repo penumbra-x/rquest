@@ -124,7 +124,7 @@ fn layer(tls: TlsConnectorBuilder) -> TlsResult<HttpsLayer> {
                 feature = "boring-tls-native-roots"
             ))]
             {
-                compile_error!("Both 'boring-tls-native-roots' and 'boring-tls-webpki-roots' features are enabled, but they are mutually exclusive. Enable only one.");
+                builder.configure_set_webpki_verify_cert_store()?
             }
         } else {
             builder
