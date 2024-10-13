@@ -264,32 +264,31 @@ impl ClientBuilder {
 
     /// Sets the necessary values to mimic the specified impersonate version.
     /// This will set the necessary headers and TLS settings.
-    /// This is only available with the `boring-tls` feature.
     #[cfg(feature = "boring-tls")]
     pub fn impersonate(self, impersonate: Impersonate) -> ClientBuilder {
-        self.impersonate_with_headers(impersonate, true)
+        self.configure_impersonate(impersonate, true)
     }
 
-    /// Sets the necessary values to mimic the specified impersonate version (with headers).
+    /// Sets the necessary values to mimic the specified impersonate version (without headers).
     /// This will set the necessary headers and TLS settings.
-    /// This is only available with the `boring-tls` feature.
     #[cfg(feature = "boring-tls")]
-    pub fn impersonate_with_headers(
-        self,
-        impersonate: Impersonate,
-        set_headers: bool,
-    ) -> ClientBuilder {
-        // Try to get the settings for the impersonate version
-        if let Ok(settings) = tls::tls_settings(impersonate) {
-            return self.apply_tls_settings(settings, set_headers);
-        }
-        self
+    pub fn impersonate_without_headers(self, impersonate: Impersonate) -> ClientBuilder {
+        self.configure_impersonate(impersonate, false)
     }
 
     /// Use the preconfigured TLS settings.
     #[cfg(feature = "boring-tls")]
     pub fn use_preconfigured_tls(self, settings: ImpersonateSettings) -> ClientBuilder {
         self.apply_tls_settings(settings, true)
+    }
+
+    /// Private helper to configure impersonation.
+    #[cfg(feature = "boring-tls")]
+    fn configure_impersonate(self, impersonate: Impersonate, with_headers: bool) -> ClientBuilder {
+        if let Ok(settings) = tls::tls_settings(impersonate) {
+            return self.apply_tls_settings(settings, with_headers);
+        }
+        self
     }
 
     /// Apply the given TLS settings and header function.

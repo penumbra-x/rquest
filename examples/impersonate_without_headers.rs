@@ -5,7 +5,7 @@ use std::error::Error;
 async fn main() -> Result<(), Box<dyn Error>> {
     // Build a client to mimic Chrome129 with headers
     let client = rquest::Client::builder()
-        .impersonate_with_headers(Impersonate::Chrome129, false)
+        .impersonate_without_headers(Impersonate::Chrome129)
         .build()?;
 
     // Use the API you're already familiar with
