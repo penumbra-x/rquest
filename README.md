@@ -19,7 +19,7 @@ An ergonomic, all-in-one `JA3`/`JA4`/`HTTP2` fingerprint `HTTP`/`WebSocket` clie
 Additional learning resources include:
 
 - [API Documentation](https://docs.rs/rquest)
-- [Repository Examples](https://github.com/penumbra-x/rqeust/tree/main/examples)
+- [Repository Examples](https://github.com/penumbra-x/rquest/tree/main/examples)
 
 ## Usage
 

@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.23.0] - 2024-10-13
+
+### 🚀 Features
+
+- *(tls)* Optional webpki root certificates feature (#40)
+
+### 🐛 Bug Fixes
+
+- *(tls)* Fix CA certificate conditional compilation (#41)
+
+### 🚜 Refactor
+
+- *(tls)* Public and reuse tls/http2 templates (#42)
+
 ## [0.22.2] - 2024-10-12
 
 ### 🚀 Features
