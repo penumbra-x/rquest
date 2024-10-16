@@ -1383,27 +1383,6 @@ impl Client {
             }
         }
 
-        // Insert headers in order if enabled
-        if let Some(ref headers_order) = self.inner.headers_order {
-            let mut sorted_headers = HeaderMap::with_capacity(headers.keys_len());
-
-            // First insert headers in order
-            for key in headers_order {
-                if let Some(value) = headers.get(key) {
-                    sorted_headers.insert(key, value.clone());
-                }
-            }
-
-            // Then insert any remaining headers
-            for (name, value) in headers.iter() {
-                if !sorted_headers.contains_key(name) {
-                    sorted_headers.insert(name, value.clone());
-                }
-            }
-
-            headers = sorted_headers;
-        }
-
         let uri = expect_uri(&url);
 
         let (reusable, body) = match body {
@@ -1415,6 +1394,27 @@ impl Client {
         };
 
         self.proxy_auth(&uri, &mut headers);
+
+        // Insert headers in order if enabled
+        if let Some(ref headers_order) = self.inner.headers_order {
+            let mut sorted_headers = HeaderMap::with_capacity(headers.keys_len());
+
+            // First insert headers in the specified order
+            for key in headers_order {
+                if let Some(value) = headers.remove(key) {
+                    sorted_headers.insert(key, value);
+                }
+            }
+
+            // Then insert any remaining headers that were not ordered
+            for (key, value) in headers.drain() {
+                if let Some(key) = key {
+                    sorted_headers.insert(key, value);
+                }
+            }
+
+            headers = sorted_headers;
+        }
 
         let builder = hyper::Request::builder()
             .method(method.clone())
