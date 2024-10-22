@@ -2,7 +2,6 @@
 use super::{impersonate::tls::TlsSettings, TlsResult, Version};
 use crate::client::http::HttpVersionPref;
 use boring::x509::store::X509Store;
-use std::sync::Arc;
 
 /// The TLS connector configuration.
 pub struct TlsConnectorBuilder {
@@ -10,7 +9,7 @@ pub struct TlsConnectorBuilder {
     pub(crate) certs_verification: bool,
 
     /// CA certificates store.
-    pub(crate) ca_cert_store: Option<Arc<dyn Fn() -> TlsResult<X509Store>>>,
+    pub(crate) ca_cert_store: Option<Box<dyn Fn() -> TlsResult<X509Store>>>,
 
     /// The TLS connector settings.
     pub(crate) tls: TlsSettings,

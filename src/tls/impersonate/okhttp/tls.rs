@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::tls::TlsSettings;
 use boring::{
     error::ErrorStack,
@@ -44,7 +42,7 @@ impl TryInto<TlsSettings> for OkHttpTlsSettings<'_> {
             .map(|c| c.to_owned())
             .unwrap_or_else(|| vec![SslCurve::X25519, SslCurve::SECP256R1, SslCurve::SECP384R1]);
 
-        let connector = Arc::new(move || {
+        let connector = Box::new(move || {
             let mut builder = SslConnector::builder(SslMethod::tls_client())?;
             builder.enable_ocsp_stapling();
             builder.set_curves(&curves)?;

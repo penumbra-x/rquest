@@ -1,15 +1,14 @@
 #![allow(missing_debug_implementations)]
 use crate::{tls::Version, HttpVersionPref};
 use boring::{error::ErrorStack, ssl::SslConnectorBuilder};
-use std::sync::Arc;
 use typed_builder::TypedBuilder;
 
 /// TLS Extension settings.
-#[derive(TypedBuilder, Clone)]
+#[derive(TypedBuilder)]
 pub struct TlsSettings {
     #[builder(default, setter(strip_option))]
     pub(crate) connector:
-        Option<Arc<dyn Fn() -> Result<SslConnectorBuilder, ErrorStack> + Send + Sync>>,
+        Option<Box<dyn Fn() -> Result<SslConnectorBuilder, ErrorStack> + Send + Sync>>,
 
     #[builder(default = true)]
     pub(crate) tls_sni: bool,

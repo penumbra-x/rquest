@@ -10,7 +10,6 @@ use boring::ssl::{ConnectConfiguration, SslConnectorBuilder, SslVerifyMode, SslV
 use boring::x509::store::X509Store;
 use cert_compression::CertCompressionAlgorithm;
 use foreign_types::ForeignTypeRef;
-use std::sync::Arc;
 
 /// Error handler for the boringssl functions.
 fn sv_handler(r: c_int) -> Result<c_int, ErrorStack> {
@@ -54,7 +53,7 @@ pub trait TlsExtension {
     /// Configure the ca certificate store for the given `SslConnectorBuilder`.
     fn configure_ca_cert_store(
         self,
-        ca_cert_stroe: Option<Arc<dyn Fn() -> TlsResult<X509Store>>>,
+        ca_cert_stroe: Option<&dyn Fn() -> TlsResult<X509Store>>,
     ) -> TlsResult<SslConnectorBuilder>;
 
     /// Configure the permute_extensions for the given `SslConnectorBuilder`.
@@ -174,7 +173,7 @@ impl TlsExtension for SslConnectorBuilder {
 
     fn configure_ca_cert_store(
         mut self,
-        ca_cert_stroe: Option<Arc<dyn Fn() -> TlsResult<X509Store>>>,
+        ca_cert_stroe: Option<&dyn Fn() -> TlsResult<X509Store>>,
     ) -> TlsResult<SslConnectorBuilder> {
         if let Some(stroe) = ca_cert_stroe {
             self.set_verify_cert_store(stroe()?)?;

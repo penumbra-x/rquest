@@ -127,7 +127,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let settings = ImpersonateSettings::builder()
         .tls(
             TlsSettings::builder()
-                .connector(SslConnector::builder(SslMethod::tls_client())?)
+                .connector(Box::new(|| SslConnector::builder(SslMethod::tls_client())))
                 .tls_sni(true)
                 .http_version_pref(HttpVersionPref::Http2)
                 .application_settings(true)

@@ -1165,7 +1165,7 @@ impl ClientBuilder {
     where
         F: Fn() -> Result<boring::x509::store::X509Store, boring::error::ErrorStack> + 'static,
     {
-        self.config.tls.ca_cert_store = Some(Arc::new(store));
+        self.config.tls.ca_cert_store = Some(Box::new(store));
         self
     }
 

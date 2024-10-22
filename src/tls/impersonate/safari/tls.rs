@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::tls::{
     cert_compression::CertCompressionAlgorithm, extension::TlsExtension, TlsSettings,
 };
@@ -104,7 +102,7 @@ impl TryInto<TlsSettings> for SafariTlsSettings<'_> {
             ]
         });
 
-        let connector = Arc::new(move || {
+        let connector = Box::new(move || {
             let mut builder = SslConnector::builder(SslMethod::tls_client())?;
             builder.set_options(SslOptions::NO_TICKET);
             builder.set_grease_enabled(true);

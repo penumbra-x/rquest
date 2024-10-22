@@ -100,9 +100,10 @@ impl BoringTlsConnector {
 
 /// Create a new `ConnectLayer` with the given `Tls` settings.
 fn new_layer(builder: &TlsConnectorBuilder, ws: bool) -> TlsResult<ConnectLayer> {
-    let tls = builder.tls.clone();
+    let tls = &builder.tls;
+
     // If the connector builder is set, use it. Otherwise, create a new one.
-    let connector = match tls.connector {
+    let connector = match &tls.connector {
         Some(connector) => connector()?,
         None => SslConnector::builder(SslMethod::tls_client())?,
     };
@@ -150,7 +151,7 @@ fn new_layer(builder: &TlsConnectorBuilder, ws: bool) -> TlsResult<ConnectLayer>
         }
     } else {
         // If a custom CA certificate store is provided, configure it.
-        connector.configure_ca_cert_store(builder.ca_cert_store.clone())?
+        connector.configure_ca_cert_store(builder.ca_cert_store.as_deref())?
     };
 
     // Create the `HttpsLayerSettings` with the default session cache capacity.
