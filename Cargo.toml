@@ -1,6 +1,6 @@
 [package]
 name = "rquest"
-version = "0.25.0"
+version = "0.25.1"
 description = "An ergonomic, all-in-one JA3/JA4/HTTP2 fingerprint HTTP/WebSocket client"
 keywords = ["http", "client", "websocket", "ja3", "ja4"]
 categories = ["web-programming::http-client"]
@@ -18,7 +18,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [features]
-default = ["boring-tls", "boring-tls-webpki-roots", "websocket"]
+default = ["boring-tls", "boring-tls-webpki-roots"]
 
 full = [
     "boring-tls",

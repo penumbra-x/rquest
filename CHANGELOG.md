@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 Features
 
+- *(websocket)* Improve websocket API usage (#49)
+
+## [0.25.0] - 2024-10-22
+
+### 🚀 Features
+
 - *(client)* Adaptively select and upgrade the websocket connector (#48)
 
 ## [0.23.3] - 2024-10-17
