@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🚀 Features
+
+- *(client)* Adaptively select and upgrade the websocket connector (#48)
+
+## [0.23.3] - 2024-10-17
+
+### 🚜 Refactor
+
+- *(tls)* Simplify TLS custom settings (#46)
+
+## [0.23.2] - 2024-10-16
+
+### Deps
+
+- *(hyper)* Bump version to v0.14.50 (#45)
+
+## [0.23.1] - 2024-10-16
+
+### 🚀 Features
+
+- Improve header sort (#43)
+- Improve unnecessary header sorting storage overhead (#44)
+
 ## [0.23.0] - 2024-10-13
 
 ### 🚀 Features
