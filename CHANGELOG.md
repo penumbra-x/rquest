@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.25.2] - 2024-10-23
+
+### 🚀 Features
+
+- *(websocket)* Add websocket handshake with a specified websocket key (#50)
+
+### 🐛 Bug Fixes
+
+- *(client)* Fix `ClientBuilder` not `Send` + `Sync` (#51)
+
+## [0.25.1] - 2024-10-22
 
 ### 🚀 Features
 
