@@ -1,7 +1,7 @@
 use rquest::{tls::Impersonate, Client};
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), rquest::Error> {
     // Build a client to mimic Chrome129
     #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
     let client = Client::builder()

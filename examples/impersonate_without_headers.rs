@@ -1,8 +1,7 @@
 use rquest::tls::Impersonate;
-use std::error::Error;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), rquest::Error> {
     // Build a client to mimic Chrome129 with headers
     let client = rquest::Client::builder()
         .impersonate_without_headers(Impersonate::Chrome129)

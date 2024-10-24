@@ -5,10 +5,9 @@ use rquest::{
     HttpVersionPref,
 };
 use rquest::{PseudoOrder::*, SettingsOrder::*};
-use std::error::Error;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), rquest::Error> {
     // Create a pre-configured TLS settings
     let settings = ImpersonateSettings::builder()
         .tls(

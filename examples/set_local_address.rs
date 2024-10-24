@@ -2,7 +2,7 @@ use rquest::tls::Impersonate;
 use std::net::Ipv4Addr;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), rquest::Error> {
     // Build a client to mimic Chrome129
     let mut client = rquest::Client::builder()
         .impersonate(Impersonate::Chrome129)

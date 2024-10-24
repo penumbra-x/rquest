@@ -1,9 +1,8 @@
 use http::{header, HeaderValue};
 use rquest::tls::{chrome, ImpersonateSettings};
-use std::error::Error;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), rquest::Error> {
     // Create a pre-configured TLS settings
     let settings = ImpersonateSettings::builder()
         .tls(chrome::tls_template_1()?)

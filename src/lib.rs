@@ -27,11 +27,10 @@
 //! The `impersonate` module provides a way to simulate various browser fingerprints.
 //!
 //! ```rust,no_run
-//! use std::error::Error;
 //! use rquest::tls::Impersonate;
 //!
 //! #[tokio::main]
-//! async fn main() -> Result<(), Box<dyn Error>> {
+//! async fn main() -> Result<(), rquest::Error> {
 //!     // Build a client to mimic Chrome129
 //!     let client = rquest::Client::builder()
 //!         .impersonate(Impersonate::Chrome129)
@@ -52,12 +51,12 @@
 //! ```rust,no_run
 //! use futures_util::{SinkExt, StreamExt, TryStreamExt};
 //! use rquest::{tls::Impersonate, Client, Message};
-//! use std::error::Error;
 //!
 //! #[tokio::main]
-//! async fn main() -> Result<(), Box<dyn Error>> {
+//! async fn main() -> Result<(), rquest::Error> {
+//!     // Build a client to mimic Chrome129
 //!     let websocket = Client::builder()
-//!         .impersonate(Impersonate::Chrome127)
+//!         .impersonate(Impersonate::Chrome129)
 //!         .build()?
 //!         .websocket("wss://echo.websocket.org")
 //!         .send()
@@ -97,10 +96,9 @@
 //!    HttpVersionPref,
 //!};
 //!use rquest::{PseudoOrder::*, SettingsOrder::*};
-//!use std::error::Error;
 //!
 //!#[tokio::main]
-//!async fn main() -> Result<(), Box<dyn Error>> {
+//!async fn main() -> Result<(), rquest::Error> {
 //!    // Create a pre-configured TLS settings
 //!    let settings = ImpersonateSettings::builder()
 //!        .tls(

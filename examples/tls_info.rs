@@ -1,8 +1,7 @@
 use rquest::tls::Impersonate;
-use std::error::Error;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), rquest::Error> {
     // Build a client to mimic Edge127
     let client = rquest::Client::builder()
         .impersonate(Impersonate::Edge127)
