@@ -8,8 +8,18 @@ use ::std::os::raw::c_int;
 use boring::error::ErrorStack;
 use boring::ssl::{ConnectConfiguration, SslConnectorBuilder, SslVerifyMode, SslVersion};
 use boring::x509::store::X509Store;
+#[cfg(any(
+    feature = "boring-tls-webpki-roots",
+    feature = "boring-tls-native-roots"
+))]
+use boring::x509::{store::X509StoreBuilder, X509};
 use cert_compression::CertCompressionAlgorithm;
 use foreign_types::ForeignTypeRef;
+#[cfg(any(
+    feature = "boring-tls-webpki-roots",
+    feature = "boring-tls-native-roots"
+))]
+use std::sync::LazyLock;
 
 /// Error handler for the boringssl functions.
 fn sv_handler(r: c_int) -> Result<c_int, ErrorStack> {
@@ -203,16 +213,12 @@ impl TlsExtension for SslConnectorBuilder {
         not(feature = "boring-tls-webpki-roots")
     ))]
     fn configure_set_native_verify_cert_store(mut self) -> TlsResult<SslConnectorBuilder> {
-        use boring::x509::X509;
-        use std::ops::Deref;
-        use std::sync::LazyLock;
-
         static LOAD_NATIVE_CERTS: LazyLock<Result<X509Store, crate::Error>> = LazyLock::new(|| {
             let load_certs = rustls_native_certs::load_native_certs();
             load_certs_from_source(load_certs.certs.iter().map(|c| X509::from_der(c.as_ref())))
         });
 
-        let store = configure_set_verify_cert_store(LOAD_NATIVE_CERTS.deref())?;
+        let store = configure_set_verify_cert_store(&LOAD_NATIVE_CERTS)?;
         self.set_verify_cert_store(store)?;
 
         Ok(self)
@@ -220,10 +226,6 @@ impl TlsExtension for SslConnectorBuilder {
 
     #[cfg(feature = "boring-tls-webpki-roots")]
     fn configure_set_webpki_verify_cert_store(mut self) -> TlsResult<SslConnectorBuilder> {
-        use boring::x509::X509;
-        use std::ops::Deref;
-        use std::sync::LazyLock;
-
         static LOAD_WEBPKI_CERTS: LazyLock<Result<X509Store, crate::Error>> = LazyLock::new(|| {
             load_certs_from_source(
                 webpki_root_certs::TLS_SERVER_ROOT_CERTS
@@ -232,8 +234,9 @@ impl TlsExtension for SslConnectorBuilder {
             )
         });
 
-        let stroe = configure_set_verify_cert_store(LOAD_WEBPKI_CERTS.deref())?;
+        let stroe = configure_set_verify_cert_store(&LOAD_WEBPKI_CERTS)?;
         self.set_verify_cert_store(stroe)?;
+
         Ok(self)
     }
 }
@@ -244,10 +247,8 @@ impl TlsExtension for SslConnectorBuilder {
 ))]
 fn load_certs_from_source<I>(certs: I) -> Result<X509Store, crate::Error>
 where
-    I: Iterator<Item = Result<boring::x509::X509, ErrorStack>>,
+    I: Iterator<Item = Result<X509, ErrorStack>>,
 {
-    use boring::x509::store::X509StoreBuilder;
-
     let mut valid_count = 0;
     let mut invalid_count = 0;
     let mut verify_store = X509StoreBuilder::new()?;
@@ -282,8 +283,6 @@ where
 fn configure_set_verify_cert_store(
     certs: &Result<X509Store, crate::Error>,
 ) -> TlsResult<X509Store> {
-    use boring::x509::store::X509StoreBuilder;
-
     let mut verify_store = X509StoreBuilder::new()?;
 
     if let Some(store) = certs.as_ref().ok() {
