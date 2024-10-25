@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🚜 Refactor
+
+- Normalize DNS module exports (#64)
+
+## [0.25.7] - 2024-10-25
+
+### 🚀 Features
+
+- *(client)* Default send header names as title case (only http1) (#61)
+
+### Deps
+
+- *(h2)* Use h2 dependencies export by hyper (#63)
+
+## [0.25.6] - 2024-10-24
+
+### 🚀 Features
+
+- *(dns)* Export dns resolver `HickoryDnsResolver` (#55)
+
+### 🐛 Bug Fixes
+
+- *(http)* Compatible with some CDN servers, Http1 retains case by default when sending headers(#56)
+
+### 📚 Documentation
+
+- Update docs (#54)
+
+### Deps
+
+- Remove unnecessary libc dependencies (#53)
+
+## [0.25.5] - 2024-10-23
+
+### 🐛 Bug Fixes
+
+- *(tls)* Fix unsafe code block warnings (#52)
+
 ## [0.25.2] - 2024-10-23
 
 ### 🚀 Features
