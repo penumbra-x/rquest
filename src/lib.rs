@@ -8,7 +8,7 @@
 //! An ergonomic, all-in-one `JA3`/`JA4`/`HTTP2` fingerprint `HTTP`/`WebSocket` client.
 //!
 //! - Plain bodies, [JSON](#json), [urlencoded](#forms), [multipart], [websocket](#websocket)
-//! - Headers Order
+//! - Header Order
 //! - Cookies Store
 //! - [Redirect policy](#redirect-policies)
 //! - Uses [BoringSSL](#tls)

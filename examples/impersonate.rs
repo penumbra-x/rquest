@@ -7,6 +7,7 @@ async fn main() -> Result<(), rquest::Error> {
         .impersonate(Impersonate::Chrome130)
         .build()?;
 
+    
     // Use the API you're already familiar with
     let resp = client.get("https://tls.peet.ws/api/all").send().await?;
     println!("{}", resp.text().await?);
