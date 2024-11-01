@@ -89,10 +89,12 @@ pub struct TlsSettings {
 // ============== http2 ==============
 #[derive(TypedBuilder, Debug, Clone)]
 pub struct Http2Settings {
+    // ============== windows update frame ==============
     /// The initial connection window size.
     #[builder(default, setter(into))]
     pub initial_connection_window_size: Option<u32>,
 
+    // ============== settings frame ==============
     /// The header table size.
     #[builder(default, setter(into))]
     pub header_table_size: Option<u32>,
@@ -125,6 +127,11 @@ pub struct Http2Settings {
     #[builder(default, setter(into))]
     pub unknown_setting9: Option<bool>,
 
+    /// The settings order.
+    #[builder(default, setter(strip_option))]
+    pub settings_order: Option<[SettingsOrder; 8]>,
+
+    // ============== headers frame ==============
     /// The priority of the headers.
     #[builder(default, setter(into))]
     pub headers_priority: Option<(u32, u8, bool)>,
@@ -132,8 +139,4 @@ pub struct Http2Settings {
     /// The pseudo header order.
     #[builder(default, setter(into))]
     pub headers_pseudo_order: Option<[PseudoOrder; 4]>,
-
-    /// The settings order.
-    #[builder(default, setter(strip_option))]
-    pub settings_order: Option<[SettingsOrder; 8]>,
 }
