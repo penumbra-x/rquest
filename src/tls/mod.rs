@@ -153,9 +153,13 @@ fn create_connect_layer(settings: &TlsSettings, ws: bool) -> TlsResult<ConnectLa
     }
 
     // Set the certificate compression algorithm if it is set.
-    if let Some(ref cert_compression_algorithm) = tls.cert_compression_algorithm {
-        connector =
-            connector.configure_add_cert_compression_alg(cert_compression_algorithm.clone())?;
+    if let Some(cert_compression_algorithm) = tls.cert_compression_algorithm {
+        connector = connector.configure_add_cert_compression_alg(cert_compression_algorithm)?;
+    }
+
+    // Set no session ticket if it is set.
+    if tls.no_session_ticket {
+        connector = connector.configure_no_session_ticket()?;
     }
 
     // Conditionally configure the TLS builder based on the "boring-tls-native-roots" feature.

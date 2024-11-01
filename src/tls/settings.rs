@@ -108,8 +108,14 @@ impl std::fmt::Debug for TlsSettings {
             .field("curves", &self.curves)
             .field("sigalgs_list", &self.sigalgs_list)
             .field("cipher_list", &self.cipher_list)
-            .field("enable_signed_cert_timestamps", &self.enable_signed_cert_timestamps)
-            .field("cert_compression_algorithm", &self.cert_compression_algorithm)
+            .field(
+                "enable_signed_cert_timestamps",
+                &self.enable_signed_cert_timestamps,
+            )
+            .field(
+                "cert_compression_algorithm",
+                &self.cert_compression_algorithm,
+            )
             .finish()
     }
 }

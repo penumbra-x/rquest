@@ -6,7 +6,7 @@ use super::{TlsResult, Version};
 use crate::client::http::HttpVersionPref;
 use ::std::os::raw::c_int;
 use boring::error::ErrorStack;
-use boring::ssl::{ConnectConfiguration, SslConnectorBuilder, SslVerifyMode};
+use boring::ssl::{ConnectConfiguration, SslConnectorBuilder, SslOptions, SslVerifyMode};
 use boring::x509::store::X509Store;
 #[cfg(any(
     feature = "boring-tls-webpki-roots",
@@ -83,6 +83,9 @@ pub trait TlsExtension {
     /// Configure the webpki roots CA for the given `SslConnectorBuilder`.
     #[cfg(feature = "boring-tls-webpki-roots")]
     fn configure_set_webpki_verify_cert_store(self) -> TlsResult<SslConnectorBuilder>;
+
+    /// Configure the no_session_ticket for the given `SslConnectorBuilder`.
+    fn configure_no_session_ticket(self) -> TlsResult<SslConnectorBuilder>;
 }
 
 /// TlsConnectExtension trait for `ConnectConfiguration`.
@@ -224,6 +227,11 @@ impl TlsExtension for SslConnectorBuilder {
         let stroe = configure_set_verify_cert_store(&LOAD_WEBPKI_CERTS)?;
         self.set_verify_cert_store(stroe)?;
 
+        Ok(self)
+    }
+
+    fn configure_no_session_ticket(mut self) -> TlsResult<SslConnectorBuilder> {
+        self.set_options(SslOptions::NO_TICKET);
         Ok(self)
     }
 }
