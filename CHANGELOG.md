@@ -4,6 +4,71 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- Optionl BoringSSL PQ experimental feature (#84)
+
+## [0.27.2] - 2024-11-01
+
+### 🚀 Features
+
+- *(tls)* Add option `session_ticket` extension (#79)
+- *(tls)* Implement Debug for TlsSettings (#80)
+- *(tls)* Update session ticket setting
+- *(tls)* No additional WebSocket connector is needed for HTTP/1 client (#81)
+
+## [0.27.1] - 2024-11-01
+
+### 🚀 Features
+
+- *(http2)* Exposing Http2Settings fields (#75)
+- *(tls)* Expose more custom TL settings (#76)
+- *(client)* Optional configuration of Client TLS extension (#78)
+
+### 🚜 Refactor
+
+- Integrate tls/http2 unified configuration module (#77)
+
+## [0.27.0] - 2024-10-31
+
+### Deps
+
+- *(hyper)* Bump version to v0.14.60 (#74)
+
+## [0.26.3] - 2024-10-30
+
+### 🚀 Features
+
+- *(http2)* Add `http2_max_frame_size` settings (#73)
+
+## [0.26.2] - 2024-10-27
+
+### 🚜 Refactor
+
+- *(tls)* Refactor internal `TLS`/`HTTP2` module (#69)
+- *(tls)* Simplified TLS version mappr (#70)
+- *(impersonate)* Simplify Impersonate enum parsing with macro (#71)
+
+## [0.26.1] - 2024-10-26
+
+### 🚀 Features
+
+- *(tls)* Simplify TLS version settings (#66)
+
+### 🐛 Bug Fixes
+
+- Update Chrome version from 129 to 130 (#68)
+
+### 📚 Documentation
+
+- Improve `TLS`/`HTTP2` custom configuration documentation (#67)
+
+## [0.26.0] - 2024-10-25
+
+### 🚀 Features
+
+- *(impersonate)* Add Chrome 130 impersonate (#65)
+
 ### 🚜 Refactor
 
 - Normalize DNS module exports (#64)
