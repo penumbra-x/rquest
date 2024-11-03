@@ -34,8 +34,8 @@ pub struct TlsSettings {
     pub http_version_pref: HttpVersionPref,
 
     /// No session ticket
-    #[builder(default = false)]
-    pub no_session_ticket: bool,
+    #[builder(default, setter(into))]
+    pub session_ticket: Option<bool>,
 
     /// The minimum TLS version to use.
     #[builder(default, setter(into))]
@@ -58,8 +58,8 @@ pub struct TlsSettings {
     pub enable_ech_grease: bool,
 
     /// Permute extensions.
-    #[builder(default = false)]
-    pub permute_extensions: bool,
+    #[builder(default, setter(into))]
+    pub permute_extensions: Option<bool>,
 
     /// Enable grease enabled.
     #[builder(default, setter(into))]
@@ -96,7 +96,7 @@ impl std::fmt::Debug for TlsSettings {
             .field("certs_verification", &self.certs_verification)
             .field("tls_sni", &self.tls_sni)
             .field("http_version_pref", &self.http_version_pref)
-            .field("no_session_ticket", &self.no_session_ticket)
+            .field("no_session_ticket", &self.session_ticket)
             .field("min_tls_version", &self.min_tls_version)
             .field("max_tls_version", &self.max_tls_version)
             .field("application_settings", &self.application_settings)

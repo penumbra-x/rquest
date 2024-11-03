@@ -66,13 +66,6 @@ pub trait TlsExtension {
         ca_cert_stroe: Option<&(dyn Fn() -> TlsResult<X509Store> + Send + Sync)>,
     ) -> TlsResult<SslConnectorBuilder>;
 
-    /// Configure the permute_extensions for the given `SslConnectorBuilder`.
-    fn configure_permute_extensions(
-        self,
-        enable: bool,
-        permute_extensions: bool,
-    ) -> TlsResult<SslConnectorBuilder>;
-
     /// Configure the native roots CA for the given `SslConnectorBuilder`.
     #[cfg(all(
         feature = "boring-tls-native-roots",
@@ -93,14 +86,12 @@ pub trait TlsConnectExtension {
     /// Configure the enable_ech_grease for the given `ConnectConfiguration`.
     fn configure_enable_ech_grease(
         &mut self,
-        enable: bool,
         enable_ech_grease: bool,
     ) -> TlsResult<&mut ConnectConfiguration>;
 
     /// Configure the add_application_settings for the given `ConnectConfiguration`.
     fn configure_add_application_settings(
         &mut self,
-        enable: bool,
         http_version: HttpVersionPref,
     ) -> TlsResult<&mut ConnectConfiguration>;
 }
@@ -182,19 +173,6 @@ impl TlsExtension for SslConnectorBuilder {
             self.set_verify_cert_store(stroe()?)?;
         }
 
-        Ok(self)
-    }
-
-    fn configure_permute_extensions(
-        mut self,
-        enable: bool,
-        permute_extensions: bool,
-    ) -> TlsResult<SslConnectorBuilder> {
-        if !enable {
-            return Ok(self);
-        }
-
-        self.set_permute_extensions(permute_extensions);
         Ok(self)
     }
 
@@ -296,26 +274,16 @@ fn configure_set_verify_cert_store(
 impl TlsConnectExtension for ConnectConfiguration {
     fn configure_enable_ech_grease(
         &mut self,
-        enable: bool,
         enable_ech_grease: bool,
     ) -> TlsResult<&mut ConnectConfiguration> {
-        if !enable {
-            return Ok(self);
-        }
-
         unsafe { boring_sys::SSL_set_enable_ech_grease(self.as_ptr(), enable_ech_grease as _) }
         Ok(self)
     }
 
     fn configure_add_application_settings(
         &mut self,
-        enable: bool,
         http_version: HttpVersionPref,
     ) -> TlsResult<&mut ConnectConfiguration> {
-        if !enable {
-            return Ok(self);
-        }
-
         let (alpn, alpn_len) = match http_version {
             HttpVersionPref::Http1 => ("http/1.1", 8),
             HttpVersionPref::Http2 | HttpVersionPref::All => ("h2", 2),
