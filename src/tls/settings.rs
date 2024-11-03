@@ -96,7 +96,7 @@ impl std::fmt::Debug for TlsSettings {
             .field("certs_verification", &self.certs_verification)
             .field("tls_sni", &self.tls_sni)
             .field("http_version_pref", &self.http_version_pref)
-            .field("no_session_ticket", &self.session_ticket)
+            .field("session_ticket", &self.session_ticket)
             .field("min_tls_version", &self.min_tls_version)
             .field("max_tls_version", &self.max_tls_version)
             .field("application_settings", &self.application_settings)
