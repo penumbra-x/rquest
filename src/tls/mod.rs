@@ -95,9 +95,13 @@ impl BoringTlsConnector {
             self.tls_sni,
         );
         http.set_callback(move |conf, _| {
-            conf.configure_enable_ech_grease(application_settings, enable_ech_grease)?
-                .configure_add_application_settings(application_settings, http_version_pref)?
+            conf.configure_enable_ech_grease(enable_ech_grease)?
                 .set_use_server_name_indication(tls_sni);
+
+            // Add application settings if it is set.
+            if application_settings {
+                conf.configure_add_application_settings(http_version_pref)?;
+            }
             Ok(())
         });
 
@@ -123,17 +127,31 @@ fn create_connect_layer(
         .configure_cert_verification(settings.certs_verification)?
         .configure_alpn_protos(http_version_pref)?
         .configure_min_tls_version(tls.min_tls_version)?
-        .configure_max_tls_version(tls.max_tls_version)?
-        .configure_permute_extensions(tls.application_settings, tls.permute_extensions)?;
+        .configure_max_tls_version(tls.max_tls_version)?;
+
+    // Set enable ocsp stapling if it is set.
+    if tls.enable_ocsp_stapling {
+        connector.enable_ocsp_stapling();
+    }
+
+    // Set enable signed cert timestamps if it is set.
+    if tls.enable_signed_cert_timestamps {
+        connector.enable_signed_cert_timestamps();
+    }
+
+    // Set no session ticket if it is set.
+    if let Some(true) = tls.session_ticket {
+        connector = connector.configure_no_session_ticket()?;
+    }
 
     // Set grease enabled if it is set.
     if let Some(grease_enabled) = tls.grease_enabled {
         connector.set_grease_enabled(grease_enabled);
     }
 
-    // Set enable ocsp stapling if it is set.
-    if tls.enable_ocsp_stapling {
-        connector.enable_ocsp_stapling();
+    // Set permute extensions if it is set.
+    if let Some(permute_extensions) = tls.permute_extensions {
+        connector.set_permute_extensions(permute_extensions);
     }
 
     // Set the curves if they are set.
@@ -151,19 +169,9 @@ fn create_connect_layer(
         connector.set_cipher_list(cipher_list)?;
     }
 
-    // Set enable signed cert timestamps if it is set.
-    if tls.enable_signed_cert_timestamps {
-        connector.enable_signed_cert_timestamps();
-    }
-
     // Set the certificate compression algorithm if it is set.
     if let Some(cert_compression_algorithm) = tls.cert_compression_algorithm {
         connector = connector.configure_add_cert_compression_alg(cert_compression_algorithm)?;
-    }
-
-    // Set no session ticket if it is set.
-    if tls.no_session_ticket {
-        connector = connector.configure_no_session_ticket()?;
     }
 
     // Conditionally configure the TLS builder based on the "boring-tls-native-roots" feature.
@@ -200,7 +208,7 @@ fn create_connect_layer(
     // Create the `HttpsLayerSettings` with the default session cache capacity.
     let settings = HttpsLayerSettings::builder()
         .session_cache_capacity(8)
-        .session_cache(tls.application_settings && tls.pre_shared_key)
+        .session_cache(tls.pre_shared_key)
         .build();
 
     HttpsLayer::with_connector_and_settings(connector, settings)

@@ -340,7 +340,7 @@ impl ClientBuilder {
     /// Enable TLS permute_extensions
     #[cfg(feature = "boring-tls")]
     pub fn permute_extensions(mut self, enabled: bool) -> ClientBuilder {
-        self.config.tls.permute_extensions = enabled;
+        self.config.tls.permute_extensions = Some(enabled);
         self
     }
 
