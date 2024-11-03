@@ -14,7 +14,7 @@ mod settings;
 use crate::{connect::HttpConnector, HttpVersionPref};
 use boring::{
     error::ErrorStack,
-    ssl::{SslConnector, SslMethod, SslVersion},
+    ssl::{SslConnector, SslMethod, SslOptions, SslVersion},
 };
 pub use connector::MaybeHttpsStream;
 use connector::{HttpsConnector, HttpsLayer, HttpsLayerSettings};
@@ -110,6 +110,7 @@ impl BoringTlsConnector {
 }
 
 /// Create a new `ConnectLayer` with the given `Tls` settings.
+#[inline]
 fn create_connect_layer(
     settings: &TlsSettings,
     http_version_pref: HttpVersionPref,
@@ -140,8 +141,8 @@ fn create_connect_layer(
     }
 
     // Set no session ticket if it is set.
-    if let Some(true) = tls.session_ticket {
-        connector = connector.configure_no_session_ticket()?;
+    if let Some(false) = tls.session_ticket {
+        connector.set_options(SslOptions::NO_TICKET);
     }
 
     // Set grease enabled if it is set.
