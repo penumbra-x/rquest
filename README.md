@@ -22,6 +22,8 @@ Additional learning resources include:
 - [API Documentation](https://docs.rs/rquest)
 - [Repository Examples](https://github.com/penumbra-x/rquest/tree/main/examples)
 
+> &#9888; This crate is under active development and the API is not yet stable.
+
 ## Usage
 
 This asynchronous example uses [Tokio](https://tokio.rs) and enables some
