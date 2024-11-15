@@ -1,6 +1,6 @@
 [package]
 name = "rquest"
-version = "0.27.5"
+version = "0.27.6"
 description = "An ergonomic, all-in-one JA3/JA4/HTTP2 fingerprint HTTP/WebSocket client"
 keywords = ["http", "client", "websocket", "ja3", "ja4"]
 categories = ["web-programming::http-client"]
@@ -100,7 +100,7 @@ mime_guess = { version = "2.0", default-features = false, optional = true }
 
 encoding_rs = "0.8"
 http-body = "0.4.6"
-hyper = { package = "rhyper", version = "0.14.60", default-features = false, features = [
+hyper = { package = "hyper2", version = "0.14.60", default-features = false, features = [
     "http1",
     "http2",
     "client",
@@ -116,9 +116,9 @@ ipnet = "2.10.0"
 # Optional deps...
 
 ## boring-tls
-boring = { package = "rboring", version = "4", optional = true }
-boring-sys = { package = "rboring-sys", version = "4", optional = true }
-tokio-boring = { package = "tokio-rboring", version = "4", optional = true }
+boring = { package = "boring2", version = "4", optional = true }
+boring-sys = { package = "boring-sys2", version = "4", optional = true }
+tokio-boring = { package = "tokio-boring2", version = "4", optional = true }
 foreign-types = { version = "0.5.0", optional = true }
 brotli_crate = { package = "brotli", version = "7", optional = true }
 flate2 = { version = "1", optional = true }
@@ -165,7 +165,7 @@ system-configuration = "0.6.0"
 
 [dev-dependencies]
 env_logger = "0.10.0"
-hyper = { package = "rhyper", version = "0.14.60", default-features = false, features = [
+hyper = { package = "hyper2", version = "0.14.60", default-features = false, features = [
     "stream",
     "http1",
     "http2",
