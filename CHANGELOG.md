@@ -2,7 +2,56 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.28.5] - 2024-12-05
+
+### 🚀 Features
+
+- Support changing header order after initialization (#101)
+
+## [0.28.1] - 2024-12-05
+
+### 🚀 Features
+
+- Support changing impersonate fingerprint after initialization (#100)
+
+## [0.28.0] - 2024-12-05
+
+### 🚀 Features
+
+- Changing request headers after client initialization (#97)
+
+### 🐛 Bug Fixes
+
+- Fix decompressing deflate with zlib specific wrapper fails (#99)
+
+### 🚜 Refactor
+
+- Delete unnecessary clone (#98)
+
+## [0.27.7] - 2024-11-21
+
+### 🚀 Features
+
+- Add `Chrome 131` impersonate (#94)
+
+## [0.27.6] - 2024-11-15
+
+### 🚀 Features
+
+- *(proxy)* Optional disable internal proxy cache (#92)
+- Expose `hickory-resolver` as public API (#93)
+
+## [0.27.5] - 2024-11-05
+
+### 🚀 Features
+
+- Expose `tokio-boring` as public API (#88)
+
+### 🐛 Bug Fixes
+
+- *(tls)* Fix SNI verification (#87)
+
+## [0.27.3] - 2024-11-04
 
 ### 🚀 Features
 
