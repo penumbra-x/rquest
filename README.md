@@ -263,7 +263,8 @@ async fn main() -> Result<(), rquest::Error> {
     // ⚠️ Please note that `set_impersonate`, `set_impersonate_without_headers` will reset all settings, including proxy, header information, etc.,
     // When using Client's `set_headers_order`, `headers_mut`, `set_impersonate`, `set_impersonate_without_headers`,
     // `set_interface`, `set_local_address`, `set_local_addresss`, `set_proxies` methods,
-    // When the reference count of the Client is 1, the current Client's settings will be changed, otherwise a new Client will be created and will not affect the previous Client, but will share the same connection pool
+    // When the reference count of the Client is 1, the current Client's settings will be changed,
+    // otherwise a new Client will be created and will not affect the previous Client, but will share the same connection pool
     let mut client2 = client.clone();
 
     // Set the impersonate to Chrome131
