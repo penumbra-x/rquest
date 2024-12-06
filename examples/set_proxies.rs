@@ -10,11 +10,14 @@ async fn main() -> Result<(), rquest::Error> {
     let resp = client.get("https://api.ip.sb/ip").send().await?;
     println!("{}", resp.text().await?);
 
-    let proxy = rquest::Proxy::all("socks5h://127.0.0.1:1080")?;
-    client.set_proxies(&[proxy]);
-
-    let resp = client.get("https://api.ip.sb/ip").send().await?;
-    println!("{}", resp.text().await?);
+    // Set the proxy
+    {
+        let proxy = rquest::Proxy::all("socks5h://127.0.0.1:1080")?;
+        client.set_proxies(&[proxy]);
+        
+        let resp = client.get("https://api.ip.sb/ip").send().await?;
+        println!("{}", resp.text().await?);
+    }
 
     Ok(())
 }

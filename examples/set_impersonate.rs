@@ -18,25 +18,25 @@ async fn main() -> Result<(), rquest::Error> {
         .build()?;
 
     // Set the headers order
-    client.set_headers_order(&HEADER_ORDER);
-
-    // Use the API you're already familiar with
-    let resp = client.get("https://tls.peet.ws/api/all").send().await?;
-    println!("{}", resp.text().await?);
+    {
+        client.set_headers_order(&HEADER_ORDER);
+        let resp = client.get("https://tls.peet.ws/api/all").send().await?;
+        println!("{}", resp.text().await?);
+    }
 
     // Change the impersonate to Safari18
-    client.set_impersonate(Impersonate::Safari18)?;
+    {
+        client.set_impersonate(Impersonate::Safari18)?;
+        let resp = client.get("https://tls.peet.ws/api/all").send().await?;
+        println!("{}", resp.text().await?);
+    }
 
-    // Use the API you're already familiar with
-    let resp = client.get("https://tls.peet.ws/api/all").send().await?;
-    println!("{}", resp.text().await?);
-
-    // Change the impersonate to Chrome131 without setting the headers
-    client.set_impersonate_without_headers(Impersonate::Edge127)?;
-
-    // Use the API you're already familiar with
-    let resp = client.get("https://tls.peet.ws/api/all").send().await?;
-    println!("{}", resp.text().await?);
+    // Change the impersonate to Edge127 without setting the headers
+    {
+        client.set_impersonate_without_headers(Impersonate::Edge127)?;
+        let resp = client.get("https://tls.peet.ws/api/all").send().await?;
+        println!("{}", resp.text().await?);
+    }
 
     Ok(())
 }
