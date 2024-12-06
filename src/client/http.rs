@@ -940,7 +940,7 @@ impl ClientBuilder {
     /// Default is `None`.
     pub fn http2_headers_pseudo_order(
         mut self,
-        order: impl Into<Option<[PseudoOrder; 4]>>,
+        order: impl Into<Option<[hyper::PseudoOrder; 4]>>,
     ) -> ClientBuilder {
         self.config.builder.http2_headers_pseudo_order(order.into());
         self
@@ -950,7 +950,7 @@ impl ClientBuilder {
     /// Default is `None`.
     pub fn http2_headers_priority(
         mut self,
-        priority: impl Into<Option<StreamDependency>>,
+        priority: impl Into<Option<hyper::StreamDependency>>,
     ) -> ClientBuilder {
         self.config.builder.http2_headers_priority(priority.into());
         self
@@ -961,7 +961,7 @@ impl ClientBuilder {
     /// Default is `None`.
     pub fn http2_settings_order(
         mut self,
-        order: impl Into<Option<[SettingsOrder; 8]>>,
+        order: impl Into<Option<[hyper::SettingsOrder; 8]>>,
     ) -> ClientBuilder {
         self.config.builder.http2_settings_order(order.into());
         self
@@ -1598,6 +1598,7 @@ impl Client {
 
     /// Set the impersonate for this client.
     #[inline]
+    #[cfg(feature = "boring-tls")]
     pub fn set_impersonate(&mut self, var: Impersonate) -> crate::Result<()> {
         let settings = tls::tls_settings(var)?;
         let inner = Arc::make_mut(&mut self.inner);
@@ -1606,6 +1607,7 @@ impl Client {
 
     /// Set the impersonate for this client without setting the headers.
     #[inline]
+    #[cfg(feature = "boring-tls")]
     pub fn set_impersonate_without_headers(&mut self, var: Impersonate) -> crate::Result<()> {
         let settings = tls::tls_settings(var)?;
         let inner = Arc::make_mut(&mut self.inner);
@@ -1614,6 +1616,7 @@ impl Client {
 
     /// Set the impersonate for this client with the given settings.
     #[inline]
+    #[cfg(feature = "boring-tls")]
     pub fn set_impersonate_with_settings(
         &mut self,
         settings: ImpersonateSettings,
@@ -1623,6 +1626,7 @@ impl Client {
     }
 
     /// Apply the impersonate settings to the client.
+    #[cfg(feature = "boring-tls")]
     fn apply_impersonate_settings(
         inner: &mut ClientRef,
         settings: ImpersonateSettings,

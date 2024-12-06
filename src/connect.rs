@@ -170,11 +170,9 @@ impl Connector {
         };
     }
 
+    #[cfg(feature = "boring-tls")]
     pub(crate) fn set_connector(&mut self, connector: BoringTlsConnector) {
         match &mut self.inner {
-            #[cfg(not(feature = "boring-tls"))]
-            Inner::Http(http) => *http = connector.into(),
-            #[cfg(feature = "boring-tls")]
             Inner::BoringTls { tls, .. } => *tls = connector,
         }
     }
@@ -230,7 +228,7 @@ impl Connector {
         mut dst: Uri,
         is_proxy: bool,
     ) -> Result<Conn, BoxError> {
-        let ws = maybe_websocket_uri(&mut dst);
+        let _ws = maybe_websocket_uri(&mut dst);
         match self.inner {
             #[cfg(not(feature = "boring-tls"))]
             Inner::Http(mut http) => {
@@ -252,7 +250,7 @@ impl Connector {
                     http.set_nodelay(true);
                 }
 
-                let mut http = tls.create_connector(http, ws).await;
+                let mut http = tls.create_connector(http, _ws).await;
                 let io = http.call(dst).await?;
 
                 if let MaybeHttpsStream::Https(stream) = io {
@@ -295,7 +293,7 @@ impl Connector {
         #[cfg(feature = "boring-tls")]
         let auth = _auth;
 
-        let ws = maybe_websocket_uri(&mut dst);
+        let _ws = maybe_websocket_uri(&mut dst);
 
         match &self.inner {
             #[cfg(feature = "boring-tls")]
@@ -304,7 +302,7 @@ impl Connector {
                     let host = dst.host().ok_or("no host in url")?;
                     let port = dst.port().map(|p| p.as_u16()).unwrap_or(443);
 
-                    let mut http = tls.create_connector(http.clone(), ws).await;
+                    let mut http = tls.create_connector(http.clone(), _ws).await;
                     let conn = http.call(proxy_dst).await?;
                     log::trace!("tunneling HTTPS over proxy");
                     let tunneled = tunnel(conn, host, port, self.user_agent.as_ref(), auth).await?;
