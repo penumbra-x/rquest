@@ -34,7 +34,7 @@ HTTP
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.28"
+rquest = "0.29"
 ```
 
 ```rust,no_run
@@ -60,7 +60,7 @@ WebSocket
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = { version = "0.28", features = ["websocket"] }
+rquest = { version = "0.29", features = ["websocket"] }
 ```
 
 ```rust,no_run
@@ -109,7 +109,7 @@ Preconfigured `TLS`/`HTTP2`
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.28"
+rquest = "0.29"
 ```
 
 ```rust
@@ -189,7 +189,7 @@ Modify `Client` settings
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.28"
+rquest = "0.29"
 ```
 
 ```rust
@@ -227,7 +227,7 @@ async fn main() -> Result<(), rquest::Error> {
         println!("{}", resp.text().await?);
     }
 
-    // Change the impersonate to Chrome131 without setting the headers
+    // Change the impersonate to Edge127 without setting the headers
     {
         client.set_impersonate_without_headers(Impersonate::Edge127)?;
 

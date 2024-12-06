@@ -32,7 +32,7 @@ async fn main() -> Result<(), rquest::Error> {
         println!("{}", resp.text().await?);
     }
 
-    // Change the impersonate to Chrome131 without setting the headers
+    // Change the impersonate to Edge127 without setting the headers
     {
         client.set_impersonate_without_headers(Impersonate::Edge127)?;
 

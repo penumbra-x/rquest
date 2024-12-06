@@ -90,6 +90,7 @@ impl BoringTlsConnector {
 }
 
 /// Create a new `ConnectLayer` with the given `Tls` settings.
+/// Creating a TLS connector takes a lot of time. It is recommended to complete it in a blocking task when creating a client.
 #[inline]
 fn create_connect_layer(settings: TlsSettings) -> TlsResult<ConnectLayer> {
     let tls = &settings;
