@@ -292,3 +292,8 @@ required-features = ["deflate"]
 name = "multipart"
 path = "tests/multipart.rs"
 required-features = ["multipart"]
+
+[[example]]
+name = "client"
+path = "examples/client.rs"
+required-features = ["full"]
