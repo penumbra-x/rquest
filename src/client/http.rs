@@ -1567,15 +1567,6 @@ impl Client {
         self.inner.hyper.reset_pool_idle();
     }
 
-    /// Set the interface for this client.
-    #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
-    pub fn set_interface(&mut self, interface: &str) {
-        Arc::make_mut(&mut self.inner)
-            .hyper
-            .set_interface(interface);
-        self.inner.hyper.reset_pool_idle();
-    }
-
     /// Set that all sockets are bound to the configured address before connection.
     ///
     /// If `None`, the sockets will not be bound.
@@ -1944,16 +1935,14 @@ impl PendingRequest {
 
         let uri = expect_uri(&self.url);
 
-        *self.as_mut().in_flight().get_mut() = match *self.as_mut().in_flight().as_ref() {
-            _ => {
-                let mut req = hyper::Request::builder()
-                    .method(self.method.clone())
-                    .uri(uri)
-                    .body(body.into_stream())
-                    .expect("valid request parts");
-                *req.headers_mut() = self.headers.clone();
-                ResponseFuture::Default(self.client.hyper.request(req))
-            }
+        *self.as_mut().in_flight().get_mut() = {
+            let mut req = hyper::Request::builder()
+                .method(self.method.clone())
+                .uri(uri)
+                .body(body.into_stream())
+                .expect("valid request parts");
+            *req.headers_mut() = self.headers.clone();
+            ResponseFuture::Default(self.client.hyper.request(req))
         };
 
         true
@@ -2136,19 +2125,16 @@ impl Future for PendingRequest {
                                 }
                             }
 
-                            *self.as_mut().in_flight().get_mut() =
-                                match *self.as_mut().in_flight().as_ref() {
-                                    _ => {
-                                        let mut req = hyper::Request::builder()
-                                            .method(self.method.clone())
-                                            .uri(uri)
-                                            .body(body.into_stream())
-                                            .expect("valid request parts");
-                                        *req.headers_mut() = headers.clone();
-                                        std::mem::swap(self.as_mut().headers(), &mut headers);
-                                        ResponseFuture::Default(self.client.hyper.request(req))
-                                    }
-                                };
+                            *self.as_mut().in_flight().get_mut() = {
+                                let mut req = hyper::Request::builder()
+                                    .method(self.method.clone())
+                                    .uri(uri)
+                                    .body(body.into_stream())
+                                    .expect("valid request parts");
+                                *req.headers_mut() = headers.clone();
+                                std::mem::swap(self.as_mut().headers(), &mut headers);
+                                ResponseFuture::Default(self.client.hyper.request(req))
+                            };
 
                             continue;
                         }
