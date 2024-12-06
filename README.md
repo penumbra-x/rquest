@@ -34,7 +34,7 @@ HTTP
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.29"
+rquest = "0.30.0"
 ```
 
 ```rust,no_run
@@ -60,7 +60,7 @@ WebSocket
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = { version = "0.29", features = ["websocket"] }
+rquest = { version = "0.30.0", features = ["websocket"] }
 ```
 
 ```rust,no_run
@@ -109,7 +109,7 @@ Preconfigured `TLS`/`HTTP2`
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.29"
+rquest = "0.30.0"
 ```
 
 ```rust
@@ -189,7 +189,7 @@ Modify `Client` settings
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.29"
+rquest = "0.30.0"
 ```
 
 ```rust
