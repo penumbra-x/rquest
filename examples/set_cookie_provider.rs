@@ -15,7 +15,7 @@ async fn main() -> Result<(), rquest::Error> {
 
     // Set a cookie
     client.set_cookies(
-        vec![HeaderValue::from_str("foo=bar; Domain=tls.peet.ws").unwrap()],
+        vec![HeaderValue::from_static("foo=bar; Domain=tls.peet.ws")],
         "https://tls.peet.ws/api/all",
     )?;
 
