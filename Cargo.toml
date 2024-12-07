@@ -183,7 +183,7 @@ tokio = { version = "1.0", default-features = false, features = [
     "rt-multi-thread",
 ] }
 futures = { version = "0.3.0", default-features = false }
-reqwest = { version = "0.12" }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "charset", "http2", "macos-system-configuration"]}
 
 [[example]]
 name = "json_dynamic"
