@@ -41,13 +41,14 @@ pub struct BoringTlsConnector {
 
 impl BoringTlsConnector {
     /// Create a new `BoringTlsConnector` with the given function.
+    #[inline]
     pub fn new(settings: TlsSettings) -> TlsResult<BoringTlsConnector> {
         Ok(Self {
             tls_sni: settings.tls_sni,
             enable_ech_grease: settings.enable_ech_grease,
             application_settings: settings.application_settings,
             http_version_pref: settings.http_version_pref,
-            connect_layer: create_connect_layer(settings)?,
+            connect_layer: connect_layer(settings)?,
         })
     }
 
@@ -91,7 +92,7 @@ impl BoringTlsConnector {
 
 /// Create a new `ConnectLayer` with the given `Tls` settings.
 #[inline]
-fn create_connect_layer(settings: TlsSettings) -> TlsResult<ConnectLayer> {
+fn connect_layer(settings: TlsSettings) -> TlsResult<ConnectLayer> {
     let default_connector = if cfg!(any(
         feature = "boring-tls-native-roots",
         feature = "boring-tls-webpki-roots"

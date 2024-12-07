@@ -42,6 +42,7 @@ macro_rules! impersonate_match {
 }
 
 /// Get the connection settings for the given impersonate version
+#[inline]
 pub fn tls_settings(ver: Impersonate) -> ImpersonateSettings {
     impersonate_match!(
         ver,
