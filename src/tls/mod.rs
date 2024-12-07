@@ -92,15 +92,20 @@ impl BoringTlsConnector {
 /// Create a new `ConnectLayer` with the given `Tls` settings.
 #[inline]
 fn create_connect_layer(settings: TlsSettings) -> TlsResult<ConnectLayer> {
-    // If the connector builder is set, use it. Otherwise, create a new one.
-    let connector = if cfg!(any(
+    let default_connector = if cfg!(any(
         feature = "boring-tls-native-roots",
         feature = "boring-tls-webpki-roots"
     )) {
-        SslConnector::no_default_verify_builder(SslMethod::tls_client())?
+        SslConnector::no_default_verify_builder(SslMethod::tls_client())
     } else {
-        SslConnector::builder(SslMethod::tls_client())?
+        SslConnector::builder(SslMethod::tls_client())
     };
+
+    // If the connector builder is set, use it. Otherwise, create a new one.
+    let connector = settings
+        .connector
+        .map(|f| f())
+        .unwrap_or(default_connector)?;
 
     // Create the `SslConnectorBuilder` and configure it.
     let mut connector = connector
