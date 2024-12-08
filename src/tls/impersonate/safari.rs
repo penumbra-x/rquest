@@ -593,7 +593,8 @@ pub(crate) mod safari_ios_16_5 {
 pub(crate) mod safari_ios_17_2 {
     use crate::tls::impersonate::impersonte_imports::*;
 
-    pub(crate) fn get_settings() -> ImpersonateSettings {
+    #[inline]
+    pub fn get_settings() -> ImpersonateSettings {
         ImpersonateSettings::builder()
             .tls(super::tls_template_1())
             .http2(super::http2_template_2())

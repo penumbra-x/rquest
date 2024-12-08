@@ -343,6 +343,7 @@ impl Connector {
 ///
 /// # Conditional compilation:
 /// This function only works if the "websocket" feature is enabled.
+#[inline]
 fn maybe_websocket_uri(dst: &mut Uri) -> bool {
     match (dst.scheme_str(), dst.authority()) {
         #[cfg(feature = "websocket")]
@@ -583,7 +584,8 @@ where
 
     // user-agent
     buf.extend_from_slice(b"User-Agent: ");
-    buf.extend_from_slice(b"rquest/");
+    buf.extend_from_slice(env!("CARGO_PKG_NAME").as_bytes());
+    buf.extend_from_slice(b"/");
     buf.extend_from_slice(env!("CARGO_PKG_VERSION").as_bytes());
     buf.extend_from_slice(b"\r\n");
 
