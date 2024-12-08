@@ -1,4 +1,4 @@
-use http::{header, HeaderValue};
+use http::{header, HeaderMap, HeaderValue};
 use rquest::tls::{chrome, ImpersonateSettings};
 
 #[tokio::main]
@@ -7,8 +7,10 @@ async fn main() -> Result<(), rquest::Error> {
     let settings = ImpersonateSettings::builder()
         .tls(chrome::tls_template_1())
         .http2(chrome::http2_template_1())
-        .headers(|headers| {
+        .headers({
+            let mut headers = HeaderMap::new();
             headers.insert(header::USER_AGENT, HeaderValue::from_static("rquest"));
+            headers
         })
         .build();
 

@@ -305,7 +305,7 @@ impl ClientBuilder {
         // Set the headers if needed
         if set_headers {
             if let Some(headers) = settings.headers {
-                (headers)(&mut self.config.headers);
+                crate::util::replace_headers(&mut self.config.headers, headers);
             }
         }
 
@@ -1647,7 +1647,7 @@ impl Client {
         // Set the headers
         if with_headers {
             if let Some(headers) = settings.headers {
-                headers(&mut inner.headers)
+                crate::util::replace_headers(&mut inner.headers, headers);
             }
         }
 

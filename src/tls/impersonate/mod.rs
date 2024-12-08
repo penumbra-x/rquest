@@ -15,6 +15,31 @@ use std::{fmt::Debug, str::FromStr};
 use typed_builder::TypedBuilder;
 use Impersonate::*;
 
+/// Impersonate settings imports
+mod impersonte_imports {
+    pub use super::ImpersonateSettings;
+    pub use http::{
+        header::{
+            ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, CACHE_CONTROL, DNT,
+            UPGRADE_INSECURE_REQUESTS, USER_AGENT,
+        },
+        HeaderMap, HeaderValue,
+    };
+}
+
+/// Http2 settings imports
+mod http2_imports {
+    pub use hyper::PseudoOrder::{self, *};
+    pub use hyper::SettingsOrder::{self, *};
+}
+
+/// TLS settings imports
+mod tls_imports {
+    pub use crate::tls::{cert_compression::CertCompressionAlgorithm, TlsSettings, Version};
+    pub use boring::ssl::SslCurve;
+    pub use typed_builder::TypedBuilder;
+}
+
 /// Impersonate Settings.
 #[derive(TypedBuilder)]
 pub struct ImpersonateSettings {
@@ -26,7 +51,7 @@ pub struct ImpersonateSettings {
 
     /// Http headers
     #[builder(default, setter(strip_option))]
-    pub(crate) headers: Option<fn(&mut HeaderMap)>,
+    pub(crate) headers: Option<HeaderMap>,
 
     /// Http headers order
     #[builder(default, setter(strip_option))]

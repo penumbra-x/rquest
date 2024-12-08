@@ -1,5 +1,5 @@
 use boring::ssl::{SslConnector, SslCurve, SslMethod, SslOptions};
-use http::{header, HeaderName, HeaderValue};
+use http::{header, HeaderMap, HeaderName, HeaderValue};
 use rquest::{
     tls::{Http2Settings, ImpersonateSettings, TlsSettings, Version},
     HttpVersionPref,
@@ -58,7 +58,8 @@ async fn main() -> Result<(), rquest::Error> {
                 ])
                 .build(),
         )
-        .headers(|headers| {
+        .headers({
+            let mut headers = HeaderMap::new();
             headers.insert(header::USER_AGENT, HeaderValue::from_static("rquest"));
             headers.insert(
                 header::ACCEPT_LANGUAGE,
@@ -70,6 +71,7 @@ async fn main() -> Result<(), rquest::Error> {
             );
             headers.insert(header::HOST, HeaderValue::from_static("tls.peet.ws"));
             headers.insert(header::COOKIE, HeaderValue::from_static("foo=bar"));
+            headers
         })
         .headers_order(&HEADER_ORDER)
         .build();
