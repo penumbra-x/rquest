@@ -2,6 +2,68 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🚀 Features
+
+- Support changing cookie provider after initialization (#114)
+- *(client)* Limit number of connections in pool (#118)
+
+### 🚜 Refactor
+
+- Reduce `unsafe` scope for improved safety and readability (#115)
+
+### ⚙️ Miscellaneous Tasks
+
+- Undo the dynamic distribution configuration headers (#111)
+- Disable dynamic distribution loading of certificates (#112)
+- Disable dynamic distribution loading of connector builder (#113)
+- Use custom connector builder
+- Inline some hot code
+- Reuse redirect policies whenever possible
+- Remove tunnel proxy user agent setting (#116)
+- Simplify pre-configured TLS settings
+- Simplify impersonate template
+
+### Build
+
+- Fix `android`/`fuchsia`/`linux` --no-default-features build (#110)
+
+## [0.30.5] - 2024-12-07
+
+### 🚀 Features
+
+- *(client)* Greatly improve the speed of creating clients (#108)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(tls)* Remove redundant settings (#109)
+
+## [0.30.0] - 2024-12-06
+
+### 🐛 Bug Fixes
+
+- Improve TLS connector creation, fix client creation taking too long (#107)
+
+## [0.29.9] - 2024-12-06
+
+### 🚀 Features
+
+- *(tls)* Dynamically configure WebSocket TLS connection alpn protos (#104)
+- *(client)* Added async client creation to reduce blocking of async runtime (#105)
+
+### ⚙️ Miscellaneous Tasks
+
+- Cargo clippy --fix (#106)
+
+## [0.29.0] - 2024-12-06
+
+### 🚀 Features
+
+- Support changing redirect policy after initialization (#102)
+- Support changing interface after initialization (#103)
+- Support changing interface after initialization
+
 ## [0.28.5] - 2024-12-05
 
 ### 🚀 Features
