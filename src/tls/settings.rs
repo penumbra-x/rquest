@@ -1,6 +1,6 @@
 #![allow(missing_debug_implementations)]
 use crate::{
-    tls::{cert_compression::CertCompressionAlgorithm, TlsResult, Version},
+    tls::{cert_compression::CertCompressionAlgorithm, Version},
     HttpVersionPref,
 };
 use boring::{
@@ -10,9 +10,6 @@ use boring::{
 use hyper::{PseudoOrder, SettingsOrder};
 use typed_builder::TypedBuilder;
 
-/// A TLS connector builder.
-pub type ConnectorBuilder = fn() -> TlsResult<SslConnectorBuilder>;
-
 /// A CA certificate store.
 pub type CAStore = fn() -> Option<&'static X509StoreRef>;
 
@@ -21,7 +18,7 @@ pub type CAStore = fn() -> Option<&'static X509StoreRef>;
 pub struct TlsSettings {
     /// The TLS connector builder.
     #[builder(default, setter(strip_option))]
-    pub connector: Option<ConnectorBuilder>,
+    pub connector: Option<SslConnectorBuilder>,
 
     /// CA certificates store.
     #[builder(default, setter(strip_option))]

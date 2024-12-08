@@ -8,7 +8,7 @@ pub mod safari;
 use super::{Http2Settings, TlsSettings};
 use chrome::*;
 use edge::*;
-use http::HeaderMap;
+use http::{HeaderMap, HeaderName};
 use okhttp::*;
 use safari::*;
 use std::{fmt::Debug, str::FromStr};
@@ -27,6 +27,10 @@ pub struct ImpersonateSettings {
     /// Http headers
     #[builder(default, setter(strip_option))]
     pub(crate) headers: Option<fn(&mut HeaderMap)>,
+
+    /// Http headers order
+    #[builder(default, setter(strip_option))]
+    pub(crate) headers_order: Option<&'static [HeaderName]>,
 }
 
 macro_rules! impersonate_match {

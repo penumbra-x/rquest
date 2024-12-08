@@ -309,15 +309,18 @@ impl ClientBuilder {
             }
         }
 
+        // Set the headers order if needed
+        if let Some(headers_order) = settings.headers_order {
+            self = self.headers_order(headers_order);
+        }
+
         self.config.tls = settings.tls;
 
         // Convert the headers priority to the correct type
-        let http2_headers_priority = settings
-            .http2
-            .headers_priority
-            .map(|(a, b, c)| hyper::StreamDependency::new(hyper::StreamId::from(a), b, c));
+        let http2_headers_priority =
+            crate::util::convert_headers_priority(settings.http2.headers_priority);
 
-        // Set the http2 version preference
+        // Set the http2 preference
         self.http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
             .http2_initial_connection_window_size(settings.http2.initial_connection_window_size)
             .http2_max_concurrent_streams(settings.http2.max_concurrent_streams)
@@ -1648,6 +1651,9 @@ impl Client {
             }
         }
 
+        // Set the headers order if needed
+        inner.headers_order = settings.headers_order;
+
         let hyper = &mut inner.hyper;
 
         // Set the connector
@@ -1657,12 +1663,10 @@ impl Client {
         // Set the conn builder
         hyper.set_conn_builder(|conn| {
             // Convert the headers priority to the correct type
-            let http2_headers_priority = settings
-                .http2
-                .headers_priority
-                .map(|(a, b, c)| hyper::StreamDependency::new(hyper::StreamId::from(a), b, c));
+            let http2_headers_priority =
+                crate::util::convert_headers_priority(settings.http2.headers_priority);
 
-            // Set the http2 version preference
+            // Set the http2 preference
             conn.http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
                 .http2_initial_connection_window_size(settings.http2.initial_connection_window_size)
                 .http2_max_concurrent_streams(settings.http2.max_concurrent_streams)

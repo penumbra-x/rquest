@@ -87,3 +87,12 @@ pub(crate) fn replace_headers(dst: &mut HeaderMap, src: HeaderMap) {
         }
     }
 }
+
+// Convert the headers priority to the correct type
+#[cfg(feature = "boring-tls")]
+#[inline]
+pub(crate) fn convert_headers_priority(
+    headers_priority: Option<(u32, u8, bool)>,
+) -> Option<hyper::StreamDependency> {
+    headers_priority.map(|(a, b, c)| hyper::StreamDependency::new(hyper::StreamId::from(a), b, c))
+}

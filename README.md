@@ -116,25 +116,33 @@ rquest = "0.30.0"
 
 ```rust
 use boring::ssl::{SslConnector, SslCurve, SslMethod, SslOptions};
-use http::{header, HeaderValue};
+use http::{header, HeaderName, HeaderValue};
 use rquest::{
     tls::{Http2Settings, ImpersonateSettings, TlsSettings, Version},
     HttpVersionPref,
 };
 use rquest::{PseudoOrder::*, SettingsOrder::*};
 
+static HEADER_ORDER: [HeaderName; 5] = [
+    header::USER_AGENT,
+    header::ACCEPT_LANGUAGE,
+    header::ACCEPT_ENCODING,
+    header::COOKIE,
+    header::HOST,
+];
+
 #[tokio::main]
 async fn main() -> Result<(), rquest::Error> {
+    // Create a TLS connector builder
+    let mut connector = SslConnector::no_default_verify_builder(SslMethod::tls_client())?;
+    connector.set_curves(&[SslCurve::SECP224R1, SslCurve::SECP521R1])?;
+    connector.set_options(SslOptions::NO_TICKET);
+
     // Create a pre-configured TLS settings
     let settings = ImpersonateSettings::builder()
         .tls(
             TlsSettings::builder()
-                .connector(|| {
-                    let mut builder = SslConnector::no_default_verify_builder(SslMethod::tls_client())?;
-                    builder.set_curves(&[SslCurve::SECP224R1, SslCurve::SECP521R1])?;
-                    builder.set_options(SslOptions::NO_TICKET);
-                    Ok(builder)
-                })
+                .connector(connector)
                 .tls_sni(true)
                 .http_version_pref(HttpVersionPref::All)
                 .application_settings(true)
@@ -169,7 +177,18 @@ async fn main() -> Result<(), rquest::Error> {
         )
         .headers(|headers| {
             headers.insert(header::USER_AGENT, HeaderValue::from_static("rquest"));
+            headers.insert(
+                header::ACCEPT_LANGUAGE,
+                HeaderValue::from_static("en-US,en;q=0.9"),
+            );
+            headers.insert(
+                header::ACCEPT_ENCODING,
+                HeaderValue::from_static("gzip, deflate, br"),
+            );
+            headers.insert(header::HOST, HeaderValue::from_static("tls.peet.ws"));
+            headers.insert(header::COOKIE, HeaderValue::from_static("foo=bar"));
         })
+        .headers_order(&HEADER_ORDER)
         .build();
 
     // Build a client with pre-configured TLS settings

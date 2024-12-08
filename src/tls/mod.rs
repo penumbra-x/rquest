@@ -105,7 +105,7 @@ fn connect_layer(settings: TlsSettings) -> TlsResult<ConnectLayer> {
     // If the connector builder is set, use it. Otherwise, create a new one.
     let connector = settings
         .connector
-        .map(|f| f())
+        .map(Result::Ok)
         .unwrap_or(default_connector)?;
 
     // Create the `SslConnectorBuilder` and configure it.
