@@ -13,7 +13,7 @@ An ergonomic, all-in-one `JA3`/`JA4`/`HTTP2` fingerprint `HTTP`/`WebSocket` clie
 - Redirect policy
 - Cookie Store
 - Ultra-fast client setup
-- Customizable Connection Pool
+- Restrict pool [connections](https://docs.rs/rquest/latest/rquest/struct.ClientBuilder.html#method.pool_max_size)
 - `HTTPS`/`WebSocket` via [BoringSSL](https://github.com/google/boringssl)
 - Preconfigured `TLS`/`HTTP2` settings
 - `HTTP`, `HTTPS`, `SOCKS4` and `SOCKS5` proxies
@@ -36,7 +36,7 @@ HTTP
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.30.0"
+rquest = "0.31.0"
 ```
 
 ```rust,no_run
@@ -62,7 +62,7 @@ WebSocket
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = { version = "0.30.0", features = ["websocket"] }
+rquest = { version = "0.31.0", features = ["websocket"] }
 ```
 
 ```rust,no_run
@@ -111,12 +111,12 @@ Preconfigured `TLS`/`HTTP2`
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.30.0"
+rquest = "0.31.0"
 ```
 
 ```rust
 use boring::ssl::{SslConnector, SslCurve, SslMethod, SslOptions};
-use http::{header, HeaderName, HeaderValue};
+use http::{header, HeaderMap, HeaderName, HeaderValue};
 use rquest::{
     tls::{Http2Settings, ImpersonateSettings, TlsSettings, Version},
     HttpVersionPref,
@@ -175,7 +175,8 @@ async fn main() -> Result<(), rquest::Error> {
                 ])
                 .build(),
         )
-        .headers(|headers| {
+        .headers({
+            let mut headers = HeaderMap::new();
             headers.insert(header::USER_AGENT, HeaderValue::from_static("rquest"));
             headers.insert(
                 header::ACCEPT_LANGUAGE,
@@ -187,6 +188,7 @@ async fn main() -> Result<(), rquest::Error> {
             );
             headers.insert(header::HOST, HeaderValue::from_static("tls.peet.ws"));
             headers.insert(header::COOKIE, HeaderValue::from_static("foo=bar"));
+            headers
         })
         .headers_order(&HEADER_ORDER)
         .build();
@@ -210,7 +212,7 @@ Modify `Client` settings
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.30.0"
+rquest = "0.31.0"
 ```
 
 ```rust
