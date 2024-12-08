@@ -12,7 +12,6 @@ An ergonomic, all-in-one `JA3`/`JA4`/`HTTP2` fingerprint `HTTP`/`WebSocket` clie
 - Header Order
 - Redirect policy
 - Cookie Store
-- Ultra-fast client setup
 - Restrict pool [connections](https://docs.rs/rquest/latest/rquest/struct.ClientBuilder.html#method.pool_max_size)
 - Proxy-level connection pool
 - `HTTPS`/`WebSocket` via [BoringSSL](https://github.com/google/boringssl)
@@ -213,7 +212,7 @@ Modify `Client` settings
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.31.0"
+rquest = { version = "0.31.0", features = ["full"] }
 ```
 
 ```rust
