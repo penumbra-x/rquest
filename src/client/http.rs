@@ -1606,7 +1606,6 @@ impl Client {
     #[inline]
     pub fn set_interface(&mut self, interface: &str) {
         self.inner_mut().hyper.set_interface(interface);
-        self.inner.hyper.reset_pool_idle();
     }
 
     /// Set the impersonate for this client.
