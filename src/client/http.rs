@@ -302,7 +302,7 @@ impl ClientBuilder {
     fn apply_tls_settings(mut self, settings: ImpersonateSettings) -> ClientBuilder {
         // Set the headers if needed
         if let Some(headers) = settings.headers {
-            crate::util::replace_headers(&mut self.config.headers.to_mut(), headers.into_owned());
+            self.config.headers = headers;
         }
 
         // Set the headers order if needed
@@ -1644,7 +1644,7 @@ impl Client {
 
         // Set the headers
         if let Some(headers) = settings.headers {
-            crate::util::replace_headers(&mut inner.headers.to_mut(), headers.into_owned());
+            inner.headers = headers;
         }
 
         // Set the headers order if needed
