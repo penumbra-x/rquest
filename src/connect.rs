@@ -36,10 +36,7 @@ pub(crate) struct Connector {
     nodelay: bool,
     #[cfg(feature = "boring-tls")]
     tls_info: bool,
-    local_addr_v4: Option<Ipv4Addr>,
-    local_addr_v6: Option<Ipv6Addr>,
-    #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
-    interface: Option<std::borrow::Cow<'static, str>>,
+    pool_key_ext: Option<PoolKeyExt>,
 }
 
 #[derive(Clone)]
@@ -61,7 +58,7 @@ impl Connector {
         local_addr_v4: Option<Ipv4Addr>,
         local_addr_v6: Option<Ipv6Addr>,
         #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
-        interface: Option<String>,
+        interface: Option<std::borrow::Cow<'static, str>>,
         nodelay: bool,
     ) -> Connector {
         match (local_addr_v4, local_addr_v6) {
@@ -71,17 +68,30 @@ impl Connector {
             _ => {}
         }
         #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
-        if let Some(interface) = interface {
-            http.set_interface(&interface);
+        if let Some(ref interface) = interface {
+            http.set_interface(interface.clone());
         }
         http.set_nodelay(nodelay);
 
-        Connector {
+        let mut connector = Connector {
             inner: Inner::Http(http),
             proxies,
             verbose: verbose::OFF,
             timeout: None,
-        }
+            pool_key_ext: None,
+        };
+
+        #[cfg(not(any(target_os = "android", target_os = "fuchsia", target_os = "linux")))]
+        connector.set_pool_key_ext(local_addr_v4.map(IpAddr::V4), local_addr_v6.map(IpAddr::V6));
+
+        #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+        connector.set_pool_key_ext(
+            local_addr_v4.map(IpAddr::V4),
+            local_addr_v6.map(IpAddr::V6),
+            interface,
+        );
+
+        connector
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -104,25 +114,35 @@ impl Connector {
             _ => {}
         }
         #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
-        if let Some(interface) = interface {
-            http.set_interface(interface.into_owned());
+        if let Some(ref interface) = interface {
+            http.set_interface(interface.clone());
         }
         http.enforce_http(false);
 
-        Connector {
+        let mut connector = Connector {
             inner: Inner::BoringTls { http, tls },
             proxies,
             verbose: verbose::OFF,
             timeout: None,
             nodelay,
             tls_info,
-            local_addr_v4: None,
-            local_addr_v6: None,
-            #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
-            interface: None,
-        }
+            pool_key_ext: None,
+        };
+
+        #[cfg(not(any(target_os = "android", target_os = "fuchsia", target_os = "linux")))]
+        connector.set_pool_key_ext(local_addr_v4.map(IpAddr::V4), local_addr_v6.map(IpAddr::V6));
+
+        #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+        connector.set_pool_key_ext(
+            local_addr_v4.map(IpAddr::V4),
+            local_addr_v6.map(IpAddr::V6),
+            interface,
+        );
+
+        connector
     }
 
+    #[inline]
     pub(crate) fn set_keepalive(&mut self, dur: Option<Duration>) {
         match &mut self.inner {
             #[cfg(not(feature = "boring-tls"))]
@@ -132,22 +152,27 @@ impl Connector {
         }
     }
 
+    #[inline]
     pub(crate) fn set_timeout(&mut self, timeout: Option<Duration>) {
         self.timeout = timeout;
     }
 
+    #[inline]
     pub(crate) fn set_verbose(&mut self, enabled: bool) {
         self.verbose.0 = enabled;
     }
 
+    #[inline]
     pub(crate) fn get_proxies(&self) -> Arc<Vec<Proxy>> {
         self.proxies.clone()
     }
 
+    #[inline]
     pub(crate) fn set_proxies(&mut self, proxies: &[Proxy]) {
         Arc::make_mut(&mut self.proxies).clone_from_slice(proxies);
     }
 
+    #[inline]
     pub(crate) fn pool_key_extension(&self, uri: &Uri) -> Option<PoolKeyExt> {
         for proxy in self.proxies.as_ref() {
             if let Some(proxy_scheme) = proxy.intercept(uri) {
@@ -165,35 +190,16 @@ impl Connector {
             }
         }
 
-        if let (Some(_), Some(_)) | (Some(_), None) | (None, Some(_)) =
-            (&self.local_addr_v4, &self.local_addr_v6)
-        {
-            return Some(PoolKeyExt::Address(
-                self.local_addr_v4.map(IpAddr::V4),
-                self.local_addr_v6.map(IpAddr::V6),
-            ));
-        }
-
-        #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
-        if let Some(ref interface) = self.interface {
-            return Some(PoolKeyExt::Interface(interface.clone()));
-        }
-
-        None
+        self.pool_key_ext.clone()
     }
 
+    #[inline]
     pub(crate) fn set_local_address(&mut self, addr: Option<IpAddr>) {
-        if self.proxies.is_empty() {
-            match addr {
-                Some(IpAddr::V4(a)) => {
-                    self.local_addr_v4 = Some(a);
-                }
-                Some(IpAddr::V6(a)) => {
-                    self.local_addr_v6 = Some(a);
-                }
-                _ => {}
-            };
-        }
+        #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+        self.set_pool_key_ext(addr, None, None);
+
+        #[cfg(not(any(target_os = "android", target_os = "fuchsia", target_os = "linux")))]
+        self.set_pool_key_ext(addr, None);
 
         match &mut self.inner {
             #[cfg(not(feature = "boring-tls"))]
@@ -203,11 +209,13 @@ impl Connector {
         }
     }
 
+    #[inline]
     pub(crate) fn set_local_addresses(&mut self, addr_ipv4: Ipv4Addr, addr_ipv6: Ipv6Addr) {
-        if self.proxies.is_empty() {
-            self.local_addr_v4 = Some(addr_ipv4);
-            self.local_addr_v6 = Some(addr_ipv6);
-        }
+        #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+        self.set_pool_key_ext(IpAddr::V4(addr_ipv4), IpAddr::V6(addr_ipv6), None);
+
+        #[cfg(not(any(target_os = "android", target_os = "fuchsia", target_os = "linux")))]
+        self.set_pool_key_ext(IpAddr::V4(addr_ipv4), IpAddr::V6(addr_ipv6));
 
         match &mut self.inner {
             #[cfg(not(feature = "boring-tls"))]
@@ -217,10 +225,37 @@ impl Connector {
         }
     }
 
+    #[inline]
+    fn set_pool_key_ext(
+        &mut self,
+        addr_ipv4: impl Into<Option<IpAddr>>,
+        addr_ipv6: impl Into<Option<IpAddr>>,
+        #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+        interface: impl Into<Option<std::borrow::Cow<'static, str>>>,
+    ) {
+        if self.proxies.is_empty() {
+            let ipv4 = addr_ipv4.into();
+            let ipv6 = addr_ipv6.into();
+            match (&ipv4, &ipv6) {
+                (Some(_), Some(_)) | (None, Some(_)) | (Some(_), None) => {
+                    self.pool_key_ext = Some(PoolKeyExt::Address(ipv4, ipv6));
+                }
+                _ =>
+                {
+                    #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+                    if let Some(interface) = interface.into() {
+                        self.pool_key_ext = Some(PoolKeyExt::Interface(interface));
+                    }
+                }
+            }
+        }
+    }
+
     #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+    #[inline]
     pub(crate) fn set_interface(&mut self, interface: std::borrow::Cow<'static, str>) {
         if self.proxies.is_empty() {
-            self.interface = Some(interface.clone());
+            self.pool_key_ext = Some(PoolKeyExt::Interface(interface.clone()));
         }
 
         match &mut self.inner {
@@ -232,6 +267,7 @@ impl Connector {
     }
 
     #[cfg(feature = "boring-tls")]
+    #[inline]
     pub(crate) fn set_connector(&mut self, connector: BoringTlsConnector) {
         match &mut self.inner {
             Inner::BoringTls { tls, .. } => *tls = connector,
