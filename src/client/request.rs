@@ -244,17 +244,13 @@ impl RequestBuilder {
     /// when the URL is not a full URL.
     pub fn with_host_header(mut self) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
-            let url = &mut req.url;
-            let hostname = url.host().expect("authority implies host");
-            let is_secure = matches!(url.scheme(), "wss" | "https");
-            let host_with_port = url
-                .port()
-                .filter(|p| !(is_secure && *p == 443 || !is_secure && *p == 80))
-                .map(|port| format!("{}:{}", hostname, port))
-                .unwrap_or_else(|| hostname.to_string());
-            let header_value =
-                HeaderValue::from_str(&host_with_port).expect("uri host is valid header value");
-            return self.header_sensitive(HOST, header_value, false);
+            let authority = req.url().authority();
+            if authority.is_empty() {
+                return self;
+            }
+            if let Some(host_with_port) = authority.parse::<HeaderValue>().ok() {
+                return self.header_sensitive(HOST, host_with_port, false);
+            }
         }
         self
     }
