@@ -15,8 +15,6 @@ use super::http::{Client, Pending};
 #[cfg(feature = "multipart")]
 use super::multipart;
 use super::response::Response;
-#[cfg(feature = "multipart")]
-use crate::header::CONTENT_LENGTH;
 use crate::header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE, HOST};
 use crate::{Method, Url};
 use http::{request::Parts, Request as HttpRequest, Version};
