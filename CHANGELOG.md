@@ -6,6 +6,98 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 Features
 
+- Implement IntoUrl for Cow<'a, str> (#145)
+- Impl `IntoUrl` for `&Url` (#146)
+- *(client)* Request specific redirect policy override (#147)
+- *(redirect)* Expose method for accessing the previous and next request (#148)
+- Add `Safari 18.2` impersonate (#151)
+
+### 🚜 Refactor
+
+- Unified naming API (#150)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(client)* Client `set_redirect_policy` rename to `set_redirect` (#149)
+
+## [0.31.11] - 2024-12-11
+
+### 🚀 Features
+
+- *(request)* Add `with_host_header` method for populating Host header (#142)
+- *(client)* Set `content-length` in advance for header sorting (#144)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(request)* Delete WASM legacy API (#141)
+- *(request)* Avoid panic when adding host header
+
+## [0.31.10] - 2024-12-10
+
+### 🐛 Bug Fixes
+
+- *(client)* Fix http redirect via proxy (#134)
+- *(client)* Fix redirect header sorting (#135)
+- *(client)* Fix redirect via connection pool extension (#137)
+- *(client)* Fix retry request via connection pool extension (#138)
+
+## [0.31.7] - 2024-12-10
+
+### 🚀 Features
+
+- *(client)* Add proxy management APIs: set, append, and clear proxies (#132)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(tls)* Rename `http_version_pref` to `alpn_protos` (#131)
+
+## [0.31.6] - 2024-12-09
+
+### ⚙️ Miscellaneous Tasks
+
+- Introduce macro for conditional header initialization (#127)
+- Fix typo
+
+## [0.31.5] - 2024-12-09
+
+### 🐛 Bug Fixes
+
+- *(connector)* Initialize pool key extension when creating a client (#126)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(client)* Accept request header is appended by default (#125)
+
+## [0.31.3] - 2024-12-09
+
+### 🚀 Features
+
+- *(client)* Add address/interface level connection pool (#123)
+
+### ⚙️ Miscellaneous Tasks
+
+- Refactor struct fields to use Cow<'static, T> for better efficiency (#124)
+- *(client)* Impersonate does not clone request headers unless necessary
+
+## [0.31.2] - 2024-12-08
+
+### 🚀 Features
+
+- *(client)* Support proxy-level connection pool (#122)
+
+### 🚜 Refactor
+
+- Do not create default request headers unless necessary (#120)
+
+### ⚙️ Miscellaneous Tasks
+
+- Update
+- Cache template request headers (#121)
+
+## [0.31.0] - 2024-12-08
+
+### 🚀 Features
+
 - Support changing cookie provider after initialization (#114)
 - *(client)* Limit number of connections in pool (#118)
 
@@ -24,6 +116,7 @@ All notable changes to this project will be documented in this file.
 - Remove tunnel proxy user agent setting (#116)
 - Simplify pre-configured TLS settings
 - Simplify impersonate template
+- *(tls)* Export extension as public API
 
 ### Build
 
