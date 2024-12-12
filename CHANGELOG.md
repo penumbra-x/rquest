@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.32.1] - 2024-12-12
 
 ### 🚀 Features
 
@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - *(client)* Client `set_redirect_policy` rename to `set_redirect` (#149)
+- Simplify the impersonate template
 
 ## [0.31.11] - 2024-12-11
 
