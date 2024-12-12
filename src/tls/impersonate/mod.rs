@@ -2,6 +2,7 @@
 
 pub mod chrome;
 pub mod edge;
+pub mod macros;
 pub mod okhttp;
 pub mod safari;
 
@@ -17,34 +18,17 @@ use Impersonate::*;
 
 mod impersonate_imports {
     pub use super::ImpersonateSettings;
-    pub use crate::conditional_headers;
-    pub use crate::static_join;
+    pub use crate::{
+        chrome_edge_accpet, chrome_edge_accpet_with_zstd, chrome_edge_sec_fetch,
+        chrome_edge_sec_fetch1, chrome_edge_ua, conditional_headers, macos_chrome_edge_sec_ch_ua,
+        static_join, windows_chrome_edge_sec_ch_ua,
+    };
     pub use http::{
         header::{
-            ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, CACHE_CONTROL, DNT,
-            UPGRADE_INSECURE_REQUESTS, USER_AGENT,
+            ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, DNT, UPGRADE_INSECURE_REQUESTS, USER_AGENT,
         },
         HeaderMap, HeaderValue,
     };
-    pub use std::borrow::Cow;
-    pub use std::sync::LazyLock;
-
-    #[macro_export]
-    macro_rules! conditional_headers {
-        ($with_headers:expr, $initializer:expr) => {
-            if $with_headers {
-                static HEADER_INITIALIZER: LazyLock<HeaderMap> = LazyLock::new($initializer);
-                Some(Cow::Borrowed(&*HEADER_INITIALIZER))
-            } else {
-                None
-            }
-        };
-    }
-}
-
-mod http2_imports {
-    pub use hyper::PseudoOrder::{self, *};
-    pub use hyper::SettingsOrder::{self, *};
 }
 
 mod tls_imports {
@@ -53,13 +37,11 @@ mod tls_imports {
     pub use boring::ssl::SslCurve;
     pub use std::borrow::Cow;
     pub use typed_builder::TypedBuilder;
+}
 
-    #[macro_export]
-    macro_rules! static_join {
-        ($sep:expr, $first:expr $(, $rest:expr)*) => {
-            concat!($first $(, $sep, $rest)*)
-        };
-    }
+mod http2_imports {
+    pub use hyper::PseudoOrder::{self, *};
+    pub use hyper::SettingsOrder::{self, *};
 }
 
 /// Impersonate Settings.

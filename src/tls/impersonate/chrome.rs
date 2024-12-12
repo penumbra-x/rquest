@@ -240,30 +240,13 @@ pub(crate) mod v100 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                r#"" Not A;Brand";v="99", "Chromium";v="100", "Google Chrome";v="100""#,
-            ),
+        windows_chrome_edge_sec_ch_ua!(
+            headers,
+            r#""Not A;Brand";v="99", "Chromium";v="100", "Google Chrome";v="100""#
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert(
-            "sec-ch-ua-platform",
-            HeaderValue::from_static("\"Windows\""),
-        );
-        headers.insert(DNT, HeaderValue::from_static("1"));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet!(headers);
         headers
     }
 }
@@ -283,30 +266,13 @@ pub(crate) mod v101 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                r#"" Not A;Brand";v="99", "Chromium";v="101", "Google Chrome";v="101""#,
-            ),
+        windows_chrome_edge_sec_ch_ua!(
+            headers,
+            r#""Not A;Brand";v="99", "Chromium";v="101", "Google Chrome";v="101""#
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert(
-            "sec-ch-ua-platform",
-            HeaderValue::from_static("\"Windows\""),
-        );
-        headers.insert(DNT, HeaderValue::from_static("1"));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.67 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.67 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet!(headers);
         headers
     }
 }
@@ -326,30 +292,13 @@ pub(crate) mod v104 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                "\"Chromium\";v=\"104\", \" Not A;Brand\";v=\"99\", \"Google Chrome\";v=\"104\"",
-            ),
+        windows_chrome_edge_sec_ch_ua!(
+            headers,
+            "\"Chromium\";v=\"104\", \" Not A;Brand\";v=\"99\", \"Google Chrome\";v=\"104\""
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert(
-            "sec-ch-ua-platform",
-            HeaderValue::from_static("\"Windows\""),
-        );
-        headers.insert(DNT, HeaderValue::from_static("1"));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet!(headers);
         headers
     }
 }
@@ -369,30 +318,13 @@ pub(crate) mod v105 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                "\"Google Chrome\";v=\"105\", \"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"105\"",
-            ),
+        windows_chrome_edge_sec_ch_ua!(
+            headers,
+            "\"Google Chrome\";v=\"105\", \"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"105\""
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert(
-            "sec-ch-ua-platform",
-            HeaderValue::from_static("\"Windows\""),
-        );
-        headers.insert(DNT, HeaderValue::from_static("1"));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet!(headers);
         headers
     }
 }
@@ -412,30 +344,14 @@ pub(crate) mod v106 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                "\"Chromium\";v=\"106\", \"Google Chrome\";v=\"106\", \"Not;A=Brand\";v=\"99\"",
-            ),
+
+        windows_chrome_edge_sec_ch_ua!(
+            headers,
+            "\"Chromium\";v=\"106\", \"Google Chrome\";v=\"106\", \"Not;A=Brand\";v=\"99\""
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert(
-            "sec-ch-ua-platform",
-            HeaderValue::from_static("\"Windows\""),
-        );
-        headers.insert(DNT, HeaderValue::from_static("1"));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet!(headers);
         headers
     }
 }
@@ -455,30 +371,13 @@ pub(crate) mod v107 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                "\"Chromium\";v=\"107\", \"Google Chrome\";v=\"107\", \"Not;A=Brand\";v=\"99\"",
-            ),
+        windows_chrome_edge_sec_ch_ua!(
+            headers,
+            "\"Chromium\";v=\"107\", \"Google Chrome\";v=\"107\", \"Not;A=Brand\";v=\"99\""
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert(
-            "sec-ch-ua-platform",
-            HeaderValue::from_static("\"Windows\""),
-        );
-        headers.insert(DNT, HeaderValue::from_static("1"));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet!(headers);
         headers
     }
 }
@@ -498,30 +397,13 @@ pub(crate) mod v108 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                "\"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"108\", \"Google Chrome\";v=\"108\"",
-            ),
+        windows_chrome_edge_sec_ch_ua!(
+            headers,
+            "\"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"108\", \"Google Chrome\";v=\"108\""
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert(
-            "sec-ch-ua-platform",
-            HeaderValue::from_static("\"Windows\""),
-        );
-        headers.insert(DNT, HeaderValue::from_static("1"));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet!(headers);
         headers
     }
 }
@@ -541,30 +423,13 @@ pub(crate) mod v109 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                r#""Chromium";v="110", "Not A(Brand";v="24", "Google Chrome";v="110""#,
-            ),
+        windows_chrome_edge_sec_ch_ua!(
+            headers,
+            r#""Chromium";v="110", "Not A(Brand";v="24", "Google Chrome";v="110""#
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert(
-            "sec-ch-ua-platform",
-            HeaderValue::from_static("\"Windows\""),
-        );
-        headers.insert(DNT, HeaderValue::from_static("1"));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet!(headers);
         headers
     }
 }
@@ -584,27 +449,13 @@ pub(crate) mod v114 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                r#""Chromium";v="114", "Not A(Brand";v="30", "Google Chrome";v="114""#,
-            ),
+        macos_chrome_edge_sec_ch_ua!(
+            headers,
+            r#""Chromium";v="114", "Not A(Brand";v="30", "Google Chrome";v="114""#
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert("sec-ch-ua-platform", HeaderValue::from_static("\"Mac OS\""));
-        headers.insert(DNT, HeaderValue::from_static("1"));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet!(headers);
         headers
     }
 }
@@ -624,29 +475,13 @@ pub(crate) mod v116 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                r#""Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116""#,
-            ),
+        windows_chrome_edge_sec_ch_ua!(
+            headers,
+            r#""Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116""#
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert(
-            "sec-ch-ua-platform",
-            HeaderValue::from_static("\"Windows\""),
-        );
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet!(headers);
         headers
     }
 }
@@ -666,29 +501,13 @@ pub(crate) mod v117 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                r#""Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117""#,
-            ),
+        windows_chrome_edge_sec_ch_ua!(
+            headers,
+            r#""Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117""#
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert(
-            "sec-ch-ua-platform",
-            HeaderValue::from_static("\"Windows\""),
-        );
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet!(headers);
         headers
     }
 }
@@ -707,27 +526,13 @@ pub(crate) mod v118 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                r#""Chromium";v="118", "Google Chrome";v="118", "Not=A?Brand";v="99""#,
-            ),
+        macos_chrome_edge_sec_ch_ua!(
+            headers,
+            r#""Chromium";v="118", "Google Chrome";v="118", "Not=A?Brand";v="99""#
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert("sec-ch-ua-platform", HeaderValue::from_static("\"macOS\""));
-        headers.insert(DNT, HeaderValue::from_static("1"));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet!(headers);
         headers
     }
 }
@@ -747,31 +552,13 @@ pub(crate) mod v119 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(CACHE_CONTROL, HeaderValue::from_static("max-age=0"));
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                r#""Microsoft Edge";v="119", "Chromium";v="119", "Not?A_Brand";v="24""#,
-            ),
+        macos_chrome_edge_sec_ch_ua!(
+            headers,
+            r#""Microsoft Edge";v="119", "Chromium";v="119", "Not?A_Brand";v="24""#
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert("sec-ch-ua-platform", HeaderValue::from_static("\"macOS\""));
-        headers.insert(DNT, HeaderValue::from_static("1"));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br"),
-        );
-        headers.insert(
-            ACCEPT_LANGUAGE,
-            HeaderValue::from_static("en;q=0.8,en-GB;q=0.7,en-US;q=0.6"),
-        );
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet!(headers);
         headers
     }
 }
@@ -791,34 +578,13 @@ pub(crate) mod v120 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(CACHE_CONTROL, HeaderValue::from_static("max-age=0"));
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                r#""Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120""#,
-            ),
+        windows_chrome_edge_sec_ch_ua!(
+            headers,
+            r#""Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120""#
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert(
-            "sec-ch-ua-platform",
-            HeaderValue::from_static("\"Windows\""),
-        );
-        headers.insert(DNT, HeaderValue::from_static("1"));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br"),
-        );
-        headers.insert(
-            ACCEPT_LANGUAGE,
-            HeaderValue::from_static("en;q=0.8,en-GB;q=0.7,en-US;q=0.6"),
-        );
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet!(headers);
         headers
     }
 }
@@ -838,26 +604,13 @@ pub(crate) mod v123 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                "\"Google Chrome\";v=\"123\", \"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"123\"",
-            ),
+        macos_chrome_edge_sec_ch_ua!(
+            headers,
+            "\"Google Chrome\";v=\"123\", \"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"123\""
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert("sec-ch-ua-platform", HeaderValue::from_static("\"macOS\""));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"));
-        headers.insert("Sec-Fetch-Site", HeaderValue::from_static("?1"));
-        headers.insert("Sec-Fetch-Mode", HeaderValue::from_static("same-site"));
-        headers.insert("Sec-Fetch-User", HeaderValue::from_static("document"));
-        headers.insert("Sec-Fetch-Dest", HeaderValue::from_static("navigate"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br, zstd"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US;q=1.0"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet_with_zstd!(headers);
         headers
     }
 }
@@ -877,26 +630,13 @@ pub(crate) mod v124 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
-            ),
+        macos_chrome_edge_sec_ch_ua!(
+            headers,
+            "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\""
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert("sec-ch-ua-platform", HeaderValue::from_static("\"macOS\""));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"));
-        headers.insert("Sec-Fetch-Site", HeaderValue::from_static("?1"));
-        headers.insert("Sec-Fetch-Mode", HeaderValue::from_static("same-site"));
-        headers.insert("Sec-Fetch-User", HeaderValue::from_static("document"));
-        headers.insert("Sec-Fetch-Dest", HeaderValue::from_static("navigate"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br, zstd"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US;q=1.0"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet_with_zstd!(headers);
         headers
     }
 }
@@ -916,26 +656,13 @@ pub(crate) mod v126 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\"",
-            ),
+        macos_chrome_edge_sec_ch_ua!(
+            headers,
+            "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\""
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert("sec-ch-ua-platform", HeaderValue::from_static("\"macOS\""));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br, zstd"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet_with_zstd!(headers);
         headers
     }
 }
@@ -955,26 +682,13 @@ pub(crate) mod v127 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                "\"Not)A;Brand\";v=\"99\", \"Google Chrome\";v=\"127\", \"Chromium\";v=\"127\"",
-            ),
+        macos_chrome_edge_sec_ch_ua!(
+            headers,
+            "\"Not)A;Brand\";v=\"99\", \"Google Chrome\";v=\"127\", \"Chromium\";v=\"127\""
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert("sec-ch-ua-platform", HeaderValue::from_static("\"macOS\""));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br, zstd"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet_with_zstd!(headers);
         headers
     }
 }
@@ -994,26 +708,13 @@ pub(crate) mod v128 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\"",
-            ),
+        macos_chrome_edge_sec_ch_ua!(
+            headers,
+            "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\""
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert("sec-ch-ua-platform", HeaderValue::from_static("\"macOS\""));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br, zstd"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet_with_zstd!(headers);
         headers
     }
 }
@@ -1033,26 +734,13 @@ pub(crate) mod v129 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                "\"Google Chrome\";v=\"129\", \"Not=A?Brand\";v=\"8\", \"Chromium\";v=\"129\"",
-            ),
+        macos_chrome_edge_sec_ch_ua!(
+            headers,
+            "\"Google Chrome\";v=\"129\", \"Not=A?Brand\";v=\"8\", \"Chromium\";v=\"129\""
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert("sec-ch-ua-platform", HeaderValue::from_static("\"macOS\""));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("cross-site"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br, zstd"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch1!(headers);
+        chrome_edge_accpet_with_zstd!(headers);
         headers.insert("priority", HeaderValue::from_static("u=0, i"));
         headers
     }
@@ -1073,32 +761,13 @@ pub(crate) mod v130 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                "\"Chromium\";v=\"130\", \"Google Chrome\";v=\"130\", \"Not?A_Brand\";v=\"99\"",
-            ),
+        macos_chrome_edge_sec_ch_ua!(
+            headers,
+            "\"Chromium\";v=\"130\", \"Google Chrome\";v=\"130\", \"Not?A_Brand\";v=\"99\""
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert("sec-ch-ua-platform", HeaderValue::from_static("\"macOS\""));
-        headers.insert(DNT, HeaderValue::from_static("1"));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"));
-        headers.insert(
-            "sec-purpose",
-            HeaderValue::from_static("prefetch;prerender"),
-        );
-        headers.insert("purpose", HeaderValue::from_static("prefetch"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br, zstd"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet_with_zstd!(headers);
         headers.insert("priority", HeaderValue::from_static("u=0, i"));
         headers
     }
@@ -1119,27 +788,13 @@ pub(crate) mod v131 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "sec-ch-ua",
-            HeaderValue::from_static(
-                "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
-            ),
+        macos_chrome_edge_sec_ch_ua!(
+            headers,
+            "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\""
         );
-        headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        headers.insert("sec-ch-ua-platform", HeaderValue::from_static("\"macOS\""));
-        headers.insert(DNT, HeaderValue::from_static("1"));
-        headers.insert(UPGRADE_INSECURE_REQUESTS, HeaderValue::from_static("1"));
-        headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"));
-        headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"));
-        headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br, zstd"),
-        );
-        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+        chrome_edge_sec_fetch!(headers);
+        chrome_edge_accpet_with_zstd!(headers);
         headers.insert("priority", HeaderValue::from_static("u=0, i"));
         headers
     }
