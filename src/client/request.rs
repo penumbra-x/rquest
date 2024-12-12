@@ -126,14 +126,6 @@ impl Request {
         &mut self.version
     }
 
-    /// private
-    ///
-    /// Set the mutable reference to the redirect policy for this request.
-    #[inline]
-    fn redirect_mut(&mut self) -> &mut Option<redirect::Policy> {
-        &mut self.redirect
-    }
-
     /// Attempt to clone the request.
     ///
     /// `None` is returned if the request can not be cloned, i.e. if the body is a stream.
@@ -409,7 +401,7 @@ impl RequestBuilder {
     /// Set the redirect policy for this request.
     pub fn redirect(mut self, policy: redirect::Policy) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
-            *req.redirect_mut() = Some(policy)
+            req.redirect = Some(policy)
         }
         self
     }
