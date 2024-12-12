@@ -7,8 +7,7 @@ static HEADER_ORDER: [HeaderName; 6] = [
     header::USER_AGENT,
     header::ACCEPT_ENCODING,
     header::HOST,
-    header::COOKIE,
-    HeaderName::from_static("priority"),
+    header::COOKIE
 ];
 
 #[tokio::main]
@@ -34,7 +33,7 @@ async fn main() -> Result<(), rquest::Error> {
 
     // Change the impersonate to Edge127 without setting the headers
     {
-        client.set_impersonate_without_headers(Impersonate::Edge127)?;
+        client.set_impersonate_skip_headers(Impersonate::Edge127)?;
 
         // Set a header
         client
