@@ -2,7 +2,7 @@ use http::{header, HeaderName, HeaderValue};
 use rquest::{tls::Impersonate, Client};
 use std::net::Ipv4Addr;
 
-static HEADER_ORDER: [HeaderName; 6] = [
+const HEADER_ORDER: &[HeaderName] = &[
     header::ACCEPT_LANGUAGE,
     header::USER_AGENT,
     header::ACCEPT_ENCODING,
@@ -19,7 +19,7 @@ async fn main() -> Result<(), rquest::Error> {
 
     // Set the headers order
     {
-        client.set_headers_order(&HEADER_ORDER);
+        client.set_headers_order(HEADER_ORDER);
         let resp = client.get("https://tls.peet.ws/api/all").send().await?;
         println!("{}", resp.text().await?);
     }

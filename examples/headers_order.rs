@@ -1,7 +1,7 @@
 use http::{header, HeaderName, HeaderValue};
 use rquest::tls::Impersonate;
 
-static HEADER_ORDER: &[HeaderName] = &[
+const HEADER_ORDER: &[HeaderName] = &[
     header::USER_AGENT,
     header::ACCEPT_LANGUAGE,
     header::ACCEPT_ENCODING,
