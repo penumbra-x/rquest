@@ -1,8 +1,8 @@
 #![allow(missing_docs, missing_debug_implementations)]
-
 pub mod chrome;
 pub mod edge;
-pub mod macros;
+#[macro_use]
+mod macros;
 pub mod okhttp;
 pub mod safari;
 
@@ -18,13 +18,7 @@ use Impersonate::*;
 
 mod impersonate_imports {
     pub use super::ImpersonateSettings;
-    pub use crate::{
-        chrome_http2_template, chrome_tls_template, conditional_headers, edge_http2_template,
-        edge_tls_template, header_chrome_edge_accpet, header_chrome_edge_accpet_with_zstd,
-        header_chrome_edge_sec_ch_ua, header_chrome_edge_sec_fetch, header_chrome_edge_ua,
-        okhttp_http2_template, okhttp_tls_template, safari_http2_template, safari_tls_template,
-        static_join,
-    };
+    pub use crate::*;
     pub use http::{
         header::{
             ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, DNT, UPGRADE_INSECURE_REQUESTS, USER_AGENT,
@@ -34,8 +28,8 @@ mod impersonate_imports {
 }
 
 mod tls_imports {
-    pub use crate::static_join;
     pub use crate::tls::{cert_compression::CertCompressionAlgorithm, TlsSettings, TlsVersion};
+    pub use crate::*;
     pub use boring::ssl::SslCurve;
     pub use std::borrow::Cow;
     pub use typed_builder::TypedBuilder;
@@ -62,18 +56,6 @@ pub struct ImpersonateSettings {
     /// Http headers order
     #[builder(default, setter(strip_option))]
     pub(crate) headers_order: Option<Cow<'static, [HeaderName]>>,
-}
-
-macro_rules! impersonate_match {
-    ($ver:expr, $with_headers:expr, $($variant:pat => $path:path),+) => {
-        match $ver {
-            $(
-                $variant => {
-                    $path($with_headers)
-                },
-            )+
-        }
-    }
 }
 
 /// Get the connection settings for the given impersonate version
@@ -198,21 +180,6 @@ pub enum Impersonate {
     Edge101,
     Edge122,
     Edge127,
-}
-
-macro_rules! impl_from_str {
-    ($(($variant:ident, $string:expr)),* $(,)?) => {
-        impl FromStr for Impersonate {
-            type Err = String;
-
-            fn from_str(s: &str) -> Result<Self, Self::Err> {
-                match s {
-                    $( $string => Ok(Impersonate::$variant), )*
-                    _ => Err(format!("Unknown impersonate version: {}", s)),
-                }
-            }
-        }
-    };
 }
 
 impl_from_str! {

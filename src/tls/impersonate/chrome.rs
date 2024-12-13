@@ -1,7 +1,26 @@
 use super::impersonate_imports::*;
-use crate::{chrome_mod_generator, tls::Http2Settings};
+use crate::tls::Http2Settings;
 use http2::{HEADERS_PSEUDO_ORDER, HEADER_PRIORITY, SETTINGS_ORDER};
 use tls::*;
+
+macro_rules! chrome_mod_generator {
+    ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $sec_ch_ua:tt, $ua:tt) => {
+        pub(crate) mod $mod_name {
+            use crate::tls::chrome::*;
+
+            #[inline]
+            pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
+                ImpersonateSettings::builder()
+                    .tls($tls_template)
+                    .http2($http2_template)
+                    .headers(conditional_headers!(with_headers, || {
+                        $header_initializer($sec_ch_ua, $ua)
+                    }))
+                    .build()
+            }
+        }
+    };
+}
 
 // ============== Header initializer ==============
 #[inline]

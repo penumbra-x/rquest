@@ -80,81 +80,28 @@ macro_rules! static_join {
     };
 }
 
-#[macro_export]
-macro_rules! chrome_mod_generator {
-    ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $sec_ch_ua:tt, $ua:tt) => {
-        pub(crate) mod $mod_name {
-            use crate::tls::chrome::*;
-
-            #[inline]
-            pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-                ImpersonateSettings::builder()
-                    .tls($tls_template)
-                    .http2($http2_template)
-                    .headers(conditional_headers!(with_headers, || {
-                        $header_initializer($sec_ch_ua, $ua)
-                    }))
-                    .build()
-            }
+macro_rules! impersonate_match {
+    ($ver:expr, $with_headers:expr, $($variant:pat => $path:path),+) => {
+        match $ver {
+            $(
+                $variant => {
+                    $path($with_headers)
+                },
+            )+
         }
-    };
+    }
 }
 
-#[macro_export]
-macro_rules! edge_mod_generator {
-    ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $sec_ch_ua:tt, $ua:tt) => {
-        pub(crate) mod $mod_name {
-            use crate::tls::edge::*;
+macro_rules! impl_from_str {
+    ($(($variant:ident, $string:expr)),* $(,)?) => {
+        impl FromStr for Impersonate {
+            type Err = String;
 
-            #[inline]
-            pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-                ImpersonateSettings::builder()
-                    .tls($tls_template)
-                    .http2($http2_template)
-                    .headers(conditional_headers!(with_headers, || {
-                        $header_initializer($sec_ch_ua, $ua)
-                    }))
-                    .build()
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! okhttp_mod_generator {
-    ($mod_name:ident, $cipher_list:expr, $header_initializer:ident, $ua:expr) => {
-        pub(crate) mod $mod_name {
-            use crate::tls::{impersonate::impersonate_imports::*, okhttp::*};
-
-            #[inline]
-            pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-                ImpersonateSettings::builder()
-                    .tls(okhttp_tls_template!($cipher_list))
-                    .http2(okhttp_http2_template!())
-                    .headers(conditional_headers!(with_headers, $header_initializer, $ua))
-                    .build()
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! safari_mod_generator {
-    ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $user_agent:expr) => {
-        pub(crate) mod $mod_name {
-            use $crate::tls::{impersonate::impersonate_imports::*, safari::*};
-
-            #[inline]
-            pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-                ImpersonateSettings::builder()
-                    .tls($tls_template)
-                    .http2($http2_template)
-                    .headers(conditional_headers!(
-                        with_headers,
-                        $header_initializer,
-                        $user_agent
-                    ))
-                    .build()
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                match s {
+                    $( $string => Ok(Impersonate::$variant), )*
+                    _ => Err(format!("Unknown impersonate version: {}", s)),
+                }
             }
         }
     };

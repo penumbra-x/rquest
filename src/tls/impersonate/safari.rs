@@ -1,4 +1,4 @@
-use crate::{safari_mod_generator, tls::Http2Settings};
+use crate::tls::Http2Settings;
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
     HeaderMap, HeaderValue,
@@ -8,6 +8,27 @@ use http2::{
     NEW_SETTINGS_ORDER, SETTINGS_ORDER,
 };
 use tls::*;
+
+macro_rules! safari_mod_generator {
+    ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $user_agent:expr) => {
+        pub(crate) mod $mod_name {
+            use $crate::tls::{impersonate::impersonate_imports::*, safari::*};
+
+            #[inline]
+            pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
+                ImpersonateSettings::builder()
+                    .tls($tls_template)
+                    .http2($http2_template)
+                    .headers(conditional_headers!(
+                        with_headers,
+                        $header_initializer,
+                        $user_agent
+                    ))
+                    .build()
+            }
+        }
+    };
+}
 
 // ============== Headers ==============
 #[inline]

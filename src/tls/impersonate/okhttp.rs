@@ -1,10 +1,27 @@
-use crate::{okhttp_mod_generator, tls::Http2Settings};
+use crate::tls::Http2Settings;
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
     HeaderMap, HeaderValue,
 };
 use http2::{HEADERS_PSEUDO_ORDER, HEADER_PRIORITY, SETTINGS_ORDER};
 use tls::*;
+
+macro_rules! okhttp_mod_generator {
+    ($mod_name:ident, $cipher_list:expr, $header_initializer:ident, $ua:expr) => {
+        pub(crate) mod $mod_name {
+            use crate::tls::{impersonate::impersonate_imports::*, okhttp::*};
+
+            #[inline]
+            pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
+                ImpersonateSettings::builder()
+                    .tls(okhttp_tls_template!($cipher_list))
+                    .http2(okhttp_http2_template!())
+                    .headers(conditional_headers!(with_headers, $header_initializer, $ua))
+                    .build()
+            }
+        }
+    };
+}
 
 // ============== Headers ==============
 #[inline]
