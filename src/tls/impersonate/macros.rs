@@ -23,7 +23,7 @@ macro_rules! conditional_headers {
 }
 
 #[macro_export]
-macro_rules! header_macos_chrome_edge_sec_ch_ua {
+macro_rules! header_chrome_edge_sec_ch_ua {
     ($headers:expr, $ua:expr) => {
         $headers.insert("sec-ch-ua", HeaderValue::from_static($ua));
         $headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
@@ -32,31 +32,9 @@ macro_rules! header_macos_chrome_edge_sec_ch_ua {
 }
 
 #[macro_export]
-macro_rules! header_windows_chrome_edge_sec_ch_ua {
-    ($headers:expr, $ua:expr) => {
-        $headers.insert("sec-ch-ua", HeaderValue::from_static($ua));
-        $headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        $headers.insert(
-            "sec-ch-ua-platform",
-            HeaderValue::from_static("\"Windows\""),
-        );
-    };
-}
-
-#[macro_export]
 macro_rules! header_chrome_edge_sec_fetch {
     ($headers:expr) => {
         $headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        $headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        $headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-        $headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-    };
-}
-
-#[macro_export]
-macro_rules! header_chrome_edge_sec_fetch1 {
-    ($headers:expr) => {
-        $headers.insert("sec-fetch-site", HeaderValue::from_static("cross-site"));
         $headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
         $headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
         $headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
@@ -99,5 +77,85 @@ macro_rules! header_chrome_edge_accpet_with_zstd {
 macro_rules! static_join {
     ($sep:expr, $first:expr $(, $rest:expr)*) => {
         concat!($first $(, $sep, $rest)*)
+    };
+}
+
+#[macro_export]
+macro_rules! chrome_mod_generator {
+    ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $sec_ch_ua:tt, $ua:tt) => {
+        pub(crate) mod $mod_name {
+            use crate::tls::chrome::*;
+
+            #[inline]
+            pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
+                ImpersonateSettings::builder()
+                    .tls($tls_template)
+                    .http2($http2_template)
+                    .headers(conditional_headers!(with_headers, || {
+                        $header_initializer($sec_ch_ua, $ua)
+                    }))
+                    .build()
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! edge_mod_generator {
+    ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $sec_ch_ua:tt, $ua:tt) => {
+        pub(crate) mod $mod_name {
+            use crate::tls::edge::*;
+
+            #[inline]
+            pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
+                ImpersonateSettings::builder()
+                    .tls($tls_template)
+                    .http2($http2_template)
+                    .headers(conditional_headers!(with_headers, || {
+                        $header_initializer($sec_ch_ua, $ua)
+                    }))
+                    .build()
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! okhttp_mod_generator {
+    ($mod_name:ident, $cipher_list:expr, $header_initializer:ident, $ua:expr) => {
+        pub(crate) mod $mod_name {
+            use crate::tls::{impersonate::impersonate_imports::*, okhttp::*};
+
+            #[inline]
+            pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
+                ImpersonateSettings::builder()
+                    .tls(okhttp_tls_template!($cipher_list))
+                    .http2(okhttp_http2_template!())
+                    .headers(conditional_headers!(with_headers, $header_initializer, $ua))
+                    .build()
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! safari_mod_generator {
+    ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $user_agent:expr) => {
+        pub(crate) mod $mod_name {
+            use $crate::tls::{impersonate::impersonate_imports::*, safari::*};
+
+            #[inline]
+            pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
+                ImpersonateSettings::builder()
+                    .tls($tls_template)
+                    .http2($http2_template)
+                    .headers(conditional_headers!(
+                        with_headers,
+                        $header_initializer,
+                        $user_agent
+                    ))
+                    .build()
+            }
+        }
     };
 }

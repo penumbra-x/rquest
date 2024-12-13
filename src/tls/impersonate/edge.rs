@@ -1,6 +1,29 @@
-use crate::tls::Http2Settings;
+use super::impersonate_imports::*;
+use crate::{edge_mod_generator, tls::Http2Settings};
 use http2::{HEADERS_PSEUDO_ORDER, HEADER_PRIORITY, SETTINGS_ORDER};
-use tls::EdgeTlsSettings;
+use tls::*;
+
+// ============== Header initializer ==============
+#[inline]
+fn header_initializer(sec_ch_ua: &'static str, ua: &'static str) -> HeaderMap {
+    let mut headers = HeaderMap::new();
+    header_chrome_edge_sec_ch_ua!(headers, sec_ch_ua);
+    header_chrome_edge_ua!(headers, ua);
+    header_chrome_edge_sec_fetch!(headers);
+    header_chrome_edge_accpet!(headers);
+    headers
+}
+
+#[inline]
+fn header_initializer_with_zstd_priority(sec_ch_ua: &'static str, ua: &'static str) -> HeaderMap {
+    let mut headers = HeaderMap::new();
+    header_chrome_edge_sec_ch_ua!(headers, sec_ch_ua);
+    header_chrome_edge_ua!(headers, ua);
+    header_chrome_edge_sec_fetch!(headers);
+    header_chrome_edge_accpet_with_zstd!(headers);
+    headers.insert("priority", HeaderValue::from_static("u=0, i"));
+    headers
+}
 
 // ============== TLS settings ==============
 mod tls {
@@ -77,21 +100,21 @@ mod tls {
         pre_shared_key: bool,
     }
 
-    impl Into<TlsSettings> for EdgeTlsSettings {
-        fn into(self) -> TlsSettings {
+    impl From<EdgeTlsSettings> for TlsSettings {
+        fn from(val: EdgeTlsSettings) -> Self {
             TlsSettings::builder()
                 .grease_enabled(true)
                 .enable_ocsp_stapling(true)
                 .enable_signed_cert_timestamps(true)
-                .curves(Cow::Borrowed(self.curves))
-                .sigalgs_list(Cow::Borrowed(self.sigalgs_list))
-                .cipher_list(Cow::Borrowed(self.cipher_list))
+                .curves(Cow::Borrowed(val.curves))
+                .sigalgs_list(Cow::Borrowed(val.sigalgs_list))
+                .cipher_list(Cow::Borrowed(val.cipher_list))
                 .min_tls_version(TlsVersion::TLS_1_2)
                 .max_tls_version(TlsVersion::TLS_1_3)
-                .permute_extensions(self.permute_extensions)
-                .pre_shared_key(self.pre_shared_key)
-                .enable_ech_grease(self.enable_ech_grease)
-                .application_settings(self.application_settings)
+                .permute_extensions(val.permute_extensions)
+                .pre_shared_key(val.pre_shared_key)
+                .enable_ech_grease(val.enable_ech_grease)
+                .application_settings(val.application_settings)
                 .cert_compression_algorithm(CertCompressionAlgorithm::Brotli)
                 .build()
         }
@@ -173,82 +196,29 @@ mod http2 {
     }
 }
 
-pub(crate) mod edge101 {
-    use crate::tls::impersonate::impersonate_imports::*;
+edge_mod_generator!(
+    edge101,
+    edge_tls_template!(1),
+    edge_http2_template!(1),
+    header_initializer,
+    r#""Not A;Brand";v="99", "Chromium";v="101", "Microsoft Edge";v="101""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.64 Safari/537.36 Edg/101.0.1210.47"
+);
 
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(edge_tls_template!(1))
-            .http2(edge_http2_template!(1))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
+edge_mod_generator!(
+    edge122,
+    edge_tls_template!(2),
+    edge_http2_template!(2),
+    header_initializer,
+    "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Microsoft Edge\";v=\"122\"",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0"
+);
 
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_windows_chrome_edge_sec_ch_ua!(
-            headers,
-            r#""Not A;Brand";v="99", "Chromium";v="101", "Microsoft Edge";v="101""#
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.64 Safari/537.36 Edg/101.0.1210.47");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod edge122 {
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(edge_tls_template!(2))
-            .http2(edge_http2_template!(2))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_macos_chrome_edge_sec_ch_ua!(
-            headers,
-            "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Microsoft Edge\";v=\"122\""
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod edge127 {
-    use super::tls::NEW_CURVES;
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(edge_tls_template!(3, NEW_CURVES))
-            .http2(edge_http2_template!(2))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_macos_chrome_edge_sec_ch_ua!(
-            headers,
-            "\"Not)A;Brand\";v=\"99\", \"Microsoft Edge\";v=\"127\", \"Chromium\";v=\"127\""
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet_with_zstd!(headers);
-        headers.insert("priority", HeaderValue::from_static("u=0, i"));
-        headers
-    }
-}
+edge_mod_generator!(
+    edge127,
+    edge_tls_template!(3, NEW_CURVES),
+    edge_http2_template!(2),
+    header_initializer_with_zstd_priority,
+    "\"Not)A;Brand\";v=\"99\", \"Microsoft Edge\";v=\"127\", \"Chromium\";v=\"127\"",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0"
+);

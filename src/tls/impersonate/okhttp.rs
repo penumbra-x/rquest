@@ -1,9 +1,10 @@
-use crate::tls::Http2Settings;
+use crate::{okhttp_mod_generator, tls::Http2Settings};
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
     HeaderMap, HeaderValue,
 };
 use http2::{HEADERS_PSEUDO_ORDER, HEADER_PRIORITY, SETTINGS_ORDER};
+use tls::*;
 
 // ============== Headers ==============
 #[inline]
@@ -72,13 +73,13 @@ mod tls {
         cipher_list: &'static str,
     }
 
-    impl Into<TlsSettings> for OkHttpTlsSettings {
-        fn into(self) -> TlsSettings {
+    impl From<OkHttpTlsSettings> for TlsSettings {
+        fn from(val: OkHttpTlsSettings) -> Self {
             TlsSettings::builder()
                 .enable_ocsp_stapling(true)
-                .curves(Cow::Borrowed(self.curves))
-                .sigalgs_list(Cow::Borrowed(self.sigalgs_list))
-                .cipher_list(Cow::Borrowed(self.cipher_list))
+                .curves(Cow::Borrowed(val.curves))
+                .sigalgs_list(Cow::Borrowed(val.sigalgs_list))
+                .cipher_list(Cow::Borrowed(val.cipher_list))
                 .min_tls_version(TlsVersion::TLS_1_2)
                 .max_tls_version(TlsVersion::TLS_1_3)
                 .build()
@@ -135,177 +136,120 @@ mod http2 {
     }
 }
 
-pub(crate) mod okhttp3_11 {
-    use super::tls::OkHttpTlsSettings;
-    use crate::tls::{impersonate::impersonate_imports::*, okhttp::header_initializer};
+okhttp_mod_generator!(
+    okhttp3_11,
+    static_join!(
+        ":",
+        "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
+    ),
+    header_initializer,
+    "NRC Audio/2.0.6 (nl.nrc.audio; build:36; Android 12; Sdk:31; Manufacturer:motorola; Model: moto g72) OkHttp/3.11.0"
+);
 
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        let tls = okhttp_tls_template!(static_join!(
-            ":",
-            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-            "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-            "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-            "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
-            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
-            "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
-            "TLS_RSA_WITH_AES_128_GCM_SHA256",
-            "TLS_RSA_WITH_AES_256_GCM_SHA384",
-            "TLS_RSA_WITH_AES_128_CBC_SHA",
-            "TLS_RSA_WITH_AES_256_CBC_SHA",
-            "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
-        ));
+okhttp_mod_generator!(
+    okhttp3_13,
+    static_join!(
+        ":",
+        "TLS_AES_128_GCM_SHA256",
+        "TLS_AES_256_GCM_SHA384",
+        "TLS_CHACHA20_POLY1305_SHA256",
+        "TLS_AES_128_CCM_SHA256",
+        "TLS_AES_256_CCM_8_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
+    ),
+    header_initializer,
+    "GM-Android/6.112.2 (240590300; M:Google Pixel 7a; O:34; D:2b045e03986fa6dc) ObsoleteUrlFactory/1.0 OkHttp/3.13.0"
+);
 
-        ImpersonateSettings::builder()
-            .tls(tls)
-            .http2(okhttp_http2_template!())
-            .headers(conditional_headers!(with_headers, header_initializer, "NRC Audio/2.0.6 (nl.nrc.audio; build:36; Android 12; Sdk:31; Manufacturer:motorola; Model: moto g72) OkHttp/3.11.0"))
-            .build()
-    }
-}
+okhttp_mod_generator!(
+    okhttp3_14,
+    CIPHER_LIST,
+    header_initializer,
+    "DS podcast/2.0.1 (be.standaard.audio; build:9; Android 11; Sdk:30; Manufacturer:samsung; Model: SM-A405FN) OkHttp/3.14.0"
+);
 
-pub(crate) mod okhttp3_13 {
-    use super::tls::OkHttpTlsSettings;
-    use crate::tls::{impersonate::impersonate_imports::*, okhttp::header_initializer};
+okhttp_mod_generator!(
+    okhttp3_9,
+    static_join!(
+        ":",
+        "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+        "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+        "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
+    ),
+    header_initializer,
+    "MaiMemo/4.4.50_639 okhttp/3.9 Android/5.0 Channel/WanDouJia Device/alps+M8+Emulator (armeabi-v7a) Screen/4.44 Resolution/480x800 DId/aa6cde19def3806806d5374c4e5fd617 RAM/0.94 ROM/4.91 Theme/Day"
+);
 
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        let tls = okhttp_tls_template!(static_join!(
-            ":",
-            "TLS_AES_128_GCM_SHA256",
-            "TLS_AES_256_GCM_SHA384",
-            "TLS_CHACHA20_POLY1305_SHA256",
-            "TLS_AES_128_CCM_SHA256",
-            "TLS_AES_256_CCM_8_SHA256",
-            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-            "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-            "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-            "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
-            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
-            "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
-            "TLS_RSA_WITH_AES_128_GCM_SHA256",
-            "TLS_RSA_WITH_AES_256_GCM_SHA384",
-            "TLS_RSA_WITH_AES_128_CBC_SHA",
-            "TLS_RSA_WITH_AES_256_CBC_SHA",
-            "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
-        ));
+okhttp_mod_generator!(
+    okhttp4_10,
+    CIPHER_LIST,
+    header_initializer,
+    "GM-Android/6.112.2 (240590300; M:samsung SM-G781U1; O:33; D:edb34792871638d8) ObsoleteUrlFactory/1.0 OkHttp/4.10.0"
+);
 
-        ImpersonateSettings::builder()
-            .tls(tls)
-            .http2(okhttp_http2_template!())
-            .headers(conditional_headers!(with_headers, header_initializer, "GM-Android/6.112.2 (240590300; M:Google Pixel 7a; O:34; D:2b045e03986fa6dc) ObsoleteUrlFactory/1.0 OkHttp/3.13.0"))
-            .build()
-    }
-}
+okhttp_mod_generator!(
+    okhttp4_9,
+    static_join!(
+        ":",
+        "TLS_AES_128_GCM_SHA256",
+        "TLS_AES_256_GCM_SHA384",
+        "TLS_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_RSA_WITH_AES_256_CBC_SHA"
+    ),
+    header_initializer,
+    "GM-Android/6.111.1 (240460200; M:motorola moto g power (2021); O:30; D:76ba9f6628d198c8) ObsoleteUrlFactory/1.0 OkHttp/4.9"
+);
 
-pub(crate) mod okhttp3_14 {
-    use super::tls::{OkHttpTlsSettings, CIPHER_LIST};
-    use crate::tls::{impersonate::impersonate_imports::*, okhttp::header_initializer};
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(okhttp_tls_template!(CIPHER_LIST))
-            .http2(okhttp_http2_template!())
-            .headers(conditional_headers!(with_headers, header_initializer, "DS podcast/2.0.1 (be.standaard.audio; build:9; Android 11; Sdk:30; Manufacturer:samsung; Model: SM-A405FN) OkHttp/3.14.0"))
-            .build()
-    }
-}
-
-pub(crate) mod okhttp3_9 {
-    use super::tls::OkHttpTlsSettings;
-    use crate::tls::{impersonate::impersonate_imports::*, okhttp::header_initializer};
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        let tls = okhttp_tls_template!(static_join!(
-            ":",
-            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-            "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-            "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-            "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
-            "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
-            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
-            "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
-            "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
-            "TLS_RSA_WITH_AES_128_GCM_SHA256",
-            "TLS_RSA_WITH_AES_256_GCM_SHA384",
-            "TLS_RSA_WITH_AES_128_CBC_SHA",
-            "TLS_RSA_WITH_AES_256_CBC_SHA",
-            "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
-        ));
-
-        ImpersonateSettings::builder()
-            .tls(tls)
-            .http2(okhttp_http2_template!())
-            .headers(conditional_headers!(with_headers, header_initializer, "MaiMemo/4.4.50_639 okhttp/3.9 Android/5.0 Channel/WanDouJia Device/alps+M8+Emulator (armeabi-v7a) Screen/4.44 Resolution/480x800 DId/aa6cde19def3806806d5374c4e5fd617 RAM/0.94 ROM/4.91 Theme/Day"))
-            .build()
-    }
-}
-
-pub(crate) mod okhttp4_10 {
-    use super::tls::{OkHttpTlsSettings, CIPHER_LIST};
-    use crate::tls::{impersonate::impersonate_imports::*, okhttp::header_initializer};
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(okhttp_tls_template!(CIPHER_LIST))
-            .http2(okhttp_http2_template!())
-            .headers(conditional_headers!(with_headers, header_initializer, "GM-Android/6.112.2 (240590300; M:samsung SM-G781U1; O:33; D:edb34792871638d8) ObsoleteUrlFactory/1.0 OkHttp/4.10.0"))
-            .build()
-    }
-}
-
-pub(crate) mod okhttp4_9 {
-    use super::tls::OkHttpTlsSettings;
-    use crate::tls::{impersonate::impersonate_imports::*, okhttp::header_initializer};
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        let tls = okhttp_tls_template!(static_join!(
-            ":",
-            "TLS_AES_128_GCM_SHA256",
-            "TLS_AES_256_GCM_SHA384",
-            "TLS_CHACHA20_POLY1305_SHA256",
-            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-            "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-            "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-            "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
-            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
-            "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
-            "TLS_RSA_WITH_AES_128_GCM_SHA256",
-            "TLS_RSA_WITH_AES_256_GCM_SHA384",
-            "TLS_RSA_WITH_AES_128_CBC_SHA",
-            "TLS_RSA_WITH_AES_256_CBC_SHA"
-        ));
-
-        ImpersonateSettings::builder()
-            .tls(tls)
-            .http2(okhttp_http2_template!())
-            .headers(conditional_headers!(with_headers, header_initializer, "GM-Android/6.111.1 (240460200; M:motorola moto g power (2021); O:30; D:76ba9f6628d198c8) ObsoleteUrlFactory/1.0 OkHttp/4.9"))
-            .build()
-    }
-}
-
-pub(crate) mod okhttp5 {
-    use super::tls::{OkHttpTlsSettings, CIPHER_LIST};
-    use crate::tls::{impersonate::impersonate_imports::*, okhttp::header_initializer};
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(okhttp_tls_template!(CIPHER_LIST))
-            .http2(okhttp_http2_template!())
-            .headers(conditional_headers!(with_headers, header_initializer, "NRC Audio/2.0.6 (nl.nrc.audio; build:36; Android 14; Sdk:34; Manufacturer:OnePlus; Model: CPH2609) OkHttp/5.0.0-alpha2"))
-            .build()
-    }
-}
+okhttp_mod_generator!(
+    okhttp5,
+    CIPHER_LIST,
+    header_initializer,
+    "NRC Audio/2.0.6 (nl.nrc.audio; build:36; Android 14; Sdk:34; Manufacturer:OnePlus; Model: CPH2609) OkHttp/5.0.0-alpha2"
+);

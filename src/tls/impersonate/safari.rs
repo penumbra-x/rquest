@@ -1,4 +1,4 @@
-use crate::tls::Http2Settings;
+use crate::{safari_mod_generator, tls::Http2Settings};
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, USER_AGENT},
     HeaderMap, HeaderValue,
@@ -7,7 +7,8 @@ use http2::{
     HEADERS_PSEUDO_ORDER, HEADER_PRIORITY, NEW_HEADERS_PSEUDO_ORDER, NEW_HEADER_PRIORITY,
     NEW_SETTINGS_ORDER, SETTINGS_ORDER,
 };
-use tls::SafariTlsSettings;
+use tls::*;
+
 // ============== Headers ==============
 #[inline]
 fn header_initializer_for_16_17(ua: &'static str) -> HeaderMap {
@@ -172,16 +173,16 @@ mod tls {
         cipher_list: &'static str,
     }
 
-    impl Into<TlsSettings> for SafariTlsSettings {
-        fn into(self) -> TlsSettings {
+    impl From<SafariTlsSettings> for TlsSettings {
+        fn from(val: SafariTlsSettings) -> Self {
             TlsSettings::builder()
                 .session_ticket(false)
                 .grease_enabled(true)
                 .enable_ocsp_stapling(true)
                 .enable_signed_cert_timestamps(true)
-                .curves(Cow::Borrowed(self.curves))
-                .sigalgs_list(Cow::Borrowed(self.sigalgs_list))
-                .cipher_list(Cow::Borrowed(self.cipher_list))
+                .curves(Cow::Borrowed(val.curves))
+                .sigalgs_list(Cow::Borrowed(val.sigalgs_list))
+                .cipher_list(Cow::Borrowed(val.cipher_list))
                 .min_tls_version(TlsVersion::TLS_1_0)
                 .cert_compression_algorithm(CertCompressionAlgorithm::Zlib)
                 .build()
@@ -300,226 +301,130 @@ mod http2 {
     }
 }
 
-pub(crate) mod safari15_3 {
-    use super::tls::CIPHER_LIST;
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_15};
+safari_mod_generator!(
+    safari15_3,
+    safari_tls_template!(1, CIPHER_LIST),
+    safari_http2_template!(4),
+    header_initializer_for_15,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Safari/605.1.15"
+);
 
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(1, CIPHER_LIST))
-            .http2(safari_http2_template!(4))
-            .headers(conditional_headers!(with_headers, header_initializer_for_15, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Safari/605.1.15"))
-            .build()
-    }
-}
+safari_mod_generator!(
+    safari15_5,
+    safari_tls_template!(1, CIPHER_LIST),
+    safari_http2_template!(4),
+    header_initializer_for_15,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Safari/605.1.15"
+);
 
-pub(crate) mod safari15_5 {
-    use super::tls::CIPHER_LIST;
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_15};
+safari_mod_generator!(
+    safari15_6_1,
+    safari_tls_template!(1, NEW_CIPHER_LIST),
+    safari_http2_template!(4),
+    header_initializer_for_15,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6.1 Safari/605.1.15"
+);
 
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(1, CIPHER_LIST))
-            .http2(safari_http2_template!(4))
-            .headers(conditional_headers!(with_headers, header_initializer_for_15, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Safari/605.1.15"))
-            .build()
-    }
-}
+safari_mod_generator!(
+    safari16,
+    safari_tls_template!(1, NEW_CIPHER_LIST),
+    safari_http2_template!(4),
+    header_initializer_for_16_17,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"
+);
 
-pub(crate) mod safari15_6_1 {
-    use super::tls::NEW_CIPHER_LIST;
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_15};
+safari_mod_generator!(
+    safari16_5,
+    safari_tls_template!(1, NEW_CIPHER_LIST),
+    safari_http2_template!(4),
+    header_initializer_for_16_17,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15"
+);
 
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(1, NEW_CIPHER_LIST))
-            .http2(safari_http2_template!(4))
-            .headers(conditional_headers!(with_headers, header_initializer_for_15, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6.1 Safari/605.1.15"))
-            .build()
-    }
-}
+safari_mod_generator!(
+    safari_ios_16_5,
+    safari_tls_template!(1, NEW_CIPHER_LIST),
+    safari_http2_template!(1),
+    header_initializer_for_16_17,
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1"
+);
 
-pub(crate) mod safari16 {
-    use super::tls::NEW_CIPHER_LIST;
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_16_17};
+safari_mod_generator!(
+    safari17_0,
+    safari_tls_template!(1, NEW_CIPHER_LIST),
+    safari_http2_template!(5),
+    header_initializer_for_16_17,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
+);
 
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(1, NEW_CIPHER_LIST))
-            .http2(safari_http2_template!(4))
-            .headers(conditional_headers!(with_headers, header_initializer_for_16_17, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"))
-            .build()
-    }
-}
+safari_mod_generator!(
+    safari17_2_1,
+    safari_tls_template!(1, NEW_CIPHER_LIST),
+    safari_http2_template!(5),
+    header_initializer_for_16_17,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"
+);
 
-pub(crate) mod safari16_5 {
-    use super::tls::NEW_CIPHER_LIST;
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_16_17};
+safari_mod_generator!(
+    safari17_4_1,
+    safari_tls_template!(1, NEW_CIPHER_LIST),
+    safari_http2_template!(4),
+    header_initializer_for_16_17,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15"
+);
 
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(1, NEW_CIPHER_LIST))
-            .http2(safari_http2_template!(4))
-            .headers(conditional_headers!(with_headers, header_initializer_for_16_17, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15"))
-            .build()
-    }
-}
+safari_mod_generator!(
+    safari17_5,
+    safari_tls_template!(1, NEW_CIPHER_LIST),
+    safari_http2_template!(5),
+    header_initializer_for_16_17,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15"
+);
 
-pub(crate) mod safari17_0 {
-    use super::tls::NEW_CIPHER_LIST;
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_16_17};
+safari_mod_generator!(
+    safari_ios_17_2,
+    safari_tls_template!(1, NEW_CIPHER_LIST),
+    safari_http2_template!(2),
+    header_initializer_for_16_17,
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1"
+);
 
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(1, NEW_CIPHER_LIST))
-            .http2(safari_http2_template!(5))
-            .headers(conditional_headers!(with_headers, header_initializer_for_16_17, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"))
-            .build()
-    }
-}
+safari_mod_generator!(
+    safari_ios_17_4_1,
+    safari_tls_template!(1, NEW_CIPHER_LIST),
+    safari_http2_template!(2),
+    header_initializer_for_16_17,
+    "Mozilla/5.0 (iPad; CPU OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1"
+);
 
-pub(crate) mod safari17_2_1 {
-    use super::tls::NEW_CIPHER_LIST;
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_16_17};
+safari_mod_generator!(
+    safari_ipad_18,
+    safari_tls_template!(1, NEW_CIPHER_LIST),
+    safari_http2_template!(3),
+    header_initializer_for_18,
+    "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+);
 
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(1, NEW_CIPHER_LIST))
-            .http2(safari_http2_template!(5))
-            .headers(conditional_headers!(with_headers, header_initializer_for_16_17, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"))
-            .build()
-    }
-}
+safari_mod_generator!(
+    safari18,
+    safari_tls_template!(1, NEW_CIPHER_LIST),
+    safari_http2_template!(3),
+    header_initializer_for_18,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"
+);
 
-pub(crate) mod safari17_4_1 {
-    use super::tls::NEW_CIPHER_LIST;
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_16_17};
+safari_mod_generator!(
+    safari_ios_18_1_1,
+    safari_tls_template!(1, NEW_CIPHER_LIST),
+    safari_http2_template!(3),
+    header_initializer_for_18,
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Mobile/15E148 Safari/604.1"
+);
 
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(1, NEW_CIPHER_LIST))
-            .http2(safari_http2_template!(4))
-            .headers(conditional_headers!(with_headers, header_initializer_for_16_17, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15"))
-            .build()
-    }
-}
-
-pub(crate) mod safari17_5 {
-    use super::tls::NEW_CIPHER_LIST;
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_16_17};
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(1, NEW_CIPHER_LIST))
-            .http2(safari_http2_template!(5))
-            .headers(conditional_headers!(with_headers, header_initializer_for_16_17, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15"))
-            .build()
-    }
-}
-
-pub(crate) mod safari18 {
-    use super::tls::NEW_CIPHER_LIST;
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_18};
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(1, NEW_CIPHER_LIST))
-            .http2(safari_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer_for_18, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"))
-            .build()
-    }
-}
-
-pub(crate) mod safari18_2 {
-    use super::tls::{NEW_CIPHER_LIST, NEW_SIGALGS_LIST};
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_18};
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(2, NEW_CIPHER_LIST, NEW_SIGALGS_LIST))
-            .http2(safari_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer_for_18, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15"))
-            .build()
-    }
-}
-
-pub(crate) mod safari_ios_16_5 {
-    use super::tls::NEW_CIPHER_LIST;
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_16_17};
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(1, NEW_CIPHER_LIST))
-            .http2(safari_http2_template!(1))
-            .headers(conditional_headers!(with_headers, header_initializer_for_16_17, "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1"))
-            .build()
-    }
-}
-
-pub(crate) mod safari_ios_17_2 {
-    use super::tls::NEW_CIPHER_LIST;
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_16_17};
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(1, NEW_CIPHER_LIST))
-            .http2(safari_http2_template!(2))
-            .headers(conditional_headers!(with_headers, header_initializer_for_16_17, "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1"))
-            .build()
-    }
-}
-
-pub(crate) mod safari_ios_17_4_1 {
-    use super::tls::NEW_CIPHER_LIST;
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_16_17};
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(1, NEW_CIPHER_LIST))
-            .http2(safari_http2_template!(2))
-            .headers(conditional_headers!(with_headers, header_initializer_for_16_17, "Mozilla/5.0 (iPad; CPU OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1"))
-            .build()
-    }
-}
-
-pub(crate) mod safari_ipad_18 {
-    use super::tls::NEW_CIPHER_LIST;
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_18};
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(1, NEW_CIPHER_LIST))
-            .http2(safari_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer_for_18, "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"))
-            .build()
-    }
-}
-
-pub(crate) mod safari_ios_18_1_1 {
-    use super::tls::NEW_CIPHER_LIST;
-    use crate::tls::{impersonate::impersonate_imports::*, safari::header_initializer_for_18};
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(safari_tls_template!(1, NEW_CIPHER_LIST))
-            .http2(safari_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer_for_18, "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Mobile/15E148 Safari/604.1"))
-            .build()
-    }
-}
+safari_mod_generator!(
+    safari18_2,
+    safari_tls_template!(2, NEW_CIPHER_LIST, NEW_SIGALGS_LIST),
+    safari_http2_template!(3),
+    header_initializer_for_18,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15"
+);

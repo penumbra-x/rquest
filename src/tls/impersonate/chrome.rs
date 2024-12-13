@@ -1,6 +1,39 @@
-use crate::tls::Http2Settings;
+use super::impersonate_imports::*;
+use crate::{chrome_mod_generator, tls::Http2Settings};
 use http2::{HEADERS_PSEUDO_ORDER, HEADER_PRIORITY, SETTINGS_ORDER};
-use tls::ChromeTlsSettings;
+use tls::*;
+
+// ============== Header initializer ==============
+#[inline]
+fn header_initializer(sec_ch_ua: &'static str, ua: &'static str) -> HeaderMap {
+    let mut headers = HeaderMap::new();
+    header_chrome_edge_sec_ch_ua!(headers, sec_ch_ua);
+    header_chrome_edge_ua!(headers, ua);
+    header_chrome_edge_sec_fetch!(headers);
+    header_chrome_edge_accpet!(headers);
+    headers
+}
+
+#[inline]
+fn header_initializer_with_zstd(sec_ch_ua: &'static str, ua: &'static str) -> HeaderMap {
+    let mut headers = HeaderMap::new();
+    header_chrome_edge_sec_ch_ua!(headers, sec_ch_ua);
+    header_chrome_edge_ua!(headers, ua);
+    header_chrome_edge_sec_fetch!(headers);
+    header_chrome_edge_accpet_with_zstd!(headers);
+    headers
+}
+
+#[inline]
+fn header_initializer_with_zstd_priority(sec_ch_ua: &'static str, ua: &'static str) -> HeaderMap {
+    let mut headers = HeaderMap::new();
+    header_chrome_edge_sec_ch_ua!(headers, sec_ch_ua);
+    header_chrome_edge_ua!(headers, ua);
+    header_chrome_edge_sec_fetch!(headers);
+    header_chrome_edge_accpet_with_zstd!(headers);
+    headers.insert("priority", HeaderValue::from_static("u=0, i"));
+    headers
+}
 
 // ============== TLS settings ==============
 mod tls {
@@ -84,21 +117,21 @@ mod tls {
         pre_shared_key: bool,
     }
 
-    impl Into<TlsSettings> for ChromeTlsSettings {
-        fn into(self) -> TlsSettings {
+    impl From<ChromeTlsSettings> for TlsSettings {
+        fn from(val: ChromeTlsSettings) -> Self {
             TlsSettings::builder()
                 .grease_enabled(true)
                 .enable_ocsp_stapling(true)
                 .enable_signed_cert_timestamps(true)
-                .curves(Cow::Borrowed(self.curves))
-                .sigalgs_list(Cow::Borrowed(self.sigalgs_list))
-                .cipher_list(Cow::Borrowed(self.cipher_list))
+                .curves(Cow::Borrowed(val.curves))
+                .sigalgs_list(Cow::Borrowed(val.sigalgs_list))
+                .cipher_list(Cow::Borrowed(val.cipher_list))
                 .min_tls_version(TlsVersion::TLS_1_2)
                 .max_tls_version(TlsVersion::TLS_1_3)
-                .permute_extensions(self.permute_extensions)
-                .pre_shared_key(self.pre_shared_key)
-                .enable_ech_grease(self.enable_ech_grease)
-                .application_settings(self.application_settings)
+                .permute_extensions(val.permute_extensions)
+                .pre_shared_key(val.pre_shared_key)
+                .enable_ech_grease(val.enable_ech_grease)
+                .application_settings(val.application_settings)
                 .cert_compression_algorithm(CertCompressionAlgorithm::Brotli)
                 .build()
         }
@@ -212,583 +245,200 @@ mod http2 {
     }
 }
 
-pub(crate) mod v100 {
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(1))
-            .http2(chrome_http2_template!(1))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_windows_chrome_edge_sec_ch_ua!(
-            headers,
-            r#""Not A;Brand";v="99", "Chromium";v="100", "Google Chrome";v="100""#
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v101 {
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(1))
-            .http2(chrome_http2_template!(1))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_windows_chrome_edge_sec_ch_ua!(
-            headers,
-            r#""Not A;Brand";v="99", "Chromium";v="101", "Google Chrome";v="101""#
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.67 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v104 {
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(1))
-            .http2(chrome_http2_template!(1))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_windows_chrome_edge_sec_ch_ua!(
-            headers,
-            "\"Chromium\";v=\"104\", \" Not A;Brand\";v=\"99\", \"Google Chrome\";v=\"104\""
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v105 {
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(2))
-            .http2(chrome_http2_template!(1))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_windows_chrome_edge_sec_ch_ua!(
-            headers,
-            "\"Google Chrome\";v=\"105\", \"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"105\""
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v106 {
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(3))
-            .http2(chrome_http2_template!(2))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_windows_chrome_edge_sec_ch_ua!(
-            headers,
-            "\"Chromium\";v=\"106\", \"Google Chrome\";v=\"106\", \"Not;A=Brand\";v=\"99\""
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v107 {
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(3))
-            .http2(chrome_http2_template!(2))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_windows_chrome_edge_sec_ch_ua!(
-            headers,
-            "\"Chromium\";v=\"107\", \"Google Chrome\";v=\"107\", \"Not;A=Brand\";v=\"99\""
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v108 {
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(3))
-            .http2(chrome_http2_template!(2))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_windows_chrome_edge_sec_ch_ua!(
-            headers,
-            "\"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"108\", \"Google Chrome\";v=\"108\""
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v109 {
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(3))
-            .http2(chrome_http2_template!(2))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_windows_chrome_edge_sec_ch_ua!(
-            headers,
-            r#""Chromium";v="110", "Not A(Brand";v="24", "Google Chrome";v="110""#
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v114 {
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(3))
-            .http2(chrome_http2_template!(2))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_macos_chrome_edge_sec_ch_ua!(
-            headers,
-            r#""Chromium";v="114", "Not A(Brand";v="30", "Google Chrome";v="114""#
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v116 {
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(4))
-            .http2(chrome_http2_template!(2))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_windows_chrome_edge_sec_ch_ua!(
-            headers,
-            r#""Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116""#
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v117 {
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(5))
-            .http2(chrome_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_windows_chrome_edge_sec_ch_ua!(
-            headers,
-            r#""Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117""#
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v118 {
-    use crate::tls::impersonate::impersonate_imports::*;
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(4))
-            .http2(chrome_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_macos_chrome_edge_sec_ch_ua!(
-            headers,
-            r#""Chromium";v="118", "Google Chrome";v="118", "Not=A?Brand";v="99""#
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v119 {
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(4))
-            .http2(chrome_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_macos_chrome_edge_sec_ch_ua!(
-            headers,
-            r#""Microsoft Edge";v="119", "Chromium";v="119", "Not?A_Brand";v="24""#
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v120 {
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(5))
-            .http2(chrome_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_windows_chrome_edge_sec_ch_ua!(
-            headers,
-            r#""Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120""#
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v123 {
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(5))
-            .http2(chrome_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_macos_chrome_edge_sec_ch_ua!(
-            headers,
-            "\"Google Chrome\";v=\"123\", \"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"123\""
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet_with_zstd!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v124 {
-    use super::tls::NEW_CURVES_1;
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(6, NEW_CURVES_1))
-            .http2(chrome_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_macos_chrome_edge_sec_ch_ua!(
-            headers,
-            "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\""
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet_with_zstd!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v126 {
-    use super::tls::NEW_CURVES_1;
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(6, NEW_CURVES_1))
-            .http2(chrome_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_macos_chrome_edge_sec_ch_ua!(
-            headers,
-            "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\""
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet_with_zstd!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v127 {
-    use super::tls::NEW_CURVES_1;
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(6, NEW_CURVES_1))
-            .http2(chrome_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_macos_chrome_edge_sec_ch_ua!(
-            headers,
-            "\"Not)A;Brand\";v=\"99\", \"Google Chrome\";v=\"127\", \"Chromium\";v=\"127\""
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet_with_zstd!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v128 {
-    use super::tls::NEW_CURVES_1;
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(6, NEW_CURVES_1))
-            .http2(chrome_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_macos_chrome_edge_sec_ch_ua!(
-            headers,
-            "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\""
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet_with_zstd!(headers);
-        headers
-    }
-}
-
-pub(crate) mod v129 {
-    use super::tls::NEW_CURVES_1;
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(6, NEW_CURVES_1))
-            .http2(chrome_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_macos_chrome_edge_sec_ch_ua!(
-            headers,
-            "\"Google Chrome\";v=\"129\", \"Not=A?Brand\";v=\"8\", \"Chromium\";v=\"129\""
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch1!(headers);
-        header_chrome_edge_accpet_with_zstd!(headers);
-        headers.insert("priority", HeaderValue::from_static("u=0, i"));
-        headers
-    }
-}
-
-pub(crate) mod v130 {
-    use super::tls::NEW_CURVES_1;
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(6, NEW_CURVES_1))
-            .http2(chrome_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_macos_chrome_edge_sec_ch_ua!(
-            headers,
-            "\"Chromium\";v=\"130\", \"Google Chrome\";v=\"130\", \"Not?A_Brand\";v=\"99\""
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet_with_zstd!(headers);
-        headers.insert("priority", HeaderValue::from_static("u=0, i"));
-        headers
-    }
-}
-
-pub(crate) mod v131 {
-    use super::tls::NEW_CURVES_2;
-    use crate::tls::impersonate::impersonate_imports::*;
-
-    #[inline]
-    pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
-        ImpersonateSettings::builder()
-            .tls(chrome_tls_template!(6, NEW_CURVES_2))
-            .http2(chrome_http2_template!(3))
-            .headers(conditional_headers!(with_headers, header_initializer))
-            .build()
-    }
-
-    #[inline]
-    fn header_initializer() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        header_macos_chrome_edge_sec_ch_ua!(
-            headers,
-            "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\""
-        );
-        header_chrome_edge_ua!(headers, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
-        header_chrome_edge_sec_fetch!(headers);
-        header_chrome_edge_accpet_with_zstd!(headers);
-        headers.insert("priority", HeaderValue::from_static("u=0, i"));
-        headers
-    }
-}
+chrome_mod_generator!(
+    v100,
+    chrome_tls_template!(1),
+    chrome_http2_template!(1),
+    header_initializer,
+    r#""Not A;Brand";v="99", "Chromium";v="100", "Google Chrome";v="100""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v101,
+    chrome_tls_template!(1),
+    chrome_http2_template!(1),
+    header_initializer,
+    r#""Not A;Brand";v="99", "Chromium";v="101", "Google Chrome";v="101""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.67 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v104,
+    chrome_tls_template!(1),
+    chrome_http2_template!(1),
+    header_initializer,
+    "\"Chromium\";v=\"104\", \" Not A;Brand\";v=\"99\", \"Google Chrome\";v=\"104\"",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v105,
+    chrome_tls_template!(2),
+    chrome_http2_template!(1),
+    header_initializer,
+    "\"Google Chrome\";v=\"105\", \"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"105\"",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v106,
+    chrome_tls_template!(3),
+    chrome_http2_template!(2),
+    header_initializer,
+    r#""Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v107,
+    chrome_tls_template!(3),
+    chrome_http2_template!(2),
+    header_initializer,
+    r#""Chromium";v="107", "Google Chrome";v="107", "Not;A=Brand";v="99""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v108,
+    chrome_tls_template!(3),
+    chrome_http2_template!(2),
+    header_initializer,
+    "\"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"108\", \"Google Chrome\";v=\"108\"",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v109,
+    chrome_tls_template!(3),
+    chrome_http2_template!(2),
+    header_initializer,
+    r#""Chromium";v="109", "Google Chrome";v="109", "Not;A=Brand";v="99""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v114,
+    chrome_tls_template!(3),
+    chrome_http2_template!(2),
+    header_initializer,
+    r#""Chromium";v="114", "Google Chrome";v="114", "Not;A=Brand";v="99""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v116,
+    chrome_tls_template!(4),
+    chrome_http2_template!(2),
+    header_initializer,
+    r#""Chromium";v="116", "Google Chrome";v="116", "Not;A=Brand";v="99""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v117,
+    chrome_tls_template!(5),
+    chrome_http2_template!(3),
+    header_initializer,
+    r#""Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v118,
+    chrome_tls_template!(4),
+    chrome_http2_template!(3),
+    header_initializer,
+    r#""Chromium";v="118", "Google Chrome";v="118", "Not=A?Brand";v="99""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v119,
+    chrome_tls_template!(4),
+    chrome_http2_template!(3),
+    header_initializer,
+    r#""Chromium";v="119", "Google Chrome";v="119", "Not=A?Brand";v="99""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v120,
+    chrome_tls_template!(5),
+    chrome_http2_template!(3),
+    header_initializer,
+    r#""Chromium";v="120", "Google Chrome";v="120", "Not?A_Brand";v="99""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v123,
+    chrome_tls_template!(5),
+    chrome_http2_template!(3),
+    header_initializer_with_zstd,
+    r#""Google Chrome";v="123", "Not;A=Brand";v="8", "Chromium";v="123""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v124,
+    chrome_tls_template!(6, NEW_CURVES_1),
+    chrome_http2_template!(3),
+    header_initializer_with_zstd,
+    r#""Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v126,
+    chrome_tls_template!(6, NEW_CURVES_1),
+    chrome_http2_template!(3),
+    header_initializer_with_zstd,
+    r#""Chromium";v="126", "Google Chrome";v="126", "Not-A.Brand";v="99""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v127,
+    chrome_tls_template!(6, NEW_CURVES_1),
+    chrome_http2_template!(3),
+    header_initializer_with_zstd,
+    r#""Not/A)Brand";v="8", "Chromium";v="127", "Google Chrome";v="127""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v128,
+    chrome_tls_template!(6, NEW_CURVES_1),
+    chrome_http2_template!(3),
+    header_initializer,
+    r#""Chromium";v="128", "Google Chrome";v="128", "Not?A_Brand";v="99""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v129,
+    chrome_tls_template!(6, NEW_CURVES_1),
+    chrome_http2_template!(3),
+    header_initializer_with_zstd_priority,
+    r#""Google Chrome";v="129", "Chromium";v="129", "Not_A Brand\";v="24""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v130,
+    chrome_tls_template!(6, NEW_CURVES_1),
+    chrome_http2_template!(3),
+    header_initializer_with_zstd_priority,
+    r#""Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+);
+
+chrome_mod_generator!(
+    v131,
+    chrome_tls_template!(6, NEW_CURVES_2),
+    chrome_http2_template!(3),
+    header_initializer_with_zstd_priority,
+    r#""Google Chrome";v="131", "Chromium";v="131", "Not_A Brand\";v="24""#,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+);
