@@ -32,7 +32,7 @@ async fn main() -> Result<(), rquest::Error> {
         }
 
         // option clear the proxies
-        client.clear_proxies();
+        client.unset_proxies();
 
         // option 2: append the proxies
         {
