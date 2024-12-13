@@ -1,6 +1,7 @@
 # rquest
 
 [![Crates.io License](https://img.shields.io/crates/l/rquest)](./LICENSE)
+![Crates.io MSRV](https://img.shields.io/crates/msrv/rquest)
 [![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)
 [![Crates.io Total Downloads](https://img.shields.io/crates/d/rquest)](https://crates.io/crates/rquest)
 
@@ -36,7 +37,7 @@ HTTP
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.31.0"
+rquest = "0.32.0"
 ```
 
 ```rust,no_run
@@ -62,7 +63,7 @@ WebSocket
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = { version = "0.31.0", features = ["websocket"] }
+rquest = { version = "0.32.0", features = ["websocket"] }
 ```
 
 ```rust,no_run
@@ -111,7 +112,7 @@ Preconfigured `TLS`/`HTTP2`
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.31.0"
+rquest = "0.32.0"
 ```
 
 ```rust
@@ -213,7 +214,7 @@ Modify `Client` settings
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = { version = "0.31.0", features = ["full"] }
+rquest = { version = "0.32.0", features = ["full"] }
 ```
 
 ```rust
