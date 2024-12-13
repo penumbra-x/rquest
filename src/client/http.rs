@@ -1250,10 +1250,26 @@ impl ClientBuilder {
         self
     }
 
-    /// Sets a base url to be used on all requests with a relative URL.
+    /// Sets a base URL for the client.
     ///
-    /// By default relative URLs are rejected, but will be allowed if a
-    /// base url has been set.
+    /// The base URL will be used as the root for all relative request paths made by this client.
+    /// If a request specifies an absolute URL, it will override the base URL.
+    ///
+    /// # Parameters
+    /// - `base_url`: A value that can be converted into a URL, representing the base URL for the client.
+    ///
+    /// # Returns
+    /// Returns the `ClientBuilder` with the base URL configured. If the provided `base_url` is invalid,
+    /// an error is stored in the configuration, and the builder can no longer produce a valid client.
+    ///
+    /// # Example
+    /// ```rust
+    /// let client = Client::builder()
+    ///     .base_url("https://api.example.com")
+    ///     .build();
+    ///
+    /// let response = client.get("/users").send().await?; // Resolves to "https://api.example.com/users"
+    /// ```
     pub fn base_url<U: IntoUrl>(mut self, base_url: U) -> ClientBuilder {
         match base_url.into_url() {
             Ok(base_url) => {
