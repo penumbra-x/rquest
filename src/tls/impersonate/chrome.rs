@@ -344,7 +344,6 @@ pub(crate) mod v106 {
     #[inline]
     fn header_initializer() -> HeaderMap {
         let mut headers = HeaderMap::new();
-
         windows_chrome_edge_sec_ch_ua!(
             headers,
             "\"Chromium\";v=\"106\", \"Google Chrome\";v=\"106\", \"Not;A=Brand\";v=\"99\""
