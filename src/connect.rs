@@ -185,7 +185,7 @@ impl Connector {
 
     #[inline]
     fn proxies_mut(&mut self) -> &mut Vec<Proxy> {
-        Arc::make_mut(&mut self.proxies).as_mut()
+        Arc::make_mut(&mut self.proxies)
     }
 
     #[inline]
