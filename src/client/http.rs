@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::num::NonZeroUsize;
+use std::ops::DerefMut;
 use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 use std::{collections::HashMap, convert::TryInto, net::SocketAddr};
@@ -194,6 +195,8 @@ impl ClientBuilder {
         }
         let proxies = Arc::new(proxies);
 
+        let proxies_maybe_http_auth = proxies.iter().any(|p| p.maybe_has_http_auth());
+
         let mut connector = {
             let mut resolver: Arc<dyn Resolve> = match config.hickory_dns {
                 false => Arc::new(GaiResolver::new()),
@@ -267,6 +270,7 @@ impl ClientBuilder {
                 referer: config.referer,
                 request_timeout: config.timeout,
                 https_only: config.https_only,
+                proxies_maybe_http_auth,
             }),
         })
     }
@@ -1517,13 +1521,26 @@ impl Client {
     /// Returns the old proxies.
     #[inline]
     pub fn set_proxies(&mut self, proxies: impl Into<Cow<'static, [Proxy]>>) -> Vec<Proxy> {
-        self.inner_mut().hyper.set_proxies(proxies.into())
+        let (inner, proxies) = self.apply_proxies(proxies);
+        inner.set_proxies(proxies)
     }
 
     /// Append the proxies to the client.
     #[inline]
     pub fn append_proxies(&mut self, proxies: impl Into<Cow<'static, [Proxy]>>) {
-        self.inner_mut().hyper.append_proxies(proxies.into());
+        let (inner, proxies) = self.apply_proxies(proxies);
+        inner.append_proxies(proxies);
+    }
+
+    /// Private helper to handle setting or appending proxies.
+    fn apply_proxies(
+        &mut self,
+        proxies: impl Into<Cow<'static, [Proxy]>>,
+    ) -> (&mut Connector, Cow<'static, [Proxy]>) {
+        let proxies = proxies.into();
+        let inner = self.inner_mut();
+        inner.proxies_maybe_http_auth = proxies.iter().any(|p| p.maybe_has_http_auth());
+        (inner.hyper.deref_mut(), proxies)
     }
 
     /// Clear the proxies for this client.
@@ -1775,6 +1792,7 @@ struct ClientRef {
     referer: bool,
     request_timeout: Option<Duration>,
     https_only: bool,
+    proxies_maybe_http_auth: bool,
 }
 
 impl ClientRef {
@@ -1813,6 +1831,10 @@ impl ClientRef {
 
     #[inline]
     fn proxy_auth(&self, dst: &Uri, headers: &mut HeaderMap) {
+        if !self.proxies_maybe_http_auth {
+            return;
+        }
+
         // Only set the header here if the destination scheme is 'http',
         // since otherwise, the header will be included in the CONNECT tunnel
         // request instead.
