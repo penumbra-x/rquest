@@ -5,7 +5,7 @@ use tls::*;
 macro_rules! safari_mod_generator {
     ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $user_agent:expr) => {
         pub(crate) mod $mod_name {
-            use $crate::tls::{impersonate::impersonate_imports::*, safari::*};
+            use crate::tls::{impersonate::impersonate_imports::*, safari::*};
 
             #[inline]
             pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
