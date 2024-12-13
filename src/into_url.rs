@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use url::Url;
 
 /// A trait to try to convert some type into a `Url`.
@@ -8,10 +9,10 @@ pub trait IntoUrl: IntoUrlSealed {}
 
 impl IntoUrl for Url {}
 impl IntoUrl for String {}
-impl<'a> IntoUrl for &'a Url {}
-impl<'a> IntoUrl for &'a str {}
-impl<'a> IntoUrl for &'a String {}
-impl<'a> IntoUrl for std::borrow::Cow<'a, str> {}
+impl IntoUrl for &Url {}
+impl IntoUrl for &str {}
+impl IntoUrl for &String {}
+impl IntoUrl for Cow<'_, str> {}
 
 pub trait IntoUrlSealed {
     // Besides parsing as a valid `Url`, the `Url` must be a valid
@@ -35,7 +36,7 @@ impl IntoUrlSealed for Url {
     }
 }
 
-impl<'a> IntoUrlSealed for &'a Url {
+impl IntoUrlSealed for &Url {
     fn into_url(self) -> crate::Result<Url> {
         if self.has_host() {
             Ok(self.clone())
@@ -49,7 +50,7 @@ impl<'a> IntoUrlSealed for &'a Url {
     }
 }
 
-impl<'a> IntoUrlSealed for &'a str {
+impl IntoUrlSealed for &str {
     fn into_url(self) -> crate::Result<Url> {
         Url::parse(self).map_err(crate::error::builder)?.into_url()
     }
@@ -59,7 +60,7 @@ impl<'a> IntoUrlSealed for &'a str {
     }
 }
 
-impl<'a> IntoUrlSealed for &'a String {
+impl IntoUrlSealed for &String {
     fn into_url(self) -> crate::Result<Url> {
         (&**self).into_url()
     }
@@ -79,12 +80,12 @@ impl IntoUrlSealed for String {
     }
 }
 
-impl<'a> IntoUrlSealed for std::borrow::Cow<'a, str> {
+impl IntoUrlSealed for Cow<'_, str> {
     fn into_url(self) -> crate::Result<Url> {
         (&*self).into_url()
     }
     fn as_str(&self) -> &str {
-        &*self
+        self
     }
 }
 
