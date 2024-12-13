@@ -107,6 +107,7 @@ struct Config {
     dns_resolver: Option<Arc<dyn Resolve>>,
     #[cfg(feature = "hickory-dns")]
     dns_strategy: Option<LookupIpStrategy>,
+    base_url: Option<Url>,
     builder: hyper::client::Builder,
     https_only: bool,
     #[cfg(feature = "boring-tls")]
@@ -165,6 +166,7 @@ impl ClientBuilder {
                 cookie_store: None,
                 dns_overrides: HashMap::new(),
                 dns_resolver: None,
+                base_url: None,
                 builder: hyper::Client::builder(),
                 https_only: false,
                 #[cfg(feature = "boring-tls")]
@@ -271,6 +273,7 @@ impl ClientBuilder {
                 request_timeout: config.timeout,
                 https_only: config.https_only,
                 proxies_maybe_http_auth,
+                base_url: config.base_url,
             }),
         })
     }
@@ -1246,6 +1249,38 @@ impl ClientBuilder {
         self.config.dns_resolver = Some(resolver as _);
         self
     }
+
+    /// Sets a base URL for the client.
+    ///
+    /// The base URL will be used as the root for all relative request paths made by this client.
+    /// If a request specifies an absolute URL, it will override the base URL.
+    ///
+    /// # Parameters
+    /// - `base_url`: A value that can be converted into a URL, representing the base URL for the client.
+    ///
+    /// # Returns
+    /// Returns the `ClientBuilder` with the base URL configured. If the provided `base_url` is invalid,
+    /// an error is stored in the configuration, and the builder can no longer produce a valid client.
+    ///
+    /// # Example
+    /// ```rust
+    /// let client = Client::builder()
+    ///     .base_url("https://api.example.com")
+    ///     .build();
+    ///
+    /// let response = client.get("/users").send().await?; // Resolves to "https://api.example.com/users"
+    /// ```
+    pub fn base_url<U: IntoUrl>(mut self, base_url: U) -> ClientBuilder {
+        match base_url.into_url() {
+            Ok(base_url) => {
+                self.config.base_url = Some(base_url);
+            }
+            Err(e) => {
+                self.config.error = Some(e);
+            }
+        }
+        self
+    }
 }
 
 type HyperClient = hyper::Client<Connector, super::body::ImplStream>;
@@ -1349,7 +1384,11 @@ impl Client {
     ///
     /// This method fails whenever the supplied `Url` cannot be parsed.
     pub fn request<U: IntoUrl>(&self, method: Method, url: U) -> RequestBuilder {
-        let req = url.into_url().map(move |url| Request::new(method, url));
+        let url = match self.inner.base_url {
+            Some(ref base_url) => base_url.join(url.as_str()).map_err(error::builder),
+            None => url.into_url(),
+        };
+        let req = url.map(move |url| Request::new(method, url));
         RequestBuilder::new(self.clone(), req)
     }
 
@@ -1543,9 +1582,9 @@ impl Client {
         (inner.hyper.deref_mut(), proxies)
     }
 
-    /// Clear the proxies for this client.
+    /// Unset the proxies for this client.
     #[inline]
-    pub fn clear_proxies(&mut self) {
+    pub fn unset_proxies(&mut self) {
         self.inner_mut().hyper.clear_proxies();
     }
 
@@ -1583,28 +1622,28 @@ impl Client {
     #[cfg(feature = "boring-tls")]
     pub fn set_impersonate(&mut self, var: Impersonate) -> crate::Result<()> {
         let settings = tls::tls_settings(var, true);
-        self.set_impersonate0(settings)
+        self.set_impersonate_settings(settings)
     }
 
     /// Set the impersonate for this client without setting the headers.
     #[inline]
     #[cfg(feature = "boring-tls")]
     pub fn set_impersonate_skip_headers(&mut self, var: Impersonate) -> crate::Result<()> {
-        let settings = tls::tls_settings(var, true);
-        self.set_impersonate0(settings)
+        let settings = tls::tls_settings(var, false);
+        self.impersonate_settings(settings)
     }
 
     /// Set the impersonate for this client with the given settings.
     #[inline]
     #[cfg(feature = "boring-tls")]
     pub fn set_impersonate_settings(&mut self, settings: ImpersonateSettings) -> crate::Result<()> {
-        self.set_impersonate0(settings)
+        self.impersonate_settings(settings)
     }
 
     /// Apply the impersonate settings to the client.
     #[cfg(feature = "boring-tls")]
     #[inline]
-    fn set_impersonate0(&mut self, settings: ImpersonateSettings) -> crate::Result<()> {
+    fn impersonate_settings(&mut self, settings: ImpersonateSettings) -> crate::Result<()> {
         let inner = self.inner_mut();
 
         // Clear the headers
@@ -1656,6 +1695,17 @@ impl Client {
     /// Set the redirect policy for this client.
     pub fn set_redirect(&mut self, policy: impl Into<Arc<redirect::Policy>>) {
         self.inner_mut().redirect = policy.into();
+    }
+
+    /// Set the bash url for this client.
+    pub fn set_base_url<U: IntoUrl>(&mut self, url: U) -> crate::Result<()> {
+        self.inner_mut().base_url = Some(url.into_url()?);
+        Ok(())
+    }
+
+    /// Unset the base url for this client.
+    pub fn unset_base_url(&mut self) {
+        self.inner_mut().base_url = None;
     }
 
     /// private mut ref to inner
@@ -1793,6 +1843,7 @@ struct ClientRef {
     request_timeout: Option<Duration>,
     https_only: bool,
     proxies_maybe_http_auth: bool,
+    base_url: Option<Url>,
 }
 
 impl ClientRef {
