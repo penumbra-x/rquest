@@ -171,7 +171,7 @@ impl Default for Policy {
     }
 }
 
-impl<'a> Attempt<'a> {
+impl Attempt<'_> {
     /// Get the type of redirect.
     pub fn status(&self) -> StatusCode {
         self.status

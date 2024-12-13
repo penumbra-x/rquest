@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::num::NonZeroUsize;
-use std::ops::DerefMut;
 use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 use std::{collections::HashMap, convert::TryInto, net::SocketAddr};
@@ -1575,11 +1574,11 @@ impl Client {
     fn apply_proxies(
         &mut self,
         proxies: impl Into<Cow<'static, [Proxy]>>,
-    ) -> (&mut Connector, Cow<'static, [Proxy]>) {
+    ) -> (&mut HyperClient, Cow<'static, [Proxy]>) {
         let proxies = proxies.into();
         let inner = self.inner_mut();
         inner.proxies_maybe_http_auth = proxies.iter().any(|p| p.maybe_has_http_auth());
-        (inner.hyper.deref_mut(), proxies)
+        (&mut inner.hyper, proxies)
     }
 
     /// Unset the proxies for this client.
