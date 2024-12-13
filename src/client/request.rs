@@ -253,7 +253,7 @@ impl RequestBuilder {
             if authority.is_empty() {
                 return self;
             }
-            if let Some(host_with_port) = authority.parse::<HeaderValue>().ok() {
+            if let Ok(host_with_port) = authority.parse::<HeaderValue>() {
                 return self.header_sensitive(HOST, host_with_port, false);
             }
         }
@@ -731,7 +731,7 @@ impl<'a> InnerRequest<'a> {
             }
 
             // Sort headers
-            crate::util::sort_headers(&mut headers, &order);
+            crate::util::sort_headers(&mut headers, order);
         }
 
         // Add pool key extension
@@ -740,9 +740,9 @@ impl<'a> InnerRequest<'a> {
         }
 
         // Add headers to the request
-        builder
-            .headers_mut()
-            .map(|h| std::mem::swap(h, &mut headers));
+        if let Some(h) = builder.headers_mut() {
+            std::mem::swap(h, &mut headers)
+        }
 
         builder.body(body).expect("valid request parts")
     }

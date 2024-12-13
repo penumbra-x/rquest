@@ -298,7 +298,7 @@ impl ClientBuilder {
     #[inline]
     fn apply_impersonate(self, impersonate: Impersonate, with_headers: bool) -> ClientBuilder {
         let settings = tls::tls_settings(impersonate, with_headers);
-        return self.apply_impersonate_settings(settings);
+        self.apply_impersonate_settings(settings)
     }
 
     /// Apply the given TLS settings and header function.
