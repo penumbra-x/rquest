@@ -170,7 +170,10 @@ impl TlsExtension for SslConnectorBuilder {
         Ok(self)
     }
 
-    #[cfg(feature = "boring-tls-webpki-roots")]
+    #[cfg(any(
+        feature = "boring-tls-webpki-roots",
+        feature = "boring-tls-native-roots"
+    ))]
     #[inline]
     fn configure_set_verify_cert_store(mut self) -> TlsResult<SslConnectorBuilder> {
         if let Ok(cert_store) = cert_imports::LOAD_CERTS.as_deref() {
