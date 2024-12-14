@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🚀 Features
+
+- Add `Safari 18.1.1` impersonate (#157)
+- Add `Edge 131` impersonate (#158)
+- *(client)* Add support for base URL parameter (#159)
+- *(client)* Add support for base URL parameter
+
+### 🐛 Bug Fixes
+
+- *(hickory-dns)* Fix initialization when `/etc/resolv.conf` is missing (#163)
+- *(client)* Return an error instead of panic when parsing invalid URL (#164)
+- *(connect)* Unnecessarily panic when parsing invalid URI (#166)
+
+### ⚙️ Miscellaneous Tasks
+
+- Do not pre-append `content-length` in non-header sorting state (#152)
+- Macro static creation of impersonate template (#156)
+- Update impersonate template
+- Update macro export scope
+- To avoid ambiguity, `ca_cert_store` is renamed to `root_certs_store` (#162)
+
+### ◀️ Revert
+
+- Remove `proxies_maybe_http_auth` state
+
+### Deps
+
+- *(async-tungstenite)* Downgrade `async-tungstenite` to `0.27.0` (#161)
+
 ## [0.32.1] - 2024-12-12
 
 ### 🚀 Features
