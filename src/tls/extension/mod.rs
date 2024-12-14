@@ -1,6 +1,11 @@
 #![allow(missing_debug_implementations)]
 
 pub mod cert_compression;
+#[cfg(any(
+    feature = "boring-tls-webpki-roots",
+    feature = "boring-tls-native-roots"
+))]
+mod cert_load;
 use super::settings::RootCertsStore;
 use super::{TlsResult, TlsVersion};
 use crate::client::http::HttpVersionPref;
@@ -12,7 +17,7 @@ use cert_compression::CertCompressionAlgorithm;
     feature = "boring-tls-webpki-roots",
     feature = "boring-tls-native-roots"
 ))]
-use cert_imports::*;
+use cert_load::*;
 
 /// Error handler for the boringssl functions.
 fn sv_handler(r: c_int) -> TlsResult<c_int> {
@@ -176,7 +181,7 @@ impl TlsExtension for SslConnectorBuilder {
     ))]
     #[inline]
     fn configure_set_verify_cert_store(mut self) -> TlsResult<SslConnectorBuilder> {
-        if let Ok(cert_store) = cert_imports::LOAD_CERTS.as_deref() {
+        if let Ok(cert_store) = LOAD_CERTS.as_deref() {
             log::debug!("Using CA certs from webpki/native roots");
             unsafe {
                 sv_handler(boring_sys::SSL_CTX_set1_verify_cert_store(
@@ -223,68 +228,5 @@ impl TlsConnectExtension for ConnectConfiguration {
             )
         })
         .map(|_| self)
-    }
-}
-
-/// Certificate imports for the boringssl.
-#[cfg(any(
-    feature = "boring-tls-webpki-roots",
-    feature = "boring-tls-native-roots"
-))]
-mod cert_imports {
-    pub use boring::x509::{store::X509StoreBuilder, X509};
-    use boring::{error::ErrorStack, x509::store::X509Store};
-    pub use foreign_types::ForeignTypeRef;
-    pub use std::sync::LazyLock;
-
-    pub static LOAD_CERTS: LazyLock<Result<X509Store, crate::Error>> = LazyLock::new(|| {
-        #[cfg(feature = "boring-tls-webpki-roots")]
-        {
-            load_certs_from_source(
-                webpki_root_certs::TLS_SERVER_ROOT_CERTS
-                    .iter()
-                    .map(|c| X509::from_der(c)),
-            )
-        }
-
-        #[cfg(all(
-            feature = "boring-tls-native-roots",
-            not(feature = "boring-tls-webpki-roots")
-        ))]
-        {
-            let load_certs = rustls_native_certs::load_native_certs();
-            load_certs_from_source(load_certs.certs.iter().map(|c| X509::from_der(c.as_ref())))
-        }
-    });
-
-    pub fn load_certs_from_source<I>(certs: I) -> Result<X509Store, crate::Error>
-    where
-        I: Iterator<Item = Result<X509, ErrorStack>>,
-    {
-        let mut valid_count = 0;
-        let mut invalid_count = 0;
-        let mut cert_store = X509StoreBuilder::new()?;
-
-        for cert in certs {
-            match cert {
-                Ok(cert) => {
-                    cert_store.add_cert(cert)?;
-                    valid_count += 1;
-                }
-                Err(err) => {
-                    invalid_count += 1;
-                    log::debug!("tls failed to parse DER certificate: {err:?}");
-                }
-            }
-        }
-
-        if valid_count == 0 && invalid_count > 0 {
-            return Err(crate::Error::new(
-                crate::error::Kind::Builder,
-                Some("all certificates are invalid"),
-            ));
-        }
-
-        Ok(cert_store.build())
     }
 }
