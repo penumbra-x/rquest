@@ -22,7 +22,7 @@ use std::task::{Context, Poll};
 use std::time::Duration;
 
 use crate::dns::DynResolver;
-use crate::error::BoxError;
+use crate::error::{self, BoxError};
 use crate::proxy::{Proxy, ProxyScheme};
 
 pub(crate) type HttpConnector = hyper::client::HttpConnector<DynResolver>;
@@ -311,7 +311,7 @@ impl Connector {
             #[cfg(feature = "boring-tls")]
             Inner::BoringTls { http, tls, .. } => {
                 if dst.scheme() == Some(&Scheme::HTTPS) {
-                    let host = dst.host().ok_or("no host in url")?;
+                    let host = dst.host().ok_or(error::uri_bad_host())?;
                     let conn = socks::connect(proxy, dst.clone(), dns).await?;
                     let connector = tls.create_connector(http.clone(), ws).await;
                     let setup_ssl = connector.setup_ssl(&dst, host)?;
@@ -341,7 +341,7 @@ impl Connector {
         mut dst: Uri,
         is_proxy: bool,
     ) -> Result<Conn, BoxError> {
-        let _ws = maybe_websocket_uri(&mut dst);
+        let _ws = maybe_websocket_uri(&mut dst)?;
         match self.inner {
             #[cfg(not(feature = "boring-tls"))]
             Inner::Http(mut http) => {
@@ -395,8 +395,8 @@ impl Connector {
         log::debug!("proxy({:?}) intercepts '{:?}'", proxy_scheme, dst);
 
         let (proxy_dst, _auth) = match proxy_scheme {
-            ProxyScheme::Http { host, auth } => (into_uri(Scheme::HTTP, host), auth),
-            ProxyScheme::Https { host, auth } => (into_uri(Scheme::HTTPS, host), auth),
+            ProxyScheme::Http { host, auth } => (into_uri(Scheme::HTTP, host)?, auth),
+            ProxyScheme::Https { host, auth } => (into_uri(Scheme::HTTPS, host)?, auth),
             #[cfg(feature = "socks")]
             ProxyScheme::Socks4 { .. } => return self.connect_socks(dst, proxy_scheme).await,
             #[cfg(feature = "socks")]
@@ -406,13 +406,13 @@ impl Connector {
         #[cfg(feature = "boring-tls")]
         let auth = _auth;
 
-        let _ws = maybe_websocket_uri(&mut dst);
+        let _ws = maybe_websocket_uri(&mut dst)?;
 
         match &self.inner {
             #[cfg(feature = "boring-tls")]
             Inner::BoringTls { http, tls } => {
                 if dst.scheme() == Some(&Scheme::HTTPS) {
-                    let host = dst.host().ok_or("no host in url")?;
+                    let host = dst.host().ok_or(error::uri_bad_host())?;
                     let port = dst.port().map(|p| p.as_u16()).unwrap_or(443);
 
                     let mut http = tls.create_connector(http.clone(), _ws).await;
@@ -460,30 +460,32 @@ impl Connector {
 /// # Conditional compilation:
 /// This function only works if the "websocket" feature is enabled.
 #[inline]
-fn maybe_websocket_uri(dst: &mut Uri) -> bool {
-    match (dst.scheme_str(), dst.authority()) {
+fn maybe_websocket_uri(dst: &mut Uri) -> Result<bool, BoxError> {
+    let ok = match (dst.scheme_str(), dst.authority()) {
         #[cfg(feature = "websocket")]
         (Some("ws"), Some(host)) => {
-            *dst = into_uri(Scheme::HTTP, host.clone());
+            *dst = into_uri(Scheme::HTTP, host.clone())?;
             true
         }
         #[cfg(feature = "websocket")]
         (Some("wss"), Some(host)) => {
-            *dst = into_uri(Scheme::HTTPS, host.clone());
+            *dst = into_uri(Scheme::HTTPS, host.clone())?;
             true
         }
         _ => false,
-    }
+    };
+
+    Ok(ok)
 }
 
-fn into_uri(scheme: Scheme, host: Authority) -> Uri {
+fn into_uri(scheme: Scheme, host: Authority) -> Result<Uri, BoxError> {
     // TODO: Should the `http` crate get `From<(Scheme, Authority)> for Uri`?
     Uri::builder()
         .scheme(scheme)
         .authority(host)
         .path_and_query(http::uri::PathAndQuery::from_static("/"))
         .build()
-        .expect("scheme and authority is valid Uri")
+        .map_err(From::from)
 }
 
 async fn with_timeout<T, F>(f: F, timeout: Option<Duration>) -> Result<T, BoxError>

@@ -285,6 +285,10 @@ pub(crate) fn url_bad_uri(url: Url) -> Error {
     Error::new(Kind::Builder, Some("url is not a valid uri")).with_url(url)
 }
 
+pub(crate) fn uri_bad_host() -> Error {
+    Error::new(Kind::Builder, Some("no host in url"))
+}
+
 pub(crate) fn upgrade<E: Into<BoxError>>(e: E) -> Error {
     Error::new(Kind::Upgrade, Some(e))
 }
