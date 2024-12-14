@@ -160,18 +160,12 @@ fn connect_layer(settings: TlsSettings) -> TlsResult<HttpsLayer> {
     // If no custom CA cert store, use the system's native certificate store if the feature is enabled.
     let connector = if settings.root_certs_store.is_none() {
         // WebPKI root certificates are enabled (regardless of whether native-roots is also enabled).
-        #[cfg(feature = "boring-tls-webpki-roots")]
-        {
-            connector.configure_set_webpki_verify_cert_store()?
-        }
-
-        // Only native-roots is enabled, WebPKI is not enabled.
-        #[cfg(all(
-            feature = "boring-tls-native-roots",
-            not(feature = "boring-tls-webpki-roots")
+        #[cfg(any(
+            feature = "boring-tls-webpki-roots",
+            feature = "boring-tls-native-roots"
         ))]
         {
-            connector.configure_set_native_verify_cert_store()?
+            connector.configure_set_verify_cert_store()?
         }
 
         // Neither native-roots nor WebPKI roots are enabled, proceed with the default builder.
