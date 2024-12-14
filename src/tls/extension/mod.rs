@@ -1,19 +1,23 @@
 #![allow(missing_debug_implementations)]
 
 pub mod cert_compression;
+#[cfg(any(
+    feature = "boring-tls-webpki-roots",
+    feature = "boring-tls-native-roots"
+))]
+mod cert_load;
 use super::settings::RootCertsStore;
 use super::{TlsResult, TlsVersion};
 use crate::client::http::HttpVersionPref;
 use ::std::os::raw::c_int;
 use boring::error::ErrorStack;
 use boring::ssl::{ConnectConfiguration, SslConnectorBuilder, SslVerifyMode};
-use boring::x509::store::X509Store;
 use cert_compression::CertCompressionAlgorithm;
 #[cfg(any(
     feature = "boring-tls-webpki-roots",
     feature = "boring-tls-native-roots"
 ))]
-use cert_imports::*;
+use cert_load::{ForeignTypeRef, LOAD_CERTS};
 
 /// Error handler for the boringssl functions.
 fn sv_handler(r: c_int) -> TlsResult<c_int> {
@@ -60,16 +64,12 @@ pub trait TlsExtension {
         ca_cert_stroe: Option<RootCertsStore>,
     ) -> TlsResult<SslConnectorBuilder>;
 
-    /// Configure the native roots CA for the given `SslConnectorBuilder`.
-    #[cfg(all(
-        feature = "boring-tls-native-roots",
-        not(feature = "boring-tls-webpki-roots")
+    /// Configure the webpki/native roots CA for the given `SslConnectorBuilder`.
+    #[cfg(any(
+        feature = "boring-tls-webpki-roots",
+        feature = "boring-tls-native-roots"
     ))]
-    fn configure_set_native_verify_cert_store(self) -> TlsResult<SslConnectorBuilder>;
-
-    /// Configure the webpki roots CA for the given `SslConnectorBuilder`.
-    #[cfg(feature = "boring-tls-webpki-roots")]
-    fn configure_set_webpki_verify_cert_store(self) -> TlsResult<SslConnectorBuilder>;
+    fn configure_set_verify_cert_store(self) -> TlsResult<SslConnectorBuilder>;
 }
 
 /// TlsConnectExtension trait for `ConnectConfiguration`.
@@ -175,32 +175,26 @@ impl TlsExtension for SslConnectorBuilder {
         Ok(self)
     }
 
-    #[cfg(all(
-        feature = "boring-tls-native-roots",
-        not(feature = "boring-tls-webpki-roots")
+    #[cfg(any(
+        feature = "boring-tls-webpki-roots",
+        feature = "boring-tls-native-roots"
     ))]
     #[inline]
-    fn configure_set_native_verify_cert_store(mut self) -> TlsResult<SslConnectorBuilder> {
-        static LOAD_NATIVE_CERTS: LazyLock<Result<X509Store, crate::Error>> = LazyLock::new(|| {
-            let load_certs = rustls_native_certs::load_native_certs();
-            load_certs_from_source(load_certs.certs.iter().map(|c| X509::from_der(c.as_ref())))
-        });
+    fn configure_set_verify_cert_store(mut self) -> TlsResult<SslConnectorBuilder> {
+        if let Ok(cert_store) = LOAD_CERTS.as_deref() {
+            log::debug!("Using CA certs from webpki/native roots");
+            unsafe {
+                sv_handler(boring_sys::SSL_CTX_set1_verify_cert_store(
+                    self.as_ptr(),
+                    cert_store.as_ptr(),
+                ))?;
+            }
+        } else {
+            log::debug!("No CA certs provided, using system default");
+            self.set_default_verify_paths()?;
+        }
 
-        configure_set_verify_cert_store(self, &LOAD_NATIVE_CERTS)
-    }
-
-    #[cfg(feature = "boring-tls-webpki-roots")]
-    #[inline]
-    fn configure_set_webpki_verify_cert_store(self) -> TlsResult<SslConnectorBuilder> {
-        static LOAD_WEBPKI_CERTS: LazyLock<Result<X509Store, crate::Error>> = LazyLock::new(|| {
-            load_certs_from_source(
-                webpki_root_certs::TLS_SERVER_ROOT_CERTS
-                    .iter()
-                    .map(|c| X509::from_der(c)),
-            )
-        });
-
-        configure_set_verify_cert_store(self, &LOAD_WEBPKI_CERTS)
+        Ok(self)
     }
 }
 
@@ -234,69 +228,5 @@ impl TlsConnectExtension for ConnectConfiguration {
             )
         })
         .map(|_| self)
-    }
-}
-
-/// Certificate imports for the boringssl.
-#[cfg(any(
-    feature = "boring-tls-webpki-roots",
-    feature = "boring-tls-native-roots"
-))]
-mod cert_imports {
-    use super::sv_handler;
-    use crate::tls::TlsResult;
-    pub use boring::x509::{store::X509StoreBuilder, X509};
-    use boring::{error::ErrorStack, ssl::SslConnectorBuilder, x509::store::X509Store};
-    pub use foreign_types::ForeignTypeRef;
-    pub use std::sync::LazyLock;
-
-    pub fn configure_set_verify_cert_store(
-        mut builder: SslConnectorBuilder,
-        certs: &Result<X509Store, crate::Error>,
-    ) -> TlsResult<SslConnectorBuilder> {
-        if let Ok(cert_store) = certs.as_deref() {
-            unsafe {
-                sv_handler(boring_sys::SSL_CTX_set1_verify_cert_store(
-                    builder.as_ptr(),
-                    cert_store.as_ptr(),
-                ))?;
-            }
-        } else {
-            log::debug!("No CA certs provided, using system default");
-            builder.set_default_verify_paths()?;
-        }
-
-        Ok(builder)
-    }
-
-    pub fn load_certs_from_source<I>(certs: I) -> Result<X509Store, crate::Error>
-    where
-        I: Iterator<Item = Result<X509, ErrorStack>>,
-    {
-        let mut valid_count = 0;
-        let mut invalid_count = 0;
-        let mut cert_store = X509StoreBuilder::new()?;
-
-        for cert in certs {
-            match cert {
-                Ok(cert) => {
-                    cert_store.add_cert(cert)?;
-                    valid_count += 1;
-                }
-                Err(err) => {
-                    invalid_count += 1;
-                    log::debug!("tls failed to parse DER certificate: {err:?}");
-                }
-            }
-        }
-
-        if valid_count == 0 && invalid_count > 0 {
-            return Err(crate::Error::new(
-                crate::error::Kind::Builder,
-                Some("all certificates are invalid"),
-            ));
-        }
-
-        Ok(cert_store.build())
     }
 }
