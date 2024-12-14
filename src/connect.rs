@@ -305,7 +305,7 @@ impl Connector {
             }
         };
 
-        let ws = maybe_websocket_uri(&mut dst);
+        let ws = maybe_websocket_uri(&mut dst)?;
 
         match &self.inner {
             #[cfg(feature = "boring-tls")]
