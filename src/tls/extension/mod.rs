@@ -17,7 +17,7 @@ use cert_compression::CertCompressionAlgorithm;
     feature = "boring-tls-webpki-roots",
     feature = "boring-tls-native-roots"
 ))]
-use cert_load::*;
+use cert_load::{ForeignTypeRef, LOAD_CERTS};
 
 /// Error handler for the boringssl functions.
 fn sv_handler(r: c_int) -> TlsResult<c_int> {

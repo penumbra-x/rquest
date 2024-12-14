@@ -1,9 +1,9 @@
 //! Certificate imports for the boringssl.
 
-pub use boring::x509::{store::X509StoreBuilder, X509};
+use boring::x509::{store::X509StoreBuilder, X509};
 use boring::{error::ErrorStack, x509::store::X509Store};
 pub use foreign_types::ForeignTypeRef;
-pub use std::sync::LazyLock;
+use std::sync::LazyLock;
 
 pub static LOAD_CERTS: LazyLock<Result<X509Store, crate::Error>> = LazyLock::new(|| {
     #[cfg(feature = "boring-tls-webpki-roots")]
@@ -20,8 +20,11 @@ pub static LOAD_CERTS: LazyLock<Result<X509Store, crate::Error>> = LazyLock::new
         not(feature = "boring-tls-webpki-roots")
     ))]
     {
-        let load_certs = rustls_native_certs::load_native_certs();
-        load_certs_from_source(load_certs.certs.iter().map(|c| X509::from_der(c.as_ref())))
+        load_certs_from_source(
+            rustls_native_certs::load_native_certs()
+                .iter()
+                .map(|c| X509::from_der(&*c)),
+        )
     }
 });
 
