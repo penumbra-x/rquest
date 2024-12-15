@@ -311,7 +311,7 @@ impl Connector {
             #[cfg(feature = "boring-tls")]
             Inner::BoringTls { http, tls, .. } => {
                 if dst.scheme() == Some(&Scheme::HTTPS) {
-                    let host = dst.host().ok_or(error::uri_bad_host())?;
+                    let host = dst.host().ok_or(crate::error::uri_bad_host())?;
                     let conn = socks::connect(proxy, dst.clone(), dns).await?;
                     let connector = tls.create_connector(http.clone(), ws).await;
                     let setup_ssl = connector.setup_ssl(&dst, host)?;
