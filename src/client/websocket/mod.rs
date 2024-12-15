@@ -359,17 +359,13 @@ impl WebSocket {
     /// or [`CloseCode::Library(_)`]. Furthermore `reason` must be at most 123
     /// bytes long. Otherwise the call to [`close`][Self::close] will fail.
     pub async fn close(self, code: CloseCode, reason: Option<&str>) -> Result<(), Error> {
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            let mut inner = self.inner;
-            inner
-                .close(Some(tungstenite::protocol::CloseFrame {
-                    code: code.into(),
-                    reason: reason.unwrap_or_default().into(),
-                }))
-                .await?;
-        }
-
+        let mut inner = self.inner;
+        inner
+            .close(Some(tungstenite::protocol::CloseFrame {
+                code: code.into(),
+                reason: reason.unwrap_or_default().into(),
+            }))
+            .await?;
         Ok(())
     }
 }
