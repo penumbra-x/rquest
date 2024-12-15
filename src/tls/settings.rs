@@ -9,8 +9,27 @@ use boring::{
     ssl::{SslConnectorBuilder, SslCurve},
     x509::store::X509StoreRef,
 };
+use http::{HeaderMap, HeaderName};
 use hyper::{PseudoOrder, SettingsOrder};
 use typed_builder::TypedBuilder;
+
+/// Impersonate Settings.
+#[derive(TypedBuilder)]
+pub struct ImpersonateSettings {
+    /// The SSL connector builder.
+    pub(crate) tls: TlsSettings,
+
+    /// HTTP/2 settings.
+    pub(crate) http2: Http2Settings,
+
+    /// Http headers
+    #[builder(default, setter(into))]
+    pub(crate) headers: Option<Cow<'static, HeaderMap>>,
+
+    /// Http headers order
+    #[builder(default, setter(strip_option))]
+    pub(crate) headers_order: Option<Cow<'static, [HeaderName]>>,
+}
 
 /// A root certificates store.
 pub type RootCertsStore = fn() -> Option<&'static X509StoreRef>;

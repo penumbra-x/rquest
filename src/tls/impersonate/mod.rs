@@ -5,18 +5,15 @@ mod macros;
 pub mod okhttp;
 pub mod safari;
 
-use super::{Http2Settings, TlsSettings};
+use super::ImpersonateSettings;
 use chrome::*;
-use http::{HeaderMap, HeaderName};
 use okhttp::*;
 use safari::*;
-use std::{borrow::Cow, fmt::Debug, str::FromStr};
-use typed_builder::TypedBuilder;
+use std::{fmt::Debug, str::FromStr};
 use Impersonate::*;
 
 mod impersonate_imports {
-    pub use super::ImpersonateSettings;
-    pub use crate::tls::Http2Settings;
+    pub use crate::tls::{Http2Settings, ImpersonateSettings};
     pub use crate::*;
     pub use http::{
         header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, UPGRADE_INSECURE_REQUESTS, USER_AGENT},
@@ -35,24 +32,6 @@ mod tls_imports {
 mod http2_imports {
     pub use hyper::PseudoOrder::{self, *};
     pub use hyper::SettingsOrder::{self, *};
-}
-
-/// Impersonate Settings.
-#[derive(TypedBuilder)]
-pub struct ImpersonateSettings {
-    /// The SSL connector builder.
-    pub(crate) tls: TlsSettings,
-
-    /// HTTP/2 settings.
-    pub(crate) http2: Http2Settings,
-
-    /// Http headers
-    #[builder(default, setter(into))]
-    pub(crate) headers: Option<Cow<'static, HeaderMap>>,
-
-    /// Http headers order
-    #[builder(default, setter(strip_option))]
-    pub(crate) headers_order: Option<Cow<'static, [HeaderName]>>,
 }
 
 /// Get the connection settings for the given impersonate version

@@ -19,8 +19,8 @@ use boring::{
 pub use conn::MaybeHttpsStream;
 use conn::{HttpsConnector, HttpsLayer, HttpsLayerSettings};
 pub use extension::{cert_compression, TlsConnectExtension, TlsExtension};
-pub use impersonate::{chrome, okhttp, safari, tls_settings, Impersonate, ImpersonateSettings};
-pub use settings::{Http2Settings, RootCertsStore, TlsSettings};
+pub use impersonate::{chrome, okhttp, safari, tls_settings, Impersonate};
+pub use settings::{Http2Settings, ImpersonateSettings, RootCertsStore, TlsSettings};
 
 type TlsResult<T> = Result<T, ErrorStack>;
 

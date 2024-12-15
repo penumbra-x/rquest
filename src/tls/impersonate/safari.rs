@@ -3,7 +3,7 @@ use http2::*;
 use tls::*;
 
 macro_rules! safari_mod_generator {
-    ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $user_agent:expr) => {
+    ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $ua:expr) => {
         pub(crate) mod $mod_name {
             use crate::tls::{impersonate::impersonate_imports::*, safari::*};
 
@@ -12,11 +12,7 @@ macro_rules! safari_mod_generator {
                 ImpersonateSettings::builder()
                     .tls($tls_template)
                     .http2($http2_template)
-                    .headers(conditional_headers!(
-                        with_headers,
-                        $header_initializer,
-                        $user_agent
-                    ))
+                    .headers(conditional_headers!(with_headers, $header_initializer, $ua))
                     .build()
             }
         }
