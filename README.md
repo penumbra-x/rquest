@@ -318,6 +318,17 @@ By default, `rquest` uses Mozilla's root certificates through the `webpki-roots`
 
 - [source code details](https://github.com/penumbra-x/rquest/blob/main/examples/set_native_root_cert.rs)
 
+## Header Sorting
+
+The `HeaderMap` in the `http` library is implemented based on `HashMap`, so the order of headers is random. However, the insertion order is preserved. The `rquest` library does not sort `HeaderMap` by default, requiring users to set it manually.
+
+Additionally, for `http/1.1`, `HeaderMap` stores headers in lowercase by default and does not retain the original casing. This can be problematic for certain strict servers that may require specific casing for headers. Thus, when using `http/1.1`, the `rquest` library might not be suitable for such cases.
+
+For the `http/2` protocol, headers are enforced to be lowercase, so this issue does not apply.
+
+- The proposal to retain header casing is still under discussion: [issue](https://github.com/hyperium/hyper/issues/2695)
+
+
 ## Device
 
 You can customize the `TLS`/`HTTP2` fingerprint parameters of the device. In addition, the basic device impersonation types are provided as follows:
