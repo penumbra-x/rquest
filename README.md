@@ -64,6 +64,7 @@ WebSocket
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 rquest = { version = "0.32.0", features = ["websocket"] }
+futures-util = { version = "0.3.0", default-features = false, features = ["std"] }
 ```
 
 ```rust,no_run
