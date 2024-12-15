@@ -1502,9 +1502,6 @@ impl Client {
                 urls: Vec::new(),
                 retry_count: 0,
                 redirect,
-                #[cfg(feature = "cookies")]
-                cookie_store: cookie_store.cloned(),
-                #[cfg(not(feature = "cookies"))]
                 cookie_store: _cookie_store,
                 client: self.inner.clone(),
                 in_flight,
