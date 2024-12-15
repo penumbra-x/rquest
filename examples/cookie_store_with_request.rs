@@ -16,6 +16,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Build a client to mimic Safari18
     let client = rquest::Client::builder()
         .impersonate(Impersonate::Safari18)
+        .redirect(Policy::default())
         .build()?;
 
     // Create a cookie store
@@ -23,12 +24,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let jar = Arc::new(Jar::default());
 
     // Make a request
-    let _ = client
-        .get(&url)
-        .cookie_store(jar.clone())
-        .redirect(Policy::default())
-        .send()
-        .await?;
+    let _ = client.get(&url).cookie_store(jar.clone()).send().await?;
+
+    // Print cookies
+    let cookies = jar.cookies(&url);
+    log::info!("{:?}", cookies);
+
+    // Add a cookie
+    jar.add_cookie_str("foo=bar; Domain=google.com", &url);
+
+    // Make a request
+    let _ = client.get(&url).cookie_store(jar.clone()).send().await?;
 
     // Print cookies
     let cookies = jar.cookies(&url);
