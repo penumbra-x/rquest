@@ -276,7 +276,7 @@ required-features = ["boring-tls-webpki-roots"]
 [[example]]
 name = "websocket"
 path = "examples/websocket.rs"
-required-features = ["websocket"]
+required-features = ["websocket", "futures-util/std"]
 
 [[test]]
 name = "cookie"
