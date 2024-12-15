@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 - Add `Edge 131` impersonate (#158)
 - *(client)* Add support for base URL parameter (#159)
 - *(client)* Add support for base URL parameter
+- Add loading of dynamic root certificate store (#170)
+- *(client)* Request specific cookie store override (#171)
 
 ### 🐛 Bug Fixes
 
@@ -24,6 +26,9 @@ All notable changes to this project will be documented in this file.
 - Update impersonate template
 - Update macro export scope
 - To avoid ambiguity, `ca_cert_store` is renamed to `root_certs_store` (#162)
+- Simplify root certificate load
+- Simplify root certificate load (#169)
+- Move `ImpersonateSettings` to implement location
 
 ### ◀️ Revert
 
