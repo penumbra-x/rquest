@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🐛 Bug Fixes
+
+- *(proxy)* Fix `ws`/`wss` upgrade support for `http`/`https` proxy (#176)
+
+## [0.33.1] - 2024-12-16
+
+### ⚙️ Miscellaneous Tasks
+
+- Show clear errors when TLS connector build fails (#173)
+- Avoiding setup bloat when customizing your DNS resolver (#174)
+
+## [0.33.0] - 2024-12-15
+
 ### 🚀 Features
 
 - Add `Safari 18.1.1` impersonate (#157)
