@@ -283,7 +283,7 @@ impl ClientBuilder {
                 request_timeout: config.timeout,
                 https_only: config.https_only,
                 proxies_maybe_http_auth,
-                base_url: config.base_url,
+                base_url: config.base_url.map(Arc::new),
             }),
         })
     }
@@ -1719,7 +1719,7 @@ impl Client {
 
     /// Set the bash url for this client.
     pub fn set_base_url<U: IntoUrl>(&mut self, url: U) -> crate::Result<()> {
-        self.inner_mut().base_url = Some(url.into_url()?);
+        self.inner_mut().base_url = Some(Arc::new(url.into_url()?));
         Ok(())
     }
 
@@ -1863,7 +1863,7 @@ struct ClientRef {
     request_timeout: Option<Duration>,
     https_only: bool,
     proxies_maybe_http_auth: bool,
-    base_url: Option<Url>,
+    base_url: Option<Arc<Url>>,
 }
 
 impl ClientRef {
