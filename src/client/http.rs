@@ -1695,8 +1695,7 @@ impl Client {
                 crate::util::convert_headers_priority(settings.http2.headers_priority);
 
             // Set the http2 preference
-            conn
-                .http2_initial_stream_id(settings.http2.initial_stream_id)
+            conn.http2_initial_stream_id(settings.http2.initial_stream_id)
                 .http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
                 .http2_initial_connection_window_size(settings.http2.initial_connection_window_size)
                 .http2_max_concurrent_streams(settings.http2.max_concurrent_streams)
