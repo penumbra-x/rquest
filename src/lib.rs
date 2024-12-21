@@ -218,8 +218,6 @@
 //! The following are a list of [Cargo features][cargo-features] that can be
 //! enabled or disabled:
 //!
-//! - **boring-tls** *(enabled by default)*: Provides TLS support to connect
-//!   over HTTPS.
 //! - **websocket**: Provides websocket support.
 //! - **cookies**: Provides cookie session support.
 //! - **gzip**: Provides response body gzip decompression.
@@ -245,16 +243,15 @@
 //! [cargo-features]: https://doc.rust-lang.org/stable/cargo/reference/manifest.html#the-features-section
 
 /// Re-export of boring to keep versions in check
-#[cfg(feature = "boring-tls")]
 pub use boring;
-#[cfg(feature = "boring-tls")]
+
 pub use boring_sys;
 #[cfg(feature = "hickory-dns")]
 pub use hickory_resolver;
 pub use http::header;
 pub use http::Method;
 pub use http::{StatusCode, Version};
-#[cfg(feature = "boring-tls")]
+
 pub use tokio_boring;
 pub use url::Url;
 
@@ -346,8 +343,7 @@ pub use self::client::{
 };
 pub use self::proxy::{NoProxy, Proxy};
 
-#[cfg(feature = "boring-tls")]
-pub use hyper::{PseudoOrder, SettingsOrder};
+pub use hyper2::{PseudoOrder, SettingsOrder};
 
 mod client;
 mod connect;
@@ -357,6 +353,6 @@ pub mod dns;
 mod macros;
 mod proxy;
 pub mod redirect;
-#[cfg(feature = "boring-tls")]
+
 pub mod tls;
 mod util;

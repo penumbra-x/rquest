@@ -126,7 +126,7 @@ impl Error {
         let mut source = self.source();
 
         while let Some(err) = source {
-            if let Some(hyper_err) = err.downcast_ref::<hyper::Error>() {
+            if let Some(hyper_err) = err.downcast_ref::<crate::util::client::Error>() {
                 if hyper_err.is_connect() {
                     return true;
                 }
@@ -233,7 +233,6 @@ impl From<serde_json::Error> for Error {
     }
 }
 
-#[cfg(feature = "boring-tls")]
 impl From<boring::error::ErrorStack> for Error {
     fn from(err: boring::error::ErrorStack) -> Error {
         Error::new(Kind::Builder, Some(format!("boring tls error: {:?}", err)))
@@ -285,7 +284,6 @@ pub(crate) fn url_bad_uri(url: Url) -> Error {
     Error::new(Kind::Builder, Some("url is not a valid uri")).with_url(url)
 }
 
-#[cfg(feature = "boring-tls")]
 pub(crate) fn uri_bad_host() -> Error {
     Error::new(Kind::Builder, Some("no host in url"))
 }
@@ -296,9 +294,14 @@ pub(crate) fn upgrade<E: Into<BoxError>>(e: E) -> Error {
 
 // io::Error helpers
 
-#[allow(unused)]
-pub(crate) fn into_io(e: Error) -> io::Error {
-    e.into_io()
+#[cfg(any(
+    feature = "gzip",
+    feature = "zstd",
+    feature = "brotli",
+    feature = "deflate",
+))]
+pub(crate) fn into_io(e: BoxError) -> io::Error {
+    io::Error::new(io::ErrorKind::Other, e)
 }
 
 #[allow(unused)]

@@ -1,3 +1,17 @@
+#![deny(missing_docs)]
+#![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
+//! Backport from: https://github.com/hyperium/hyper-util
+//! Utilities for working with hyper.
+//!
+//! This crate is less-stable than [`hyper`](https://docs.rs/hyper). However,
+//! does respect Rust's semantic version regarding breaking changes.
+
+pub mod client;
+mod common;
+pub mod ext;
+pub mod rt;
+pub mod service;
+
 use crate::header::{Entry, HeaderMap, HeaderName, HeaderValue, OccupiedEntry};
 
 pub fn basic_auth<U, P>(username: U, password: Option<P>) -> HeaderValue
@@ -116,10 +130,10 @@ pub(crate) fn sort_headers(headers: &mut HeaderMap, headers_order: &[HeaderName]
 }
 
 // Convert the headers priority to the correct type
-#[cfg(feature = "boring-tls")]
+
 #[inline]
 pub(crate) fn convert_headers_priority(
     headers_priority: Option<(u32, u8, bool)>,
-) -> Option<hyper::StreamDependency> {
-    headers_priority.map(|(a, b, c)| hyper::StreamDependency::new(hyper::StreamId::from(a), b, c))
+) -> Option<hyper2::StreamDependency> {
+    headers_priority.map(|(a, b, c)| hyper2::StreamDependency::new(hyper2::StreamId::from(a), b, c))
 }

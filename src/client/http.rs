@@ -6,6 +6,7 @@ use std::time::Duration;
 use std::{collections::HashMap, convert::TryInto, net::SocketAddr};
 use std::{fmt, str};
 
+use crate::util::client::connect::HttpConnector;
 use bytes::Bytes;
 use http::header::{
     Entry, HeaderMap, HeaderValue, ACCEPT, ACCEPT_ENCODING, CONTENT_ENCODING, CONTENT_LENGTH,
@@ -13,7 +14,6 @@ use http::header::{
 };
 use http::uri::Scheme;
 use http::{HeaderName, Uri, Version};
-use hyper::client::{HttpConnector, ResponseFuture as HyperResponseFuture};
 use pin_project_lite::pin_project;
 use std::future::Future;
 use std::pin::Pin;
@@ -32,13 +32,15 @@ use crate::dns::hickory::HickoryDnsResolver;
 use crate::dns::{gai::GaiResolver, DnsResolverWithOverrides, DynResolver, Resolve};
 use crate::into_url::try_uri;
 use crate::redirect::{self, remove_sensitive_headers};
-#[cfg(feature = "boring-tls")]
 use crate::tls::{self, BoringTlsConnector, Impersonate, ImpersonateSettings, TlsSettings};
+use crate::util::{self, client::Builder, rt::TokioExecutor};
 use crate::{error, impl_debug};
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
 #[cfg(feature = "hickory-dns")]
 use hickory_resolver::config::LookupIpStrategy;
 use log::{debug, trace};
+
+type HyperResponseFuture = util::client::ResponseFuture;
 
 /// An asynchronous `Client` to make Requests with.
 ///
@@ -98,9 +100,9 @@ struct Config {
     redirect_policy: redirect::Policy,
     referer: bool,
     timeout: Option<Duration>,
+    read_timeout: Option<Duration>,
     local_address_ipv6: Option<Ipv6Addr>,
     local_address_ipv4: Option<Ipv4Addr>,
-    http1_title_case_headers: bool,
     #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
     interface: Option<std::borrow::Cow<'static, str>>,
     nodelay: bool,
@@ -113,11 +115,11 @@ struct Config {
     #[cfg(feature = "hickory-dns")]
     dns_strategy: Option<LookupIpStrategy>,
     base_url: Option<Url>,
-    builder: hyper::client::Builder,
+    builder: Builder,
     https_only: bool,
-    #[cfg(feature = "boring-tls")]
+
     tls_info: bool,
-    #[cfg(feature = "boring-tls")]
+
     tls: TlsSettings,
 }
 
@@ -159,6 +161,7 @@ impl ClientBuilder {
                 redirect_policy: redirect::Policy::none(),
                 referer: true,
                 timeout: None,
+                read_timeout: None,
                 local_address_ipv6: None,
                 local_address_ipv4: None,
                 #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
@@ -172,12 +175,11 @@ impl ClientBuilder {
                 dns_overrides: HashMap::new(),
                 dns_resolver: None,
                 base_url: None,
-                builder: hyper::Client::builder(),
+                builder: crate::util::client::Client::builder(TokioExecutor::new()),
                 https_only: false,
-                http1_title_case_headers: false,
-                #[cfg(feature = "boring-tls")]
+
                 tls_info: false,
-                #[cfg(feature = "boring-tls")]
+
                 tls: Default::default(),
             },
         }
@@ -207,19 +209,17 @@ impl ClientBuilder {
         let mut connector = {
             let mut resolver: Arc<dyn Resolve> = if let Some(dns_resolver) = config.dns_resolver {
                 dns_resolver
-            } else {
-                if config.hickory_dns {
-                    #[cfg(feature = "hickory-dns")]
-                    {
-                        Arc::new(HickoryDnsResolver::new(config.dns_strategy)?)
-                    }
-                    #[cfg(not(feature = "hickory-dns"))]
-                    {
-                        unreachable!("hickory-dns shouldn't be enabled unless the feature is")
-                    }
-                } else {
-                    Arc::new(GaiResolver::new())
+            } else if config.hickory_dns {
+                #[cfg(feature = "hickory-dns")]
+                {
+                    Arc::new(HickoryDnsResolver::new(config.dns_strategy)?)
                 }
+                #[cfg(not(feature = "hickory-dns"))]
+                {
+                    unreachable!("hickory-dns shouldn't be enabled unless the feature is")
+                }
+            } else {
+                Arc::new(GaiResolver::new())
             };
             if !config.dns_overrides.is_empty() {
                 resolver = Arc::new(DnsResolverWithOverrides::new(
@@ -230,34 +230,18 @@ impl ClientBuilder {
             let mut http = HttpConnector::new_with_resolver(DynResolver::new(resolver));
             http.set_connect_timeout(config.connect_timeout);
 
-            #[cfg(feature = "boring-tls")]
-            {
-                let tls = BoringTlsConnector::new(config.tls)?;
-                Connector::new_boring_tls(
-                    http,
-                    tls,
-                    proxies,
-                    config.local_address_ipv4,
-                    config.local_address_ipv6,
-                    #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
-                    config.interface,
-                    config.nodelay,
-                    config.tls_info,
-                )
-            }
-
-            #[cfg(not(feature = "boring-tls"))]
-            {
-                Connector::new(
-                    http,
-                    proxies.clone(),
-                    config.local_address_ipv4,
-                    config.local_address_ipv6,
-                    #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
-                    config.interface,
-                    config.nodelay,
-                )
-            }
+            let tls = BoringTlsConnector::new(config.tls)?;
+            Connector::new_boring_tls(
+                http,
+                tls,
+                proxies,
+                config.local_address_ipv4,
+                config.local_address_ipv6,
+                #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+                config.interface,
+                config.nodelay,
+                config.tls_info,
+            )
         };
 
         connector.set_timeout(config.connect_timeout);
@@ -268,8 +252,7 @@ impl ClientBuilder {
             .builder
             .pool_idle_timeout(config.pool_idle_timeout)
             .pool_max_idle_per_host(config.pool_max_idle_per_host)
-            .pool_max_size(config.pool_max_size)
-            .http1_title_case_headers(config.http1_title_case_headers);
+            .pool_max_size(config.pool_max_size);
 
         Ok(Client {
             inner: Arc::new(ClientRef {
@@ -282,6 +265,7 @@ impl ClientBuilder {
                 redirect: Arc::new(config.redirect_policy),
                 referer: config.referer,
                 request_timeout: config.timeout,
+                read_timeout: config.read_timeout,
                 https_only: config.https_only,
                 proxies_maybe_http_auth,
                 base_url: config.base_url.map(Arc::new),
@@ -290,7 +274,6 @@ impl ClientBuilder {
     }
 
     /// Sets the necessary values to mimic the specified impersonate version, including headers and TLS settings.
-    #[cfg(feature = "boring-tls")]
     #[inline]
     pub fn impersonate(self, impersonate: Impersonate) -> ClientBuilder {
         self.apply_impersonate(impersonate, true)
@@ -298,21 +281,18 @@ impl ClientBuilder {
 
     /// Sets the necessary values to mimic the specified impersonate version, skipping header configuration.
     /// This will only apply the required TLS settings.
-    #[cfg(feature = "boring-tls")]
     #[inline]
     pub fn impersonate_skip_headers(self, impersonate: Impersonate) -> ClientBuilder {
         self.apply_impersonate(impersonate, false)
     }
 
     /// Apply the given impersonate settings directly.
-    #[cfg(feature = "boring-tls")]
     #[inline]
     pub fn impersonate_settings(self, settings: ImpersonateSettings) -> ClientBuilder {
         self.apply_impersonate_settings(settings)
     }
 
     /// Private helper to configure impersonation with optional header settings.
-    #[cfg(feature = "boring-tls")]
     #[inline]
     fn apply_impersonate(self, impersonate: Impersonate, with_headers: bool) -> ClientBuilder {
         let settings = tls::tls_settings(impersonate, with_headers);
@@ -320,7 +300,6 @@ impl ClientBuilder {
     }
 
     /// Apply the given TLS settings and header function.
-    #[cfg(feature = "boring-tls")]
     fn apply_impersonate_settings(mut self, settings: ImpersonateSettings) -> ClientBuilder {
         // Set the headers if needed
         if let Some(headers) = settings.headers {
@@ -333,45 +312,56 @@ impl ClientBuilder {
         // Set the TLS settings
         self.config.tls = settings.tls;
 
-        // Convert the headers priority to the correct type
-        let http2_headers_priority =
-            crate::util::convert_headers_priority(settings.http2.headers_priority);
-
         // Set the http2 preference
-        self.http2_initial_stream_id(settings.http2.initial_stream_id)
-            .http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
-            .http2_initial_connection_window_size(settings.http2.initial_connection_window_size)
-            .http2_max_concurrent_streams(settings.http2.max_concurrent_streams)
-            .http2_max_header_list_size(settings.http2.max_header_list_size)
-            .http2_header_table_size(settings.http2.header_table_size)
-            .http2_enable_push(settings.http2.enable_push)
-            .http2_max_frame_size(settings.http2.max_frame_size)
-            .http2_headers_priority(http2_headers_priority)
-            .http2_headers_pseudo_order(settings.http2.headers_pseudo_order)
-            .http2_settings_order(settings.http2.settings_order)
-            .http2_unknown_setting8(settings.http2.unknown_setting8)
-            .http2_unknown_setting9(settings.http2.unknown_setting9)
+        self.config.builder.with_http2_builder(|builder| {
+            let http2_headers_priority =
+                crate::util::convert_headers_priority(settings.http2.headers_priority);
+
+            builder
+                .initial_stream_id(settings.http2.initial_stream_id)
+                .initial_stream_window_size(settings.http2.initial_stream_window_size)
+                .initial_connection_window_size(settings.http2.initial_connection_window_size)
+                .max_concurrent_streams(settings.http2.max_concurrent_streams)
+                .header_table_size(settings.http2.header_table_size)
+                .max_frame_size(settings.http2.max_frame_size)
+                .headers_priority(http2_headers_priority)
+                .headers_pseudo_order(settings.http2.headers_pseudo_order)
+                .settings_order(settings.http2.settings_order);
+
+            if let Some(max_header_list_size) = settings.http2.max_header_list_size {
+                builder.max_header_list_size(max_header_list_size);
+            }
+
+            if let Some(enable_push) = settings.http2.enable_push {
+                builder.enable_push(enable_push);
+            }
+
+            if let Some(unknown_setting8) = settings.http2.unknown_setting8 {
+                builder.unknown_setting8(unknown_setting8);
+            }
+
+            if let Some(unknown_setting9) = settings.http2.unknown_setting9 {
+                builder.unknown_setting9(unknown_setting9);
+            }
+            builder
+        });
+
+        self
     }
 
     /// Enable Encrypted Client Hello (Secure SNI)
-    #[cfg(feature = "boring-tls")]
-    #[inline]
     pub fn enable_ech_grease(mut self, enabled: bool) -> ClientBuilder {
         self.config.tls.enable_ech_grease = enabled;
         self
     }
 
     /// Enable TLS permute_extensions
-    #[cfg(feature = "boring-tls")]
-    #[inline]
     pub fn permute_extensions(mut self, enabled: bool) -> ClientBuilder {
         self.config.tls.permute_extensions = Some(enabled);
         self
     }
 
     /// Enable TLS pre_shared_key
-    #[cfg(feature = "boring-tls")]
-    #[inline]
     pub fn pre_shared_key(mut self, enabled: bool) -> ClientBuilder {
         self.config.tls.pre_shared_key = enabled;
         self
@@ -473,7 +463,6 @@ impl ClientBuilder {
     ///
     /// The host header needs to be manually inserted if you want to modify its order.
     /// Otherwise it will be inserted by hyper after sorting.
-    #[inline]
     pub fn headers_order(mut self, order: impl Into<Cow<'static, [HeaderName]>>) -> ClientBuilder {
         self.config.headers_order = Some(order.into());
         self
@@ -737,6 +726,14 @@ impl ClientBuilder {
         self
     }
 
+    /// Set a timeout for only the read phase of a `Client`.
+    ///
+    /// Default is `None`.
+    pub fn read_timeout(mut self, timeout: Duration) -> ClientBuilder {
+        self.config.read_timeout = Some(timeout);
+        self
+    }
+
     /// Set a timeout for only the connect phase of a `Client`.
     ///
     /// Default is `None`.
@@ -788,54 +785,9 @@ impl ClientBuilder {
         self
     }
 
-    /// Send headers as title case instead of lowercase.
-    pub fn http1_title_case_headers(mut self, enabled: bool) -> ClientBuilder {
-        self.config.http1_title_case_headers = enabled;
-        self
-    }
-
-    /// Set whether HTTP/1 connections will accept obsolete line folding for
-    /// header values.
-    ///
-    /// Newline codepoints (`\r` and `\n`) will be transformed to spaces when
-    /// parsing.
-    pub fn http1_allow_obsolete_multiline_headers_in_responses(
-        mut self,
-        value: bool,
-    ) -> ClientBuilder {
-        self.config
-            .builder
-            .http1_allow_obsolete_multiline_headers_in_responses(value);
-        self
-    }
-
-    /// Sets whether invalid header lines should be silently ignored in HTTP/1 responses.
-    pub fn http1_ignore_invalid_headers_in_responses(mut self, value: bool) -> ClientBuilder {
-        self.config
-            .builder
-            .http1_ignore_invalid_headers_in_responses(value);
-        self
-    }
-
-    /// Set whether HTTP/1 connections will accept spaces between header
-    /// names and the colon that follow them in responses.
-    ///
-    /// Newline codepoints (`\r` and `\n`) will be transformed to spaces when
-    /// parsing.
-    pub fn http1_allow_spaces_after_header_name_in_responses(
-        mut self,
-        value: bool,
-    ) -> ClientBuilder {
-        self.config
-            .builder
-            .http1_allow_spaces_after_header_name_in_responses(value);
-        self
-    }
-
     /// Only use HTTP/1.
     /// Default is Http/1.
     pub fn http1_only(mut self) -> ClientBuilder {
-        #[cfg(feature = "boring-tls")]
         {
             self.config.tls.alpn_protos = HttpVersionPref::Http1;
         }
@@ -844,15 +796,8 @@ impl ClientBuilder {
         self
     }
 
-    /// Allow HTTP/0.9 responses
-    pub fn http09_responses(mut self) -> ClientBuilder {
-        self.config.builder.http09_responses(true);
-        self
-    }
-
     /// Only use HTTP/2.
     pub fn http2_only(mut self) -> ClientBuilder {
-        #[cfg(feature = "boring-tls")]
         {
             self.config.tls.alpn_protos = HttpVersionPref::Http2;
         }
@@ -861,172 +806,23 @@ impl ClientBuilder {
         self
     }
 
-    /// Sets the initial stream ID for HTTP2.
-    pub fn http2_initial_stream_id(mut self, id: impl Into<Option<u32>>) -> ClientBuilder {
-        self.config.builder.http2_initial_stream_id(id);
-        self
-    }
-
-    /// Sets the `SETTINGS_INITIAL_WINDOW_SIZE` option for HTTP2 stream-level flow control.
+    /// With http1/http2 builder
     ///
-    /// Default is currently 65,535 but may change internally to optimize for common uses.
-    pub fn http2_initial_stream_window_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
-        self.config
-            .builder
-            .http2_initial_stream_window_size(sz.into());
-        self
-    }
-
-    /// Sets the max connection-level flow control for HTTP2
-    ///
-    /// Default is currently 65,535 but may change internally to optimize for common uses.
-    pub fn http2_initial_connection_window_size(
-        mut self,
-        sz: impl Into<Option<u32>>,
-    ) -> ClientBuilder {
-        self.config
-            .builder
-            .http2_initial_connection_window_size(sz.into());
-        self
-    }
-
-    /// Sets whether to use an adaptive flow control.
-    ///
-    /// Enabling this will override the limits set in `http2_initial_stream_window_size` and
-    /// `http2_initial_connection_window_size`.
-    pub fn http2_adaptive_window(mut self, enabled: bool) -> ClientBuilder {
-        self.config.builder.http2_adaptive_window(enabled);
-        self
-    }
-
-    /// Sets the maximum frame size to use for HTTP2.
-    ///
-    /// Default is currently 16,384 but may change internally to optimize for common uses.
-    pub fn http2_max_frame_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
-        self.config.builder.http2_max_frame_size(sz.into());
-        self
-    }
-
-    /// Sets the maximum concurrent streams to use for HTTP2.
-    ///
-    /// Passing `None` will do nothing.
-    pub fn http2_max_concurrent_streams(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
-        if let Some(max) = sz.into() {
-            self.config.builder.http2_max_concurrent_streams(max);
-        }
-        self
-    }
-
-    /// Sets the max header list size to use for HTTP2.
-    ///
-    /// Passing `None` will do nothing.
-    pub fn http2_max_header_list_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
-        if let Some(sz) = sz.into() {
-            self.config.builder.http2_max_header_list_size(sz);
-        }
-        self
-    }
-
-    /// Enables and disables the push feature for HTTP2.
-    ///
-    /// Passing `None` will do nothing.
-    pub fn http2_enable_push(mut self, sz: impl Into<Option<bool>>) -> ClientBuilder {
-        if let Some(sz) = sz.into() {
-            self.config.builder.http2_enable_push(sz);
-        }
-        self
-    }
-
-    /// Http2 unknown_setting8
-    pub fn http2_unknown_setting8(mut self, sz: impl Into<Option<bool>>) -> ClientBuilder {
-        if let Some(sz) = sz.into() {
-            self.config.builder.http2_unknown_setting8(sz);
-        }
-        self
-    }
-
-    /// Http2 unknown_setting9
-    pub fn http2_unknown_setting9(mut self, sz: impl Into<Option<bool>>) -> ClientBuilder {
-        if let Some(sz) = sz.into() {
-            self.config.builder.http2_unknown_setting9(sz);
-        }
-        self
-    }
-
-    /// Sets the header table size to use for HTTP2.
-    ///
-    /// Passing `None` will do nothing.
-    pub fn http2_header_table_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
-        if let Some(sz) = sz.into() {
-            self.config.builder.http2_header_table_size(sz);
-        }
-        self
-    }
-
-    /// Sets the pseudo header order for HTTP2.
-    /// This is an array of 4 elements, each element is a `PseudoOrder` enum.
-    /// Default is `None`.
-    pub fn http2_headers_pseudo_order(
-        mut self,
-        order: impl Into<Option<[hyper::PseudoOrder; 4]>>,
-    ) -> ClientBuilder {
-        self.config.builder.http2_headers_pseudo_order(order.into());
-        self
-    }
-
-    /// Sets the priority for HTTP2 headers.
-    /// Default is `None`.
-    pub fn http2_headers_priority(
-        mut self,
-        priority: impl Into<Option<hyper::StreamDependency>>,
-    ) -> ClientBuilder {
-        self.config.builder.http2_headers_priority(priority.into());
-        self
-    }
-
-    /// Sets the settings order for HTTP2.
-    /// This is an array of 2 elements, each element is a `SettingsOrder` enum.
-    /// Default is `None`.
-    pub fn http2_settings_order(
-        mut self,
-        order: impl Into<Option<[hyper::SettingsOrder; 8]>>,
-    ) -> ClientBuilder {
-        self.config.builder.http2_settings_order(order.into());
-        self
-    }
-
-    /// Sets an interval for HTTP2 Ping frames should be sent to keep a connection alive.
-    ///
-    /// Pass `None` to disable HTTP2 keep-alive.
-    /// Default is currently disabled.
-    pub fn http2_keep_alive_interval(
-        mut self,
-        interval: impl Into<Option<Duration>>,
-    ) -> ClientBuilder {
-        self.config
-            .builder
-            .http2_keep_alive_interval(interval.into());
-        self
-    }
-
-    /// Sets a timeout for receiving an acknowledgement of the keep-alive ping.
-    ///
-    /// If the ping is not acknowledged within the timeout, the connection will be closed.
-    /// Does nothing if `http2_keep_alive_interval` is disabled.
-    /// Default is currently disabled.
-    pub fn http2_keep_alive_timeout(mut self, timeout: Duration) -> ClientBuilder {
-        self.config.builder.http2_keep_alive_timeout(timeout);
-        self
-    }
-
-    /// Sets whether HTTP2 keep-alive should apply while the connection is idle.
-    ///
-    /// If disabled, keep-alive pings are only sent while there are open request/responses streams.
-    /// If enabled, pings are also sent when no streams are active.
-    /// Does nothing if `http2_keep_alive_interval` is disabled.
-    /// Default is `false`.
-    pub fn http2_keep_alive_while_idle(mut self, enabled: bool) -> ClientBuilder {
-        self.config.builder.http2_keep_alive_while_idle(enabled);
+    /// # Example
+    /// ```
+    /// let client = rquest::Client::builder()
+    ///     .with_http_builder(|builder| {
+    ///         builder.with_http1_builder(|builder| {
+    ///             builder.http09_responses(true);
+    ///         });
+    ///     })
+    ///     .build()?;
+    /// ```
+    pub fn with_http_builder<F>(mut self, f: F) -> ClientBuilder
+    where
+        F: FnOnce(&mut Builder),
+    {
+        f(&mut self.config.builder);
         self
     }
 
@@ -1120,7 +916,6 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg(feature = "boring-tls")]
     pub fn danger_accept_invalid_certs(mut self, accept_invalid_certs: bool) -> ClientBuilder {
         self.config.tls.certs_verification = !accept_invalid_certs;
         self
@@ -1133,7 +928,6 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg(feature = "boring-tls")]
     pub fn tls_sni(mut self, tls_sni: bool) -> ClientBuilder {
         self.config.tls.tls_sni = tls_sni;
         self
@@ -1153,7 +947,6 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg(feature = "boring-tls")]
     pub fn min_tls_version(mut self, version: tls::TlsVersion) -> ClientBuilder {
         self.config.tls.min_tls_version = Some(version);
         self
@@ -1173,7 +966,6 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg(feature = "boring-tls")]
     pub fn max_tls_version(mut self, version: tls::TlsVersion) -> ClientBuilder {
         self.config.tls.max_tls_version = Some(version);
         self
@@ -1184,7 +976,6 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    #[cfg(feature = "boring-tls")]
     pub fn tls_info(mut self, tls_info: bool) -> ClientBuilder {
         self.config.tls_info = tls_info;
         self
@@ -1199,7 +990,6 @@ impl ClientBuilder {
     }
 
     /// Set root certificate store.
-    #[cfg(feature = "boring-tls")]
     pub fn root_certs_store(mut self, store: impl Into<tls::RootCertsStore>) -> ClientBuilder {
         self.config.tls.root_certs_store = store.into();
         self
@@ -1301,7 +1091,7 @@ impl ClientBuilder {
     }
 }
 
-type HyperClient = hyper::Client<Connector, super::body::ImplStream>;
+type HyperClient = util::client::Client<Connector, super::Body>;
 
 impl Default for Client {
     fn default() -> Self {
@@ -1492,8 +1282,12 @@ impl Client {
         self.inner.proxy_auth(&uri, &mut headers);
 
         let in_flight = {
-            let extension = self.inner.hyper.pool_key_extension(&uri);
-            let req = InnerRequest::new(version, uri, &method, headers.clone())
+            let extension = self.inner.hyper.pool_key(&uri);
+            let req = InnerRequest::new()
+                .uri(uri)
+                .method(method.clone())
+                .version(version)
+                .headers(headers.clone())
                 .headers_order(self.inner.headers_order.as_deref())
                 .extension(extension)
                 .build(body);
@@ -1501,8 +1295,14 @@ impl Client {
             ResponseFuture::Default(self.inner.hyper.request(req))
         };
 
-        let timeout = timeout
+        let total_timeout = timeout
             .or(self.inner.request_timeout)
+            .map(tokio::time::sleep)
+            .map(Box::pin);
+
+        let read_timeout_fut = self
+            .inner
+            .read_timeout
             .map(tokio::time::sleep)
             .map(Box::pin);
 
@@ -1519,7 +1319,9 @@ impl Client {
                 cookie_store: _cookie_store,
                 client: self.inner.clone(),
                 in_flight,
-                timeout,
+                total_timeout,
+                read_timeout_fut,
+                read_timeout: self.inner.read_timeout,
             }),
         }
     }
@@ -1645,74 +1447,6 @@ impl Client {
         self.inner_mut().hyper.set_interface(interface.into());
     }
 
-    /// Set the impersonate for this client.
-    #[inline]
-    #[cfg(feature = "boring-tls")]
-    pub fn set_impersonate(&mut self, var: Impersonate) -> crate::Result<()> {
-        let settings = tls::tls_settings(var, true);
-        self.set_impersonate_settings(settings)
-    }
-
-    /// Set the impersonate for this client without setting the headers.
-    #[inline]
-    #[cfg(feature = "boring-tls")]
-    pub fn set_impersonate_skip_headers(&mut self, var: Impersonate) -> crate::Result<()> {
-        let settings = tls::tls_settings(var, false);
-        self.impersonate_settings(settings)
-    }
-
-    /// Set the impersonate for this client with the given settings.
-    #[inline]
-    #[cfg(feature = "boring-tls")]
-    pub fn set_impersonate_settings(&mut self, settings: ImpersonateSettings) -> crate::Result<()> {
-        self.impersonate_settings(settings)
-    }
-
-    /// Apply the impersonate settings to the client.
-    #[cfg(feature = "boring-tls")]
-    #[inline]
-    fn impersonate_settings(&mut self, settings: ImpersonateSettings) -> crate::Result<()> {
-        let inner = self.inner_mut();
-
-        // Set the headers
-        if let Some(headers) = settings.headers {
-            inner.headers = headers;
-        }
-
-        // Set the headers order if needed
-        inner.headers_order = settings.headers_order;
-
-        let hyper = &mut inner.hyper;
-
-        // Set the connector
-        let boringtls_connector = BoringTlsConnector::new(settings.tls)?;
-        hyper.set_connector(|c| c.set_connector(boringtls_connector));
-
-        // Set the conn builder
-        hyper.set_conn_builder(|conn| {
-            // Convert the headers priority to the correct type
-            let http2_headers_priority =
-                crate::util::convert_headers_priority(settings.http2.headers_priority);
-
-            // Set the http2 preference
-            conn.http2_initial_stream_id(settings.http2.initial_stream_id)
-                .http2_initial_stream_window_size(settings.http2.initial_stream_window_size)
-                .http2_initial_connection_window_size(settings.http2.initial_connection_window_size)
-                .http2_max_concurrent_streams(settings.http2.max_concurrent_streams)
-                .http2_max_header_list_size(settings.http2.max_header_list_size)
-                .http2_header_table_size(settings.http2.header_table_size)
-                .http2_enable_push(settings.http2.enable_push)
-                .http2_max_frame_size(settings.http2.max_frame_size)
-                .http2_headers_priority(http2_headers_priority)
-                .http2_headers_pseudo_order(settings.http2.headers_pseudo_order)
-                .http2_settings_order(settings.http2.settings_order)
-                .http2_unknown_setting8(settings.http2.unknown_setting8)
-                .http2_unknown_setting9(settings.http2.unknown_setting9);
-        });
-
-        Ok(())
-    }
-
     /// Set the headers order for this client.
     pub fn set_headers_order(&mut self, order: impl Into<Cow<'static, [HeaderName]>>) {
         self.inner_mut().headers_order = Some(order.into());
@@ -1734,11 +1468,83 @@ impl Client {
         self.inner_mut().base_url = None;
     }
 
+    /// Set the impersonate for this client.
+    #[inline]
+    pub fn set_impersonate(&mut self, var: Impersonate) -> crate::Result<()> {
+        let settings = tls::tls_settings(var, true);
+        self.set_impersonate_settings(settings)
+    }
+
+    /// Set the impersonate for this client without setting the headers.
+    #[inline]
+    pub fn set_impersonate_skip_headers(&mut self, var: Impersonate) -> crate::Result<()> {
+        let settings = tls::tls_settings(var, false);
+        self.impersonate_settings(settings)
+    }
+
+    /// Set the impersonate for this client with the given settings.
+    #[inline]
+    pub fn set_impersonate_settings(&mut self, settings: ImpersonateSettings) -> crate::Result<()> {
+        self.impersonate_settings(settings)
+    }
+
+    /// Apply the impersonate settings to the client.
+    #[inline]
+    fn impersonate_settings(&mut self, settings: ImpersonateSettings) -> crate::Result<()> {
+        let inner = self.inner_mut();
+
+        // Set the headers
+        if let Some(headers) = settings.headers {
+            inner.headers = headers;
+        }
+
+        // Set the headers order if needed
+        inner.headers_order = settings.headers_order;
+
+        let hyper = &mut inner.hyper;
+
+        // Set the connector
+        let connector = BoringTlsConnector::new(settings.tls)?;
+        hyper.with_connector(|c| c.set_connector(connector));
+
+        // Set the http2 preference
+        hyper.with_http2_builder(|builder| {
+            let http2_headers_priority =
+                crate::util::convert_headers_priority(settings.http2.headers_priority);
+
+            builder
+                .initial_stream_id(settings.http2.initial_stream_id)
+                .initial_stream_window_size(settings.http2.initial_stream_window_size)
+                .initial_connection_window_size(settings.http2.initial_connection_window_size)
+                .max_concurrent_streams(settings.http2.max_concurrent_streams)
+                .header_table_size(settings.http2.header_table_size)
+                .max_frame_size(settings.http2.max_frame_size)
+                .headers_priority(http2_headers_priority)
+                .headers_pseudo_order(settings.http2.headers_pseudo_order)
+                .settings_order(settings.http2.settings_order);
+
+            if let Some(max_header_list_size) = settings.http2.max_header_list_size {
+                builder.max_header_list_size(max_header_list_size);
+            }
+
+            if let Some(enable_push) = settings.http2.enable_push {
+                builder.enable_push(enable_push);
+            }
+
+            if let Some(unknown_setting8) = settings.http2.unknown_setting8 {
+                builder.unknown_setting8(unknown_setting8);
+            }
+
+            if let Some(unknown_setting9) = settings.http2.unknown_setting9 {
+                builder.unknown_setting9(unknown_setting9);
+            }
+        });
+
+        Ok(())
+    }
+
     /// private mut ref to inner
     fn inner_mut(&mut self) -> &mut ClientRef {
-        // If the are HttpConnector clones, this will clone the inner
-        // config. So mutating the config won't ever affect previous
-        // clones.
         Arc::make_mut(&mut self.inner)
     }
 }
@@ -1804,6 +1610,7 @@ struct ClientRef {
     redirect: Arc<redirect::Policy>,
     referer: bool,
     request_timeout: Option<Duration>,
+    read_timeout: Option<Duration>,
     https_only: bool,
     proxies_maybe_http_auth: bool,
     base_url: Option<Arc<Url>>,
@@ -1819,6 +1626,7 @@ impl_debug!(
         redirect,
         referer,
         request_timeout,
+        read_timeout,
         https_only,
         proxies_maybe_http_auth,
         base_url
@@ -1887,7 +1695,10 @@ pin_project! {
         #[pin]
         in_flight: ResponseFuture,
         #[pin]
-        timeout: Option<Pin<Box<Sleep>>>,
+        total_timeout: Option<Pin<Box<Sleep>>>,
+        #[pin]
+        read_timeout_fut: Option<Pin<Box<Sleep>>>,
+        read_timeout: Option<Duration>,
     }
 }
 
@@ -1900,8 +1711,12 @@ impl PendingRequest {
         self.project().in_flight
     }
 
-    fn timeout(self: Pin<&mut Self>) -> Pin<&mut Option<Pin<Box<Sleep>>>> {
-        self.project().timeout
+    fn total_timeout(self: Pin<&mut Self>) -> Pin<&mut Option<Pin<Box<Sleep>>>> {
+        self.project().total_timeout
+    }
+
+    fn read_timeout(self: Pin<&mut Self>) -> Pin<&mut Option<Pin<Box<Sleep>>>> {
+        self.project().read_timeout_fut
     }
 
     fn urls(self: Pin<&mut Self>) -> &mut Vec<Url> {
@@ -1943,8 +1758,12 @@ impl PendingRequest {
         };
 
         *self.as_mut().in_flight().get_mut() = {
-            let extension = self.client.hyper.pool_key_extension(&uri);
-            let req = InnerRequest::new(self.version, uri, &self.method, self.headers.clone())
+            let extension = self.client.hyper.pool_key(&uri);
+            let req = InnerRequest::new()
+                .uri(uri)
+                .method(self.method.clone())
+                .version(self.version)
+                .headers(self.headers.clone())
                 .headers_order(self.client.headers_order.as_deref())
                 .extension(extension)
                 .build(body);
@@ -1956,12 +1775,28 @@ impl PendingRequest {
 }
 
 fn is_retryable_error(err: &(dyn std::error::Error + 'static)) -> bool {
+    use hyper2::h2;
+
+    // pop the legacy::Error
+    let err = if let Some(err) = err.source() {
+        err
+    } else {
+        return false;
+    };
+
     if let Some(cause) = err.source() {
-        if let Some(err) = cause.downcast_ref::<hyper::h2::Error>() {
+        if let Some(err) = cause.downcast_ref::<h2::Error>() {
             // They sent us a graceful shutdown, try with a new connection!
-            return err.is_go_away()
-                && err.is_remote()
-                && err.reason() == Some(hyper::h2::Reason::NO_ERROR);
+            if err.is_go_away() && err.is_remote() && err.reason() == Some(h2::Reason::NO_ERROR) {
+                return true;
+            }
+
+            // REFUSED_STREAM was sent from the server, which is safe to retry.
+            // https://www.rfc-editor.org/rfc/rfc9113.html#section-8.7-3.2
+            if err.is_reset() && err.is_remote() && err.reason() == Some(h2::Reason::REFUSED_STREAM)
+            {
+                return true;
+            }
         }
     }
     false
@@ -1997,7 +1832,15 @@ impl Future for PendingRequest {
     type Output = Result<Response, crate::Error>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        if let Some(delay) = self.as_mut().timeout().as_mut().as_pin_mut() {
+        if let Some(delay) = self.as_mut().total_timeout().as_mut().as_pin_mut() {
+            if let Poll::Ready(()) = delay.poll(cx) {
+                return Poll::Ready(Err(
+                    crate::error::request(crate::error::TimedOut).with_url(self.url.clone())
+                ));
+            }
+        }
+
+        if let Some(delay) = self.as_mut().read_timeout().as_mut().as_pin_mut() {
             if let Poll::Ready(()) = delay.poll(cx) {
                 return Poll::Ready(Err(
                     crate::error::request(crate::error::TimedOut).with_url(self.url.clone())
@@ -2016,7 +1859,7 @@ impl Future for PendingRequest {
                             crate::error::request(e).with_url(self.url.clone())
                         ));
                     }
-                    Poll::Ready(Ok(res)) => res,
+                    Poll::Ready(Ok(res)) => res.map(super::body::boxed),
                     Poll::Pending => return Poll::Pending,
                 },
             };
@@ -2162,16 +2005,15 @@ impl Future for PendingRequest {
                             self.client.proxy_auth(&uri, &mut headers);
 
                             *self.as_mut().in_flight().get_mut() = {
-                                let extension = self.client.hyper.pool_key_extension(&uri);
-                                let req = InnerRequest::new(
-                                    self.version,
-                                    uri,
-                                    &self.method,
-                                    headers.clone(),
-                                )
-                                .headers_order(self.client.headers_order.as_deref())
-                                .extension(extension)
-                                .build(body);
+                                let extension = self.client.hyper.pool_key(&uri);
+                                let req = InnerRequest::new()
+                                    .uri(uri)
+                                    .method(self.method.clone())
+                                    .version(self.version)
+                                    .headers(headers.clone())
+                                    .headers_order(self.client.headers_order.as_deref())
+                                    .extension(extension)
+                                    .build(body);
                                 std::mem::swap(self.as_mut().headers(), &mut headers);
                                 ResponseFuture::Default(self.client.hyper.request(req))
                             };
@@ -2192,7 +2034,8 @@ impl Future for PendingRequest {
                 res,
                 self.url.clone(),
                 self.client.accepts,
-                self.timeout.take(),
+                self.total_timeout.take(),
+                self.read_timeout,
             );
             return Poll::Ready(Ok(res));
         }
@@ -2228,20 +2071,5 @@ fn make_referer(next: &Url, previous: &Url) -> Option<HeaderValue> {
 fn add_cookie_header(headers: &mut HeaderMap, cookie_store: &dyn cookie::CookieStore, url: &Url) {
     if let Some(header) = cookie_store.cookies(url) {
         headers.insert(crate::header::COOKIE, header);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[tokio::test]
-    async fn execute_request_rejects_invald_urls() {
-        let url_str = "hxxps://www.rust-lang.org/";
-        let url = url::Url::parse(url_str).unwrap();
-        let result = crate::get(url.clone()).await;
-
-        assert!(result.is_err());
-        let err = result.err().unwrap();
-        assert!(err.is_builder());
-        assert_eq!(url_str, err.url().unwrap().as_str());
     }
 }

@@ -5,12 +5,11 @@ use std::time::Duration;
 
 use http::header::CONTENT_LENGTH;
 use http::Uri;
-use hyper::ext::PoolKeyExt;
 use serde::Serialize;
 #[cfg(feature = "json")]
 use serde_json;
 
-use super::body::{Body, ImplStream};
+use super::body::Body;
 use super::http::{Client, Pending};
 #[cfg(feature = "multipart")]
 use super::multipart;
@@ -18,6 +17,7 @@ use super::response::Response;
 #[cfg(feature = "cookies")]
 use crate::cookie;
 use crate::header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE, HOST};
+use crate::util::ext::PoolKeyExtension;
 use crate::{redirect, Method, Url};
 use http::{request::Parts, Request as HttpRequest, Version};
 #[cfg(feature = "cookies")]
@@ -704,26 +704,50 @@ impl TryFrom<Request> for HttpRequest<Body> {
 
 /// A builder for constructing HTTP requests.
 pub(crate) struct InnerRequest<'a> {
-    version: Version,
-    uri: Uri,
-    method: &'a Method,
-    headers: HeaderMap,
+    builder: http::request::Builder,
     headers_order: Option<&'a [HeaderName]>,
-    extension: Option<PoolKeyExt>,
+    extension: Option<PoolKeyExtension>,
 }
 
 impl<'a> InnerRequest<'a> {
     /// Create a new `RequestBuilder` with required fields.
     #[inline]
-    pub fn new(version: Version, uri: Uri, method: &'a Method, headers: HeaderMap) -> Self {
+    pub fn new() -> Self {
         Self {
-            version,
-            uri,
-            method,
-            headers,
+            builder: hyper2::Request::builder(),
             headers_order: None,
             extension: None,
         }
+    }
+
+    /// Set the method for the request.
+    #[inline]
+    pub fn method(mut self, method: Method) -> Self {
+        self.builder = self.builder.method(method);
+        self
+    }
+
+    /// Set the URI for the request.
+    #[inline]
+    pub fn uri(mut self, uri: Uri) -> Self {
+        self.builder = self.builder.uri(uri);
+        self
+    }
+
+    /// Set the version for the request.
+    #[inline]
+    pub fn version(mut self, version: Version) -> Self {
+        self.builder = self.builder.version(version);
+        self
+    }
+
+    /// Set the headers for the request.
+    #[inline]
+    pub fn headers(mut self, mut headers: HeaderMap) -> Self {
+        if let Some(h) = self.builder.headers_mut() {
+            std::mem::swap(h, &mut headers);
+        }
+        self
     }
 
     /// Set the headers order for the request.
@@ -735,53 +759,44 @@ impl<'a> InnerRequest<'a> {
 
     /// Set an extension for the request.
     #[inline]
-    pub fn extension(mut self, extension: Option<PoolKeyExt>) -> Self {
+    pub fn extension(mut self, extension: Option<PoolKeyExtension>) -> Self {
         self.extension = extension;
         self
     }
 
     /// Build and return the constructed request.
-    pub fn build(self, body: Body) -> http::Request<ImplStream> {
-        let mut headers = self.headers;
-        let body = body.into_stream();
-
-        // Build the request
-        let mut builder = hyper::Request::builder()
-            .method(self.method)
-            .uri(self.uri)
-            .version(self.version);
-
+    pub fn build(mut self, body: Body) -> http::Request<Body> {
         // Sort headers if headers_order is provided
         if let Some(order) = self.headers_order {
-            // Add CONTENT_LENGTH header if required
-            if let Some(len) = http_body::Body::size_hint(&body).exact() {
-                let needs_content_length = len != 0
-                    || !matches!(
-                        *self.method,
-                        Method::GET | Method::HEAD | Method::DELETE | Method::CONNECT
-                    );
-                if needs_content_length {
-                    headers
-                        .entry(CONTENT_LENGTH)
-                        .or_insert_with(|| HeaderValue::from(len));
+            let method = self.builder.method_ref().cloned();
+            let headers_mut = self.builder.headers_mut();
+            if let (Some(headers), Some(method)) = (headers_mut, method) {
+                {
+                    // Add CONTENT_LENGTH header if required
+                    if let Some(len) = http_body::Body::size_hint(&body).exact() {
+                        let needs_content_length = len != 0
+                            || !matches!(
+                                method,
+                                Method::GET | Method::HEAD | Method::DELETE | Method::CONNECT
+                            );
+                        if needs_content_length {
+                            headers
+                                .entry(CONTENT_LENGTH)
+                                .or_insert_with(|| HeaderValue::from(len));
+                        }
+                    }
+                    // Sort headers
+                    crate::util::sort_headers(headers, order);
                 }
             }
-
-            // Sort headers
-            crate::util::sort_headers(&mut headers, order);
         }
 
         // Add pool key extension
         if let Some(extension) = self.extension {
-            builder = builder.extension(extension);
+            self.builder = self.builder.extension(extension);
         }
 
-        // Add headers to the request
-        if let Some(h) = builder.headers_mut() {
-            std::mem::swap(h, &mut headers)
-        }
-
-        builder.body(body).expect("valid request parts")
+        self.builder.body(body).expect("valid request parts")
     }
 }
 
