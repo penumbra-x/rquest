@@ -6,6 +6,26 @@ All notable changes to this project will be documented in this file.
 
 ### 🐛 Bug Fixes
 
+- *(http2)* Fix http2 header frame initial `stream_id` settings (#185)
+
+### ⚙️ Miscellaneous Tasks
+
+- Remove dead code (#182)
+- Macros simplify some debug implement (#183)
+- Static calc extension permutation (#184)
+- Cargo fmt --all
+
+## [0.33.5] - 2024-12-19
+
+### 🚀 Features
+
+- *(client)* Http1 sends lowercase request headers by default to improve performance (#179)
+- Add `firefox 133` impersonate (#181)
+
+## [0.33.3] - 2024-12-16
+
+### 🐛 Bug Fixes
+
 - *(proxy)* Fix `ws`/`wss` upgrade support for `http`/`https` proxy (#176)
 
 ## [0.33.1] - 2024-12-16

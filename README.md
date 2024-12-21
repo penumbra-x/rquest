@@ -37,7 +37,7 @@ HTTP
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.33.3"
+rquest = "0.33.0"
 ```
 
 ```rust,no_run
@@ -63,7 +63,7 @@ WebSocket
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = { version = "0.33.3", features = ["websocket"] }
+rquest = { version = "0.33.0", features = ["websocket"] }
 futures-util = { version = "0.3.0", default-features = false, features = ["std"] }
 ```
 
@@ -113,7 +113,7 @@ Preconfigured `TLS`/`HTTP2`
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.33.3"
+rquest = "0.33.0"
 ```
 
 ```rust
