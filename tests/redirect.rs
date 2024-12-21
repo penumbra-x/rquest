@@ -308,29 +308,3 @@ async fn test_redirect_302_with_set_cookies() {
     assert_eq!(res.status(), rquest::StatusCode::OK);
 }
 
-#[tokio::test]
-#[ignore = "Needs TLS support in the test server"]
-async fn test_redirect_https_only_enforced_gh1312() {
-    let server = server::http(move |_req| async move {
-        http::Response::builder()
-            .status(302)
-            .header("location", "http://insecure")
-            .body(Body::default())
-            .unwrap()
-    });
-
-    let url = format!("https://{}/yikes", server.addr());
-
-    let res = rquest::Client::builder()
-        .danger_accept_invalid_certs(true)
-        .use_rustls_tls()
-        .https_only(true)
-        .build()
-        .expect("client builder")
-        .get(&url)
-        .send()
-        .await;
-
-    let err = res.unwrap_err();
-    assert!(err.is_redirect());
-}

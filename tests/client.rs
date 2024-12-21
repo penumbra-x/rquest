@@ -331,7 +331,6 @@ async fn http2_upgrade() {
     let url = format!("https://localhost:{}", server.addr().port());
     let res = rquest::Client::builder()
         .danger_accept_invalid_certs(true)
-        .use_rustls_tls()
         .build()
         .expect("client builder")
         .get(&url)
@@ -409,7 +408,7 @@ async fn test_tls_info() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn highly_concurrent_requests_to_http2_server_with_low_max_concurrent_streams() {
     let client = rquest::Client::builder()
-        .http2_prior_knowledge()
+        .http2_only()
         .build()
         .unwrap();
 
@@ -441,7 +440,7 @@ async fn highly_concurrent_requests_to_slow_http2_server_with_low_max_concurrent
     use support::delay_server;
 
     let client = rquest::Client::builder()
-        .http2_prior_knowledge()
+        .http2_only()
         .build()
         .unwrap();
 
