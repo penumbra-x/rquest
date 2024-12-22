@@ -119,7 +119,6 @@ type PoolKey = (Uri, Option<PoolKeyExtension>);
 /// This is used to store the destination of the request, the http version pref, and the pool key.
 #[derive(Clone)]
 pub struct Dst {
-    dst: Uri,
     version: Option<VersionExtension>,
     pool_key: PoolKey,
 }
@@ -163,7 +162,6 @@ impl Dst {
 
         into_uri(scheme, authority)
             .map(|uri| Dst {
-                dst: uri.clone(),
                 pool_key: (uri, extension),
                 version,
             })
@@ -177,7 +175,7 @@ impl Dst {
 
     /// Set the destination of the request
     pub fn set_dst(&mut self, uri: Uri) {
-        self.dst = uri;
+        self.pool_key.0 = uri;
     }
 
     /// Get the http version pref
@@ -190,13 +188,13 @@ impl std::ops::Deref for Dst {
     type Target = Uri;
 
     fn deref(&self) -> &Self::Target {
-        &self.dst
+        &self.pool_key.0
     }
 }
 
 impl std::fmt::Debug for Dst {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.dst)
+        write!(f, "{}", self.pool_key.0)
     }
 }
 
