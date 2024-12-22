@@ -1053,13 +1053,6 @@ impl Builder {
         self
     }
 
-    #[doc(hidden)]
-    #[deprecated(note = "renamed to `pool_max_idle_per_host`")]
-    pub fn max_idle_per_host(&mut self, max_idle: usize) -> &mut Self {
-        self.pool_config.max_idle_per_host = max_idle;
-        self
-    }
-
     /// Sets the maximum idle connection per host allowed in the pool.
     ///
     /// Default is `usize::MAX` (no limit).
