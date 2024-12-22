@@ -1,11 +1,10 @@
-use self::boring_tls_conn::BoringTlsConn;
+use self::tls_conn::BoringTlsConn;
 use crate::tls::{BoringTlsConnector, MaybeHttpsStream};
 use crate::util::client::connect::{Connected, Connection};
 use crate::util::client::ConnectRequest;
 use crate::util::ext::PoolKeyExtension;
 use crate::util::rt::TokioIo;
 use crate::util::{self, into_uri};
-use http::header::HeaderValue;
 use http::uri::Scheme;
 use http::Uri;
 use hyper2::rt::{Read, ReadBufCursor, Write};
@@ -315,13 +314,13 @@ impl Connector {
         let Inner { http, tls } = &self.inner;
         if dst.scheme() == Some(&Scheme::HTTPS) {
             let host = dst.host().ok_or(crate::error::uri_bad_host())?;
-            let port = dst.port().map(|p| p.as_u16()).unwrap_or(443);
+            let port = dst.port_u16().unwrap_or(443);
 
             let mut http = tls.create_connector(http.clone(), dst.version());
             let conn = http.call(proxy_dst).await?;
 
             log::trace!("tunneling HTTPS over proxy");
-            let tunneled = tunnel(conn, host, port, auth).await?;
+            let tunneled = tunnel::connect(conn, host, port, auth).await?;
             let io = http.connect(&dst, host, tunneled).await?;
 
             return Ok(Conn {
@@ -400,8 +399,12 @@ impl TlsInfoFactory for tokio::net::TcpStream {
 
 impl TlsInfoFactory for SslStream<TokioIo<TokioIo<tokio::net::TcpStream>>> {
     fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
-        let peer_certificate = self.ssl().peer_certificate().and_then(|c| c.to_der().ok());
-        Some(crate::tls::TlsInfo { peer_certificate })
+        self.ssl()
+            .peer_certificate()
+            .and_then(|c| c.to_der().ok())
+            .map(|c| crate::tls::TlsInfo {
+                peer_certificate: Some(c),
+            })
     }
 }
 
@@ -419,14 +422,14 @@ impl TlsInfoFactory for SslStream<TokioIo<MaybeHttpsStream<TokioIo<tokio::net::T
 impl TlsInfoFactory for MaybeHttpsStream<TokioIo<tokio::net::TcpStream>> {
     fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
         match self {
-            MaybeHttpsStream::Https(tls) => {
-                let peer_certificate = tls
-                    .inner()
-                    .ssl()
-                    .peer_certificate()
-                    .and_then(|c| c.to_der().ok());
-                Some(crate::tls::TlsInfo { peer_certificate })
-            }
+            MaybeHttpsStream::Https(tls) => tls
+                .inner()
+                .ssl()
+                .peer_certificate()
+                .and_then(|c| c.to_der().ok())
+                .map(|c| crate::tls::TlsInfo {
+                    peer_certificate: Some(c),
+                }),
             MaybeHttpsStream::Http(_) => None,
         }
     }
@@ -522,78 +525,7 @@ impl Write for Conn {
 
 pub(crate) type Connecting = Pin<Box<dyn Future<Output = Result<Conn, BoxError>> + Send>>;
 
-async fn tunnel<T>(
-    mut conn: T,
-    host: &str,
-    port: u16,
-    auth: Option<HeaderValue>,
-) -> Result<T, BoxError>
-where
-    T: Read + Write + Unpin,
-{
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use util::rt::TokioIo;
-
-    let mut buf = format!(
-        "\
-         CONNECT {0}:{1} HTTP/1.1\r\n\
-         Host: {0}:{1}\r\n\
-         ",
-        host, port
-    )
-    .into_bytes();
-
-    // user-agent
-    buf.extend_from_slice(b"User-Agent: ");
-    buf.extend_from_slice(env!("CARGO_PKG_NAME").as_bytes());
-    buf.extend_from_slice(b"/");
-    buf.extend_from_slice(env!("CARGO_PKG_VERSION").as_bytes());
-    buf.extend_from_slice(b"\r\n");
-
-    // proxy-authorization
-    if let Some(value) = auth {
-        log::debug!("tunnel to {}:{} using basic auth", host, port);
-        buf.extend_from_slice(b"Proxy-Authorization: ");
-        buf.extend_from_slice(value.as_bytes());
-        buf.extend_from_slice(b"\r\n");
-    }
-
-    // headers end
-    buf.extend_from_slice(b"\r\n");
-
-    let mut tokio_conn = TokioIo::new(&mut conn);
-
-    tokio_conn.write_all(&buf).await?;
-
-    let mut buf = [0; 8192];
-    let mut pos = 0;
-
-    loop {
-        let n = tokio_conn.read(&mut buf[pos..]).await?;
-
-        if n == 0 {
-            return Err("unexpected eof while tunneling".into());
-        }
-        pos += n;
-
-        let recvd = &buf[..pos];
-        if recvd.starts_with(b"HTTP/1.1 200") || recvd.starts_with(b"HTTP/1.0 200") {
-            if recvd.ends_with(b"\r\n\r\n") {
-                return Ok(conn);
-            }
-            if pos == buf.len() {
-                return Err("proxy headers too long for tunnel".into());
-            }
-        // else read more
-        } else if recvd.starts_with(b"HTTP/1.1 407") {
-            return Err("proxy authentication required".into());
-        } else {
-            return Err("unsuccessful tunnel".into());
-        }
-    }
-}
-
-mod boring_tls_conn {
+mod tls_conn {
     use super::TlsInfoFactory;
     use crate::{
         tls::MaybeHttpsStream,
@@ -700,6 +632,82 @@ mod boring_tls_conn {
     {
         fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
             self.inner.tls_info()
+        }
+    }
+}
+
+mod tunnel {
+    use super::BoxError;
+    use crate::util::rt::TokioIo;
+    use http::HeaderValue;
+    use hyper2::rt::{Read, Write};
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    pub(super) async fn connect<T>(
+        mut conn: T,
+        host: &str,
+        port: u16,
+        auth: Option<HeaderValue>,
+    ) -> Result<T, BoxError>
+    where
+        T: Read + Write + Unpin,
+    {
+        let mut buf = format!(
+            "\
+             CONNECT {0}:{1} HTTP/1.1\r\n\
+             Host: {0}:{1}\r\n\
+             ",
+            host, port
+        )
+        .into_bytes();
+
+        // user-agent
+        buf.extend_from_slice(b"User-Agent: ");
+        buf.extend_from_slice(env!("CARGO_PKG_NAME").as_bytes());
+        buf.extend_from_slice(b"/");
+        buf.extend_from_slice(env!("CARGO_PKG_VERSION").as_bytes());
+        buf.extend_from_slice(b"\r\n");
+
+        // proxy-authorization
+        if let Some(value) = auth {
+            log::debug!("tunnel to {}:{} using basic auth", host, port);
+            buf.extend_from_slice(b"Proxy-Authorization: ");
+            buf.extend_from_slice(value.as_bytes());
+            buf.extend_from_slice(b"\r\n");
+        }
+
+        // headers end
+        buf.extend_from_slice(b"\r\n");
+
+        let mut tokio_conn = TokioIo::new(&mut conn);
+
+        tokio_conn.write_all(&buf).await?;
+
+        let mut buf = [0; 8192];
+        let mut pos = 0;
+
+        loop {
+            let n = tokio_conn.read(&mut buf[pos..]).await?;
+
+            if n == 0 {
+                return Err("unexpected eof while tunneling".into());
+            }
+            pos += n;
+
+            let recvd = &buf[..pos];
+            if recvd.starts_with(b"HTTP/1.1 200") || recvd.starts_with(b"HTTP/1.0 200") {
+                if recvd.ends_with(b"\r\n\r\n") {
+                    return Ok(conn);
+                }
+                if pos == buf.len() {
+                    return Err("proxy headers too long for tunnel".into());
+                }
+            // else read more
+            } else if recvd.starts_with(b"HTTP/1.1 407") {
+                return Err("proxy authentication required".into());
+            } else {
+                return Err("unsuccessful tunnel".into());
+            }
         }
     }
 }
