@@ -1,7 +1,7 @@
 [package]
 name = "rquest"
 version = "0.33.5"
-description = "An ergonomic, all-in-one JA3/JA4/HTTP2 fingerprint HTTP/WebSocket client"
+description = "Asynchronous Rust HTTP client with TLS, JA3/JA4, and HTTP2 fingerprint spoof"
 keywords = ["http", "client", "websocket", "ja3", "ja4"]
 categories = ["web-programming::http-client"]
 repository = "https://github.com/penumbra-x/rquest"
@@ -201,11 +201,6 @@ required-features = ["cookies"]
 [[example]]
 name = "impersonate_skip_headers"
 path = "examples/impersonate_skip_headers.rs"
-
-[[example]]
-name = "impersonate_settings"
-path = "examples/impersonate_settings.rs"
-required-features = ["full"]
 
 [[example]]
 name = "impersonate_psk"
