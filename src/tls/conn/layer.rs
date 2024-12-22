@@ -2,7 +2,7 @@
 use super::cache::{SessionCache, SessionKey};
 use super::{key_index, HttpsLayerSettings, MaybeHttpsStream};
 use crate::error::BoxError;
-use crate::tls::{TlsConnectExtension, TlsResult};
+use crate::tls::TlsConnectExtension;
 use crate::util::client::connect::Connection;
 use crate::util::rt::TokioIo;
 use antidote::Mutex;
@@ -101,7 +101,7 @@ impl HttpsLayer {
     pub fn with_connector_and_settings(
         mut ssl: SslConnectorBuilder,
         settings: HttpsLayerSettings,
-    ) -> TlsResult<HttpsLayer> {
+    ) -> HttpsLayer {
         // If the session cache is disabled, we don't need to set up any callbacks.
         let cache = if settings.session_cache {
             let cache = Arc::new(Mutex::new(SessionCache::with_capacity(
@@ -113,7 +113,7 @@ impl HttpsLayer {
             ssl.set_new_session_callback({
                 let cache = cache.clone();
                 move |ssl, session| {
-                    if let Some(key) = key_index().ok().and_then(|idx| ssl.ex_data(idx)) {
+                    if let Ok(Some(key)) = key_index().map(|idx| ssl.ex_data(idx)) {
                         cache.lock().insert(key.clone(), session);
                     }
                 }
@@ -137,7 +137,7 @@ impl HttpsLayer {
             Ok(())
         });
 
-        Ok(HttpsLayer {
+        HttpsLayer {
             inner: Inner {
                 ssl: ssl.build(),
                 cache,
@@ -145,7 +145,7 @@ impl HttpsLayer {
                 ssl_callback: None,
                 skip_session_ticket: settings.skip_session_ticket,
             },
-        })
+        }
     }
 }
 

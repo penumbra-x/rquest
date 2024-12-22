@@ -178,7 +178,7 @@ fn connect_layer(settings: TlsSettings) -> TlsResult<HttpsLayer> {
         .tls_sni(settings.tls_sni)
         .build();
 
-    HttpsLayer::with_connector_and_settings(connector, settings)
+    Ok(HttpsLayer::with_connector_and_settings(connector, settings))
 }
 
 /// A TLS protocol version.
