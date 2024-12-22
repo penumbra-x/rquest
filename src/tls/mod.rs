@@ -57,10 +57,7 @@ impl BoringTlsConnector {
 /// Create a new `ConnectLayer` with the given `Tls` settings.
 #[inline]
 fn connect_layer(settings: TlsSettings) -> TlsResult<HttpsLayer> {
-    let default_connector = if cfg!(any(
-        feature = "boring-tls-native-roots",
-        feature = "boring-tls-webpki-roots"
-    )) {
+    let default_connector = if cfg!(any(feature = "native-roots", feature = "webpki-roots")) {
         SslConnector::no_default_verify_builder(SslMethod::tls_client())
     } else {
         SslConnector::builder(SslMethod::tls_client())
@@ -151,23 +148,17 @@ fn connect_layer(settings: TlsSettings) -> TlsResult<HttpsLayer> {
         connector.set_extension_permutation_indices(indices.as_ref())?;
     }
 
-    // Conditionally configure the TLS builder based on the "boring-tls-native-roots" feature.
+    // Conditionally configure the TLS builder based on the "native-roots" feature.
     // If no custom CA cert store, use the system's native certificate store if the feature is enabled.
     let connector = if settings.root_certs_store.is_none() {
         // WebPKI root certificates are enabled (regardless of whether native-roots is also enabled).
-        #[cfg(any(
-            feature = "boring-tls-webpki-roots",
-            feature = "boring-tls-native-roots"
-        ))]
+        #[cfg(any(feature = "webpki-roots", feature = "native-roots"))]
         {
             connector.configure_set_verify_cert_store()?
         }
 
         // Neither native-roots nor WebPKI roots are enabled, proceed with the default builder.
-        #[cfg(not(any(
-            feature = "boring-tls-native-roots",
-            feature = "boring-tls-webpki-roots"
-        )))]
+        #[cfg(not(any(feature = "native-roots", feature = "webpki-roots")))]
         {
             connector
         }

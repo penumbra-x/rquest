@@ -18,7 +18,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [features]
-default = ["boring-tls-webpki-roots", "charset"]
+default = ["webpki-roots", "charset"]
 
 full = [
     "json",
@@ -55,8 +55,8 @@ stream = ["tokio/fs", "dep:tokio-util"]
 
 socks = ["dep:tokio-socks"]
 
-boring-tls-native-roots = ["dep:rustls-native-certs"]
-boring-tls-webpki-roots = ["dep:webpki-root-certs"]
+native-roots = ["dep:rustls-native-certs"]
+webpki-roots = ["dep:webpki-root-certs"]
 
 # Optional disable internal proxy cache
 internal_proxy_sys_no_cache = []
@@ -243,12 +243,12 @@ required-features = ["brotli"]
 [[example]]
 name = "set_native_root_cert"
 path = "examples/set_native_root_cert.rs"
-required-features = ["boring-tls-native-roots"]
+required-features = ["native-roots"]
 
 [[example]]
 name = "set_webpki_root_cert"
 path = "examples/set_webpki_root_cert.rs"
-required-features = ["boring-tls-webpki-roots"]
+required-features = ["webpki-roots"]
 
 [[example]]
 name = "websocket"

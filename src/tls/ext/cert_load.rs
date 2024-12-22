@@ -4,7 +4,7 @@ use boring::{error::ErrorStack, x509::store::X509Store};
 use std::sync::LazyLock;
 
 pub static LOAD_CERTS: LazyLock<Result<X509Store, crate::Error>> = LazyLock::new(|| {
-    #[cfg(feature = "boring-tls-webpki-roots")]
+    #[cfg(feature = "webpki-roots")]
     {
         load_certs_from_source(
             webpki_root_certs::TLS_SERVER_ROOT_CERTS
@@ -13,10 +13,7 @@ pub static LOAD_CERTS: LazyLock<Result<X509Store, crate::Error>> = LazyLock::new
         )
     }
 
-    #[cfg(all(
-        feature = "boring-tls-native-roots",
-        not(feature = "boring-tls-webpki-roots")
-    ))]
+    #[cfg(all(feature = "native-roots", not(feature = "webpki-roots")))]
     {
         load_certs_from_source(
             rustls_native_certs::load_native_certs()

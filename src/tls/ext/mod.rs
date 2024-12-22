@@ -1,8 +1,5 @@
 pub mod cert_compression;
-#[cfg(any(
-    feature = "boring-tls-webpki-roots",
-    feature = "boring-tls-native-roots"
-))]
+#[cfg(any(feature = "webpki-roots", feature = "native-roots"))]
 mod cert_load;
 use super::settings::RootCertsStore;
 use super::{TlsResult, TlsVersion};
@@ -68,10 +65,7 @@ pub trait TlsBuilderExtension {
     ) -> TlsResult<SslConnectorBuilder>;
 
     /// Configure the webpki/native roots CA for the given `SslConnectorBuilder`.
-    #[cfg(any(
-        feature = "boring-tls-webpki-roots",
-        feature = "boring-tls-native-roots"
-    ))]
+    #[cfg(any(feature = "webpki-roots", feature = "native-roots"))]
     fn configure_set_verify_cert_store(self) -> TlsResult<SslConnectorBuilder>;
 }
 
@@ -193,10 +187,7 @@ impl TlsBuilderExtension for SslConnectorBuilder {
         Ok(self)
     }
 
-    #[cfg(any(
-        feature = "boring-tls-webpki-roots",
-        feature = "boring-tls-native-roots"
-    ))]
+    #[cfg(any(feature = "webpki-roots", feature = "native-roots"))]
     #[inline]
     fn configure_set_verify_cert_store(mut self) -> TlsResult<SslConnectorBuilder> {
         if let Ok(cert_store) = cert_load::LOAD_CERTS.as_deref() {
