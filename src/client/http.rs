@@ -6,7 +6,9 @@ use std::time::Duration;
 use std::{collections::HashMap, convert::TryInto, net::SocketAddr};
 use std::{fmt, str};
 
-use crate::util::client::connect::HttpConnector;
+use crate::util::{
+    self, client::connect::HttpConnector, client::Builder, common::Exec, rt::TokioExecutor,
+};
 use bytes::Bytes;
 use http::header::{
     Entry, HeaderMap, HeaderValue, ACCEPT, ACCEPT_ENCODING, CONTENT_ENCODING, CONTENT_LENGTH,
@@ -14,6 +16,7 @@ use http::header::{
 };
 use http::uri::Scheme;
 use http::{HeaderName, Uri, Version};
+use hyper2::client::conn::{http1, http2};
 use pin_project_lite::pin_project;
 use std::future::Future;
 use std::pin::Pin;
@@ -33,7 +36,6 @@ use crate::dns::{gai::GaiResolver, DnsResolverWithOverrides, DynResolver, Resolv
 use crate::into_url::try_uri;
 use crate::redirect::{self, remove_sensitive_headers};
 use crate::tls::{self, BoringTlsConnector, Impersonate, ImpersonateSettings, TlsSettings};
-use crate::util::{self, client::Builder, rt::TokioExecutor};
 use crate::{error, impl_debug};
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
 #[cfg(feature = "hickory-dns")]
@@ -813,23 +815,39 @@ impl ClientBuilder {
         self
     }
 
-    /// With http1/http2 builder
+    /// With http1 builder
     ///
     /// # Example
     /// ```
     /// let client = rquest::Client::builder()
-    ///     .with_http_builder(|builder| {
-    ///         builder.with_http1_builder(|builder| {
-    ///             builder.http09_responses(true);
-    ///         });
+    ///     .with_http1_builder(|builder| {
+    ///         builder.http09_responses(true)
     ///     })
     ///     .build()?;
     /// ```
-    pub fn with_http_builder<F>(mut self, f: F) -> ClientBuilder
+    pub fn with_http1_builder<F>(mut self, f: F) -> ClientBuilder
     where
-        F: FnOnce(&mut Builder),
+        F: FnOnce(&mut http1::Builder) -> &mut http1::Builder,
     {
-        f(&mut self.config.builder);
+        self.config.builder.with_http1_builder(f);
+        self
+    }
+
+    /// With http2 builder
+    ///
+    /// # Example
+    /// ```
+    /// let client = rquest::Client::builder()
+    ///     .with_http2_builder(|builder| {
+    ///         builder.initial_stream_id(3)
+    ///     })
+    ///     .build()?;
+    /// ```
+    pub fn with_http2_builder<F>(mut self, f: F) -> ClientBuilder
+    where
+        F: FnOnce(&mut http2::Builder<Exec>) -> &mut http2::Builder<Exec>,
+    {
+        self.config.builder.with_http2_builder(f);
         self
     }
 

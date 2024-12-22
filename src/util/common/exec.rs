@@ -11,7 +11,7 @@ pub(crate) type BoxSendFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
 // Either the user provides an executor for background tasks, or we use
 // `tokio::spawn`.
 #[derive(Clone)]
-pub(crate) enum Exec {
+pub enum Exec {
     Executor(Arc<dyn Executor<BoxSendFuture> + Send + Sync>),
 }
 

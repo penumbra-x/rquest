@@ -7,7 +7,7 @@
 //! does respect Rust's semantic version regarding breaking changes.
 
 pub mod client;
-mod common;
+pub mod common;
 pub mod ext;
 pub mod rt;
 pub mod service;

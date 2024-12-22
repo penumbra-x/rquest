@@ -1086,8 +1086,7 @@ impl Builder {
 
     /// With http1 builder
     #[inline]
-    #[allow(unused)]
-    pub(crate) fn with_http1_builder<F>(&mut self, f: F)
+    pub fn with_http1_builder<F>(&mut self, f: F)
     where
         F: FnOnce(
             &mut hyper2::client::conn::http1::Builder,
@@ -1098,7 +1097,7 @@ impl Builder {
 
     /// With http2 builder
     #[inline]
-    pub(crate) fn with_http2_builder<F>(&mut self, f: F)
+    pub fn with_http2_builder<F>(&mut self, f: F)
     where
         F: FnOnce(
             &mut hyper2::client::conn::http2::Builder<Exec>,
