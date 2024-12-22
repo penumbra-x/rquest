@@ -166,38 +166,38 @@ mod tls {
 
     pub const RECORD_SIZE_LIMIT: u16 = 0x4001;
 
-    pub const EXTENSIONS: &[ExtensionType] = &[
-        ExtensionType::SERVER_NAME,
-        ExtensionType::EXTENDED_MASTER_SECRET,
-        ExtensionType::RENEGOTIATE,
-        ExtensionType::SUPPORTED_GROUPS,
-        ExtensionType::EC_POINT_FORMATS,
-        ExtensionType::SESSION_TICKET,
-        ExtensionType::APPLICATION_LAYER_PROTOCOL_NEGOTIATION,
-        ExtensionType::STATUS_REQUEST,
-        ExtensionType::DELEGATED_CREDENTIAL,
-        ExtensionType::KEY_SHARE,
-        ExtensionType::SUPPORTED_VERSIONS,
-        ExtensionType::SIGNATURE_ALGORITHMS,
-        ExtensionType::PSK_KEY_EXCHANGE_MODES,
-        ExtensionType::RECORD_SIZE_LIMIT,
-        ExtensionType::CERT_COMPRESSION,
-        ExtensionType::ENCRYPTED_CLIENT_HELLO,
-    ];
+    pub static EXTENSION_PERMUTATION_INDICES: LazyLock<[u8; 16]> = LazyLock::new(|| {
+        let extensions = [
+            ExtensionType::SERVER_NAME,
+            ExtensionType::EXTENDED_MASTER_SECRET,
+            ExtensionType::RENEGOTIATE,
+            ExtensionType::SUPPORTED_GROUPS,
+            ExtensionType::EC_POINT_FORMATS,
+            ExtensionType::SESSION_TICKET,
+            ExtensionType::APPLICATION_LAYER_PROTOCOL_NEGOTIATION,
+            ExtensionType::STATUS_REQUEST,
+            ExtensionType::DELEGATED_CREDENTIAL,
+            ExtensionType::KEY_SHARE,
+            ExtensionType::SUPPORTED_VERSIONS,
+            ExtensionType::SIGNATURE_ALGORITHMS,
+            ExtensionType::PSK_KEY_EXCHANGE_MODES,
+            ExtensionType::RECORD_SIZE_LIMIT,
+            ExtensionType::CERT_COMPRESSION,
+            ExtensionType::ENCRYPTED_CLIENT_HELLO,
+        ];
 
-    pub static EXTENSION_PERMUTATION_INDICES: LazyLock<[u8; EXTENSIONS.len()]> =
-        LazyLock::new(|| {
-            let mut indices = [0u8; EXTENSIONS.len()];
-            for (i, &ext) in EXTENSIONS.iter().enumerate() {
-                if let Some(idx) = ExtensionType::BORING_SSLEXTENSION_PERMUTATION
-                    .iter()
-                    .position(|&e| e == ext)
-                {
-                    indices[i] = idx as u8;
-                }
+        let mut indices = [0u8; 16];
+        for (i, &ext) in extensions.iter().enumerate() {
+            if let Some(idx) = ExtensionType::BORING_SSLEXTENSION_PERMUTATION
+                .iter()
+                .position(|&e| e == ext)
+            {
+                indices[i] = idx as u8;
             }
-            indices
-        });
+        }
+
+        indices
+    });
 
     #[derive(TypedBuilder)]
     pub struct FirefoxTlsSettings {
