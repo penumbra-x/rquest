@@ -29,13 +29,14 @@ use sync_wrapper::SyncWrapper;
 
 use crate::util::common;
 use crate::util::ext::PoolKeyExtension;
+use crate::HttpVersionPref;
 use connect::capture::CaptureConnectionExtension;
 use connect::{Alpn, Connect, Connected, Connection};
 use pool::Ver;
 
 use common::{lazy as hyper_lazy, timer, Exec, Lazy};
 
-use super::ext::ConnectExtension;
+use super::ext::{ConnectExtension, VersionExtension};
 use super::into_uri;
 
 type BoxSendFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
@@ -113,22 +114,23 @@ macro_rules! e {
 // We might change this... :shrug:
 type PoolKey = (Uri, Option<PoolKeyExtension>);
 
+/// Destination of the request
+///
+/// This is used to store the destination of the request, the http version pref, and the pool key.
 #[derive(Clone)]
-pub struct ConnectRequest {
-    uri: Uri,
-    version: Option<Version>,
+pub struct Dst {
+    dst: Uri,
+    version: Option<VersionExtension>,
     pool_key: PoolKey,
 }
 
-impl ConnectRequest {
-    pub fn new<B>(req: &mut Request<B>, is_http_connect: bool) -> Result<ConnectRequest, Error> {
-        // Extract the http version pref and the pool key extension from the request extensions.
-        // The http version pref is used to store the http version pref.
-        // The pool key extension is used to store the pool key.
-        let (version, pool_key_extension) = {
+impl Dst {
+    /// Create a new `Dst` from a request
+    pub fn new<B>(req: &mut Request<B>, is_http_connect: bool) -> Result<Dst, Error> {
+        let (version, extension) = {
             (
                 req.extensions_mut()
-                    .remove::<ConnectExtension<Version>>()
+                    .remove::<ConnectExtension<VersionExtension>>()
                     .map(|e| e.into_inner()),
                 req.extensions_mut()
                     .remove::<ConnectExtension<PoolKeyExtension>>()
@@ -137,8 +139,9 @@ impl ConnectRequest {
         };
 
         let uri = req.uri_mut();
-        let pool_key = match (uri.scheme().cloned(), uri.authority().cloned()) {
-            (Some(scheme), Some(auth)) => Ok((scheme, auth, pool_key_extension)),
+        let (scheme, authority, extension) = match (uri.scheme().cloned(), uri.authority().cloned())
+        {
+            (Some(scheme), Some(auth)) => (scheme, auth, extension),
             (None, Some(auth)) if is_http_connect => {
                 let scheme = match auth.port_u16() {
                     Some(443) => {
@@ -150,51 +153,50 @@ impl ConnectRequest {
                         Scheme::HTTP
                     }
                 };
-                Ok((scheme, auth.clone(), pool_key_extension))
+                (scheme, auth.clone(), extension)
             }
             _ => {
                 debug!("Client requires absolute-form URIs, received: {:?}", uri);
-                Err(e!(UserAbsoluteUriRequired))
+                return Err(e!(UserAbsoluteUriRequired));
             }
         };
 
-        pool_key
-            .and_then(|(scheme, authority, extension)| {
-                into_uri(scheme, authority)
-                    .map(|uri| (uri, extension))
-                    .map_err(|_| e!(UserAbsoluteUriRequired))
-            })
-            .map(|(uri, extension)| ConnectRequest {
-                uri: uri.clone(),
+        into_uri(scheme, authority)
+            .map(|uri| Dst {
+                dst: uri.clone(),
                 pool_key: (uri, extension),
                 version,
             })
+            .map_err(|_| e!(UserAbsoluteUriRequired))
     }
 
+    /// Get the pool key
     fn pool_key(&self) -> &PoolKey {
         &self.pool_key
     }
 
-    pub fn uri_mut(&mut self) -> &mut Uri {
-        &mut self.uri
+    /// Set the destination of the request
+    pub fn set_dst(&mut self, uri: Uri) {
+        self.dst = uri;
     }
 
-    pub fn version(&self) -> Option<Version> {
-        self.version
+    /// Get the http version pref
+    pub fn version_pref(&self) -> Option<HttpVersionPref> {
+        self.version.clone().map(|v| v.0)
     }
 }
 
-impl std::ops::Deref for ConnectRequest {
+impl std::ops::Deref for Dst {
     type Target = Uri;
 
     fn deref(&self) -> &Self::Target {
-        &self.uri
+        &self.dst
     }
 }
 
-impl std::fmt::Debug for ConnectRequest {
+impl std::fmt::Debug for Dst {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.uri)
+        write!(f, "{}", self.dst)
     }
 }
 
@@ -295,7 +297,7 @@ where
             other => return ResponseFuture::error_version(other),
         };
 
-        let ctx = match ConnectRequest::new(&mut req, is_http_connect) {
+        let ctx = match Dst::new(&mut req, is_http_connect) {
             Ok(s) => s,
             Err(err) => {
                 return ResponseFuture::new(future::err(err));
@@ -308,12 +310,12 @@ where
     async fn send_request(
         self,
         mut req: Request<B>,
-        ctx: ConnectRequest,
+        dst: Dst,
     ) -> Result<Response<hyper2::body::Incoming>, Error> {
         let uri = req.uri().clone();
 
         loop {
-            req = match self.try_send_request(req, ctx.clone()).await {
+            req = match self.try_send_request(req, dst.clone()).await {
                 Ok(resp) => return Ok(resp),
                 Err(TrySendError::Nope(err)) => return Err(err),
                 Err(TrySendError::Retryable {
@@ -341,10 +343,10 @@ where
     async fn try_send_request(
         &self,
         mut req: Request<B>,
-        ctx: ConnectRequest,
+        dst: Dst,
     ) -> Result<Response<hyper2::body::Incoming>, TrySendError<B>> {
         let mut pooled = self
-            .connection_for(ctx)
+            .connection_for(dst)
             .await
             // `connection_for` already retries checkout errors, so if
             // it returns an error, there's not much else to retry
@@ -447,10 +449,10 @@ where
 
     async fn connection_for(
         &self,
-        ctx: ConnectRequest,
+        dst: Dst,
     ) -> Result<pool::Pooled<PoolClient<B>, PoolKey>, Error> {
         loop {
-            match self.one_connection_for(ctx.clone()).await {
+            match self.one_connection_for(dst.clone()).await {
                 Ok(pooled) => return Ok(pooled),
                 Err(ClientConnectError::Normal(err)) => return Err(err),
                 Err(ClientConnectError::CheckoutIsClosed(reason)) => {
@@ -470,12 +472,12 @@ where
 
     async fn one_connection_for(
         &self,
-        ctx: ConnectRequest,
+        dst: Dst,
     ) -> Result<pool::Pooled<PoolClient<B>, PoolKey>, ClientConnectError> {
         // Return a single connection if pooling is not enabled
         if !self.pool.is_enabled() {
             return self
-                .connect_to(ctx)
+                .connect_to(dst)
                 .await
                 .map_err(ClientConnectError::Normal);
         }
@@ -493,8 +495,8 @@ where
         //   (an idle connection became available first), the started
         //   connection future is spawned into the runtime to complete,
         //   and then be inserted into the pool as an idle connection.
-        let checkout = self.pool.checkout(ctx.pool_key.clone());
-        let connect = self.connect_to(ctx);
+        let checkout = self.pool.checkout(dst.pool_key.clone());
+        let connect = self.connect_to(dst);
         let is_ver_h2 = self.config.ver == Ver::Http2;
 
         // The order of the `select` is depended on below...
@@ -562,7 +564,7 @@ where
 
     fn connect_to(
         &self,
-        ctx: ConnectRequest,
+        dst: Dst,
     ) -> impl Lazy<Output = Result<pool::Pooled<PoolClient<B>, PoolKey>, Error>> + Send + Unpin
     {
         let executor = self.exec.clone();
@@ -579,7 +581,7 @@ where
             // If the pool_key is for HTTP/2, and there is already a
             // connection being established, then this can't take a
             // second lock. The "connect_to" future is Canceled.
-            let connecting = match pool.connecting(ctx.pool_key(), ver) {
+            let connecting = match pool.connecting(dst.pool_key(), ver) {
                 Some(lock) => lock,
                 None => {
                     let canceled = e!(Canceled);
@@ -590,7 +592,7 @@ where
             };
             Either::Left(
                 connector
-                    .connect(connect::sealed::Internal, ctx)
+                    .connect(connect::sealed::Internal, dst)
                     .map_err(|src| e!(Connect, src))
                     .and_then(move |io| {
                         let connected = io.connected();

@@ -1,7 +1,7 @@
 use self::tls_conn::BoringTlsConn;
 use crate::tls::{BoringTlsConnector, MaybeHttpsStream};
 use crate::util::client::connect::{Connected, Connection};
-use crate::util::client::ConnectRequest;
+use crate::util::client::Dst;
 use crate::util::ext::PoolKeyExtension;
 use crate::util::rt::TokioIo;
 use crate::util::{self, into_uri};
@@ -210,11 +210,7 @@ impl Connector {
     }
 
     #[cfg(feature = "socks")]
-    async fn connect_socks(
-        &self,
-        dst: ConnectRequest,
-        proxy: ProxyScheme,
-    ) -> Result<Conn, BoxError> {
+    async fn connect_socks(&self, dst: Dst, proxy: ProxyScheme) -> Result<Conn, BoxError> {
         let dns = match proxy {
             ProxyScheme::Socks4 { .. } => socks::DnsResolve::Local,
             ProxyScheme::Socks5 {
@@ -234,7 +230,7 @@ impl Connector {
             log::trace!("socks HTTPS over proxy");
             let conn = socks::connect(proxy, &dst, dns).await?;
 
-            let http = tls.create_connector(http.clone(), dst.version());
+            let http = tls.create_connector(http.clone(), dst.version_pref());
             let io = http.connect(&dst, host, TokioIo::new(conn)).await?;
 
             return Ok(Conn {
@@ -253,11 +249,7 @@ impl Connector {
         })
     }
 
-    async fn connect_with_maybe_proxy(
-        self,
-        dst: ConnectRequest,
-        is_proxy: bool,
-    ) -> Result<Conn, BoxError> {
+    async fn connect_with_maybe_proxy(self, dst: Dst, is_proxy: bool) -> Result<Conn, BoxError> {
         let Inner { http, tls } = &self.inner;
         let mut http = http.clone();
 
@@ -269,7 +261,7 @@ impl Connector {
         }
 
         log::trace!("connect with maybe proxy");
-        let mut http = tls.create_connector(http, dst.version());
+        let mut http = tls.create_connector(http, dst.version_pref());
         let io = http.call(dst.deref().clone()).await?;
 
         if let MaybeHttpsStream::Https(stream) = io {
@@ -297,7 +289,7 @@ impl Connector {
 
     async fn connect_via_proxy(
         self,
-        mut dst: ConnectRequest,
+        mut dst: Dst,
         proxy_scheme: ProxyScheme,
     ) -> Result<Conn, BoxError> {
         log::debug!("proxy({:?}) intercepts '{:?}'", proxy_scheme, dst);
@@ -316,7 +308,7 @@ impl Connector {
             let host = dst.host().ok_or(crate::error::uri_bad_host())?;
             let port = dst.port_u16().unwrap_or(443);
 
-            let mut http = tls.create_connector(http.clone(), dst.version());
+            let mut http = tls.create_connector(http.clone(), dst.version_pref());
             let conn = http.call(proxy_dst).await?;
 
             log::trace!("tunneling HTTPS over proxy");
@@ -332,7 +324,7 @@ impl Connector {
             });
         }
 
-        *dst.uri_mut() = proxy_dst;
+        dst.set_dst(proxy_dst);
 
         self.connect_with_maybe_proxy(dst, true).await
     }
@@ -353,7 +345,7 @@ where
     }
 }
 
-impl Service<ConnectRequest> for Connector {
+impl Service<Dst> for Connector {
     type Response = Conn;
     type Error = BoxError;
     type Future = Connecting;
@@ -362,7 +354,7 @@ impl Service<ConnectRequest> for Connector {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, dst: ConnectRequest) -> Self::Future {
+    fn call(&mut self, dst: Dst) -> Self::Future {
         log::debug!("starting new connection: {:?}", dst);
         let timeout = self.timeout;
         for prox in self.proxies.iter() {

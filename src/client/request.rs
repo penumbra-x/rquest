@@ -14,10 +14,11 @@ use super::http::{Client, Pending};
 #[cfg(feature = "multipart")]
 use super::multipart;
 use super::response::Response;
+use super::HttpVersionPref;
 #[cfg(feature = "cookies")]
 use crate::cookie;
 use crate::header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE, HOST};
-use crate::util::ext::{ConnectExtension, PoolKeyExtension};
+use crate::util::ext::{ConnectExtension, PoolKeyExtension, VersionExtension};
 use crate::{redirect, Method, Url};
 use http::Version;
 #[cfg(feature = "cookies")]
@@ -681,7 +682,19 @@ impl<'a> InnerRequest<'a> {
     #[inline]
     pub fn version(mut self, version: Option<Version>) -> Self {
         if let Some(version) = version {
-            self.builder = self.builder.extension(ConnectExtension::new(version));
+            match version {
+                Version::HTTP_11 | Version::HTTP_10 | Version::HTTP_09 => {
+                    self.builder = self
+                        .builder
+                        .extension(ConnectExtension(VersionExtension(HttpVersionPref::Http1)));
+                }
+                Version::HTTP_2 => {
+                    self.builder = self
+                        .builder
+                        .extension(ConnectExtension(VersionExtension(HttpVersionPref::Http2)));
+                }
+                _ => {}
+            };
         }
         self
     }
@@ -706,7 +719,7 @@ impl<'a> InnerRequest<'a> {
     #[inline]
     pub fn pool_key(mut self, pool_key: Option<PoolKeyExtension>) -> Self {
         if let Some(pool_key) = pool_key {
-            self.builder = self.builder.extension(ConnectExtension::new(pool_key));
+            self.builder = self.builder.extension(ConnectExtension(pool_key));
         }
         self
     }
