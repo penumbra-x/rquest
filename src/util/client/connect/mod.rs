@@ -1,3 +1,4 @@
+#![allow(unused)]
 //! Connectors used by the `Client`.
 //!
 //! This module contains:

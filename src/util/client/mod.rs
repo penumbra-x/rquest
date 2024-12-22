@@ -1,4 +1,3 @@
-#![allow(unused)]
 //! The legacy HTTP Client from 0.14.x
 //!
 //! This `Client` will eventually be deconstructed into more composable parts.
@@ -21,7 +20,6 @@ use std::time::Duration;
 
 use futures_util::future::{self, Either, FutureExt, TryFutureExt};
 use http::uri::Scheme;
-use http::Extensions;
 use hyper2::client::conn::TrySendError as ConnTrySendError;
 use hyper2::header::{HeaderValue, HOST};
 use hyper2::rt::Timer;
@@ -31,9 +29,7 @@ use sync_wrapper::SyncWrapper;
 
 use crate::util::common;
 use crate::util::ext::PoolKeyExtension;
-use crate::HttpVersionPref;
 use connect::capture::CaptureConnectionExtension;
-use connect::HttpConnector;
 use connect::{Alpn, Connect, Connected, Connection};
 use pool::Ver;
 
@@ -571,7 +567,6 @@ where
     {
         let executor = self.exec.clone();
         let pool = self.pool.clone();
-        let pool_key = ctx.pool_key.clone();
 
         let h1_builder = self.h1_builder.clone();
         let h2_builder = self.h2_builder.clone();
@@ -1096,6 +1091,7 @@ impl Builder {
 
     /// With http1 builder
     #[inline]
+    #[allow(unused)]
     pub(crate) fn with_http1_builder<F>(&mut self, f: F)
     where
         F: FnOnce(
