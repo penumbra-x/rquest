@@ -75,28 +75,10 @@ pub trait TlsBuilderExtension {
     fn configure_set_verify_cert_store(self) -> TlsResult<SslConnectorBuilder>;
 }
 
+/// TlsExtension trait for `SslRef`.
 pub trait TlsExtension {
     /// Configure the ALPN protos for the given `SslRef`.
     fn configure_alpn_protos(&mut self, version: Option<HttpVersionPref>) -> TlsResult<()>;
-}
-
-impl TlsExtension for SslRef {
-    #[inline]
-    fn configure_alpn_protos(&mut self, version: Option<HttpVersionPref>) -> TlsResult<()> {
-        if let Some(HttpVersionPref::Http1) = version {
-            self.set_alpn_protos(HTTP_1_ALPN)?;
-        }
-
-        if let Some(HttpVersionPref::Http2) = version {
-            self.set_alpn_protos(HTTP_2_ALPN)?;
-        }
-
-        if let Some(HttpVersionPref::All) = version {
-            self.set_alpn_protos(HTTP_1_OR_2_ALPN)?;
-        }
-
-        Ok(())
-    }
 }
 
 /// TlsConnectExtension trait for `ConnectConfiguration`.
@@ -268,5 +250,24 @@ impl TlsConnectExtension for ConnectConfiguration {
             boring_sys::SSL_set_options(self.as_ptr(), boring_sys::SSL_OP_NO_TICKET as _) as _
         })
         .map(|_| self)
+    }
+}
+
+impl TlsExtension for SslRef {
+    #[inline]
+    fn configure_alpn_protos(&mut self, version: Option<HttpVersionPref>) -> TlsResult<()> {
+        if let Some(HttpVersionPref::Http1) = version {
+            self.set_alpn_protos(HTTP_1_ALPN)?;
+        }
+
+        if let Some(HttpVersionPref::Http2) = version {
+            self.set_alpn_protos(HTTP_2_ALPN)?;
+        }
+
+        if let Some(HttpVersionPref::All) = version {
+            self.set_alpn_protos(HTTP_1_OR_2_ALPN)?;
+        }
+
+        Ok(())
     }
 }
