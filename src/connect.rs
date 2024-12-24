@@ -12,7 +12,6 @@ use tower_service::Service;
 use pin_project_lite::pin_project;
 use std::future::Future;
 use std::io::{self, IoSlice};
-use std::ops::Deref;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::Duration;
@@ -140,7 +139,7 @@ impl Connector {
             .with_version_pref(dst.version_pref())
             .with_iface(dst.take_iface())
             .build(tls);
-        let io = http.call(dst.deref().clone()).await?;
+        let io = http.call(dst.into()).await?;
 
         if let MaybeHttpsStream::Https(stream) = io {
             if !self.nodelay {

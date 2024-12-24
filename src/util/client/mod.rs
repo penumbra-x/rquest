@@ -220,6 +220,12 @@ impl std::fmt::Debug for Dst {
     }
 }
 
+impl From<Dst> for Uri {
+    fn from(dst: Dst) -> Self {
+        dst.dst
+    }
+}
+
 enum TrySendError<B> {
     Retryable {
         error: Error,
