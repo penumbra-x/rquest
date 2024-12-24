@@ -32,7 +32,7 @@ use sync_wrapper::SyncWrapper;
 
 use crate::proxy::ProxyScheme;
 use crate::util::common;
-use crate::HttpVersionPref;
+use crate::{impl_debug, HttpVersionPref};
 use connect::capture::CaptureConnectionExtension;
 use connect::{Alpn, Connect, Connected, Connection};
 use pool::Ver;
@@ -206,17 +206,13 @@ impl Dst {
     }
 }
 
+impl_debug!(Dst, { dst });
+
 impl std::ops::Deref for Dst {
     type Target = Uri;
 
     fn deref(&self) -> &Self::Target {
         &self.dst
-    }
-}
-
-impl std::fmt::Debug for Dst {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.dst)
     }
 }
 
