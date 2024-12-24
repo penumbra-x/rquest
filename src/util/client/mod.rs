@@ -189,13 +189,13 @@ impl Dst {
         self.pool_key.0.take_iface()
     }
 
+    /// Take the network scheme for iface
     #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
     pub fn take_iface(
         &mut self,
     ) -> (
         Option<std::borrow::Cow<'static, str>>,
-        Option<Ipv4Addr>,
-        Option<Ipv6Addr>,
+        (Option<Ipv4Addr>, Option<Ipv6Addr>),
     ) {
         self.pool_key.0.take_iface()
     }

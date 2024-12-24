@@ -439,7 +439,7 @@ impl RequestBuilder {
         if let Ok(ref mut req) = self.request {
             if let Some(err) = proxy
                 .into_url()
-                .and_then(|proxy| Proxy::all(proxy))
+                .and_then(Proxy::all)
                 .map(|proxy| req.proxy = Some(proxy))
                 .err()
             {

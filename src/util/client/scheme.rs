@@ -43,15 +43,14 @@ impl NetworkScheme {
         &mut self,
     ) -> (
         Option<std::borrow::Cow<'static, str>>,
-        Option<Ipv4Addr>,
-        Option<Ipv6Addr>,
+        (Option<Ipv4Addr>, Option<Ipv6Addr>),
     ) {
         match self {
             NetworkScheme::Iface {
                 interface,
                 addresses,
-            } => (interface.take(), addresses.0.take(), addresses.1.take()),
-            _ => (None, None, None),
+            } => (interface.take(), (addresses.0.take(), addresses.1.take())),
+            _ => (None, (None, None)),
         }
     }
 }
@@ -60,6 +59,7 @@ impl std::fmt::Debug for NetworkScheme {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             NetworkScheme::Proxy(proxy) => write!(f, "proxy: {:?}", proxy),
+            #[cfg(not(any(target_os = "android", target_os = "fuchsia", target_os = "linux")))]
             NetworkScheme::Iface { addresses, .. } => {
                 write!(f, "iface: {:?}, {:?}", addresses.0, addresses.1)
             }
@@ -97,17 +97,18 @@ impl NetworkSchemeBuilder {
         }
     }
 
+    #[cfg(not(any(target_os = "android", target_os = "fuchsia", target_os = "linux")))]
     pub fn iface(mut self, iface: (Option<Ipv4Addr>, Option<Ipv6Addr>)) -> Self {
         self.addresses = iface;
         self
     }
 
     #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
-    pub fn interface(
+    pub fn iface(
         mut self,
-        (addresses, interface): (
-            (Option<Ipv4Addr>, Option<Ipv6Addr>),
+        (interface, addresses ): (
             Option<std::borrow::Cow<'static, str>>,
+            (Option<Ipv4Addr>, Option<Ipv6Addr>)
         ),
     ) -> Self {
         self.addresses = addresses;

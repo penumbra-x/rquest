@@ -46,6 +46,12 @@ pub struct InnerRequestBuilder<'a> {
     headers_order: Option<&'a [HeaderName]>,
 }
 
+impl<'a> Default for InnerRequestBuilder<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> InnerRequestBuilder<'a> {
     /// Create a new `RequestBuilder` with required fields.
     #[inline]

@@ -1735,8 +1735,7 @@ impl ClientRef {
             {
                 NetworkScheme::builder().iface((
                     self.interface.clone(),
-                    self.local_addr_v4,
-                    self.local_addr_v6,
+                    (self.local_addr_v4, self.local_addr_v6),
                 ))
             }
             // For non-Android, non-Fuchsia, non-Linux systems, use default local addresses
