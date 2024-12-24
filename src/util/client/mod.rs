@@ -229,14 +229,16 @@ enum TrySendError<B> {
     Nope(Error),
 }
 
+type ResponseWrapper = SyncWrapper<
+    Pin<Box<dyn Future<Output = Result<Response<hyper2::body::Incoming>, Error>> + Send>>,
+>;
+
 /// A `Future` that will resolve to an HTTP Response.
 ///
 /// This is returned by `Client::request` (and `Client::get`).
 #[must_use = "futures do nothing unless polled"]
 pub struct ResponseFuture {
-    inner: SyncWrapper<
-        Pin<Box<dyn Future<Output = Result<Response<hyper2::body::Incoming>, Error>> + Send>>,
-    >,
+    inner: ResponseWrapper,
 }
 
 // ===== impl Client =====

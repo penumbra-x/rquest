@@ -46,7 +46,7 @@ pub struct InnerRequestBuilder<'a> {
     headers_order: Option<&'a [HeaderName]>,
 }
 
-impl<'a> Default for InnerRequestBuilder<'a> {
+impl Default for InnerRequestBuilder<'_> {
     fn default() -> Self {
         Self::new()
     }
