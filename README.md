@@ -36,7 +36,7 @@ HTTP
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "0.33.3"
+rquest = "1.0.0-rc.1"
 ```
 
 ```rust,no_run
@@ -62,7 +62,7 @@ WebSocket
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = { version = "0.33.3", features = ["websocket"] }
+rquest = { version = "1.0.0-rc.1", features = ["websocket"] }
 futures-util = { version = "0.3.0", default-features = false, features = ["std"] }
 ```
 
@@ -108,6 +108,12 @@ async fn main() -> Result<(), rquest::Error> {
 ```
 
 > More examples can be found in the [examples](https://github.com/penumbra-x/rquest/tree/main/examples) directory.
+
+## Connection Pool
+
+Regarding the design strategy of the connection pool, `rquest` and `reqwest` are implemented differently. `rquest` reconstructs the entire connection layer, treating each host with the same proxy or bound IP/device as the same connection, while `reqwest` treats each host as an independent connection. Specifically, the connection pool of `rquest` is managed based on the host and `proxy`/`IP`/`Interface`, while the connection pool of `reqwest` is managed only by the host. In other words, when using `rquest`, you can flexibly switch between proxies, `IP` or `Interface` without affecting the management of the connection pool.
+
+> `Interface` refers to the network interface of the device, such as `wlan0` or `eth0`.
 
 ## Root Certificate
 
