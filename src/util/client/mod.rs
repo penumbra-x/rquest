@@ -123,8 +123,7 @@ type PoolKey = (NetworkScheme, Uri);
 /// This is used to store the destination of the request, the http version pref, and the pool key.
 #[derive(Clone)]
 pub struct Dst {
-    dst: Uri,
-    http_version_pref: Option<HttpVersionPref>,
+    version_pref: Option<HttpVersionPref>,
     pool_key: PoolKey,
 }
 
@@ -133,8 +132,8 @@ impl Dst {
     pub fn new<B>(
         req: &mut Request<B>,
         is_http_connect: bool,
-        network_scheme: Option<NetworkScheme>,
-        http_version_pref: Option<HttpVersionPref>,
+        network_scheme: NetworkScheme,
+        version_pref: Option<HttpVersionPref>,
     ) -> Result<Dst, Error> {
         let uri = req.uri_mut();
         let (scheme, auth) = match (uri.scheme().cloned(), uri.authority().cloned()) {
@@ -161,9 +160,8 @@ impl Dst {
         // Convert the scheme and host to a URI
         into_uri(scheme, auth)
             .map(|uri| Dst {
-                dst: uri.clone(),
-                pool_key: (network_scheme.unwrap_or_default(), uri),
-                http_version_pref,
+                pool_key: (network_scheme, uri),
+                version_pref,
             })
             .map_err(|_| e!(UserAbsoluteUriRequired))
     }
@@ -174,13 +172,13 @@ impl Dst {
     }
 
     /// Set the next destination of the request (for proxy)
-    pub(crate) fn set_dst(&mut self, uri: Uri) {
-        self.dst = uri;
+    pub fn set_dst(&mut self, mut uri: Uri) {
+        std::mem::swap(&mut self.pool_key.1, &mut uri);
     }
 
     /// Get the http version pref
     pub fn version_pref(&self) -> Option<HttpVersionPref> {
-        self.http_version_pref
+        self.version_pref
     }
 
     /// Task network scheme for iface
@@ -206,19 +204,19 @@ impl Dst {
     }
 }
 
-impl_debug!(Dst, { dst });
+impl_debug!(Dst, { pool_key });
 
 impl std::ops::Deref for Dst {
     type Target = Uri;
 
     fn deref(&self) -> &Self::Target {
-        &self.dst
+        &self.pool_key.1
     }
 }
 
 impl From<Dst> for Uri {
     fn from(dst: Dst) -> Self {
-        dst.dst
+        dst.pool_key.1
     }
 }
 

@@ -13,7 +13,7 @@ where
 {
     request: http::Request<B>,
     http_version_pref: Option<HttpVersionPref>,
-    network_scheme: Option<NetworkScheme>,
+    network_scheme: NetworkScheme,
 }
 
 impl<B> InnerRequest<B>
@@ -30,7 +30,7 @@ where
         self,
     ) -> (
         http::Request<B>,
-        Option<NetworkScheme>,
+        NetworkScheme,
         Option<HttpVersionPref>,
     ) {
         (self.request, self.network_scheme, self.http_version_pref)
@@ -41,7 +41,7 @@ where
 pub struct InnerRequestBuilder<'a> {
     builder: http::request::Builder,
     http_version_pref: Option<HttpVersionPref>,
-    network_scheme: Option<NetworkScheme>,
+    network_scheme: NetworkScheme,
     headers_order: Option<&'a [HeaderName]>,
 }
 
@@ -50,7 +50,7 @@ impl Default for InnerRequestBuilder<'_> {
         Self {
             builder: hyper2::Request::builder(),
             http_version_pref: None,
-            network_scheme: None,
+            network_scheme: NetworkScheme::None,
             headers_order: None,
         }
     }
@@ -99,7 +99,7 @@ impl<'a> InnerRequestBuilder<'a> {
 
     /// Set network scheme for the request.
     #[inline]
-    pub fn network_scheme(mut self, network_scheme: impl Into<Option<NetworkScheme>>) -> Self {
+    pub fn network_scheme(mut self, network_scheme: impl Into<NetworkScheme>) -> Self {
         self.network_scheme = network_scheme.into();
         self
     }

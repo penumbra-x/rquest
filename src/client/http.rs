@@ -1751,8 +1751,6 @@ impl ClientRef {
     fn network_scheme(&self, uri: &Uri, request_proxy: Option<&Proxy>) -> NetworkScheme {
         // Create the NetworkScheme builder based on the target OS
         let mut builder = {
-            // For Android, Fuchsia, and Linux systems, use the specified interface and local addresses
-
             #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
             {
                 NetworkScheme::builder().iface((
@@ -1760,7 +1758,7 @@ impl ClientRef {
                     (self.local_addr_v4, self.local_addr_v6),
                 ))
             }
-            // For non-Android, non-Fuchsia, non-Linux systems, use default local addresses
+            
             #[cfg(not(any(target_os = "android", target_os = "fuchsia", target_os = "linux")))]
             NetworkScheme::builder().iface((self.local_addr_v4, self.local_addr_v6))
         };
