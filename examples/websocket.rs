@@ -24,9 +24,8 @@ async fn main() -> Result<(), rquest::Error> {
     });
 
     while let Some(message) = rx.try_next().await? {
-        match message {
-            Message::Text(text) => println!("received: {text}"),
-            _ => {}
+        if let Message::Text(text) = message {
+            println!("received: {text}")
         }
     }
 

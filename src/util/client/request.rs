@@ -26,13 +26,7 @@ where
         InnerRequestBuilder::default()
     }
 
-    pub fn split(
-        self,
-    ) -> (
-        http::Request<B>,
-        NetworkScheme,
-        Option<HttpVersionPref>,
-    ) {
+    pub fn split(self) -> (http::Request<B>, NetworkScheme, Option<HttpVersionPref>) {
         (self.request, self.network_scheme, self.http_version_pref)
     }
 }

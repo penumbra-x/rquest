@@ -50,7 +50,9 @@ impl WebSocketRequestBuilder {
 
     /// Sets the websocket subprotocols to request.
     pub fn protocols(mut self, protocols: Vec<String>) -> Self {
-        self.protocols.as_mut().map(|p| p.extend(protocols));
+        if let Some(p) = self.protocols.as_mut() {
+            p.extend(protocols)
+        }
         self
     }
 
@@ -111,7 +113,7 @@ impl WebSocketRequestBuilder {
 
         let nonce = self
             .nonce
-            .unwrap_or_else(|| tungstenite::handshake::client::generate_key());
+            .unwrap_or_else(tungstenite::handshake::client::generate_key);
 
         // change the scheme
         let url = request.url_mut();

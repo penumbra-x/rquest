@@ -1437,7 +1437,10 @@ impl Client {
     #[cfg(feature = "cookies")]
     #[inline]
     pub fn set_cookie_provider<C: cookie::CookieStore + 'static>(&mut self, cookie_store: Arc<C>) {
-        std::mem::swap(&mut self.inner_mut().cookie_store, &mut Some(cookie_store as _));
+        std::mem::swap(
+            &mut self.inner_mut().cookie_store,
+            &mut Some(cookie_store as _),
+        );
     }
 
     /// Set the proxies for this client.
@@ -1758,7 +1761,7 @@ impl ClientRef {
                     (self.local_addr_v4, self.local_addr_v6),
                 ))
             }
-            
+
             #[cfg(not(any(target_os = "android", target_os = "fuchsia", target_os = "linux")))]
             NetworkScheme::builder().iface((self.local_addr_v4, self.local_addr_v6))
         };
