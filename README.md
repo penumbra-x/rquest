@@ -24,8 +24,6 @@ Additional learning resources include:
 - [API Documentation](https://docs.rs/rquest)
 - [Repository Examples](https://github.com/penumbra-x/rquest/tree/main/examples)
 
-> &#9888; This crate is under active development and the API is not yet stable.
-
 ## Usage
 
 This asynchronous example uses [Tokio](https://tokio.rs) and enables some
@@ -36,7 +34,7 @@ HTTP
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "1.0.0-rc.3"
+rquest = "1.0.0"
 ```
 
 ```rust,no_run
@@ -62,7 +60,7 @@ WebSocket
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = { version = "1.0.0-rc.3", features = ["websocket"] }
+rquest = { version = "1.0.0", features = ["websocket"] }
 futures-util = { version = "0.3.0", default-features = false, features = ["std"] }
 ```
 
@@ -108,6 +106,14 @@ async fn main() -> Result<(), rquest::Error> {
 ```
 
 > More examples can be found in the [examples](https://github.com/penumbra-x/rquest/tree/main/examples) directory.
+
+## Overview
+
+The predecessor of rquest is [reqwest](https://github.com/seanmonstar/reqwest). rquest is a specialized adaptation based on the reqwest project, supporting [BoringSSL](https://github.com/google/boringssl) and related `HTTP/2` fingerprints in requests.
+
+It also optimizes commonly used APIs and enhances compatibility with connection pools, making it easier to switch proxies, `IP` addresses, and interfaces. You can directly migrate from a project using reqwest to rquest.
+
+Due to limited time for maintaining the synchronous APIs, only asynchronous APIs are supported. I may have to give up maintenance; if possible, please consider [sponsoring me](https://github.com/penumbra-x/.github/blob/main/profile/SPONSOR.md).
 
 ## Connection Pool
 
@@ -166,14 +172,6 @@ cargo build --release
 ```
 
 You can also use [this GitHub Actions workflow](https://github.com/penumbra-x/rquest/blob/main/.github/compilation-guide/build.yml) to compile your project on **Linux**, **Windows**, and **macOS**.
-
-## About
-
-The predecessor of rquest is [reqwest](https://github.com/seanmonstar/reqwest). rquest is a specialized adaptation based on the reqwest project, supporting [BoringSSL](https://github.com/google/boringssl) and related HTTP/2 fingerprints in requests.
-
-It also optimizes commonly used APIs and enhances compatibility with connection pools, making it easier to switch proxies, IP addresses, and interfaces. You can directly migrate from a project using reqwest to rquest.
-
-Due to limited time for maintaining the synchronous APIs, only asynchronous APIs are supported. I may have to give up maintenance; if possible, please consider [sponsoring me](https://github.com/penumbra-x/.github/blob/main/profile/SPONSOR.md).
 
 ## Contributing
 
