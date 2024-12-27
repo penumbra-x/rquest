@@ -14,10 +14,8 @@ An ergonomic, all-in-one `JA3`/`JA4`/`HTTP2` fingerprint `HTTP`/`WebSocket` clie
 - Redirect Policy
 - Cookie Store
 - HTTP Proxies
-- Restrict pool [connections](https://docs.rs/rquest/latest/rquest/struct.ClientBuilder.html#method.pool_max_size)
-- `HTTPS`/`WebSocket` via [BoringSSL](https://github.com/google/boringssl)
+- `HTTPS`/`WebSocket` via [BoringSSL](https://github.com/cloudflare/boring)
 - Preconfigured `TLS`/`HTTP2` settings
-- [Changelog](https://github.com/penumbra-x/rquest/blob/main/CHANGELOG.md)
 
 Additional learning resources include:
 
@@ -109,7 +107,7 @@ async fn main() -> Result<(), rquest::Error> {
 
 ## Overview
 
-The predecessor of rquest is [reqwest](https://github.com/seanmonstar/reqwest). rquest is a specialized adaptation based on the reqwest project, supporting [BoringSSL](https://github.com/google/boringssl) and related `HTTP/2` fingerprints in requests.
+The predecessor of rquest is [reqwest](https://github.com/seanmonstar/reqwest). rquest is a specialized adaptation based on the reqwest project, supporting [BoringSSL]() and related `HTTP/2` fingerprints in requests.
 
 It also optimizes commonly used APIs and enhances compatibility with connection pools, making it easier to switch proxies, `IP` addresses, and interfaces. You can directly migrate from a project using reqwest to rquest.
 

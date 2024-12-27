@@ -1,6 +1,6 @@
 [package]
 name = "rquest"
-version = "1.0.0"
+version = "1.0.1"
 description = "Asynchronous Rust HTTP client with TLS, JA3/JA4, and HTTP2 fingerprint spoof"
 keywords = ["http", "client", "websocket", "ja3", "ja4"]
 categories = ["web-programming::http-client"]
@@ -300,13 +300,8 @@ path = "examples/client.rs"
 required-features = ["full"]
 
 [[example]]
-name = "redirect_via_proxy"
-path = "examples/redirect_via_proxy.rs"
-required-features = ["full"]
-
-[[example]]
-name = "redirect_with_request"
-path = "examples/redirect_with_request.rs"
+name = "request_with_redirect"
+path = "examples/request_with_redirect.rs"
 required-features = ["full"]
 
 [[example]]
@@ -329,8 +324,8 @@ path = "examples/request_with_version.rs"
 required-features = ["full"]
 
 [[example]]
-name = "request_via_proxy"
-path = "examples/request_via_proxy.rs"
+name = "request_with_proxy"
+path = "examples/request_with_proxy.rs"
 required-features = ["full"]
 
 [[example]]
