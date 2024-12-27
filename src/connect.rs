@@ -474,7 +474,7 @@ pub(crate) mod sealed {
         #[allow(missing_debug_implementations)]
         pub struct Conn {
             #[pin]
-            pub(super)inner: BoxConn,
+            pub(super) inner: BoxConn,
             pub(super) is_proxy: bool,
             // Only needed for __tls, but #[cfg()] on fields breaks pin_project!
             pub(super) tls_info: bool,

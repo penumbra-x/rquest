@@ -17,7 +17,7 @@ use http::uri::Scheme;
 use http::Uri;
 use hyper2::rt::{Read, Write};
 use std::error::Error;
-use std::fmt::{self, Debug};
+use std::fmt::Debug;
 use std::future::Future;
 use tokio_boring::SslStream;
 
@@ -293,7 +293,7 @@ where
     S: Service<Uri, Response = T> + Send,
     S::Error: Into<Box<dyn Error + Send + Sync>>,
     S::Future: Unpin + Send + 'static,
-    T: Read + Write + Connection + Unpin + fmt::Debug + Sync + Send + 'static,
+    T: Read + Write + Connection + Unpin + Debug + Sync + Send + 'static,
 {
     type Response = MaybeHttpsStream<T>;
     type Error = Box<dyn Error + Sync + Send>;
