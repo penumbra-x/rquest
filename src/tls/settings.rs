@@ -6,10 +6,7 @@ use crate::{
     tls::{cert_compression::CertCompressionAlgorithm, TlsVersion},
     HttpVersionPref,
 };
-use boring::{
-    ssl::{ExtensionType, SslCurve},
-    x509::store::X509Store,
-};
+use boring::{ssl::SslCurve, x509::store::X509Store};
 use http::{HeaderMap, HeaderName};
 use hyper2::{PseudoOrder, SettingsOrder};
 use typed_builder::TypedBuilder;
@@ -28,7 +25,7 @@ pub struct ImpersonateSettings {
     pub(crate) headers: Option<Cow<'static, HeaderMap>>,
 
     /// Http headers order
-    #[builder(default, setter(strip_option))]
+    #[builder(default, setter(into))]
     pub(crate) headers_order: Option<Cow<'static, [HeaderName]>>,
 }
 
@@ -176,17 +173,13 @@ pub struct TlsSettings {
     #[builder(default, setter(into))]
     pub record_size_limit: Option<u16>,
 
-    /// PSk with no session ticket.
+    /// PSk with skip session ticket.
     #[builder(default = false)]
     pub psk_skip_session_ticket: bool,
 
     /// The key shares length limit.
     #[builder(default, setter(into))]
     pub key_shares_length_limit: Option<u8>,
-
-    /// The extension permutation.
-    #[builder(default, setter(into))]
-    pub extension_permutation: Option<Cow<'static, [ExtensionType]>>,
 
     /// The extension permutation index.
     #[builder(default, setter(into))]
@@ -216,7 +209,6 @@ impl_debug!(
         record_size_limit,
         key_shares_length_limit,
         psk_skip_session_ticket,
-        extension_permutation,
         extension_permutation_indices
     }
 );

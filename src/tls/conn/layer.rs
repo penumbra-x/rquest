@@ -267,15 +267,15 @@ impl Inner {
                     unsafe {
                         conf.set_session(&session)?;
                     }
-    
+
                     if self.skip_session_ticket {
                         conf.configure_skip_session_ticket()?;
                     }
                 }
             }
-    
+
             let idx = key_index()?;
-            conf.set_ex_data(idx, key);     
+            conf.set_ex_data(idx, key);
         }
 
         let mut ssl = conf.into_ssl(host)?;

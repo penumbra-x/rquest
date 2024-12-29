@@ -24,7 +24,7 @@ macro_rules! firefox_mod_generator {
 macro_rules! firefox_tls_template {
     (1) => {{
         super::FirefoxTlsSettings::builder()
-            .cert_compression_algorithm(Some(super::CERT_COMPRESSION_ALGORITHM))
+            .cert_compression_algorithm(super::CERT_COMPRESSION_ALGORITHM)
             .enable_ech_grease(true)
             .pre_shared_key(true)
             .psk_skip_session_tickets(true)
@@ -68,7 +68,6 @@ macro_rules! firefox_http2_template {
     }};
 }
 
-// ============== Header initializer ==============
 #[inline]
 fn header_initializer(ua: &'static str) -> HeaderMap {
     let mut headers = HeaderMap::new();
@@ -91,7 +90,6 @@ fn header_initializer_with_zstd(ua: &'static str) -> HeaderMap {
     headers
 }
 
-// ============== tls settings ==============
 mod tls {
     use crate::tls::mimic::tls_imports::*;
 
@@ -187,7 +185,7 @@ mod tls {
         ];
 
         let mut indices = [0u8; EXTENSIONS.len()];
-        let mut index = 0;
+        let mut index = usize::MIN;
         while index < EXTENSIONS.len() {
             if let Some(idx) = ExtensionType::index_of(EXTENSIONS[index]) {
                 indices[index] = idx as u8;
@@ -200,47 +198,36 @@ mod tls {
 
     #[derive(TypedBuilder)]
     pub struct FirefoxTlsSettings {
-        // TLS curves
         #[builder(default = CURVES)]
         curves: &'static [SslCurve],
 
-        // TLS sigalgs list
         #[builder(default = SIGALGS_LIST)]
         sigalgs_list: &'static str,
 
-        // TLS cipher list
         #[builder(default = CIPHER_LIST)]
         cipher_list: &'static str,
 
-        // TLS enable ech grease, https://chromestatus.com/feature/6196703843581952
         #[builder(default = false, setter(into))]
         enable_ech_grease: bool,
 
-        // TLS pre_shared_key extension
         #[builder(default = false, setter(into))]
         pre_shared_key: bool,
 
-        // Pre shared key skip session tickets
         #[builder(default = false, setter(into))]
         psk_skip_session_tickets: bool,
 
-        // TLS delegated credentials extension
         #[builder(default = DELEGATED_CREDENTIALS, setter(into))]
         delegated_credentials: &'static str,
 
-        // TLS record size limit
         #[builder(default = RECORD_SIZE_LIMIT, setter(into))]
         record_size_limit: u16,
 
-        // TLS enable three key shares
         #[builder(default, setter(into))]
         key_shares_length_limit: Option<u8>,
 
-        // TLS cert compression algorithm
         #[builder(default, setter(into))]
         cert_compression_algorithm: Option<&'static [CertCompressionAlgorithm]>,
 
-        // TLS extension permutation
         #[builder(default = EXTENSION_PERMUTATION_INDICES, setter(into))]
         extension_permutation_indices: &'static [u8],
     }
@@ -268,17 +255,13 @@ mod tls {
     }
 }
 
-// ============== http2 settings ==============
 mod http2 {
     use crate::tls::mimic::http2_imports::*;
 
-    // ============== http2 headers priority ==============
     pub const HEADER_PRIORITY: (u32, u8, bool) = (0, 41, false);
 
-    /// ============== http2 headers pseudo order ==============
     pub const HEADERS_PSEUDO_ORDER: [PseudoOrder; 4] = [Method, Path, Authority, Scheme];
 
-    /// ============== http2 settings frame order ==============
     pub const SETTINGS_ORDER: [SettingsOrder; 8] = [
         HeaderTableSize,
         EnablePush,

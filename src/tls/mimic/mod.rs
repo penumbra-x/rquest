@@ -1,4 +1,3 @@
-#![allow(missing_docs, missing_debug_implementations)]
 pub mod chrome;
 #[macro_use]
 mod macros;
@@ -40,13 +39,11 @@ mod http2_imports {
     pub use hyper2::SettingsOrder::{self, *};
 }
 
-/// Get the connection settings for the given impersonate version
 #[inline]
 pub fn tls_settings(ver: Impersonate, with_headers: bool) -> ImpersonateSettings {
     impersonate_match!(
         ver,
         with_headers,
-        // Chrome
         Chrome100 => v100::get_settings,
         Chrome101 => v101::get_settings,
         Chrome104 => v104::get_settings,
@@ -70,7 +67,6 @@ pub fn tls_settings(ver: Impersonate, with_headers: bool) -> ImpersonateSettings
         Chrome130 => v130::get_settings,
         Chrome131 => v131::get_settings,
 
-        // Safari
         SafariIos17_2 => safari_ios_17_2::get_settings,
         SafariIos17_4_1 => safari_ios_17_4_1::get_settings,
         SafariIos16_5 => safari_ios_16_5::get_settings,
@@ -88,7 +84,6 @@ pub fn tls_settings(ver: Impersonate, with_headers: bool) -> ImpersonateSettings
         Safari18_2 => safari18_2::get_settings,
         SafariIos18_1_1 => safari_ios_18_1_1::get_settings,
 
-        // OkHttp
         OkHttp3_9 => okhttp3_9::get_settings,
         OkHttp3_11 => okhttp3_11::get_settings,
         OkHttp3_13 => okhttp3_13::get_settings,
@@ -97,13 +92,11 @@ pub fn tls_settings(ver: Impersonate, with_headers: bool) -> ImpersonateSettings
         OkHttp4_10 => okhttp4_10::get_settings,
         OkHttp5 => okhttp5::get_settings,
 
-        // Edge
         Edge101 => edge101::get_settings,
         Edge122 => edge122::get_settings,
         Edge127 => edge127::get_settings,
         Edge131 => edge131::get_settings,
 
-        // Firefox
         Firefox109 => ff109::get_settings,
         Firefox133 => ff133::get_settings
     )
@@ -111,7 +104,6 @@ pub fn tls_settings(ver: Impersonate, with_headers: bool) -> ImpersonateSettings
 
 #[derive(Clone, Copy, Debug, Default)]
 pub enum Impersonate {
-    // Chrome
     Chrome100,
     Chrome101,
     Chrome104,
@@ -136,7 +128,6 @@ pub enum Impersonate {
     #[default]
     Chrome131,
 
-    // Safari
     SafariIos17_2,
     SafariIos17_4_1,
     SafariIos16_5,
@@ -154,7 +145,6 @@ pub enum Impersonate {
     Safari18_2,
     SafariIos18_1_1,
 
-    // OkHttp
     OkHttp3_9,
     OkHttp3_11,
     OkHttp3_13,
@@ -163,20 +153,17 @@ pub enum Impersonate {
     OkHttp4_10,
     OkHttp5,
 
-    // Edge
     Edge101,
     Edge122,
     Edge127,
     Edge131,
 
-    // Firefox
     Firefox109,
     Firefox133,
 }
 
 #[cfg(feature = "impersonate_str")]
 impl_from_str! {
-    // Chrome
     (Chrome100, "chrome_100"),
     (Chrome101, "chrome_101"),
     (Chrome104, "chrome_104"),
@@ -200,7 +187,6 @@ impl_from_str! {
     (Chrome130, "chrome_130"),
     (Chrome131, "chrome_131"),
 
-    // Safari
     (SafariIos17_2, "safari_ios_17.2"),
     (SafariIos17_4_1, "safari_ios_17.4.1"),
     (SafariIos16_5, "safari_ios_16.5"),
@@ -218,7 +204,6 @@ impl_from_str! {
     (Safari18_2, "safari_18.2"),
     (SafariIos18_1_1, "safari_ios_18.1.1"),
 
-    // OkHttp
     (OkHttp3_9, "okhttp_3.9"),
     (OkHttp3_11, "okhttp_3.11"),
     (OkHttp3_13, "okhttp_3.13"),
@@ -227,13 +212,11 @@ impl_from_str! {
     (OkHttp4_10, "okhttp_4.10"),
     (OkHttp5, "okhttp_5"),
 
-    // Edge
     (Edge101, "edge_101"),
     (Edge122, "edge_122"),
     (Edge127, "edge_127"),
     (Edge131, "edge_131"),
 
-    // Firefox
     (Firefox109, "firefox_109"),
     (Firefox133, "firefox_133"),
 }

@@ -103,7 +103,6 @@ macro_rules! chrome_http2_template {
     }};
 }
 
-// ============== Header initializer ==============
 #[inline]
 fn header_initializer(sec_ch_ua: &'static str, ua: &'static str) -> HeaderMap {
     let mut headers = HeaderMap::new();
@@ -135,7 +134,6 @@ fn header_initializer_with_zstd_priority(sec_ch_ua: &'static str, ua: &'static s
     headers
 }
 
-// ============== TLS settings ==============
 mod tls {
     use crate::tls::mimic::tls_imports::*;
 
@@ -191,31 +189,24 @@ mod tls {
 
     #[derive(TypedBuilder)]
     pub struct ChromeTlsSettings {
-        // TLS curves
         #[builder(default = CURVES)]
         curves: &'static [SslCurve],
 
-        // TLS sigalgs list
         #[builder(default = SIGALGS_LIST)]
         sigalgs_list: &'static str,
 
-        // TLS cipher list
         #[builder(default = CIPHER_LIST)]
         cipher_list: &'static str,
 
-        // TLS application_settings extension
         #[builder(default = true, setter(into))]
         application_settings: bool,
 
-        // TLS enable ech grease, https://chromestatus.com/feature/6196703843581952
         #[builder(default = false, setter(into))]
         enable_ech_grease: bool,
 
-        // TLS permute extensions
         #[builder(default = false, setter(into))]
         permute_extensions: bool,
 
-        // TLS pre_shared_key extension
         #[builder(default = false, setter(into))]
         pre_shared_key: bool,
     }
@@ -241,17 +232,13 @@ mod tls {
     }
 }
 
-// ============== Http2 settings ==============
 mod http2 {
     use crate::tls::mimic::http2_imports::*;
 
-    // ============== http2 headers priority ==============
     pub const HEADER_PRIORITY: (u32, u8, bool) = (0, 255, true);
 
-    /// ============== http2 headers pseudo order ==============
     pub const HEADERS_PSEUDO_ORDER: [PseudoOrder; 4] = [Method, Authority, Scheme, Path];
 
-    /// ============== http2 settings frame order ==============
     pub const SETTINGS_ORDER: [SettingsOrder; 8] = [
         HeaderTableSize,
         EnablePush,

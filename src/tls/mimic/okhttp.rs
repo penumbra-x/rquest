@@ -43,7 +43,6 @@ macro_rules! okhttp_http2_template {
     };
 }
 
-// ============== Headers ==============
 #[inline]
 fn header_initializer(ua: &'static str) -> HeaderMap {
     let mut headers = HeaderMap::new();
@@ -58,7 +57,6 @@ fn header_initializer(ua: &'static str) -> HeaderMap {
     headers
 }
 
-// ============== TLS settings ==============
 mod tls {
     use crate::tls::mimic::tls_imports::*;
 
@@ -99,15 +97,12 @@ mod tls {
 
     #[derive(TypedBuilder)]
     pub struct OkHttpTlsSettings {
-        // TLS curves
         #[builder(default = CURVES)]
         curves: &'static [SslCurve],
 
-        // TLS sigalgs list
         #[builder(default = SIGALGS_LIST)]
         sigalgs_list: &'static str,
 
-        // TLS cipher list
         cipher_list: &'static str,
     }
 
@@ -125,17 +120,13 @@ mod tls {
     }
 }
 
-// ============== Http2 settings ==============
 mod http2 {
     use crate::tls::mimic::http2_imports::*;
 
-    // ============== http2 headers priority ==============
     pub const HEADER_PRIORITY: (u32, u8, bool) = (0, 255, true);
 
-    /// ============== http2 headers pseudo order ==============
     pub const HEADERS_PSEUDO_ORDER: [PseudoOrder; 4] = [Method, Path, Authority, Scheme];
 
-    /// ============== http2 settings frame order ==============
     pub const SETTINGS_ORDER: [SettingsOrder; 8] = [
         HeaderTableSize,
         EnablePush,

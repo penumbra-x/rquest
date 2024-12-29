@@ -93,7 +93,6 @@ macro_rules! safari_http2_template {
     }};
 }
 
-// ============== Headers ==============
 #[inline]
 fn header_initializer_for_16_17(ua: &'static str) -> HeaderMap {
     let mut headers = HeaderMap::new();
@@ -152,7 +151,6 @@ fn header_initializer_for_18(ua: &'static str) -> HeaderMap {
     headers
 }
 
-// ============== TLS settings ==============
 mod tls {
     use crate::tls::mimic::tls_imports::*;
 
@@ -251,15 +249,12 @@ mod tls {
 
     #[derive(TypedBuilder)]
     pub struct SafariTlsSettings {
-        // TLS curves
         #[builder(default = CURVES)]
         curves: &'static [SslCurve],
 
-        // TLS sigalgs list
         #[builder(default = SIGALGS_LIST)]
         sigalgs_list: &'static str,
 
-        // TLS cipher list
         cipher_list: &'static str,
     }
 
@@ -280,19 +275,15 @@ mod tls {
     }
 }
 
-// ============== Http2 settings ==============
 mod http2 {
     use crate::tls::mimic::http2_imports::*;
 
-    // ============== http2 headers priority ==============
     pub const HEADER_PRIORITY: (u32, u8, bool) = (0, 255, true);
     pub const NEW_HEADER_PRIORITY: (u32, u8, bool) = (0, 255, false);
 
-    /// ============== http2 headers pseudo order ==============
     pub const HEADERS_PSEUDO_ORDER: [PseudoOrder; 4] = [Method, Scheme, Path, Authority];
     pub const NEW_HEADERS_PSEUDO_ORDER: [PseudoOrder; 4] = [Method, Scheme, Authority, Path];
 
-    /// ============== http2 settings frame order ==============
     pub const SETTINGS_ORDER: [SettingsOrder; 8] = [
         HeaderTableSize,
         EnablePush,
@@ -303,6 +294,7 @@ mod http2 {
         UnknownSetting8,
         UnknownSetting9,
     ];
+
     pub const NEW_SETTINGS_ORDER: [SettingsOrder; 8] = [
         HeaderTableSize,
         EnablePush,
