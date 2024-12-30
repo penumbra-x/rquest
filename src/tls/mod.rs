@@ -28,7 +28,7 @@ pub(crate) use settings::{Http2Settings, ImpersonateSettings, TlsSettings};
 
 type TlsResult<T> = Result<T, ErrorStack>;
 
-/// A wrapper around a `SslConnectorBuilder` that allows for additional settings.
+/// A wrapper around a `HttpsLayer` that allows for additional settings.
 #[derive(Clone)]
 pub struct BoringTlsConnector(HttpsLayer);
 

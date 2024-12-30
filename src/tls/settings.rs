@@ -14,7 +14,7 @@ use typed_builder::TypedBuilder;
 /// Impersonate Settings.
 #[derive(TypedBuilder, Debug)]
 pub struct ImpersonateSettings {
-    /// The SSL connector builder.
+    /// TLS settings
     pub(crate) tls: TlsSettings,
 
     /// HTTP/2 settings.

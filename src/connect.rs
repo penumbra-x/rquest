@@ -57,17 +57,14 @@ impl ConnectorBuilder {
         }
 
         let inner_tls = InnerTLS::WithSharedState(Arc::new(RwLock::new(self.tls)));
-        let mut base_service = ConnectorService {
+        let base_service = ConnectorService {
             http: self.http,
             tls: inner_tls.clone(),
             verbose: self.verbose,
             nodelay: self.nodelay,
             tls_info: self.tls_info,
-            timeout: self.timeout,
+            timeout: None,
         };
-
-        // If layers is empty, we have no timeout
-        let timeout = base_service.timeout.take();
 
         // otherwise we have user provided layers
         // so we need type erasure all the way through
@@ -83,7 +80,7 @@ impl ConnectorBuilder {
         // now we handle the concrete stuff - any `connect_timeout`,
         // plus a final map_err layer we can use to cast default tower layer
         // errors to internal errors
-        match timeout {
+        match self.timeout {
             Some(timeout) => {
                 let service = ServiceBuilder::new()
                     .layer(TimeoutLayer::new(timeout))

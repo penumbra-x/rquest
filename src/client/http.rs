@@ -287,7 +287,6 @@ impl ClientBuilder {
     }
 
     /// Sets the necessary values to mimic the specified impersonate version, skipping header configuration.
-    /// This will only apply the required TLS settings.
     #[inline]
     pub fn impersonate_skip_headers(self, impersonate: Impersonate) -> ClientBuilder {
         let settings = tls::tls_settings(impersonate, false);
@@ -782,7 +781,10 @@ impl ClientBuilder {
     }
 
     /// Sets the maximum number of connections in the pool.
-    pub fn pool_max_size(mut self, max: impl Into<Option<NonZeroUsize>>) -> ClientBuilder {
+    pub fn pool_max_size<D>(mut self, max: D) -> ClientBuilder
+    where
+        D: Into<Option<NonZeroUsize>>,
+    {
         self.config.pool_max_size = max.into();
         self
     }
@@ -913,10 +915,10 @@ impl ClientBuilder {
     ///     .build().unwrap();
     /// ```
     #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
-    pub fn interface(
-        mut self,
-        interface: impl Into<std::borrow::Cow<'static, str>>,
-    ) -> ClientBuilder {
+    pub fn interface<T>(mut self, interface: T) -> ClientBuilder
+    where
+        T: Into<std::borrow::Cow<'static, str>>,
+    {
         self.config.interface = Some(interface.into());
         self
     }
@@ -1453,7 +1455,10 @@ impl Client {
     /// Set the cookie provider for this client.
     #[cfg(feature = "cookies")]
     #[inline]
-    pub fn set_cookie_provider<C: cookie::CookieStore + 'static>(&mut self, cookie_store: Arc<C>) {
+    pub fn set_cookie_provider<C>(&mut self, cookie_store: Arc<C>)
+    where
+        C: cookie::CookieStore + 'static,
+    {
         std::mem::swap(
             &mut self.inner_mut().cookie_store,
             &mut Some(cookie_store as _),
@@ -1461,10 +1466,11 @@ impl Client {
     }
 
     /// Set the proxies for this client.
-    ///
-    /// Returns the old proxies.
     #[inline]
-    pub fn set_proxies(&mut self, proxies: impl Into<Option<Vec<Proxy>>>) {
+    pub fn set_proxies<P>(&mut self, proxies: P)
+    where
+        P: Into<Option<Vec<Proxy>>>,
+    {
         let inner = self.inner_mut();
         match proxies.into() {
             Some(mut proxies) => {
@@ -1508,17 +1514,26 @@ impl Client {
     /// Bind to an interface by `SO_BINDTODEVICE`.
     #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
     #[inline]
-    pub fn set_interface(&mut self, interface: impl Into<std::borrow::Cow<'static, str>>) {
+    pub fn set_interface<T>(&mut self, interface: T)
+    where
+        T: Into<std::borrow::Cow<'static, str>>,
+    {
         self.inner_mut().interface = Some(interface.into());
     }
 
     /// Set the headers order for this client.
-    pub fn set_headers_order(&mut self, order: impl Into<Cow<'static, [HeaderName]>>) {
+    pub fn set_headers_order<T>(&mut self, order: T)
+    where
+        T: Into<Cow<'static, [HeaderName]>>,
+    {
         std::mem::swap(&mut self.inner_mut().headers_order, &mut Some(order.into()));
     }
 
     /// Set the redirect policy for this client.
-    pub fn set_redirect(&mut self, policy: impl Into<redirect::Policy>) {
+    pub fn set_redirect<T>(&mut self, policy: T)
+    where
+        T: Into<redirect::Policy>,
+    {
         std::mem::swap(&mut self.inner_mut().redirect, &mut policy.into());
     }
 

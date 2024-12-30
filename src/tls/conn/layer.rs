@@ -33,7 +33,6 @@ pub(crate) struct HttpsConnectorBuilder {
     http: HttpConnector,
 }
 
-#[allow(unused)]
 impl HttpsConnectorBuilder {
     #[inline]
     pub fn new(http: HttpConnector) -> HttpsConnectorBuilder {
@@ -44,7 +43,10 @@ impl HttpsConnectorBuilder {
     }
 
     #[inline]
-    pub fn with_version_pref(mut self, version: impl Into<Option<HttpVersionPref>>) -> Self {
+    pub fn with_version_pref<V>(mut self, version: V) -> Self
+    where
+        V: Into<Option<HttpVersionPref>>,
+    {
         self.version = version.into();
         self
     }
