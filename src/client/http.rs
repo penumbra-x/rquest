@@ -1425,7 +1425,7 @@ impl Client {
             cookie_store.set_cookies(&mut iter, url);
         }
     }
-    
+
     /// Set the cookie provider for this client.
     #[cfg(feature = "cookies")]
     pub fn set_cookie_provider<C>(&mut self, cookie_store: Arc<C>)

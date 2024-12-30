@@ -4,12 +4,12 @@ mod macros;
 pub mod firefox;
 pub mod okhttp;
 pub mod safari;
+
 use super::ImpersonateSettings;
 use chrome::*;
 use firefox::*;
 use okhttp::*;
 use safari::*;
-use std::fmt::Debug;
 use Impersonate::*;
 
 mod impersonate_imports {
