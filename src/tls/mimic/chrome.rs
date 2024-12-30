@@ -274,7 +274,7 @@ chrome_mod_generator!(
     chrome_tls_template!(1),
     chrome_http2_template!(1),
     header_initializer,
-    "\"Chromium\";v=\"104\", \" Not A;Brand\";v=\"99\", \"Google Chrome\";v=\"104\"",
+    r#""Chromium";v="104", " Not A;Brand";v="99", "Google Chrome";v="104""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"
 );
 
@@ -283,7 +283,7 @@ chrome_mod_generator!(
     chrome_tls_template!(2),
     chrome_http2_template!(1),
     header_initializer,
-    "\"Google Chrome\";v=\"105\", \"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"105\"",
+    r#""Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
 );
 
@@ -310,7 +310,7 @@ chrome_mod_generator!(
     chrome_tls_template!(3),
     chrome_http2_template!(2),
     header_initializer,
-    "\"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"108\", \"Google Chrome\";v=\"108\"",
+    r#""Not?A_Brand";v="8", "Chromium";v="108", "Google Chrome";v="108""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
 );
 
@@ -463,7 +463,7 @@ chrome_mod_generator!(
     chrome_tls_template!(5),
     chrome_http2_template!(3),
     header_initializer,
-    "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Microsoft Edge\";v=\"122\"",
+    r#""Chromium";v="122", "Not(A:Brand";v="24", "Microsoft Edge";v="122""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0"
 );
 
@@ -472,7 +472,7 @@ chrome_mod_generator!(
     chrome_tls_template!(6, NEW_CURVES_1),
     chrome_http2_template!(3),
     header_initializer_with_zstd_priority,
-    "\"Not)A;Brand\";v=\"99\", \"Microsoft Edge\";v=\"127\", \"Chromium\";v=\"127\"",
+    r#""Not)A;Brand";v="99", "Microsoft Edge";v="127", "Chromium";v="127""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0"
 );
 
