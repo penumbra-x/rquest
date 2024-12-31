@@ -277,8 +277,8 @@ mod http2 {
         UnknownSetting9,
     ];
 
-    pub static PRIORITY: LazyLock<Vec<Priority>> = LazyLock::new(|| {
-        vec![
+    pub static PRIORITY: LazyLock<[Priority; 6]> = LazyLock::new(|| {
+        [
             Priority::new(
                 StreamId::from(3),
                 StreamDependency::new(StreamId::zero(), 200, false),
