@@ -104,11 +104,9 @@ async fn main() -> Result<(), rquest::Error> {
 
 ```
 
-> More examples can be found in the [examples](https://github.com/penumbra-x/rquest/tree/main/examples) directory.
-
 ## Overview
 
-The predecessor of rquest is [reqwest](https://github.com/seanmonstar/reqwest). rquest is a specialized adaptation based on the reqwest project, supporting [BoringSSL]() and related `HTTP/2` fingerprints in requests.
+The predecessor of rquest is [reqwest](https://github.com/seanmonstar/reqwest). rquest is a specialized adaptation based on the reqwest project, supporting [BoringSSL](https://github.com/cloudflare/boring) and related `HTTP/2` fingerprints in requests.
 
 It also optimizes commonly used APIs and enhances compatibility with connection pools, making it easier to switch proxies, `IP` addresses, and interfaces. You can directly migrate from a project using reqwest to rquest.
 
@@ -158,7 +156,7 @@ Do not compile with crates that depend on `OpenSSL`; their prefixing symbols are
 
 If both `OpenSSL` and `BoringSSL` are used as dependencies simultaneously, even if the compilation succeeds, strange issues may still arise.
 
-If you prefer compiling for the `musl target`, it is recommended to use the [tikv-jemallocator](https://github.com/tikv/jemallocator) memory allocator; otherwise, multithreaded performance may be suboptimal. Only available in version 0.6.0, details: https://github.com/tikv/jemallocator/pull/70
+If you prefer compiling for the `musl` target, it is recommended to use the [tikv-jemallocator](https://github.com/tikv/jemallocator) memory allocator; otherwise, multithreaded performance may be suboptimal. Only available in version 0.6.0, details: https://github.com/tikv/jemallocator/pull/70
 
 ## Building
 
