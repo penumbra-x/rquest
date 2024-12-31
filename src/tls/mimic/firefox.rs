@@ -66,7 +66,7 @@ macro_rules! firefox_http2_template {
             .headers_priority((13, 41, false))
             .headers_pseudo_order(super::HEADERS_PSEUDO_ORDER)
             .settings_order(super::SETTINGS_ORDER)
-            .priority(Cow::Borrowed(super::PRIORITY_109.as_slice()))
+            .priority(Cow::Borrowed(super::PRIORITY.as_slice()))
             .build()
     }};
 }
@@ -277,7 +277,7 @@ mod http2 {
         UnknownSetting9,
     ];
 
-    pub static PRIORITY_109: LazyLock<Vec<Priority>> = LazyLock::new(|| {
+    pub static PRIORITY: LazyLock<Vec<Priority>> = LazyLock::new(|| {
         vec![
             Priority::new(
                 StreamId::from(3),
@@ -308,17 +308,25 @@ mod http2 {
 }
 
 firefox_mod_generator!(
-    ff133,
-    firefox_tls_template!(1),
-    firefox_http2_template!(1),
-    header_initializer_with_zstd,
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:133.0) Gecko/20100101 Firefox/133.0"
-);
-
-firefox_mod_generator!(
     ff109,
     firefox_tls_template!(2),
     firefox_http2_template!(2),
     header_initializer,
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/109.0"
+);
+
+firefox_mod_generator!(
+    ff117,
+    firefox_tls_template!(2),
+    firefox_http2_template!(2),
+    header_initializer,
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/117.0"
+);
+
+firefox_mod_generator!(
+    ff133,
+    firefox_tls_template!(1),
+    firefox_http2_template!(1),
+    header_initializer_with_zstd,
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:133.0) Gecko/20100101 Firefox/133.0"
 );
