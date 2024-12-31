@@ -28,10 +28,10 @@ pub struct ImpersonateSettings {
 
 #[derive(Default)]
 pub enum RootCertsStore {
-    /// Use the default root certificates store.
+    /// Use owned root certificates store.
     Owned(X509Store),
 
-    /// Use the custom root certificates store.
+    /// Use static root certificates store.
     Borrowed(&'static X509Store),
 
     /// No root certificates store.
@@ -190,6 +190,7 @@ impl_debug!(
     {
         certs_verification,
         tls_sni,
+        verify_hostname,
         alpn_protos,
         session_ticket,
         min_tls_version,
