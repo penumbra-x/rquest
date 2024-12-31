@@ -2,11 +2,59 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [1.1.2] - 2024-12-31
 
 ### 🚀 Features
 
-- *(client)* Add `no-keepalive` for `Client`
+- Add verify hostname configuration (#237)
+
+### ⚙️ Miscellaneous Tasks
+
+- Update comment
+
+## [1.1.1] - 2024-12-30
+
+### 🐛 Bug Fixes
+
+- *(decoder)* Fix decoding extra empty frame (#234)
+
+### ⚡ Performance
+
+- *(tls)* Use `Bytes` to optimize session key storage space (#231)
+- `default_headers` will swap default headers (#232)
+- Improve unnecessary convert when setting cookies (#233)
+
+### ⚙️ Miscellaneous Tasks
+
+- Remove unused code
+- Cargo clippy --fix
+- Remove unused import
+- Remove escape characters
+
+## [1.1.0] - 2024-12-27
+
+### 🚀 Features
+
+- Without compression enabled, no compression header is sent (#229)
+- *(request)* Insert when `json`/`form` does not have `CONTENT_TYPE` header (#230)
+
+### 🐛 Bug Fixes
+
+- Username in URL plus basic_auth() results in two Authorization headers (#228)
+
+## [1.0.1] - 2024-12-27
+
+### ⚙️ Miscellaneous Tasks
+
+- Update alpn protocol order (#226)
+- Cargo clippy --fix
+
+## [1.0.0] - 2024-12-25
+
+### 🚀 Features
+
+- *(client)* Add `no-keepalive` for `Client` (#221)
+- Request specific `address`/`interface` override (#223)
 
 ### ⚙️ Miscellaneous Tasks
 
