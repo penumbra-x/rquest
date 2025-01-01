@@ -1,4 +1,4 @@
-use rquest::tls::Impersonate;
+use rquest::Impersonate;
 use std::net::Ipv4Addr;
 
 #[tokio::main]

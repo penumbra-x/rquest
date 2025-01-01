@@ -3,7 +3,7 @@ use std::sync::Arc;
 use rquest::{
     cookie::{CookieStore, Jar},
     redirect::Policy,
-    tls::Impersonate,
+    Impersonate,
 };
 use url::Url;
 

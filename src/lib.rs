@@ -27,7 +27,7 @@
 //! The `impersonate` module provides a way to simulate various browser fingerprints.
 //!
 //! ```rust,no_run
-//! use rquest::tls::Impersonate;
+//! use rquest::Impersonate;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), rquest::Error> {
@@ -50,7 +50,7 @@
 //!
 //! ```rust,no_run
 //! use futures_util::{SinkExt, StreamExt, TryStreamExt};
-//! use rquest::{tls::Impersonate, Client, Message};
+//! use rquest::{Impersonate, Client, Message};
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), rquest::Error> {

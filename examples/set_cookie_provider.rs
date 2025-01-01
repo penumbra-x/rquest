@@ -1,6 +1,6 @@
 use http::HeaderValue;
 use rquest::cookie::Jar;
-use rquest::tls::Impersonate;
+use rquest::Impersonate;
 use std::sync::Arc;
 
 #[tokio::main]

@@ -1,5 +1,5 @@
 use http::{header, HeaderName, HeaderValue};
-use rquest::tls::Impersonate;
+use rquest::Impersonate;
 
 const HEADER_ORDER: &[HeaderName] = &[
     header::USER_AGENT,

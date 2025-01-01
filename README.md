@@ -37,7 +37,7 @@ rquest = "1.0.0"
 ```
 
 ```rust,no_run
-use rquest::tls::Impersonate;
+use rquest::Impersonate;
 
 #[tokio::main]
 async fn main() -> Result<(), rquest::Error> {
@@ -65,7 +65,7 @@ futures-util = { version = "0.3.0", default-features = false, features = ["std"]
 
 ```rust,no_run
 use futures_util::{SinkExt, StreamExt, TryStreamExt};
-use rquest::{tls::Impersonate, Client, Message};
+use rquest::{Impersonate, Client, Message};
 
 #[tokio::main]
 async fn main() -> Result<(), rquest::Error> {

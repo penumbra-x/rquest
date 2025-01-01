@@ -1,6 +1,6 @@
 use rquest::{
     dns::{HickoryDnsResolver, LookupIpStrategy},
-    tls::Impersonate,
+    Impersonate,
 };
 use std::sync::Arc;
 

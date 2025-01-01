@@ -5,7 +5,7 @@ use boring::{
         X509,
     },
 };
-use rquest::{tls::Impersonate, Client};
+use rquest::{Client, Impersonate};
 use std::sync::LazyLock;
 
 /// Loads the root certificates from the WebPKI certificate store.

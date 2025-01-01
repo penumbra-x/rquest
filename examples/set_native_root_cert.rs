@@ -5,7 +5,7 @@ use boring::{
         X509,
     },
 };
-use rquest::{tls::Impersonate, Client};
+use rquest::{Client, Impersonate};
 use std::sync::LazyLock;
 
 /// Loads statically the root certificates from the native certificate store.

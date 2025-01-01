@@ -1,5 +1,5 @@
 use http::{header, HeaderName};
-use rquest::tls::Impersonate;
+use rquest::Impersonate;
 
 static HEADER_ORDER: [HeaderName; 6] = [
     header::ACCEPT_LANGUAGE,

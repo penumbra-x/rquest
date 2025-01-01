@@ -1,4 +1,4 @@
-use rquest::tls::Impersonate;
+use rquest::Impersonate;
 
 #[tokio::main]
 async fn main() -> Result<(), rquest::Error> {

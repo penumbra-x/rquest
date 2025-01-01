@@ -1,4 +1,4 @@
-use rquest::{redirect::Policy, tls::Impersonate};
+use rquest::{redirect::Policy, Impersonate};
 
 #[tokio::main]
 async fn main() -> Result<(), rquest::Error> {

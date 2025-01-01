@@ -1,5 +1,5 @@
 use http::{header, HeaderName, HeaderValue};
-use rquest::{tls::Impersonate, Client};
+use rquest::{Client, Impersonate};
 use std::net::Ipv4Addr;
 
 const HEADER_ORDER: &[HeaderName] = &[
