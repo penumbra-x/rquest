@@ -1365,7 +1365,7 @@ impl Client {
         self.inner.proxy_auth(&uri, &mut headers);
 
         let in_flight = {
-            let req = InnerRequest::<Body>::builder()
+            let req = InnerRequest::builder()
                 .network_scheme(self.inner.network_scheme(&uri, &network_scheme))
                 .uri(uri)
                 .method(method.clone())
@@ -1904,7 +1904,7 @@ impl PendingRequest {
         };
 
         *self.as_mut().in_flight().get_mut() = {
-            let req = InnerRequest::<Body>::builder()
+            let req = InnerRequest::builder()
                 .network_scheme(self.client.network_scheme(&uri, &self.network_scheme))
                 .uri(uri)
                 .method(self.method.clone())
@@ -2150,7 +2150,7 @@ impl Future for PendingRequest {
                             self.client.proxy_auth(&uri, &mut headers);
 
                             *self.as_mut().in_flight().get_mut() = {
-                                let req = InnerRequest::<Body>::builder()
+                                let req = InnerRequest::builder()
                                     .network_scheme(
                                         self.client.network_scheme(&uri, &self.network_scheme),
                                     )

@@ -1,5 +1,7 @@
 #![allow(missing_debug_implementations)]
 
+use std::marker::PhantomData;
+
 use super::NetworkScheme;
 use crate::{error::BoxError, HttpVersionPref};
 use http::{
@@ -25,8 +27,14 @@ where
     B::Data: Send,
     B::Error: Into<BoxError>,
 {
-    pub fn builder<'a>() -> InnerRequestBuilder<'a> {
-        InnerRequestBuilder::default()
+    pub fn builder<'a>() -> InnerRequestBuilder<'a, B> {
+        InnerRequestBuilder {
+            builder: Request::builder(),
+            version_pref: None,
+            network_scheme: NetworkScheme::None,
+            headers_order: None,
+            _body: PhantomData,
+        }
     }
 
     pub fn pieces(self) -> (Request<B>, NetworkScheme, Option<HttpVersionPref>) {
@@ -35,25 +43,25 @@ where
 }
 
 /// A builder for constructing HTTP requests.
-pub struct InnerRequestBuilder<'a> {
+pub struct InnerRequestBuilder<'a, B>
+where
+    B: Body + Send + Unpin + 'static,
+    B::Data: Send,
+    B::Error: Into<BoxError>,
+{
     builder: Builder,
     version_pref: Option<HttpVersionPref>,
     network_scheme: NetworkScheme,
     headers_order: Option<&'a [HeaderName]>,
+    _body: PhantomData<B>,
 }
 
-impl Default for InnerRequestBuilder<'_> {
-    fn default() -> Self {
-        Self {
-            builder: Request::builder(),
-            version_pref: None,
-            network_scheme: NetworkScheme::None,
-            headers_order: None,
-        }
-    }
-}
-
-impl<'a> InnerRequestBuilder<'a> {
+impl<'a, B> InnerRequestBuilder<'a, B>
+where
+    B: Body + Send + Unpin + 'static,
+    B::Data: Send,
+    B::Error: Into<BoxError>,
+{
     /// Set the method for the request.
     #[inline]
     pub fn method(mut self, method: Method) -> Self {
@@ -103,12 +111,7 @@ impl<'a> InnerRequestBuilder<'a> {
 
     /// Set the body for the request.
     #[inline]
-    pub fn body<B>(mut self, body: B) -> InnerRequest<B>
-    where
-        B: Body + Send + Unpin + 'static,
-        B::Data: Send,
-        B::Error: Into<BoxError>,
-    {
+    pub fn body(mut self, body: B) -> InnerRequest<B> {
         if let Some(order) = self.headers_order {
             let method = self.builder.method_ref().cloned();
             let headers_mut = self.builder.headers_mut();
