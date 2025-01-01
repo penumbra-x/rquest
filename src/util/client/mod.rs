@@ -300,7 +300,7 @@ where
     /// # fn main() {}
     /// ```
     pub fn request(&self, req: InnerRequest<B>) -> ResponseFuture {
-        let (mut req, network_scheme, http_version_pref) = req.split();
+        let (mut req, network_scheme, http_version_pref) = req.pieces();
         let is_http_connect = req.method() == Method::CONNECT;
         match req.version() {
             Version::HTTP_11 => (),

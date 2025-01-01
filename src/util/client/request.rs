@@ -2,16 +2,19 @@
 
 use super::NetworkScheme;
 use crate::{error::BoxError, HttpVersionPref};
-use http::{header::CONTENT_LENGTH, HeaderMap, HeaderName, HeaderValue, Method, Uri, Version};
+use http::{
+    header::CONTENT_LENGTH, request::Builder, HeaderMap, HeaderName, HeaderValue, Method, Request,
+    Uri, Version,
+};
 use http_body::Body;
 
 pub struct InnerRequest<B>
 where
-    B: Body + Send + 'static + Unpin,
+    B: Body + Send + Unpin + 'static,
     B::Data: Send,
     B::Error: Into<BoxError>,
 {
-    request: http::Request<B>,
+    request: Request<B>,
     version_pref: Option<HttpVersionPref>,
     network_scheme: NetworkScheme,
 }
@@ -26,14 +29,14 @@ where
         InnerRequestBuilder::default()
     }
 
-    pub fn split(self) -> (http::Request<B>, NetworkScheme, Option<HttpVersionPref>) {
+    pub fn pieces(self) -> (Request<B>, NetworkScheme, Option<HttpVersionPref>) {
         (self.request, self.network_scheme, self.version_pref)
     }
 }
 
 /// A builder for constructing HTTP requests.
 pub struct InnerRequestBuilder<'a> {
-    builder: http::request::Builder,
+    builder: Builder,
     version_pref: Option<HttpVersionPref>,
     network_scheme: NetworkScheme,
     headers_order: Option<&'a [HeaderName]>,
@@ -42,7 +45,7 @@ pub struct InnerRequestBuilder<'a> {
 impl Default for InnerRequestBuilder<'_> {
     fn default() -> Self {
         Self {
-            builder: hyper2::Request::builder(),
+            builder: Request::builder(),
             version_pref: None,
             network_scheme: NetworkScheme::None,
             headers_order: None,
@@ -102,7 +105,7 @@ impl<'a> InnerRequestBuilder<'a> {
     #[inline]
     pub fn body<B>(mut self, body: B) -> InnerRequest<B>
     where
-        B: Body + Send + 'static + Unpin,
+        B: Body + Send + Unpin + 'static,
         B::Data: Send,
         B::Error: Into<BoxError>,
     {
