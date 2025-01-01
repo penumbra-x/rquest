@@ -5,7 +5,6 @@ use hyper2::{Priority, PseudoOrder, SettingsOrder};
 use std::borrow::Cow;
 use typed_builder::TypedBuilder;
 
-/// HTTP2 settings.
 #[derive(TypedBuilder, Debug)]
 pub struct Http2Settings {
     #[builder(default, setter(into))]

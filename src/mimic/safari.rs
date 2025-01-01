@@ -2,7 +2,7 @@ use super::impersonate_imports::*;
 use http2::*;
 use tls::*;
 
-macro_rules! safari_mod_generator {
+macro_rules! mod_generator {
     ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $ua:expr) => {
         pub(crate) mod $mod_name {
             use super::*;
@@ -19,7 +19,7 @@ macro_rules! safari_mod_generator {
     };
 }
 
-macro_rules! safari_tls_template {
+macro_rules! tls_settings {
     (1, $cipher_list:expr) => {{
         super::SafariTlsSettings::builder()
             .cipher_list($cipher_list)
@@ -35,7 +35,7 @@ macro_rules! safari_tls_template {
     }};
 }
 
-macro_rules! safari_http2_template {
+macro_rules! http2_settings {
     (1) => {{
         super::Http2Settings::builder()
             .initial_stream_window_size(2097152)
@@ -307,130 +307,130 @@ mod http2 {
     ];
 }
 
-safari_mod_generator!(
+mod_generator!(
     safari15_3,
-    safari_tls_template!(1, CIPHER_LIST),
-    safari_http2_template!(4),
+    tls_settings!(1, CIPHER_LIST),
+    http2_settings!(4),
     header_initializer_for_15,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Safari/605.1.15"
 );
 
-safari_mod_generator!(
+mod_generator!(
     safari15_5,
-    safari_tls_template!(1, CIPHER_LIST),
-    safari_http2_template!(4),
+    tls_settings!(1, CIPHER_LIST),
+    http2_settings!(4),
     header_initializer_for_15,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Safari/605.1.15"
 );
 
-safari_mod_generator!(
+mod_generator!(
     safari15_6_1,
-    safari_tls_template!(1, NEW_CIPHER_LIST),
-    safari_http2_template!(4),
+    tls_settings!(1, NEW_CIPHER_LIST),
+    http2_settings!(4),
     header_initializer_for_15,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6.1 Safari/605.1.15"
 );
 
-safari_mod_generator!(
+mod_generator!(
     safari16,
-    safari_tls_template!(1, NEW_CIPHER_LIST),
-    safari_http2_template!(4),
+    tls_settings!(1, NEW_CIPHER_LIST),
+    http2_settings!(4),
     header_initializer_for_16_17,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"
 );
 
-safari_mod_generator!(
+mod_generator!(
     safari16_5,
-    safari_tls_template!(1, NEW_CIPHER_LIST),
-    safari_http2_template!(4),
+    tls_settings!(1, NEW_CIPHER_LIST),
+    http2_settings!(4),
     header_initializer_for_16_17,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15"
 );
 
-safari_mod_generator!(
+mod_generator!(
     safari_ios_16_5,
-    safari_tls_template!(1, NEW_CIPHER_LIST),
-    safari_http2_template!(1),
+    tls_settings!(1, NEW_CIPHER_LIST),
+    http2_settings!(1),
     header_initializer_for_16_17,
     "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1"
 );
 
-safari_mod_generator!(
+mod_generator!(
     safari17_0,
-    safari_tls_template!(1, NEW_CIPHER_LIST),
-    safari_http2_template!(5),
+    tls_settings!(1, NEW_CIPHER_LIST),
+    http2_settings!(5),
     header_initializer_for_16_17,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
 );
 
-safari_mod_generator!(
+mod_generator!(
     safari17_2_1,
-    safari_tls_template!(1, NEW_CIPHER_LIST),
-    safari_http2_template!(5),
+    tls_settings!(1, NEW_CIPHER_LIST),
+    http2_settings!(5),
     header_initializer_for_16_17,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"
 );
 
-safari_mod_generator!(
+mod_generator!(
     safari17_4_1,
-    safari_tls_template!(1, NEW_CIPHER_LIST),
-    safari_http2_template!(4),
+    tls_settings!(1, NEW_CIPHER_LIST),
+    http2_settings!(4),
     header_initializer_for_16_17,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15"
 );
 
-safari_mod_generator!(
+mod_generator!(
     safari17_5,
-    safari_tls_template!(1, NEW_CIPHER_LIST),
-    safari_http2_template!(5),
+    tls_settings!(1, NEW_CIPHER_LIST),
+    http2_settings!(5),
     header_initializer_for_16_17,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15"
 );
 
-safari_mod_generator!(
+mod_generator!(
     safari_ios_17_2,
-    safari_tls_template!(1, NEW_CIPHER_LIST),
-    safari_http2_template!(2),
+    tls_settings!(1, NEW_CIPHER_LIST),
+    http2_settings!(2),
     header_initializer_for_16_17,
     "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1"
 );
 
-safari_mod_generator!(
+mod_generator!(
     safari_ios_17_4_1,
-    safari_tls_template!(1, NEW_CIPHER_LIST),
-    safari_http2_template!(2),
+    tls_settings!(1, NEW_CIPHER_LIST),
+    http2_settings!(2),
     header_initializer_for_16_17,
     "Mozilla/5.0 (iPad; CPU OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1"
 );
 
-safari_mod_generator!(
+mod_generator!(
     safari_ipad_18,
-    safari_tls_template!(1, NEW_CIPHER_LIST),
-    safari_http2_template!(3),
+    tls_settings!(1, NEW_CIPHER_LIST),
+    http2_settings!(3),
     header_initializer_for_18,
     "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
 );
 
-safari_mod_generator!(
+mod_generator!(
     safari18,
-    safari_tls_template!(1, NEW_CIPHER_LIST),
-    safari_http2_template!(3),
+    tls_settings!(1, NEW_CIPHER_LIST),
+    http2_settings!(3),
     header_initializer_for_18,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"
 );
 
-safari_mod_generator!(
+mod_generator!(
     safari_ios_18_1_1,
-    safari_tls_template!(1, NEW_CIPHER_LIST),
-    safari_http2_template!(3),
+    tls_settings!(1, NEW_CIPHER_LIST),
+    http2_settings!(3),
     header_initializer_for_18,
     "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Mobile/15E148 Safari/604.1"
 );
 
-safari_mod_generator!(
+mod_generator!(
     safari18_2,
-    safari_tls_template!(2, NEW_CIPHER_LIST, NEW_SIGALGS_LIST),
-    safari_http2_template!(3),
+    tls_settings!(2, NEW_CIPHER_LIST, NEW_SIGALGS_LIST),
+    http2_settings!(3),
     header_initializer_for_18,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15"
 );

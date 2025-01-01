@@ -2,7 +2,7 @@ use crate::mimic::impersonate_imports::*;
 use http2::*;
 use tls::*;
 
-macro_rules! chrome_mod_generator {
+macro_rules! mod_generator {
     ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $sec_ch_ua:tt, $ua:tt) => {
         pub(crate) mod $mod_name {
             use super::*;
@@ -21,7 +21,7 @@ macro_rules! chrome_mod_generator {
     };
 }
 
-macro_rules! chrome_tls_template {
+macro_rules! tls_settings {
     (1) => {{
         super::ChromeTlsSettings::builder().build().into()
     }};
@@ -63,7 +63,7 @@ macro_rules! chrome_tls_template {
     }};
 }
 
-macro_rules! chrome_http2_template {
+macro_rules! http2_settings {
     (1) => {{
         super::Http2Settings::builder()
             .initial_stream_window_size(6291456)
@@ -251,235 +251,235 @@ mod http2 {
     ];
 }
 
-chrome_mod_generator!(
+mod_generator!(
     v100,
-    chrome_tls_template!(1),
-    chrome_http2_template!(1),
+    tls_settings!(1),
+    http2_settings!(1),
     header_initializer,
     r#""Not A;Brand";v="99", "Chromium";v="100", "Google Chrome";v="100""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v101,
-    chrome_tls_template!(1),
-    chrome_http2_template!(1),
+    tls_settings!(1),
+    http2_settings!(1),
     header_initializer,
     r#""Not A;Brand";v="99", "Chromium";v="101", "Google Chrome";v="101""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.67 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v104,
-    chrome_tls_template!(1),
-    chrome_http2_template!(1),
+    tls_settings!(1),
+    http2_settings!(1),
     header_initializer,
     r#""Chromium";v="104", " Not A;Brand";v="99", "Google Chrome";v="104""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v105,
-    chrome_tls_template!(2),
-    chrome_http2_template!(1),
+    tls_settings!(2),
+    http2_settings!(1),
     header_initializer,
     r#""Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v106,
-    chrome_tls_template!(3),
-    chrome_http2_template!(2),
+    tls_settings!(3),
+    http2_settings!(2),
     header_initializer,
     r#""Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v107,
-    chrome_tls_template!(3),
-    chrome_http2_template!(2),
+    tls_settings!(3),
+    http2_settings!(2),
     header_initializer,
     r#""Chromium";v="107", "Google Chrome";v="107", "Not;A=Brand";v="99""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v108,
-    chrome_tls_template!(3),
-    chrome_http2_template!(2),
+    tls_settings!(3),
+    http2_settings!(2),
     header_initializer,
     r#""Not?A_Brand";v="8", "Chromium";v="108", "Google Chrome";v="108""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v109,
-    chrome_tls_template!(3),
-    chrome_http2_template!(2),
+    tls_settings!(3),
+    http2_settings!(2),
     header_initializer,
     r#""Chromium";v="109", "Google Chrome";v="109", "Not;A=Brand";v="99""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v114,
-    chrome_tls_template!(3),
-    chrome_http2_template!(2),
+    tls_settings!(3),
+    http2_settings!(2),
     header_initializer,
     r#""Chromium";v="114", "Google Chrome";v="114", "Not;A=Brand";v="99""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v116,
-    chrome_tls_template!(4),
-    chrome_http2_template!(2),
+    tls_settings!(4),
+    http2_settings!(2),
     header_initializer,
     r#""Chromium";v="116", "Google Chrome";v="116", "Not;A=Brand";v="99""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v117,
-    chrome_tls_template!(5),
-    chrome_http2_template!(3),
+    tls_settings!(5),
+    http2_settings!(3),
     header_initializer,
     r#""Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v118,
-    chrome_tls_template!(4),
-    chrome_http2_template!(3),
+    tls_settings!(4),
+    http2_settings!(3),
     header_initializer,
     r#""Chromium";v="118", "Google Chrome";v="118", "Not=A?Brand";v="99""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v119,
-    chrome_tls_template!(4),
-    chrome_http2_template!(3),
+    tls_settings!(4),
+    http2_settings!(3),
     header_initializer,
     r#""Chromium";v="119", "Google Chrome";v="119", "Not=A?Brand";v="99""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v120,
-    chrome_tls_template!(5),
-    chrome_http2_template!(3),
+    tls_settings!(5),
+    http2_settings!(3),
     header_initializer,
     r#""Chromium";v="120", "Google Chrome";v="120", "Not?A_Brand";v="99""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v123,
-    chrome_tls_template!(5),
-    chrome_http2_template!(3),
+    tls_settings!(5),
+    http2_settings!(3),
     header_initializer_with_zstd,
     r#""Google Chrome";v="123", "Not;A=Brand";v="8", "Chromium";v="123""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v124,
-    chrome_tls_template!(6, NEW_CURVES_1),
-    chrome_http2_template!(3),
+    tls_settings!(6, NEW_CURVES_1),
+    http2_settings!(3),
     header_initializer_with_zstd,
     r#""Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v126,
-    chrome_tls_template!(6, NEW_CURVES_1),
-    chrome_http2_template!(3),
+    tls_settings!(6, NEW_CURVES_1),
+    http2_settings!(3),
     header_initializer_with_zstd,
     r#""Chromium";v="126", "Google Chrome";v="126", "Not-A.Brand";v="99""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v127,
-    chrome_tls_template!(6, NEW_CURVES_1),
-    chrome_http2_template!(3),
+    tls_settings!(6, NEW_CURVES_1),
+    http2_settings!(3),
     header_initializer_with_zstd,
     r#""Not/A)Brand";v="8", "Chromium";v="127", "Google Chrome";v="127""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v128,
-    chrome_tls_template!(6, NEW_CURVES_1),
-    chrome_http2_template!(3),
+    tls_settings!(6, NEW_CURVES_1),
+    http2_settings!(3),
     header_initializer,
     r#""Chromium";v="128", "Google Chrome";v="128", "Not?A_Brand";v="99""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v129,
-    chrome_tls_template!(6, NEW_CURVES_1),
-    chrome_http2_template!(3),
+    tls_settings!(6, NEW_CURVES_1),
+    http2_settings!(3),
     header_initializer_with_zstd_priority,
     r#""Google Chrome";v="129", "Chromium";v="129", "Not_A Brand\";v="24""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v130,
-    chrome_tls_template!(6, NEW_CURVES_1),
-    chrome_http2_template!(3),
+    tls_settings!(6, NEW_CURVES_1),
+    http2_settings!(3),
     header_initializer_with_zstd_priority,
     r#""Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     v131,
-    chrome_tls_template!(6, NEW_CURVES_2),
-    chrome_http2_template!(3),
+    tls_settings!(6, NEW_CURVES_2),
+    http2_settings!(3),
     header_initializer_with_zstd_priority,
     r#""Google Chrome";v="131", "Chromium";v="131", "Not_A Brand\";v="24""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     edge101,
-    chrome_tls_template!(1),
-    chrome_http2_template!(1),
+    tls_settings!(1),
+    http2_settings!(1),
     header_initializer,
     r#""Not A;Brand";v="99", "Chromium";v="101", "Microsoft Edge";v="101""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.64 Safari/537.36 Edg/101.0.1210.47"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     edge122,
-    chrome_tls_template!(5),
-    chrome_http2_template!(3),
+    tls_settings!(5),
+    http2_settings!(3),
     header_initializer,
     r#""Chromium";v="122", "Not(A:Brand";v="24", "Microsoft Edge";v="122""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     edge127,
-    chrome_tls_template!(6, NEW_CURVES_1),
-    chrome_http2_template!(3),
+    tls_settings!(6, NEW_CURVES_1),
+    http2_settings!(3),
     header_initializer_with_zstd_priority,
     r#""Not)A;Brand";v="99", "Microsoft Edge";v="127", "Chromium";v="127""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0"
 );
 
-chrome_mod_generator!(
+mod_generator!(
     edge131,
-    chrome_tls_template!(6, NEW_CURVES_2),
-    chrome_http2_template!(3),
+    tls_settings!(6, NEW_CURVES_2),
+    http2_settings!(3),
     header_initializer_with_zstd_priority,
     r#""Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24""#,
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0"

@@ -23,7 +23,6 @@ use tls_imports::TlsSettings;
 mod impersonate_imports {
     pub(crate) use crate::http2::Http2Settings;
     pub(crate) use crate::mimic::ImpersonateSettings;
-    pub use crate::*;
     pub use http::{
         header::{ACCEPT, ACCEPT_LANGUAGE, UPGRADE_INSECURE_REQUESTS, USER_AGENT},
         HeaderMap, HeaderName, HeaderValue,

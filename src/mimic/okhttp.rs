@@ -2,7 +2,7 @@ use super::impersonate_imports::*;
 use http2::*;
 use tls::*;
 
-macro_rules! okhttp_mod_generator {
+macro_rules! mod_generator {
     ($mod_name:ident, $cipher_list:expr, $header_initializer:ident, $ua:expr) => {
         pub(crate) mod $mod_name {
             use super::*;
@@ -10,8 +10,8 @@ macro_rules! okhttp_mod_generator {
             #[inline]
             pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
                 ImpersonateSettings::builder()
-                    .tls(okhttp_tls_template!($cipher_list))
-                    .http2(okhttp_http2_template!())
+                    .tls(tls_settings!($cipher_list))
+                    .http2(http2_settings!())
                     .headers(conditional_headers!(with_headers, $header_initializer, $ua))
                     .build()
             }
@@ -19,7 +19,7 @@ macro_rules! okhttp_mod_generator {
     };
 }
 
-macro_rules! okhttp_tls_template {
+macro_rules! tls_settings {
     ($cipher_list:expr) => {
         OkHttpTlsSettings::builder()
             .cipher_list($cipher_list)
@@ -28,7 +28,7 @@ macro_rules! okhttp_tls_template {
     };
 }
 
-macro_rules! okhttp_http2_template {
+macro_rules! http2_settings {
     () => {
         super::Http2Settings::builder()
             .initial_stream_window_size(6291456)
@@ -139,7 +139,7 @@ mod http2 {
     ];
 }
 
-okhttp_mod_generator!(
+mod_generator!(
     okhttp3_11,
     join!(
         ":",
@@ -161,7 +161,7 @@ okhttp_mod_generator!(
     "NRC Audio/2.0.6 (nl.nrc.audio; build:36; Android 12; Sdk:31; Manufacturer:motorola; Model: moto g72) OkHttp/3.11.0"
 );
 
-okhttp_mod_generator!(
+mod_generator!(
     okhttp3_13,
     join!(
         ":",
@@ -188,14 +188,14 @@ okhttp_mod_generator!(
     "GM-Android/6.112.2 (240590300; M:Google Pixel 7a; O:34; D:2b045e03986fa6dc) ObsoleteUrlFactory/1.0 OkHttp/3.13.0"
 );
 
-okhttp_mod_generator!(
+mod_generator!(
     okhttp3_14,
     CIPHER_LIST,
     header_initializer,
     "DS podcast/2.0.1 (be.standaard.audio; build:9; Android 11; Sdk:30; Manufacturer:samsung; Model: SM-A405FN) OkHttp/3.14.0"
 );
 
-okhttp_mod_generator!(
+mod_generator!(
     okhttp3_9,
     join!(
         ":",
@@ -219,14 +219,14 @@ okhttp_mod_generator!(
     "MaiMemo/4.4.50_639 okhttp/3.9 Android/5.0 Channel/WanDouJia Device/alps+M8+Emulator (armeabi-v7a) Screen/4.44 Resolution/480x800 DId/aa6cde19def3806806d5374c4e5fd617 RAM/0.94 ROM/4.91 Theme/Day"
 );
 
-okhttp_mod_generator!(
+mod_generator!(
     okhttp4_10,
     CIPHER_LIST,
     header_initializer,
     "GM-Android/6.112.2 (240590300; M:samsung SM-G781U1; O:33; D:edb34792871638d8) ObsoleteUrlFactory/1.0 OkHttp/4.10.0"
 );
 
-okhttp_mod_generator!(
+mod_generator!(
     okhttp4_9,
     join!(
         ":",
@@ -250,7 +250,7 @@ okhttp_mod_generator!(
     "GM-Android/6.111.1 (240460200; M:motorola moto g power (2021); O:30; D:76ba9f6628d198c8) ObsoleteUrlFactory/1.0 OkHttp/4.9"
 );
 
-okhttp_mod_generator!(
+mod_generator!(
     okhttp5,
     CIPHER_LIST,
     header_initializer,

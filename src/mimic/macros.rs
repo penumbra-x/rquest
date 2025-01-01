@@ -95,24 +95,21 @@ macro_rules! header_firefox_sec_fetch {
 macro_rules! header_firefox_accept {
     ($headers:expr) => {
         $headers.insert(
-            header::ACCEPT,
+            ACCEPT,
             HeaderValue::from_static(
                 "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             ),
         );
         #[cfg(all(feature = "gzip", feature = "deflate", feature = "brotli"))]
         $headers.insert(
-            header::ACCEPT_ENCODING,
+            ACCEPT_ENCODING,
             HeaderValue::from_static("gzip, deflate, br"),
         );
-        $headers.insert(
-            header::ACCEPT_LANGUAGE,
-            HeaderValue::from_static("en-US,en;q=0.5"),
-        );
+        $headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.5"));
     };
     (zstd, $headers:expr) => {
         $headers.insert(
-            header::ACCEPT,
+            ACCEPT,
             HeaderValue::from_static(
                 "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             ),
@@ -124,13 +121,10 @@ macro_rules! header_firefox_accept {
             feature = "zstd"
         ))]
         $headers.insert(
-            header::ACCEPT_ENCODING,
+            ACCEPT_ENCODING,
             HeaderValue::from_static("gzip, deflate, br, zstd"),
         );
-        $headers.insert(
-            header::ACCEPT_LANGUAGE,
-            HeaderValue::from_static("en-US,en;q=0.5"),
-        );
+        $headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.5"));
     };
 }
 
@@ -171,7 +165,7 @@ macro_rules! impl_from_str {
         impl std::str::FromStr for Impersonate {
             type Err = String;
 
-            fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
                 match s {
                     $( $string => Ok(Impersonate::$variant), )*
                     _ => Err(format!("Unknown impersonate version: {}", s)),
