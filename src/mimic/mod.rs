@@ -1,24 +1,34 @@
-pub mod chrome;
+//! Mimic settings for different browsers.
+#![allow(missing_debug_implementations)]
+#![allow(missing_docs)]
+
 #[macro_use]
 mod macros;
-pub mod firefox;
-pub mod okhttp;
-pub mod safari;
+mod chrome;
+mod firefox;
+mod okhttp;
+mod safari;
 
-use super::ImpersonateSettings;
+use http::{HeaderMap, HeaderName};
+use Impersonate::*;
+
 use chrome::*;
 use firefox::*;
 use okhttp::*;
 use safari::*;
-use Impersonate::*;
+
+use impersonate_imports::*;
+use tls_imports::TlsSettings;
 
 mod impersonate_imports {
-    pub(crate) use crate::tls::{Http2Settings, ImpersonateSettings};
+    pub(crate) use crate::http2::Http2Settings;
+    pub(crate) use crate::mimic::ImpersonateSettings;
     pub use crate::*;
     pub use http::{
         header::{ACCEPT, ACCEPT_LANGUAGE, UPGRADE_INSECURE_REQUESTS, USER_AGENT},
         HeaderMap, HeaderName, HeaderValue,
     };
+    pub(crate) use std::borrow::Cow;
 
     #[cfg(all(feature = "gzip", feature = "deflate", feature = "brotli"))]
     pub use http::header::ACCEPT_ENCODING;
@@ -28,7 +38,7 @@ mod tls_imports {
     pub(crate) use crate::tls::{
         cert_compression::CertCompressionAlgorithm, TlsSettings, TlsVersion,
     };
-    pub use crate::*;
+    pub use crate::HttpVersionPref;
     pub use boring::ssl::{ExtensionType, SslCurve};
     pub use std::borrow::Cow;
     pub use typed_builder::TypedBuilder;
@@ -40,8 +50,21 @@ mod http2_imports {
     pub use std::sync::LazyLock;
 }
 
+#[derive(typed_builder::TypedBuilder, Debug)]
+pub struct ImpersonateSettings {
+    pub(crate) tls: TlsSettings,
+
+    pub(crate) http2: Http2Settings,
+
+    #[builder(default, setter(into))]
+    pub(crate) headers: Option<Cow<'static, HeaderMap>>,
+
+    #[builder(default, setter(into))]
+    pub(crate) headers_order: Option<Cow<'static, [HeaderName]>>,
+}
+
 #[inline]
-pub fn tls_settings(ver: Impersonate, with_headers: bool) -> ImpersonateSettings {
+pub fn impersonate(ver: Impersonate, with_headers: bool) -> ImpersonateSettings {
     impersonate_match!(
         ver,
         with_headers,

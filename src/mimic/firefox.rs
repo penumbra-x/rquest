@@ -1,12 +1,11 @@
 use super::impersonate_imports::*;
 use http2::*;
-use std::borrow::Cow;
 use tls::*;
 
 macro_rules! firefox_mod_generator {
     ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $ua:tt) => {
         pub(crate) mod $mod_name {
-            use crate::tls::firefox::*;
+            use super::*;
 
             #[inline]
             pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
@@ -94,7 +93,7 @@ fn header_initializer_with_zstd(ua: &'static str) -> HeaderMap {
 }
 
 mod tls {
-    use crate::tls::mimic::tls_imports::*;
+    use crate::mimic::tls_imports::*;
 
     pub const OLD_CURVES: &[SslCurve] = &[
         SslCurve::X25519,
@@ -259,7 +258,7 @@ mod tls {
 }
 
 mod http2 {
-    use crate::tls::mimic::http2_imports::*;
+    use crate::mimic::http2_imports::*;
     use hyper2::{Priority, StreamDependency, StreamId};
 
     pub const HEADER_PRIORITY: (u32, u8, bool) = (0, 41, false);

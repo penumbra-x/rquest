@@ -1,7 +1,7 @@
 pub mod cert_compression;
 #[cfg(any(feature = "webpki-roots", feature = "native-roots"))]
 mod cert_load;
-use super::settings::RootCertsStore;
+use super::RootCertsStore;
 use super::{TlsResult, TlsVersion};
 use crate::client::http::HttpVersionPref;
 use ::std::os::raw::c_int;

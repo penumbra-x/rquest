@@ -171,7 +171,7 @@ macro_rules! impl_from_str {
         impl std::str::FromStr for Impersonate {
             type Err = String;
 
-            fn from_str(s: &str) -> Result<Self, Self::Err> {
+            fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
                 match s {
                     $( $string => Ok(Impersonate::$variant), )*
                     _ => Err(format!("Unknown impersonate version: {}", s)),

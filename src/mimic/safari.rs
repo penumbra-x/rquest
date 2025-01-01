@@ -5,7 +5,7 @@ use tls::*;
 macro_rules! safari_mod_generator {
     ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $ua:expr) => {
         pub(crate) mod $mod_name {
-            use crate::tls::{mimic::impersonate_imports::*, safari::*};
+            use super::*;
 
             #[inline]
             pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
@@ -152,7 +152,7 @@ fn header_initializer_for_18(ua: &'static str) -> HeaderMap {
 }
 
 mod tls {
-    use crate::tls::mimic::tls_imports::*;
+    use crate::mimic::tls_imports::*;
 
     pub const CURVES: &[SslCurve] = &[
         SslCurve::X25519,
@@ -276,7 +276,7 @@ mod tls {
 }
 
 mod http2 {
-    use crate::tls::mimic::http2_imports::*;
+    use crate::mimic::http2_imports::*;
 
     pub const HEADER_PRIORITY: (u32, u8, bool) = (0, 255, true);
     pub const NEW_HEADER_PRIORITY: (u32, u8, bool) = (0, 255, false);

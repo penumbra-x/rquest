@@ -14,7 +14,7 @@
 //! - Uses [BoringSSL](#tls)
 //! - HTTP [Proxies](#proxies)
 //! - [Preconfigured](#preconfigured-tls) `TLS`/`HTTP2`/`Headers` settings
-//! - Perfect minic of `Chrome`/`Safari`/`Firefox` [Fingerprint](#impersonate)
+//! - Perfect mimic of `Chrome`/`Safari`/`Firefox` [Fingerprint](#impersonate)
 //! - [Changelog](https://github.com/penumbra-x/rquest/blob/main/CHANGELOG.md)
 //!
 //! Additional learning resources include:
@@ -339,6 +339,7 @@ pub use self::client::websocket::{
 pub use self::client::{
     Body, Client, ClientBuilder, HttpVersionPref, Request, RequestBuilder, Response, Upgraded,
 };
+pub use self::mimic::Impersonate;
 pub use self::proxy::{NoProxy, Proxy};
 pub use self::util::client::Dst;
 pub use hyper2::{Priority, PseudoOrder, SettingsOrder, StreamDependency, StreamId};
@@ -352,5 +353,7 @@ mod macros;
 mod proxy;
 pub mod redirect;
 
+pub mod http2;
+pub mod mimic;
 pub mod tls;
 mod util;
