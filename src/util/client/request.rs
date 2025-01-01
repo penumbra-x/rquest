@@ -12,7 +12,7 @@ where
     B::Error: Into<BoxError>,
 {
     request: http::Request<B>,
-    http_version_pref: Option<HttpVersionPref>,
+    version_pref: Option<HttpVersionPref>,
     network_scheme: NetworkScheme,
 }
 
@@ -27,14 +27,14 @@ where
     }
 
     pub fn split(self) -> (http::Request<B>, NetworkScheme, Option<HttpVersionPref>) {
-        (self.request, self.network_scheme, self.http_version_pref)
+        (self.request, self.network_scheme, self.version_pref)
     }
 }
 
 /// A builder for constructing HTTP requests.
 pub struct InnerRequestBuilder<'a> {
     builder: http::request::Builder,
-    http_version_pref: Option<HttpVersionPref>,
+    version_pref: Option<HttpVersionPref>,
     network_scheme: NetworkScheme,
     headers_order: Option<&'a [HeaderName]>,
 }
@@ -43,7 +43,7 @@ impl Default for InnerRequestBuilder<'_> {
     fn default() -> Self {
         Self {
             builder: hyper2::Request::builder(),
-            http_version_pref: None,
+            version_pref: None,
             network_scheme: NetworkScheme::None,
             headers_order: None,
         }
@@ -70,7 +70,7 @@ impl<'a> InnerRequestBuilder<'a> {
     pub fn version(mut self, version: impl Into<Option<Version>>) -> Self {
         if let Some(version) = version.into() {
             self.builder = self.builder.version(version);
-            self.http_version_pref = Some(map_version_to_pref(version));
+            self.version_pref = Some(map_version_to_pref(version));
         }
         self
     }
@@ -118,7 +118,7 @@ impl<'a> InnerRequestBuilder<'a> {
 
         InnerRequest {
             request: self.builder.body(body).expect("failed to build request"),
-            http_version_pref: self.http_version_pref,
+            version_pref: self.version_pref,
             network_scheme: self.network_scheme,
         }
     }
