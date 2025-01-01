@@ -49,7 +49,7 @@ pub struct Http2Settings {
     #[builder(default, setter(into))]
     pub headers_pseudo_order: Option<[PseudoOrder; 4]>,
 
-    // ============== priority ==============
+    // ============== priority frame ==============
     #[builder(default, setter(into))]
     pub priority: Option<Cow<'static, [Priority]>>,
 }
