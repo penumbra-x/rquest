@@ -699,9 +699,9 @@ where
     }
 
     /// Set the connection builder for the client.
-    pub(crate) fn with_http2_builder<F>(&mut self, mut builder: F)
+    pub(crate) fn with_http2_builder<F>(&mut self, builder: F)
     where
-        F: FnMut(&mut hyper2::client::conn::http2::Builder<Exec>),
+        F: FnOnce(&mut hyper2::client::conn::http2::Builder<Exec>),
     {
         builder(&mut self.h2_builder);
     }
