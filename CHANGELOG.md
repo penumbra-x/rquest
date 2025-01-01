@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🐛 Bug Fixes
+
+- Fix default TLS configuration hostname not set (#244)
+
+### 🚜 Refactor
+
+- Responsibility-based module division
+- Rename verbose identifiers for clarity
+
+### 📚 Documentation
+
+- Update docs (#243)
+
+### ⚡ Performance
+
+- Improve HTTP request in HTTPS connector (#242)
+
+### ⚙️ Miscellaneous Tasks
+
+- Fix closure capture ownership
+
+## [1.2.1] - 2024-12-31
+
+### ⚙️ Miscellaneous Tasks
+
+- Using normal array storage
+
+## [1.2.0] - 2024-12-31
+
+### 🚀 Features
+
+- *(client)* Add HTTP2 `Priority` frame configuration (#238)
+- Add `Firefox 117` impersonate (#239)
+
 ## [1.1.2] - 2024-12-31
 
 ### 🚀 Features
