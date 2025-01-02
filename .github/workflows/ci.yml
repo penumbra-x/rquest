@@ -32,7 +32,7 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --release
+          cargo build --all-features
 
       - name: Tag Check
         run: |
