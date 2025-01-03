@@ -1,7 +1,7 @@
 [package]
 name = "rquest"
-version = "1.2.5"
-description = "Asynchronous Rust HTTP client with TLS, JA3/JA4, and HTTP2 fingerprint spoof"
+version = "1.2.6"
+description = "An ergonomic, all-in-one TLS, JA3/JA4, and HTTP2 fingerprint HTTP Client for spoofing any browser"
 keywords = ["http", "client", "websocket", "ja3", "ja4"]
 categories = ["web-programming::http-client"]
 repository = "https://github.com/penumbra-x/rquest"

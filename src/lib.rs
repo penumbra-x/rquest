@@ -5,7 +5,7 @@
 
 //! # rquest
 //!
-//! An ergonomic, all-in-one `JA3`/`JA4`/`HTTP2` fingerprint `HTTP`/`WebSocket` client.
+//! An ergonomic, all-in-one `TLS`, `JA3`/`JA4`, and `HTTP2` fingerprint `HTTP`/`WebSocket` Client  for spoofing any browser.
 //!
 //! - Plain bodies, [JSON](#json), [urlencoded](#forms), [multipart], [websocket](#websocket)
 //! - Header Order
@@ -13,8 +13,8 @@
 //! - [Redirect policy](#redirect-policies)
 //! - Uses [BoringSSL](#tls)
 //! - HTTP [Proxies](#proxies)
-//! - [Preconfigured](#preconfigured-tls) `TLS`/`HTTP2`/`Headers` settings
-//! - Perfect mimic of `Chrome`/`Safari`/`Firefox` [Fingerprint](#impersonate)
+//! - Preconfigured TLS and HTTP2 settings
+//! - Perfectly mimic Chrome, Safari, and Firefox
 //! - [Changelog](https://github.com/penumbra-x/rquest/blob/main/CHANGELOG.md)
 //!
 //! Additional learning resources include:
