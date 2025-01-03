@@ -1821,10 +1821,10 @@ impl ClientRef {
                 let builder = {
                     #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
                     {
-                        NetworkScheme::builder().iface((
+                        NetworkScheme::builder().iface(
                             self.interface.clone(),
                             (self.local_addr_v4, self.local_addr_v6),
-                        ))
+                        )
                     }
 
                     #[cfg(not(any(
@@ -1832,7 +1832,7 @@ impl ClientRef {
                         target_os = "fuchsia",
                         target_os = "linux"
                     )))]
-                    NetworkScheme::builder().iface((self.local_addr_v4, self.local_addr_v6))
+                    NetworkScheme::builder().iface(self.local_addr_v4, self.local_addr_v6)
                 };
 
                 // iterate over the client's proxies and use the first valid one

@@ -98,18 +98,16 @@ impl NetworkSchemeBuilder {
     }
 
     #[cfg(not(any(target_os = "android", target_os = "fuchsia", target_os = "linux")))]
-    pub fn iface(mut self, iface: (Option<Ipv4Addr>, Option<Ipv6Addr>)) -> Self {
-        self.addresses = iface;
+    pub fn iface(mut self, ipv4: Option<Ipv4Addr>, ipv6: Option<Ipv6Addr>) -> Self {
+        self.addresses = (ipv4, ipv6);
         self
     }
 
     #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
     pub fn iface(
         mut self,
-        (interface, addresses): (
-            Option<std::borrow::Cow<'static, str>>,
-            (Option<Ipv4Addr>, Option<Ipv6Addr>),
-        ),
+        interface: Option<std::borrow::Cow<'static, str>>,
+        addresses: (Option<Ipv4Addr>, Option<Ipv6Addr>),
     ) -> Self {
         self.addresses = addresses;
         self.interface = interface;

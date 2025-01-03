@@ -193,17 +193,14 @@ impl Request {
             {
                 NetworkScheme::builder()
                     .proxy(self.proxy_scheme)
-                    .iface((
-                        self.interface.clone(),
-                        (self.local_addr_v4, self.local_addr_v6),
-                    ))
+                    .iface(self.interface, (self.local_addr_v4, self.local_addr_v6))
                     .build()
             }
 
             #[cfg(not(any(target_os = "android", target_os = "fuchsia", target_os = "linux")))]
             NetworkScheme::builder()
                 .proxy(self.proxy_scheme)
-                .iface((self.local_addr_v4, self.local_addr_v6))
+                .iface(self.local_addr_v4, self.local_addr_v6)
                 .build()
         };
         (
