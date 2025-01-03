@@ -11,13 +11,13 @@ use cert_compression::CertCompressionAlgorithm;
 use foreign_types::ForeignTypeRef;
 
 // ALPN protocol for HTTP/1.1 and HTTP/2.
-const HTTP_1_ALPN: &[u8] = b"\x08http/1.1";
-const HTTP_2_ALPN: &[u8] = b"\x02h2";
-const HTTP_1_OR_2_ALPN: &[u8] = b"\x02h2\x08http/1.1";
+const ALPN_HTTP_1: &[u8] = b"\x08http/1.1";
+const ALPN_HTTP_2: &[u8] = b"\x02h2";
+const ALPN_HTTP_1_AND_2: &[u8] = b"\x02h2\x08http/1.1";
 
 /// Application Settings protocol for HTTP/1.1 and HTTP/2.
-const HTTP_1_APP_PROTO: &[u8] = b"http/1.1";
-const HTTP_2_APP_PROTO: &[u8] = b"h2";
+const ASP_HTTP_1: &[u8] = b"http/1.1";
+const ASP_HTTP_2: &[u8] = b"h2";
 
 /// Error handler for the boringssl functions.
 fn sv_handler(r: c_int) -> TlsResult<c_int> {
@@ -114,13 +114,13 @@ impl TlsBuilderExtension for SslConnectorBuilder {
     ) -> TlsResult<SslConnectorBuilder> {
         match http_version {
             HttpVersionPref::Http1 => {
-                self.set_alpn_protos(HTTP_1_ALPN)?;
+                self.set_alpn_protos(ALPN_HTTP_1)?;
             }
             HttpVersionPref::Http2 => {
-                self.set_alpn_protos(HTTP_2_ALPN)?;
+                self.set_alpn_protos(ALPN_HTTP_2)?;
             }
             HttpVersionPref::All => {
-                self.set_alpn_protos(HTTP_1_OR_2_ALPN)?;
+                self.set_alpn_protos(ALPN_HTTP_1_AND_2)?;
             }
         }
 
@@ -220,8 +220,8 @@ impl TlsConnectExtension for ConnectConfiguration {
         http_version: HttpVersionPref,
     ) -> TlsResult<&mut ConnectConfiguration> {
         let (alpn, alpn_len) = match http_version {
-            HttpVersionPref::Http1 => (HTTP_1_APP_PROTO, 8),
-            HttpVersionPref::Http2 | HttpVersionPref::All => (HTTP_2_APP_PROTO, 2),
+            HttpVersionPref::Http1 => (ASP_HTTP_1, 8),
+            HttpVersionPref::Http2 | HttpVersionPref::All => (ASP_HTTP_2, 2),
         };
 
         sv_handler(unsafe {
@@ -248,9 +248,9 @@ impl TlsExtension for SslRef {
     #[inline]
     fn configure_alpn_protos(&mut self, version: Option<HttpVersionPref>) -> TlsResult<()> {
         match version {
-            Some(HttpVersionPref::Http1) => self.set_alpn_protos(HTTP_1_ALPN),
-            Some(HttpVersionPref::Http2) => self.set_alpn_protos(HTTP_2_ALPN),
-            Some(HttpVersionPref::All) => self.set_alpn_protos(HTTP_1_OR_2_ALPN),
+            Some(HttpVersionPref::Http1) => self.set_alpn_protos(ALPN_HTTP_1),
+            Some(HttpVersionPref::Http2) => self.set_alpn_protos(ALPN_HTTP_2),
+            Some(HttpVersionPref::All) => self.set_alpn_protos(ALPN_HTTP_1_AND_2),
             None => Ok(()),
         }
     }
