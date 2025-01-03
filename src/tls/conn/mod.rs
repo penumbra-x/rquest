@@ -34,8 +34,8 @@ pub struct HttpsLayerSettings {
     application_settings: bool,
     enable_ech_grease: bool,
     verify_hostname: bool,
-    alpn_protos: HttpVersionPref,
     tls_sni: bool,
+    alpn_protos: HttpVersionPref,
 }
 
 impl HttpsLayerSettings {
@@ -66,54 +66,63 @@ pub struct HttpsLayerSettingsBuilder(HttpsLayerSettings);
 impl HttpsLayerSettingsBuilder {
     /// Sets maximum number of sessions to cache. Session capacity is per session key (domain).
     /// Defaults to 8.
+    #[inline]
     pub fn session_cache_capacity(mut self, capacity: usize) -> Self {
         self.0.session_cache_capacity = capacity;
         self
     }
 
     /// Sets whether to enable session caching. Defaults to `false`.
+    #[inline]
     pub fn session_cache(mut self, enable: bool) -> Self {
         self.0.session_cache = enable;
         self
     }
 
     /// Sets whether to enable no session ticket. Defaults to `false`.
+    #[inline]
     pub fn skip_session_ticket(mut self, enable: bool) -> Self {
         self.0.skip_session_ticket = enable;
         self
     }
 
     /// Sets whether to enable application settings. Defaults to `false`.
+    #[inline]
     pub fn application_settings(mut self, enable: bool) -> Self {
         self.0.application_settings = enable;
         self
     }
 
     /// Sets whether to enable ECH grease. Defaults to `false`.
+    #[inline]
     pub fn enable_ech_grease(mut self, enable: bool) -> Self {
         self.0.enable_ech_grease = enable;
         self
     }
 
     /// Sets whether to enable TLS SNI. Defaults to `true`.
+    #[inline]
     pub fn tls_sni(mut self, enable: bool) -> Self {
         self.0.tls_sni = enable;
         self
     }
 
     /// Sets whether to enable hostname verification. Defaults to `true`.
+    #[inline]
     pub fn verify_hostname(mut self, enable: bool) -> Self {
         self.0.verify_hostname = enable;
         self
     }
 
     /// Sets the ALPN protos. Defaults to `None`.
+    #[inline]
     pub fn alpn_protos(mut self, protos: HttpVersionPref) -> Self {
         self.0.alpn_protos = protos;
         self
     }
 
     /// Consumes the builder, returning a new [`HttpsLayerSettings`]
+    #[inline]
     pub fn build(self) -> HttpsLayerSettings {
         self.0
     }
