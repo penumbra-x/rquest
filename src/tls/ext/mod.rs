@@ -28,69 +28,69 @@ fn sv_handler(r: c_int) -> TlsResult<c_int> {
 }
 
 /// TlsExtension trait for `SslConnectorBuilder`.
-pub trait TlsBuilderExtension {
+pub trait SslConnectorBuilderExt {
     /// Configure the certificate verification for the given `SslConnectorBuilder`.
-    fn configure_cert_verification(
+    fn cert_verification(
         self,
         certs_verification: bool,
     ) -> TlsResult<SslConnectorBuilder>;
 
     /// Configure the ALPN and certificate settings for the given `SslConnectorBuilder`.
-    fn configure_alpn_protos(self, http_version: HttpVersionPref)
+    fn alpn_protos(self, http_version: HttpVersionPref)
         -> TlsResult<SslConnectorBuilder>;
 
     /// Configure the minimum TLS version for the given `SslConnectorBuilder`.
-    fn configure_min_tls_version(
+    fn min_tls_version(
         self,
         min_tls_version: Option<TlsVersion>,
     ) -> TlsResult<SslConnectorBuilder>;
 
     /// Configure the maximum TLS version for the given `SslConnectorBuilder`.
-    fn configure_max_tls_version(
+    fn max_tls_version(
         self,
         max_tls_version: Option<TlsVersion>,
     ) -> TlsResult<SslConnectorBuilder>;
 
     /// Configure the certificate compression algorithm for the given `SslConnectorBuilder`.
-    fn configure_add_cert_compression_alg(
+    fn add_cert_compression_alg(
         self,
         cert_compression_alg: CertCompressionAlgorithm,
     ) -> TlsResult<SslConnectorBuilder>;
 
-    /// Configure the ca certificate store for the given `SslConnectorBuilder`.
-    fn configure_ca_cert_store(
+    /// Configure the RootCertsStore for the given `SslConnectorBuilder`.
+    fn root_certs_store(
         self,
-        ca_cert_stroe: RootCertsStore,
+        stroe: RootCertsStore,
     ) -> TlsResult<SslConnectorBuilder>;
 }
 
 /// TlsExtension trait for `SslRef`.
-pub trait TlsExtension {
+pub trait SslRefExt {
     /// Configure the ALPN protos for the given `SslRef`.
-    fn configure_alpn_protos(&mut self, version: Option<HttpVersionPref>) -> TlsResult<()>;
+    fn alpn_protos(&mut self, version: Option<HttpVersionPref>) -> TlsResult<()>;
 }
 
 /// TlsConnectExtension trait for `ConnectConfiguration`.
-pub trait TlsConnectExtension {
+pub trait ConnectConfigurationExt {
     /// Configure the enable_ech_grease for the given `ConnectConfiguration`.
-    fn configure_enable_ech_grease(
+    fn enable_ech_grease(
         &mut self,
         enable_ech_grease: bool,
     ) -> TlsResult<&mut ConnectConfiguration>;
 
     /// Configure the add_application_settings for the given `ConnectConfiguration`.
-    fn configure_add_application_settings(
+    fn add_application_settings(
         &mut self,
         http_version: HttpVersionPref,
     ) -> TlsResult<&mut ConnectConfiguration>;
 
     /// Configure the no session ticket for the given `ConnectConfiguration`.
-    fn configure_skip_session_ticket(&mut self) -> TlsResult<&mut ConnectConfiguration>;
+    fn skip_session_ticket(&mut self) -> TlsResult<&mut ConnectConfiguration>;
 }
 
-impl TlsBuilderExtension for SslConnectorBuilder {
+impl SslConnectorBuilderExt for SslConnectorBuilder {
     #[inline]
-    fn configure_cert_verification(
+    fn cert_verification(
         mut self,
         certs_verification: bool,
     ) -> TlsResult<SslConnectorBuilder> {
@@ -103,51 +103,39 @@ impl TlsBuilderExtension for SslConnectorBuilder {
     }
 
     #[inline]
-    fn configure_alpn_protos(
+    fn alpn_protos(
         mut self,
         http_version: HttpVersionPref,
     ) -> TlsResult<SslConnectorBuilder> {
-        match http_version {
-            HttpVersionPref::Http1 => {
-                self.set_alpn_protos(ALPN_HTTP_1)?;
-            }
-            HttpVersionPref::Http2 => {
-                self.set_alpn_protos(ALPN_HTTP_2)?;
-            }
-            HttpVersionPref::All => {
-                self.set_alpn_protos(ALPN_HTTP_1_AND_2)?;
-            }
-        }
+        let alpn = match http_version {
+            HttpVersionPref::Http1 => ALPN_HTTP_1,
+            HttpVersionPref::Http2 => ALPN_HTTP_2,
+            HttpVersionPref::All => ALPN_HTTP_1_AND_2,
+        };
 
-        Ok(self)
+        self.set_alpn_protos(alpn).map(|_| self)
     }
 
     #[inline]
-    fn configure_min_tls_version(
+    fn min_tls_version(
         mut self,
         min_tls_version: Option<TlsVersion>,
     ) -> TlsResult<SslConnectorBuilder> {
-        if let Some(version) = min_tls_version {
-            self.set_min_proto_version(Some(version.0))?
-        }
-
-        Ok(self)
+        self.set_min_proto_version(min_tls_version.map(|v| v.0))
+            .map(|_| self)
     }
 
     #[inline]
-    fn configure_max_tls_version(
+    fn max_tls_version(
         mut self,
         max_tls_version: Option<TlsVersion>,
     ) -> TlsResult<SslConnectorBuilder> {
-        if let Some(version) = max_tls_version {
-            self.set_max_proto_version(Some(version.0))?
-        }
-
-        Ok(self)
+        self.set_max_proto_version(max_tls_version.map(|v| v.0))
+            .map(|_| self)
     }
 
     #[inline]
-    fn configure_add_cert_compression_alg(
+    fn add_cert_compression_alg(
         self,
         cert_compression_alg: CertCompressionAlgorithm,
     ) -> TlsResult<SslConnectorBuilder> {
@@ -163,7 +151,7 @@ impl TlsBuilderExtension for SslConnectorBuilder {
     }
 
     #[inline]
-    fn configure_ca_cert_store(
+    fn root_certs_store(
         mut self,
         root_certs_stroe: RootCertsStore,
     ) -> TlsResult<SslConnectorBuilder> {
@@ -208,9 +196,9 @@ impl TlsBuilderExtension for SslConnectorBuilder {
     }
 }
 
-impl TlsConnectExtension for ConnectConfiguration {
+impl ConnectConfigurationExt for ConnectConfiguration {
     #[inline]
-    fn configure_enable_ech_grease(
+    fn enable_ech_grease(
         &mut self,
         enable_ech_grease: bool,
     ) -> TlsResult<&mut ConnectConfiguration> {
@@ -219,20 +207,20 @@ impl TlsConnectExtension for ConnectConfiguration {
     }
 
     #[inline]
-    fn configure_add_application_settings(
+    fn add_application_settings(
         &mut self,
         http_version: HttpVersionPref,
     ) -> TlsResult<&mut ConnectConfiguration> {
-        let (alpn, alpn_len) = match http_version {
-            HttpVersionPref::Http1 => (ASP_HTTP_1, 8),
-            HttpVersionPref::Http2 | HttpVersionPref::All => (ASP_HTTP_2, 2),
+        let asp = match http_version {
+            HttpVersionPref::Http1 => ASP_HTTP_1,
+            HttpVersionPref::Http2 | HttpVersionPref::All => ASP_HTTP_2,
         };
 
         sv_handler(unsafe {
             boring_sys::SSL_add_application_settings(
                 self.as_ptr(),
-                alpn.as_ptr(),
-                alpn_len,
+                asp.as_ptr(),
+                asp.len(),
                 std::ptr::null(),
                 0,
             )
@@ -240,7 +228,7 @@ impl TlsConnectExtension for ConnectConfiguration {
         .map(|_| self)
     }
 
-    fn configure_skip_session_ticket(&mut self) -> TlsResult<&mut ConnectConfiguration> {
+    fn skip_session_ticket(&mut self) -> TlsResult<&mut ConnectConfiguration> {
         sv_handler(unsafe {
             boring_sys::SSL_set_options(self.as_ptr(), boring_sys::SSL_OP_NO_TICKET as _) as _
         })
@@ -248,14 +236,16 @@ impl TlsConnectExtension for ConnectConfiguration {
     }
 }
 
-impl TlsExtension for SslRef {
+impl SslRefExt for SslRef {
     #[inline]
-    fn configure_alpn_protos(&mut self, version: Option<HttpVersionPref>) -> TlsResult<()> {
-        match version {
-            Some(HttpVersionPref::Http1) => self.set_alpn_protos(ALPN_HTTP_1),
-            Some(HttpVersionPref::Http2) => self.set_alpn_protos(ALPN_HTTP_2),
-            Some(HttpVersionPref::All) => self.set_alpn_protos(ALPN_HTTP_1_AND_2),
-            None => Ok(()),
-        }
+    fn alpn_protos(&mut self, version: Option<HttpVersionPref>) -> TlsResult<()> {
+        let alpn = match version {
+            Some(HttpVersionPref::Http1) => ALPN_HTTP_1,
+            Some(HttpVersionPref::Http2) => ALPN_HTTP_2,
+            Some(HttpVersionPref::All) => ALPN_HTTP_1_AND_2,
+            None => return Ok(()),
+        };
+
+        self.set_alpn_protos(alpn)
     }
 }

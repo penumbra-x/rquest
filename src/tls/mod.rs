@@ -23,8 +23,8 @@ use typed_builder::TypedBuilder;
 pub use crate::mimic::Impersonate;
 pub use conn::{HttpsConnector, MaybeHttpsStream};
 pub use ext::{
-    cert_compression::CertCompressionAlgorithm, TlsBuilderExtension, TlsConnectExtension,
-    TlsExtension,
+    cert_compression::CertCompressionAlgorithm, ConnectConfigurationExt, SslConnectorBuilderExt,
+    SslRefExt,
 };
 
 type TlsResult<T> = Result<T, ErrorStack>;
@@ -41,11 +41,11 @@ impl BoringTlsConnector {
         // If no custom CA cert store, use the system's native certificate store if the feature is enabled.
 
         let mut connector = SslConnector::no_default_verify_builder(SslMethod::tls_client())?
-            .configure_ca_cert_store(settings.root_certs_store)?
-            .configure_cert_verification(settings.certs_verification)?
-            .configure_alpn_protos(settings.alpn_protos)?
-            .configure_min_tls_version(settings.min_tls_version)?
-            .configure_max_tls_version(settings.max_tls_version)?;
+            .root_certs_store(settings.root_certs_store)?
+            .cert_verification(settings.certs_verification)?
+            .alpn_protos(settings.alpn_protos)?
+            .min_tls_version(settings.min_tls_version)?
+            .max_tls_version(settings.max_tls_version)?;
 
         if settings.enable_ocsp_stapling {
             connector.enable_ocsp_stapling();
@@ -85,7 +85,7 @@ impl BoringTlsConnector {
 
         if let Some(cert_compression_algorithm) = settings.cert_compression_algorithm {
             for algorithm in cert_compression_algorithm.iter() {
-                connector = connector.configure_add_cert_compression_alg(*algorithm)?;
+                connector = connector.add_cert_compression_alg(*algorithm)?;
             }
         }
 

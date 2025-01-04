@@ -3,8 +3,8 @@ use super::cache::{SessionCache, SessionKey};
 use super::{key_index, HttpsLayerSettings, MaybeHttpsStream};
 use crate::connect::HttpConnector;
 use crate::error::BoxError;
-use crate::tls::ext::TlsExtension;
-use crate::tls::{BoringTlsConnector, TlsConnectExtension};
+use crate::tls::ext::SslRefExt;
+use crate::tls::{BoringTlsConnector, ConnectConfigurationExt};
 use crate::util::client::connect::Connection;
 use crate::util::rt::TokioIo;
 use crate::HttpVersionPref;
@@ -105,7 +105,7 @@ impl HttpsConnectorBuilder {
     #[inline]
     pub(crate) fn build(self, tls: BoringTlsConnector) -> HttpsConnector<HttpConnector> {
         let mut connector = HttpsConnector::with_connector_layer(self.http, tls.0);
-        connector.set_ssl_callback(move |ssl, _| ssl.configure_alpn_protos(self.version));
+        connector.set_ssl_callback(move |ssl, _| ssl.alpn_protos(self.version));
         connector
     }
 }
@@ -216,7 +216,7 @@ impl HttpsLayer {
 
         let callback = Arc::new(move |conf: &mut ConnectConfiguration, _: &Uri| {
             // Set ECH grease
-            conf.configure_enable_ech_grease(settings.enable_ech_grease)?;
+            conf.enable_ech_grease(settings.enable_ech_grease)?;
 
             // Use server name indication
             conf.set_use_server_name_indication(settings.tls_sni);
@@ -226,7 +226,7 @@ impl HttpsLayer {
 
             // Add application settings if it is set.
             if settings.application_settings {
-                conf.configure_add_application_settings(settings.alpn_protos)?;
+                conf.add_application_settings(settings.alpn_protos)?;
             }
 
             Ok(())
@@ -292,7 +292,7 @@ impl Inner {
                     }
 
                     if self.skip_session_ticket {
-                        conf.configure_skip_session_ticket()?;
+                        conf.skip_session_ticket()?;
                     }
                 }
             }
