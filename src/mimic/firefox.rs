@@ -3,15 +3,15 @@ use http2::*;
 use tls::*;
 
 macro_rules! mod_generator {
-    ($mod_name:ident, $tls_template:expr, $http2_template:expr, $header_initializer:ident, $ua:tt) => {
+    ($mod_name:ident, $tls_settings:expr, $http2_settings:expr, $header_initializer:ident, $ua:tt) => {
         pub(crate) mod $mod_name {
             use super::*;
 
             #[inline(always)]
             pub fn settings(with_headers: bool) -> ImpersonateSettings {
                 ImpersonateSettings::builder()
-                    .tls($tls_template)
-                    .http2($http2_template)
+                    .tls($tls_settings)
+                    .http2($http2_settings)
                     .headers(conditional_headers!(with_headers, || {
                         $header_initializer($ua)
                     }))

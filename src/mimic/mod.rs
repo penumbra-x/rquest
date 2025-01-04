@@ -21,20 +21,19 @@ use impersonate_imports::*;
 use tls_imports::TlsSettings;
 
 mod impersonate_imports {
-    pub(crate) use crate::http2::Http2Settings;
-    pub(crate) use crate::mimic::ImpersonateSettings;
+    pub use crate::{http2::Http2Settings, mimic::ImpersonateSettings};
     pub use http::{
         header::{ACCEPT, ACCEPT_LANGUAGE, UPGRADE_INSECURE_REQUESTS, USER_AGENT},
         HeaderMap, HeaderName, HeaderValue,
     };
-    pub(crate) use std::borrow::Cow;
+    pub use std::borrow::Cow;
 
     #[cfg(all(feature = "gzip", feature = "deflate", feature = "brotli"))]
     pub use http::header::ACCEPT_ENCODING;
 }
 
 mod tls_imports {
-    pub(crate) use crate::tls::{AlpnProtos, CertCompressionAlgorithm, TlsSettings, TlsVersion};
+    pub use crate::tls::{AlpnProtos, CertCompressionAlgorithm, TlsSettings, TlsVersion};
     pub use boring::ssl::{ExtensionType, SslCurve};
     pub use std::borrow::Cow;
     pub use typed_builder::TypedBuilder;
@@ -48,15 +47,15 @@ mod http2_imports {
 
 #[derive(typed_builder::TypedBuilder, Debug)]
 pub struct ImpersonateSettings {
-    pub(crate) tls: TlsSettings,
+    pub tls: TlsSettings,
 
-    pub(crate) http2: Http2Settings,
-
-    #[builder(default, setter(into))]
-    pub(crate) headers: Option<Cow<'static, HeaderMap>>,
+    pub http2: Http2Settings,
 
     #[builder(default, setter(into))]
-    pub(crate) headers_order: Option<Cow<'static, [HeaderName]>>,
+    pub headers: Option<Cow<'static, HeaderMap>>,
+
+    #[builder(default, setter(into))]
+    pub headers_order: Option<Cow<'static, [HeaderName]>>,
 }
 
 #[inline]
