@@ -169,6 +169,7 @@ impl AlpsProto {
         self.0.as_ptr()
     }
 
+    #[inline(always)]
     pub(crate) fn len(&self) -> usize {
         self.0.len()
     }
