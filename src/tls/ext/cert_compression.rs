@@ -44,7 +44,7 @@ extern "C" fn brotli_compressor(
         return 0;
     }
 
-    unsafe { boring_sys::CBB_add_bytes(buffer, compressed.as_ptr(), compressed.len()) }
+    unsafe { ffi::CBB_add_bytes(buffer, compressed.as_ptr(), compressed.len()) }
 }
 
 extern "C" fn zlib_compressor(
@@ -64,7 +64,7 @@ extern "C" fn zlib_compressor(
         return 0;
     }
 
-    unsafe { boring_sys::CBB_add_bytes(out, compressed.as_ptr(), compressed.len()) }
+    unsafe { ffi::CBB_add_bytes(out, compressed.as_ptr(), compressed.len()) }
 }
 
 extern "C" fn zstd_compressor(
@@ -80,8 +80,7 @@ extern "C" fn zstd_compressor(
     } else {
         return 0;
     };
-
-    unsafe { boring_sys::CBB_add_bytes(out, compressed.as_ptr(), compressed.len()) }
+    unsafe { ffi::CBB_add_bytes(out, compressed.as_ptr(), compressed.len()) }
 }
 
 extern "C" fn brotli_decompressor(

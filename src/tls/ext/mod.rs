@@ -5,6 +5,7 @@ use super::{AlpnProtos, AlpsProto, RootCertsStore, TlsResult, TlsVersion};
 use ::std::os::raw::c_int;
 use boring::error::ErrorStack;
 use boring::ssl::{ConnectConfiguration, SslConnectorBuilder, SslRef, SslVerifyMode};
+use boring_sys as ffi;
 use cert_compression::CertCompressionAlgorithm;
 use foreign_types::ForeignTypeRef;
 
@@ -105,7 +106,7 @@ impl SslConnectorBuilderExt for SslConnectorBuilder {
         alg: CertCompressionAlgorithm,
     ) -> TlsResult<SslConnectorBuilder> {
         sv_handler(unsafe {
-            boring_sys::SSL_CTX_add_cert_compression_alg(
+            ffi::SSL_CTX_add_cert_compression_alg(
                 self.as_ptr(),
                 alg as _,
                 alg.compression_fn(),
@@ -127,10 +128,7 @@ impl SslConnectorBuilderExt for SslConnectorBuilder {
                     if let Ok(cert_store) = cert_load::LOAD_CERTS.as_deref() {
                         log::debug!("Using CA certs from webpki/native roots");
                         sv_handler(unsafe {
-                            boring_sys::SSL_CTX_set1_verify_cert_store(
-                                self.as_ptr(),
-                                cert_store.as_ptr(),
-                            )
+                            ffi::SSL_CTX_set1_verify_cert_store(self.as_ptr(), cert_store.as_ptr())
                         })?;
                     } else {
                         log::debug!("No CA certs provided, using system default");
@@ -149,7 +147,7 @@ impl SslConnectorBuilderExt for SslConnectorBuilder {
             }
             RootCertsStore::Borrowed(cert_store) => {
                 sv_handler(unsafe {
-                    boring_sys::SSL_CTX_set1_verify_cert_store(self.as_ptr(), cert_store.as_ptr())
+                    ffi::SSL_CTX_set1_verify_cert_store(self.as_ptr(), cert_store.as_ptr())
                 })?;
             }
         }
@@ -161,14 +159,14 @@ impl SslConnectorBuilderExt for SslConnectorBuilder {
 impl ConnectConfigurationExt for ConnectConfiguration {
     #[inline]
     fn enable_ech_grease(&mut self, enable: bool) -> TlsResult<&mut ConnectConfiguration> {
-        unsafe { boring_sys::SSL_set_enable_ech_grease(self.as_ptr(), enable as _) }
+        unsafe { ffi::SSL_set_enable_ech_grease(self.as_ptr(), enable as _) }
         Ok(self)
     }
 
     #[inline]
     fn alps_proto(&mut self, alps: AlpsProto) -> TlsResult<&mut ConnectConfiguration> {
         sv_handler(unsafe {
-            boring_sys::SSL_add_application_settings(
+            ffi::SSL_add_application_settings(
                 self.as_ptr(),
                 alps.as_ptr(),
                 alps.len(),
@@ -179,11 +177,10 @@ impl ConnectConfigurationExt for ConnectConfiguration {
         .map(|_| self)
     }
 
+    #[inline]
     fn skip_session_ticket(&mut self) -> TlsResult<&mut ConnectConfiguration> {
-        sv_handler(unsafe {
-            boring_sys::SSL_set_options(self.as_ptr(), boring_sys::SSL_OP_NO_TICKET as _) as _
-        })
-        .map(|_| self)
+        sv_handler(unsafe { ffi::SSL_set_options(self.as_ptr(), ffi::SSL_OP_NO_TICKET as _) as _ })
+            .map(|_| self)
     }
 }
 
