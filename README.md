@@ -7,13 +7,14 @@
 
 > 🚀 Help me work seamlessly with open source sharing by [sponsoring me on GitHub](https://github.com/penumbra-x/.github/blob/main/profile/SPONSOR.md)
 
-An ergonomic, all-in-one `TLS`, `JA3`/`JA4`, and `HTTP2` fingerprint `HTTP`/`WebSocket` Client  for spoofing any browser.
+An ergonomic, all-in-one `TLS`, `JA3`/`JA4`, and `HTTP2` fingerprint `HTTP` Client for spoofing any browser.
 
 - Plain, JSON, urlencoded, multipart bodies
 - Header Order
 - Redirect Policy
 - Cookie Store
 - HTTP Proxies
+- Upgrade WebSocket
 - HTTPS via [BoringSSL](https://github.com/cloudflare/boring)
 - Preconfigured TLS and HTTP2 settings
 - Perfectly mimic Chrome, Safari, and Firefox
