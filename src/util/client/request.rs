@@ -17,7 +17,7 @@ where
     B::Error: Into<BoxError>,
 {
     request: Request<B>,
-    version_pref: Option<AlpnProtos>,
+    alpn_protos: Option<AlpnProtos>,
     network_scheme: NetworkScheme,
 }
 
@@ -38,7 +38,7 @@ where
     }
 
     pub fn pieces(self) -> (Request<B>, NetworkScheme, Option<AlpnProtos>) {
-        (self.request, self.network_scheme, self.version_pref)
+        (self.request, self.network_scheme, self.alpn_protos)
     }
 }
 
@@ -121,7 +121,7 @@ where
 
         self.builder.body(body).map(|request| InnerRequest {
             request,
-            version_pref: self.alpn_protos,
+            alpn_protos: self.alpn_protos,
             network_scheme: self.network_scheme,
         })
     }

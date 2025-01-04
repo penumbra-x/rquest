@@ -171,12 +171,12 @@ impl Dst {
         std::mem::swap(&mut self.pool_key.1, &mut uri);
     }
 
-    /// Get the http version pref
+    /// Get the alpn protos
     pub fn alpn_protos(&self) -> Option<AlpnProtos> {
         self.alpn_protos
     }
 
-    /// Task network scheme for iface
+    /// Take network scheme for iface
     #[cfg(not(any(target_os = "android", target_os = "fuchsia", target_os = "linux")))]
     pub fn take_iface(&mut self) -> (Option<Ipv4Addr>, Option<Ipv6Addr>) {
         self.pool_key.0.take_iface()
