@@ -14,7 +14,7 @@ An ergonomic, all-in-one `TLS`, `JA3`/`JA4`, and `HTTP2` fingerprint `HTTP` Clie
 - Redirect Policy
 - Cookie Store
 - HTTP Proxies
-- Upgrade WebSocket
+- WebSocket Upgrade
 - HTTPS via [BoringSSL](https://github.com/cloudflare/boring)
 - Preconfigured TLS and HTTP2 settings
 - Perfectly mimic Chrome, Safari, and Firefox
