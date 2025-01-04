@@ -7,8 +7,8 @@ macro_rules! mod_generator {
         pub(crate) mod $mod_name {
             use super::*;
 
-            #[inline]
-            pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
+            #[inline(always)]
+            pub fn settings(with_headers: bool) -> ImpersonateSettings {
                 ImpersonateSettings::builder()
                     .tls($tls_template)
                     .http2($http2_template)
@@ -23,29 +23,29 @@ macro_rules! mod_generator {
 
 macro_rules! tls_settings {
     (1) => {{
-        super::ChromeTlsSettings::builder().build().into()
+        ChromeTlsSettings::builder().build().into()
     }};
     (2) => {{
-        super::ChromeTlsSettings::builder()
+        ChromeTlsSettings::builder()
             .enable_ech_grease(true)
             .build()
             .into()
     }};
     (3) => {{
-        super::ChromeTlsSettings::builder()
+        ChromeTlsSettings::builder()
             .permute_extensions(true)
             .build()
             .into()
     }};
     (4) => {{
-        super::ChromeTlsSettings::builder()
+        ChromeTlsSettings::builder()
             .permute_extensions(true)
             .enable_ech_grease(true)
             .build()
             .into()
     }};
     (5) => {{
-        super::ChromeTlsSettings::builder()
+        ChromeTlsSettings::builder()
             .permute_extensions(true)
             .enable_ech_grease(true)
             .pre_shared_key(true)
@@ -53,7 +53,7 @@ macro_rules! tls_settings {
             .into()
     }};
     (6, $curves:expr) => {{
-        super::ChromeTlsSettings::builder()
+        ChromeTlsSettings::builder()
             .curves($curves)
             .permute_extensions(true)
             .pre_shared_key(true)
@@ -65,7 +65,7 @@ macro_rules! tls_settings {
 
 macro_rules! http2_settings {
     (1) => {{
-        super::Http2Settings::builder()
+        Http2Settings::builder()
             .initial_stream_window_size(6291456)
             .initial_connection_window_size(15728640)
             .max_concurrent_streams(1000)
@@ -77,7 +77,7 @@ macro_rules! http2_settings {
             .build()
     }};
     (2) => {{
-        super::Http2Settings::builder()
+        Http2Settings::builder()
             .initial_stream_window_size(6291456)
             .initial_connection_window_size(15728640)
             .max_concurrent_streams(1000)
@@ -90,7 +90,7 @@ macro_rules! http2_settings {
             .build()
     }};
     (3) => {{
-        super::Http2Settings::builder()
+        Http2Settings::builder()
             .initial_stream_window_size(6291456)
             .initial_connection_window_size(15728640)
             .max_header_list_size(262144)

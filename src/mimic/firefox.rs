@@ -7,8 +7,8 @@ macro_rules! mod_generator {
         pub(crate) mod $mod_name {
             use super::*;
 
-            #[inline]
-            pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
+            #[inline(always)]
+            pub fn settings(with_headers: bool) -> ImpersonateSettings {
                 ImpersonateSettings::builder()
                     .tls($tls_template)
                     .http2($http2_template)
@@ -23,7 +23,7 @@ macro_rules! mod_generator {
 
 macro_rules! tls_settings {
     (1) => {{
-        super::FirefoxTlsSettings::builder()
+        FirefoxTlsSettings::builder()
             .cert_compression_algorithm(super::CERT_COMPRESSION_ALGORITHM)
             .enable_ech_grease(true)
             .pre_shared_key(true)
@@ -33,7 +33,7 @@ macro_rules! tls_settings {
             .into()
     }};
     (2) => {{
-        super::FirefoxTlsSettings::builder()
+        FirefoxTlsSettings::builder()
             .curves(super::OLD_CURVES)
             .key_shares_length_limit(2)
             .build()
@@ -43,7 +43,7 @@ macro_rules! tls_settings {
 
 macro_rules! http2_settings {
     (1) => {{
-        super::Http2Settings::builder()
+        Http2Settings::builder()
             .initial_stream_id(3)
             .header_table_size(65536)
             .enable_push(false)
@@ -56,7 +56,7 @@ macro_rules! http2_settings {
             .build()
     }};
     (2) => {{
-        super::Http2Settings::builder()
+        Http2Settings::builder()
             .initial_stream_id(15)
             .header_table_size(65536)
             .initial_stream_window_size(131072)

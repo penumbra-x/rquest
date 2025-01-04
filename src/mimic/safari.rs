@@ -7,8 +7,8 @@ macro_rules! mod_generator {
         pub(crate) mod $mod_name {
             use super::*;
 
-            #[inline]
-            pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
+            #[inline(always)]
+            pub fn settings(with_headers: bool) -> ImpersonateSettings {
                 ImpersonateSettings::builder()
                     .tls($tls_template)
                     .http2($http2_template)
@@ -21,13 +21,13 @@ macro_rules! mod_generator {
 
 macro_rules! tls_settings {
     (1, $cipher_list:expr) => {{
-        super::SafariTlsSettings::builder()
+        SafariTlsSettings::builder()
             .cipher_list($cipher_list)
             .build()
             .into()
     }};
     (2, $cipher_list:expr, $sigalgs_list:expr) => {{
-        super::SafariTlsSettings::builder()
+        SafariTlsSettings::builder()
             .cipher_list($cipher_list)
             .sigalgs_list($sigalgs_list)
             .build()
@@ -37,7 +37,7 @@ macro_rules! tls_settings {
 
 macro_rules! http2_settings {
     (1) => {{
-        super::Http2Settings::builder()
+        Http2Settings::builder()
             .initial_stream_window_size(2097152)
             .initial_connection_window_size(10551295)
             .max_concurrent_streams(100)
@@ -47,7 +47,7 @@ macro_rules! http2_settings {
             .build()
     }};
     (2) => {{
-        super::Http2Settings::builder()
+        Http2Settings::builder()
             .initial_stream_window_size(2097152)
             .initial_connection_window_size(10551295)
             .max_concurrent_streams(100)
@@ -58,7 +58,7 @@ macro_rules! http2_settings {
             .build()
     }};
     (3) => {{
-        super::Http2Settings::builder()
+        Http2Settings::builder()
             .initial_stream_window_size(2097152)
             .initial_connection_window_size(10485760)
             .max_concurrent_streams(100)
@@ -71,7 +71,7 @@ macro_rules! http2_settings {
             .build()
     }};
     (4) => {{
-        super::Http2Settings::builder()
+        Http2Settings::builder()
             .initial_stream_window_size(4194304)
             .initial_connection_window_size(10551295)
             .max_concurrent_streams(100)
@@ -81,7 +81,7 @@ macro_rules! http2_settings {
             .build()
     }};
     (5) => {{
-        super::Http2Settings::builder()
+        Http2Settings::builder()
             .initial_stream_window_size(4194304)
             .initial_connection_window_size(10551295)
             .max_concurrent_streams(100)
@@ -160,7 +160,7 @@ mod tls {
         SslCurve::SECP384R1,
         SslCurve::SECP521R1,
     ];
-
+    
     pub const CIPHER_LIST: &str = join!(
         ":",
         "TLS_AES_128_GCM_SHA256",

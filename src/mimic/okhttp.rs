@@ -7,8 +7,8 @@ macro_rules! mod_generator {
         pub(crate) mod $mod_name {
             use super::*;
 
-            #[inline]
-            pub fn get_settings(with_headers: bool) -> ImpersonateSettings {
+            #[inline(always)]
+            pub fn settings(with_headers: bool) -> ImpersonateSettings {
                 ImpersonateSettings::builder()
                     .tls(tls_settings!($cipher_list))
                     .http2(http2_settings!())
@@ -30,7 +30,7 @@ macro_rules! tls_settings {
 
 macro_rules! http2_settings {
     () => {
-        super::Http2Settings::builder()
+        Http2Settings::builder()
             .initial_stream_window_size(6291456)
             .initial_connection_window_size(15728640)
             .max_concurrent_streams(1000)
