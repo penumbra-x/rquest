@@ -37,9 +37,6 @@ impl BoringTlsConnector {
     /// Create a new `BoringTlsConnector` with the given function.
     #[inline]
     pub fn new(settings: TlsSettings) -> TlsResult<BoringTlsConnector> {
-        // Conditionally configure the TLS builder based on the "native-roots" feature.
-        // If no custom CA cert store, use the system's native certificate store if the feature is enabled.
-
         let mut connector = SslConnector::no_default_verify_builder(SslMethod::tls_client())?
             .root_certs_store(settings.root_certs_store)?
             .cert_verification(settings.certs_verification)?
