@@ -17,7 +17,7 @@ fn sv_handler(r: c_int) -> TlsResult<c_int> {
     }
 }
 
-/// TlsExtension trait for `SslConnectorBuilder`.
+/// SslConnectorBuilderExt trait for `SslConnectorBuilder`.
 pub trait SslConnectorBuilderExt {
     /// Configure the certificate verification for the given `SslConnectorBuilder`.
     fn cert_verification(self, enable: bool) -> TlsResult<SslConnectorBuilder>;
@@ -47,13 +47,13 @@ pub trait SslConnectorBuilderExt {
     fn root_certs_store(self, stroe: RootCertsStore) -> TlsResult<SslConnectorBuilder>;
 }
 
-/// TlsExtension trait for `SslRef`.
+/// SslRefExt trait for `SslRef`.
 pub trait SslRefExt {
     /// Configure the ALPN protos for the given `SslRef`.
     fn alpn_protos<A: Into<Option<AlpnProtos>>>(&mut self, alpn: A) -> TlsResult<()>;
 }
 
-/// TlsConnectExtension trait for `ConnectConfiguration`.
+/// ConnectConfigurationExt trait for `ConnectConfiguration`.
 pub trait ConnectConfigurationExt {
     /// Configure the enable_ech_grease for the given `ConnectConfiguration`.
     fn enable_ech_grease(&mut self, enable: bool) -> TlsResult<&mut ConnectConfiguration>;
