@@ -4,9 +4,56 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### ⚙️ Miscellaneous Tasks
+
+- Rename and update access scope
+
+## [1.3.0] - 2025-01-04
+
+### 🚜 Refactor
+
+- Rename `HttpVersionPref` to `AlpnProtos` (#258)
+- *(tls)* Refactor Application-layer protocol settings (#260)
+
+### 📚 Documentation
+
+- *(tls)* Update docs (#261)
+- *(tls)* Update docs
+- *(tls)* Update docs
+
+### ⚙️ Miscellaneous Tasks
+
+- Improve verbose certificate configuration (#256)
+- *(tls)* Renaming cumbersome API names
+- *(tls)* Cleaner bind calls
+- *(mimic)* Always inline settings module
+- *(tls)* Always inline alps proto len
+
+## [1.2.6] - 2025-01-03
+
+### ⚙️ Miscellaneous Tasks
+
+- Internal request for redundant method boundary (#253)
+- Simplify method signatures
+- Inline suggestions
+- *(tls/ext)* Clearer naming
+
+### Pref
+
+- Build request failures return errors instead of panic (#254)
+
+## [1.2.5] - 2025-01-02
+
+### 🚀 Features
+
+- *(tls)* Expose `TlsExtension` as public API (#246)
+- *(tls)* Expose `CertCompressionAlgorithm` as public API (#247)
+- *(client)* Improved set cookie operation (#252)
+
 ### 🐛 Bug Fixes
 
 - Fix default TLS configuration hostname not set (#244)
+- Align the cfg compilation with the socket2 (#245)
 
 ### 🚜 Refactor
 
@@ -24,6 +71,11 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Fix closure capture ownership
+- Rename  to
+- Some insignificant update
+- *(client)* Avoid explicit type declarations
+- *(tls)* Simplify certificate loading configuration (#249)
+- Add build all features
 
 ## [1.2.1] - 2024-12-31
 
