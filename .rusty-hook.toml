@@ -1,2 +1,0 @@
-[hooks]
-pre-commit = "cargo fmt --all -- --check && cargo clippy --fix --allow-dirty"
