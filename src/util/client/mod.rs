@@ -1103,24 +1103,22 @@ impl Builder {
 
     /// With http1 builder
     #[inline]
-    pub fn with_http1_builder<F>(&mut self, f: F)
+    pub fn with_http1_builder<F>(&mut self, f: F) -> &mut Self
     where
-        F: FnOnce(
-            &mut hyper2::client::conn::http1::Builder,
-        ) -> &mut hyper2::client::conn::http1::Builder,
+        F: FnOnce(&mut hyper2::client::conn::http1::Builder),
     {
         f(&mut self.h1_builder);
+        self
     }
 
     /// With http2 builder
     #[inline]
-    pub fn with_http2_builder<F>(&mut self, f: F)
+    pub fn with_http2_builder<F>(&mut self, f: F) -> &mut Self
     where
-        F: FnOnce(
-            &mut hyper2::client::conn::http2::Builder<Exec>,
-        ) -> &mut hyper2::client::conn::http2::Builder<Exec>,
+        F: FnOnce(&mut hyper2::client::conn::http2::Builder<Exec>),
     {
         f(&mut self.h2_builder);
+        self
     }
 
     /// Provide a timer to be used for h2

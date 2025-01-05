@@ -8,6 +8,7 @@ use std::{fmt, str};
 
 use crate::connect::sealed::{Conn, Unnameable};
 use crate::error::BoxError;
+use crate::http2::Http2Settings;
 use crate::util::client::{InnerRequest, NetworkScheme};
 use crate::util::{
     self, client::connect::HttpConnector, client::Builder, common::Exec, rt::TokioExecutor,
@@ -20,6 +21,7 @@ use http::header::{
 use http::uri::Scheme;
 use http::{HeaderName, Uri, Version};
 use hyper2::client::conn::{http1, http2};
+use hyper2::{StreamDependency, StreamId};
 use pin_project_lite::pin_project;
 use std::future::Future;
 use std::pin::Pin;
@@ -303,39 +305,11 @@ impl ClientBuilder {
         std::mem::swap(&mut self.config.tls, &mut settings.tls);
 
         // Set the http2 preference
-        self.config.builder.with_http2_builder(|builder| {
-            let http2_headers_priority =
-                util::convert_headers_priority(settings.http2.headers_priority);
-
-            builder
-                .initial_stream_id(settings.http2.initial_stream_id)
-                .initial_stream_window_size(settings.http2.initial_stream_window_size)
-                .initial_connection_window_size(settings.http2.initial_connection_window_size)
-                .max_concurrent_streams(settings.http2.max_concurrent_streams)
-                .header_table_size(settings.http2.header_table_size)
-                .max_frame_size(settings.http2.max_frame_size)
-                .headers_priority(http2_headers_priority)
-                .headers_pseudo_order(settings.http2.headers_pseudo_order)
-                .settings_order(settings.http2.settings_order)
-                .priority(settings.http2.priority);
-
-            if let Some(max_header_list_size) = settings.http2.max_header_list_size {
-                builder.max_header_list_size(max_header_list_size);
-            }
-
-            if let Some(enable_push) = settings.http2.enable_push {
-                builder.enable_push(enable_push);
-            }
-
-            if let Some(unknown_setting8) = settings.http2.unknown_setting8 {
-                builder.unknown_setting8(unknown_setting8);
-            }
-
-            if let Some(unknown_setting9) = settings.http2.unknown_setting9 {
-                builder.unknown_setting9(unknown_setting9);
-            }
-            builder
-        });
+        if let Some(http2) = settings.http2 {
+            self.config
+                .builder
+                .with_http2_builder(|builder| apply_http2_settings(builder, http2));
+        }
 
         self
     }
@@ -817,13 +791,13 @@ impl ClientBuilder {
     /// ```
     /// let client = rquest::Client::builder()
     ///     .with_http1_builder(|builder| {
-    ///         builder.http09_responses(true)
+    ///         builder.http09_responses(true);
     ///     })
     ///     .build()?;
     /// ```
     pub fn with_http1_builder<F>(mut self, f: F) -> ClientBuilder
     where
-        F: FnOnce(&mut http1::Builder) -> &mut http1::Builder,
+        F: FnOnce(&mut http1::Builder),
     {
         self.config.builder.with_http1_builder(f);
         self
@@ -835,13 +809,13 @@ impl ClientBuilder {
     /// ```
     /// let client = rquest::Client::builder()
     ///     .with_http2_builder(|builder| {
-    ///         builder.initial_stream_id(3)
+    ///         builder.initial_stream_id(3);
     ///     })
     ///     .build()?;
     /// ```
     pub fn with_http2_builder<F>(mut self, f: F) -> ClientBuilder
     where
-        F: FnOnce(&mut http2::Builder<Exec>) -> &mut http2::Builder<Exec>,
+        F: FnOnce(&mut http2::Builder<Exec>),
     {
         self.config.builder.with_http2_builder(f);
         self
@@ -1603,38 +1577,9 @@ impl Client {
         hyper.with_connector(|c| c.set_connector(connector));
 
         // Set the http2 preference
-        hyper.with_http2_builder(|builder| {
-            let http2_headers_priority =
-                util::convert_headers_priority(settings.http2.headers_priority);
-
-            builder
-                .initial_stream_id(settings.http2.initial_stream_id)
-                .initial_stream_window_size(settings.http2.initial_stream_window_size)
-                .initial_connection_window_size(settings.http2.initial_connection_window_size)
-                .max_concurrent_streams(settings.http2.max_concurrent_streams)
-                .header_table_size(settings.http2.header_table_size)
-                .max_frame_size(settings.http2.max_frame_size)
-                .headers_priority(http2_headers_priority)
-                .headers_pseudo_order(settings.http2.headers_pseudo_order)
-                .settings_order(settings.http2.settings_order)
-                .priority(settings.http2.priority);
-
-            if let Some(max_header_list_size) = settings.http2.max_header_list_size {
-                builder.max_header_list_size(max_header_list_size);
-            }
-
-            if let Some(enable_push) = settings.http2.enable_push {
-                builder.enable_push(enable_push);
-            }
-
-            if let Some(unknown_setting8) = settings.http2.unknown_setting8 {
-                builder.unknown_setting8(unknown_setting8);
-            }
-
-            if let Some(unknown_setting9) = settings.http2.unknown_setting9 {
-                builder.unknown_setting9(unknown_setting9);
-            }
-        });
+        if let Some(http2) = settings.http2 {
+            hyper.with_http2_builder(|builder| apply_http2_settings(builder, http2));
+        }
 
         Ok(())
     }
@@ -2257,5 +2202,39 @@ fn make_referer(next: &Url, previous: &Url) -> Option<HeaderValue> {
 fn add_cookie_header(headers: &mut HeaderMap, cookie_store: &dyn cookie::CookieStore, url: &Url) {
     if let Some(header) = cookie_store.cookies(url) {
         headers.insert(crate::header::COOKIE, header);
+    }
+}
+
+fn apply_http2_settings(builder: &mut http2::Builder<Exec>, http2: Http2Settings) {
+    let http2_headers_priority = http2
+        .headers_priority
+        .map(|(a, b, c)| StreamDependency::new(StreamId::from(a), b, c));
+
+    builder
+        .initial_stream_id(http2.initial_stream_id)
+        .initial_stream_window_size(http2.initial_stream_window_size)
+        .initial_connection_window_size(http2.initial_connection_window_size)
+        .max_concurrent_streams(http2.max_concurrent_streams)
+        .header_table_size(http2.header_table_size)
+        .max_frame_size(http2.max_frame_size)
+        .headers_priority(http2_headers_priority)
+        .headers_pseudo_order(http2.headers_pseudo_order)
+        .settings_order(http2.settings_order)
+        .priority(http2.priority);
+
+    if let Some(max_header_list_size) = http2.max_header_list_size {
+        builder.max_header_list_size(max_header_list_size);
+    }
+
+    if let Some(enable_push) = http2.enable_push {
+        builder.enable_push(enable_push);
+    }
+
+    if let Some(unknown_setting8) = http2.unknown_setting8 {
+        builder.unknown_setting8(unknown_setting8);
+    }
+
+    if let Some(unknown_setting9) = http2.unknown_setting9 {
+        builder.unknown_setting9(unknown_setting9);
     }
 }

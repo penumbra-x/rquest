@@ -15,7 +15,6 @@ use http::{
     uri::{Authority, Scheme},
     Uri,
 };
-use hyper2::{StreamDependency, StreamId};
 
 pub fn basic_auth<U, P>(username: U, password: Option<P>) -> HeaderValue
 where
@@ -130,14 +129,6 @@ pub(crate) fn sort_headers(headers: &mut HeaderMap, headers_order: &[HeaderName]
     }
 
     std::mem::swap(headers, &mut sorted_headers);
-}
-
-// Convert the headers priority to the correct type
-#[inline]
-pub(crate) fn convert_headers_priority(
-    headers_priority: Option<(u32, u8, bool)>,
-) -> Option<StreamDependency> {
-    headers_priority.map(|(a, b, c)| StreamDependency::new(StreamId::from(a), b, c))
 }
 
 /// Convert a scheme and host to a URI
