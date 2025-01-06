@@ -13,7 +13,7 @@ fn load_static_root_certs() -> Option<&'static X509Store> {
     static CERT_STORE: LazyLock<Result<X509Store, ErrorStack>> = LazyLock::new(|| {
         let mut cert_store = X509StoreBuilder::new()?;
         for cert in rustls_native_certs::load_native_certs().certs {
-            let cert = X509::from_der(&*cert)?;
+            let cert = X509::from_der(&cert)?;
             cert_store.add_cert(cert)?;
         }
         Ok(cert_store.build())
@@ -34,7 +34,7 @@ fn load_static_root_certs() -> Option<&'static X509Store> {
 fn load_dynamic_root_certs() -> Result<X509Store, ErrorStack> {
     let mut cert_store = X509StoreBuilder::new()?;
     for cert in rustls_native_certs::load_native_certs().certs {
-        let cert = X509::from_der(&*cert)?;
+        let cert = X509::from_der(&cert)?;
         cert_store.add_cert(cert)?;
     }
     log::info!("Loaded dynamic root certs");

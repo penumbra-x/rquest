@@ -6,8 +6,6 @@ use std::time::Duration;
 
 use http::{request::Parts, Request as HttpRequest, Version};
 use serde::Serialize;
-#[cfg(feature = "json")]
-use serde_json;
 
 use super::body::Body;
 use super::http::{Client, Pending};
@@ -474,7 +472,7 @@ impl RequestBuilder {
     }
 
     /// Set the proxy for this request.
-    pub fn proxy<U: IntoUrl>(mut self, proxy: impl IntoUrl) -> RequestBuilder {
+    pub fn proxy<U: IntoUrl>(mut self, proxy: U) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
             match proxy
                 .into_url()

@@ -94,6 +94,7 @@ type PeekableIoStream = futures_util::stream::Peekable<IoStream>;
 ))]
 type PeekableIoStreamReader = StreamReader<PeekableIoStream, Bytes>;
 
+#[allow(clippy::type_complexity)]
 enum Inner {
     /// A `PlainText` decoder just returns the response content as is.
     PlainText(ResponseBody),

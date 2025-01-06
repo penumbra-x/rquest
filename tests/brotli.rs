@@ -26,7 +26,7 @@ async fn test_brotli_empty_body() {
 
     let client = rquest::Client::new();
     let res = client
-        .head(&format!("http://{}/brotli", server.addr()))
+        .head(format!("http://{}/brotli", server.addr()))
         .send()
         .await
         .unwrap();
@@ -50,7 +50,7 @@ async fn test_accept_header_is_not_changed_if_set() {
     let client = rquest::Client::new();
 
     let res = client
-        .get(&format!("http://{}/accept", server.addr()))
+        .get(format!("http://{}/accept", server.addr()))
         .header(
             rquest::header::ACCEPT,
             rquest::header::HeaderValue::from_static("application/json"),
@@ -73,7 +73,7 @@ async fn test_accept_encoding_header_is_not_changed_if_set() {
     let client = rquest::Client::new();
 
     let res = client
-        .get(&format!("http://{}/accept-encoding", server.addr()))
+        .get(format!("http://{}/accept-encoding", server.addr()))
         .header(
             rquest::header::ACCEPT_ENCODING,
             rquest::header::HeaderValue::from_static("identity"),
@@ -88,12 +88,12 @@ async fn test_accept_encoding_header_is_not_changed_if_set() {
 async fn brotli_case(response_size: usize, chunk_size: usize) {
     use futures_util::stream::StreamExt;
 
-    let content: String = (0..response_size)
-        .into_iter()
-        .map(|i| format!("test {i}"))
-        .collect();
+    let content: String = (0..response_size).fold(String::new(), |mut acc, i| {
+        acc.push_str(&format!("test {i}"));
+        acc
+    });
 
-    let mut encoder = brotli_crate::CompressorReader::new(content.as_bytes(), 4096, 5, 20);
+    let mut encoder = brotli::CompressorReader::new(content.as_bytes(), 4096, 5, 20);
     let mut brotlied_content = Vec::new();
     encoder.read_to_end(&mut brotlied_content).unwrap();
 
@@ -138,7 +138,7 @@ async fn brotli_case(response_size: usize, chunk_size: usize) {
     let client = rquest::Client::new();
 
     let res = client
-        .get(&format!("http://{}/brotli", server.addr()))
+        .get(format!("http://{}/brotli", server.addr()))
         .send()
         .await
         .expect("response");
@@ -155,7 +155,7 @@ const COMPRESSED_RESPONSE_HEADERS: &[u8] = b"HTTP/1.1 200 OK\x0d\x0a\
 const RESPONSE_CONTENT: &str = "some message here";
 
 fn brotli_compress(input: &[u8]) -> Vec<u8> {
-    let mut encoder = brotli_crate::CompressorReader::new(input, 4096, 5, 20);
+    let mut encoder = brotli::CompressorReader::new(input, 4096, 5, 20);
     let mut brotlied_content = Vec::new();
     encoder.read_to_end(&mut brotlied_content).unwrap();
     brotlied_content
@@ -184,7 +184,7 @@ async fn test_non_chunked_non_fragmented_response() {
     });
 
     let res = rquest::Client::new()
-        .get(&format!("http://{}/", server.addr()))
+        .get(format!("http://{}/", server.addr()))
         .send()
         .await
         .expect("response");
@@ -237,7 +237,7 @@ async fn test_chunked_fragmented_response_1() {
 
     let start = tokio::time::Instant::now();
     let res = rquest::Client::new()
-        .get(&format!("http://{}/", server.addr()))
+        .get(format!("http://{}/", server.addr()))
         .send()
         .await
         .expect("response");
@@ -292,7 +292,7 @@ async fn test_chunked_fragmented_response_2() {
 
     let start = tokio::time::Instant::now();
     let res = rquest::Client::new()
-        .get(&format!("http://{}/", server.addr()))
+        .get(format!("http://{}/", server.addr()))
         .send()
         .await
         .expect("response");
@@ -346,7 +346,7 @@ async fn test_chunked_fragmented_response_with_extra_bytes() {
 
     let start = tokio::time::Instant::now();
     let res = rquest::Client::new()
-        .get(&format!("http://{}/", server.addr()))
+        .get(format!("http://{}/", server.addr()))
         .send()
         .await
         .expect("response");

@@ -149,7 +149,7 @@ async fn response_json() {
     let client = Client::new();
 
     let res = client
-        .get(&format!("http://{}/json", server.addr()))
+        .get(format!("http://{}/json", server.addr()))
         .send()
         .await
         .expect("Failed to get");

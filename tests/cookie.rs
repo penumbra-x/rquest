@@ -56,11 +56,11 @@ async fn cookie_response_accessor() {
 
     // secure
     assert_eq!(cookies[5].name(), "secure");
-    assert_eq!(cookies[5].secure(), true);
+    assert!(cookies[5].secure());
 
     // httponly
     assert_eq!(cookies[6].name(), "httponly");
-    assert_eq!(cookies[6].http_only(), true);
+    assert!(cookies[6].http_only());
 
     // samesitelax
     assert_eq!(cookies[7].name(), "samesitelax");

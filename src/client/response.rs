@@ -7,8 +7,6 @@ use bytes::Bytes;
 use hyper2::{HeaderMap, StatusCode, Version};
 #[cfg(feature = "json")]
 use serde::de::DeserializeOwned;
-#[cfg(feature = "json")]
-use serde_json;
 use tokio::time::Sleep;
 use url::Url;
 use util::client::connect::HttpInfo;

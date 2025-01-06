@@ -867,7 +867,7 @@ impl ClientBuilder {
     where
         T: Into<std::borrow::Cow<'static, str>>,
     {
-        self.config.interface = Some(interface.into());
+        self.config.network_scheme.interface(interface);
         self
     }
 
@@ -1394,7 +1394,7 @@ impl Client {
     /// This method ensures that cookies are only set if at least one cookie
     /// exists in the collection.
     #[cfg(feature = "cookies")]
-    pub fn set_cookies<'a, C>(&self, url: &Url, cookies: C)
+    pub fn set_cookies<C>(&self, url: &Url, cookies: C)
     where
         C: AsRef<[HeaderValue]>,
     {
@@ -1424,7 +1424,7 @@ impl Client {
         C: AsRef<[&'a HeaderValue]>,
     {
         if let Some(ref cookie_store) = self.inner.cookie_store {
-            let mut cookies = cookies.as_ref().iter().map(|v| *v).peekable();
+            let mut cookies = cookies.as_ref().iter().copied().peekable();
             if cookies.peek().is_some() {
                 cookie_store.set_cookies(&mut cookies, url);
             }
@@ -1971,9 +1971,9 @@ impl Future for PendingRequest {
 
             #[cfg(feature = "cookies")]
             {
-                if let Some(ref cookie_store) = cookie_store {
+                if let Some(cookie_store) = cookie_store {
                     let mut cookies =
-                        cookie::extract_response_cookie_headers(&res.headers()).peekable();
+                        cookie::extract_response_cookie_headers(res.headers()).peekable();
                     if cookies.peek().is_some() {
                         cookie_store.set_cookies(&mut cookies, &self.url);
                     }

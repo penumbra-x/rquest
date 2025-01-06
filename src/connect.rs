@@ -784,8 +784,8 @@ mod socks {
                     Socks5Stream::connect_with_password(
                         addr,
                         (host.as_str(), port),
-                        &username,
-                        &password,
+                        username,
+                        password,
                     )
                     .await
                     .map_err(|e| format!("socks connect error: {e}"))?
