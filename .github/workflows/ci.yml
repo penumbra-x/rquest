@@ -33,7 +33,11 @@ jobs:
       - name: Build
         run: |
           cargo build --all-features
-
+          
+      - name: Tests
+        run: |
+          cargo test --all-features
+          
       - name: Tag Check
         run: |
           echo "tag=${{ steps.tag.outputs.tag }}" >> $GITHUB_ENV
