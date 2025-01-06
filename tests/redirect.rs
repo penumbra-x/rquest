@@ -1,7 +1,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 mod support;
 use http_body_util::BodyExt;
-use rquest::Body;
+use rquest::{redirect::Policy, Body};
 use support::server;
 
 #[tokio::test]
@@ -31,7 +31,12 @@ async fn test_redirect_301_and_302_and_303_changes_post_to_get() {
 
         let url = format!("http://{}/{}", redirect.addr(), code);
         let dst = format!("http://{}/{}", redirect.addr(), "dst");
-        let res = client.post(&url).send().await.unwrap();
+        let res = client
+            .post(&url)
+            .redirect(Policy::default())
+            .send()
+            .await
+            .unwrap();
         assert_eq!(res.url().as_str(), dst);
         assert_eq!(res.status(), rquest::StatusCode::OK);
         assert_eq!(
@@ -67,7 +72,12 @@ async fn test_redirect_307_and_308_tries_to_get_again() {
 
         let url = format!("http://{}/{}", redirect.addr(), code);
         let dst = format!("http://{}/{}", redirect.addr(), "dst");
-        let res = client.get(&url).send().await.unwrap();
+        let res = client
+            .get(&url)
+            .redirect(Policy::default())
+            .send()
+            .await
+            .unwrap();
         assert_eq!(res.url().as_str(), dst);
         assert_eq!(res.status(), rquest::StatusCode::OK);
         assert_eq!(
@@ -116,7 +126,13 @@ async fn test_redirect_307_and_308_tries_to_post_again() {
 
         let url = format!("http://{}/{}", redirect.addr(), code);
         let dst = format!("http://{}/{}", redirect.addr(), "dst");
-        let res = client.post(&url).body("Hello").send().await.unwrap();
+        let res = client
+            .post(&url)
+            .redirect(Policy::default())
+            .body("Hello")
+            .send()
+            .await
+            .unwrap();
         assert_eq!(res.url().as_str(), dst);
         assert_eq!(res.status(), rquest::StatusCode::OK);
         assert_eq!(
@@ -161,6 +177,7 @@ async fn test_redirect_removes_sensitive_headers() {
     tx.send(Some(mid_server.addr())).unwrap();
 
     rquest::Client::builder()
+        .redirect(Policy::default())
         .build()
         .unwrap()
         .get(format!("http://{}/sensitive", mid_server.addr()))
@@ -185,7 +202,12 @@ async fn test_redirect_policy_can_return_errors() {
     });
 
     let url = format!("http://{}/loop", server.addr());
-    let err = rquest::get(&url).await.unwrap_err();
+    let err = rquest::Client::new()
+        .get(&url)
+        .redirect(Policy::default())
+        .send()
+        .await
+        .unwrap_err();
     assert!(err.is_redirect());
 }
 
@@ -272,7 +294,12 @@ async fn test_invalid_scheme_is_rejected() {
 
     let url = format!("http://{}/yikes", server.addr());
 
-    let err = rquest::get(&url).await.unwrap_err();
+    let err = rquest::Client::new()
+        .get(&url)
+        .redirect(Policy::default())
+        .send()
+        .await
+        .unwrap_err();
     assert!(err.is_builder());
 }
 
