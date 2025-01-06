@@ -94,6 +94,7 @@ async fn http_proxy_basic_auth_parsed() {
     assert_eq!(res.status(), rquest::StatusCode::OK);
 }
 
+#[cfg_attr(not(feature = "internal_proxy_sys_no_cache"), ignore)]
 #[tokio::test]
 async fn system_http_proxy_basic_auth_parsed() {
     let url = "http://hyper.rs/prox";
@@ -108,6 +109,9 @@ async fn system_http_proxy_basic_auth_parsed() {
 
         async { http::Response::default() }
     });
+
+    // Note: we're relying on the `internal_proxy_sys_no_cache` feature to
+    // check the environment every time.
 
     // save system setting first.
     let system_proxy = env::var("http_proxy");
