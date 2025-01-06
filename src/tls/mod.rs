@@ -253,15 +253,15 @@ pub struct TlsSettings {
     #[builder(default)]
     pub root_certs_store: RootCertsStore,
 
-    /// SSL may authenticate either endpoint with an X.509 certificate.  
-    /// Typically this is used to authenticate the server to the client.  
+    /// SSL may authenticate either endpoint with an X.509 certificate.
+    /// Typically this is used to authenticate the server to the client.
     /// These functions configure certificate verification.
     #[builder(default = true)]
     pub certs_verification: bool,
 
-    /// The server_name extension (RFC 3546) allows the client to advertise the  
-    /// name of the server it is connecting to. This is used in virtual hosting  
-    /// deployments to select one of several certificates on a single IP.  
+    /// The server_name extension (RFC 3546) allows the client to advertise the
+    /// name of the server it is connecting to. This is used in virtual hosting
+    /// deployments to select one of several certificates on a single IP.
     /// Only the host_name name type is supported.
     #[builder(default = true)]
     pub tls_sni: bool,
@@ -273,10 +273,10 @@ pub struct TlsSettings {
     /// The **ALPN extension** [RFC 7301](https://datatracker.ietf.org/doc/html/rfc7301) allows negotiating different
     /// **application-layer protocols** over a **single port**.
     ///
-    /// **Usage Example:**  
+    /// **Usage Example:**
     /// - Commonly used to negotiate **HTTP/2**.
     /// - Default use all protocols (HTTP/1.1/HTTP/2/HTTP/3).
-    #[builder(default = AlpnProtos::All)]
+    #[builder(default)]
     pub alpn_protos: AlpnProtos,
 
     /// The **ALPS extension** (*draft-vvv-tls-alps*) enables exchanging
@@ -308,24 +308,24 @@ pub struct TlsSettings {
 
     /// Connections can be configured with **PSK (Pre-Shared Key)** cipher suites.
     ///
-    /// **PSK cipher suites** use **out-of-band pre-shared keys** for authentication,  
+    /// **PSK cipher suites** use **out-of-band pre-shared keys** for authentication,
     /// instead of relying on certificates.
     ///
     /// **Reference:** See [RFC 4279](https://datatracker.ietf.org/doc/html/rfc4279) for details.
     #[builder(default = false)]
     pub pre_shared_key: bool,
 
-    /// Configures whether the **client** will send a **GREASE ECH** extension  
+    /// Configures whether the **client** will send a **GREASE ECH** extension
     /// when no supported **ECHConfig** is available.
     ///
-    /// GREASE (Generate Random Extensions And Sustain Extensibility)  
-    /// helps prevent ossification of the TLS protocol by randomly  
+    /// GREASE (Generate Random Extensions And Sustain Extensibility)
+    /// helps prevent ossification of the TLS protocol by randomly
     /// introducing unknown extensions into the handshake.
     ///
-    /// **ECH (Encrypted Client Hello)** improves privacy by encrypting  
+    /// **ECH (Encrypted Client Hello)** improves privacy by encrypting
     /// sensitive handshake information, such as the Server Name Indication (SNI).
     ///
-    /// When no valid **ECHConfig** is present, enabling this setting allows  
+    /// When no valid **ECHConfig** is present, enabling this setting allows
     /// the client to still send a GREASE extension for compatibility purposes.
     ///
     /// **Reference:** See [RFC 8701](https://datatracker.ietf.org/doc/html/rfc8701) for GREASE details.
@@ -348,11 +348,11 @@ pub struct TlsSettings {
     #[builder(default = false)]
     pub enable_ocsp_stapling: bool,
 
-    /// **Delegated Credentials** (RFC 9345) provide a mechanism for TLS 1.3 endpoints  
+    /// **Delegated Credentials** (RFC 9345) provide a mechanism for TLS 1.3 endpoints
     /// to issue temporary credentials for authentication using their existing certificate.
     ///
-    /// Once issued, **delegated credentials** **cannot be revoked**.  
-    /// To minimize potential damage if the credential's secret key is compromised,  
+    /// Once issued, **delegated credentials** **cannot be revoked**.
+    /// To minimize potential damage if the credential's secret key is compromised,
     /// these credentials are valid only for a **short duration** (e.g., days, hours, or minutes).
     ///
     /// **Reference:** See [RFC 9345](https://datatracker.ietf.org/doc/html/rfc9345) for details.
@@ -367,7 +367,7 @@ pub struct TlsSettings {
     ///
     /// Initially, **all ciphers are disabled** and follow a **default ordering**.
     ///
-    /// Developers can use this mini-language to fine-tune which ciphers are enabled,  
+    /// Developers can use this mini-language to fine-tune which ciphers are enabled,
     /// their priority, and which ones are explicitly disabled.
     ///
     /// **Reference:** See [BoringSSL Cipher Suite Documentation](https://commondatastorage.googleapis.com/chromium-boringssl-docs/ssl.h.html#SSL_CTX_set_cipher_list) for details.
@@ -430,6 +430,7 @@ impl_debug!(
         min_tls_version,
         max_tls_version,
         alps_proto,
+        psk_dhe_ke,
         pre_shared_key,
         enable_ech_grease,
         permute_extensions,

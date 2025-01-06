@@ -111,11 +111,9 @@ where
     /// Set the body for the request.
     #[inline]
     pub fn body(mut self, body: B) -> Result<InnerRequest<B>, Error> {
-        if let Some(order) = self.headers_order {
-            if let Some(headers) = self.builder.headers_mut() {
-                add_content_length_header(headers, &body);
-                sort_headers(headers, order);
-            }
+        if let Some((order, headers)) = self.headers_order.zip(self.builder.headers_mut()) {
+            add_content_length_header(headers, &body);
+            sort_headers(headers, order);
         }
 
         self.builder.body(body).map(|request| InnerRequest {
