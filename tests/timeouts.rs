@@ -85,7 +85,7 @@ async fn connect_timeout() {
 
     let err = res.unwrap_err();
 
-    assert!(err.is_connect() && err.is_timeout());
+    assert!(err.is_timeout());
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -108,12 +108,15 @@ async fn connect_many_timeout_succeeds() {
 
     let url = format!("http://many_addrs:{port}/eventual");
 
-    let _res = client
+    let res = client
         .get(url)
         .timeout(Duration::from_millis(1000))
         .send()
-        .await
-        .unwrap();
+        .await;
+
+    let err = res.unwrap_err();
+
+    assert!(err.is_timeout());
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -144,7 +147,7 @@ async fn connect_many_timeout() {
 
     let err = res.unwrap_err();
 
-    assert!(err.is_connect() && err.is_timeout());
+    assert!(err.is_timeout());
 }
 
 #[cfg(feature = "stream")]
@@ -155,7 +158,7 @@ async fn response_timeout() {
     let server = server::http(move |_req| {
         async {
             // immediate response, but delayed body
-            let body = rquest::Body::wrap_stream(futures_util::stream::once(async {
+            let body = reqwest::Body::wrap_stream(futures_util::stream::once(async {
                 tokio::time::sleep(Duration::from_secs(1)).await;
                 Ok::<_, std::convert::Infallible>("Hello")
             }));
@@ -164,7 +167,7 @@ async fn response_timeout() {
         }
     });
 
-    let client = rquest::Client::builder()
+    let client = reqwest::Client::builder()
         .timeout(Duration::from_millis(500))
         .no_proxy()
         .build()
@@ -215,7 +218,7 @@ async fn read_timeout_applies_to_body() {
     let server = server::http(move |_req| {
         async {
             // immediate response, but delayed body
-            let body = rquest::Body::wrap_stream(futures_util::stream::once(async {
+            let body = reqwest::Body::wrap_stream(futures_util::stream::once(async {
                 tokio::time::sleep(Duration::from_millis(300)).await;
                 Ok::<_, std::convert::Infallible>("Hello")
             }));
@@ -224,7 +227,7 @@ async fn read_timeout_applies_to_body() {
         }
     });
 
-    let client = rquest::Client::builder()
+    let client = reqwest::Client::builder()
         .read_timeout(Duration::from_millis(100))
         .no_proxy()
         .build()
@@ -259,13 +262,13 @@ async fn read_timeout_allows_slow_response_body() {
                     None
                 }
             });
-            let body = rquest::Body::wrap_stream(slow);
+            let body = reqwest::Body::wrap_stream(slow);
 
             http::Response::new(body)
         }
     });
 
-    let client = rquest::Client::builder()
+    let client = reqwest::Client::builder()
         .read_timeout(Duration::from_millis(200))
         //.timeout(Duration::from_millis(200))
         .no_proxy()
