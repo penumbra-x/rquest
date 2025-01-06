@@ -1,4 +1,3 @@
-#![cfg_attr(target_arch = "wasm32", allow(unused))]
 use std::error::Error as StdError;
 use std::fmt;
 use std::io;

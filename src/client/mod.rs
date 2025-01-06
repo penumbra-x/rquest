@@ -12,5 +12,5 @@ pub mod multipart;
 pub(crate) mod request;
 mod response;
 mod upgrade;
-#[cfg(all(feature = "websocket", not(target_arch = "wasm32")))]
+#[cfg(feature = "websocket")]
 pub mod websocket;
