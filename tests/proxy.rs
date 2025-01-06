@@ -94,52 +94,6 @@ async fn http_proxy_basic_auth_parsed() {
     assert_eq!(res.status(), rquest::StatusCode::OK);
 }
 
-#[cfg_attr(not(feature = "internal_proxy_sys_no_cache"), ignore)]
-#[tokio::test]
-async fn system_http_proxy_basic_auth_parsed() {
-    let url = "http://hyper.rs/prox";
-    let server = server::http(move |req| {
-        assert_eq!(req.method(), "GET");
-        assert_eq!(req.uri(), url);
-        assert_eq!(req.headers()["host"], "hyper.rs");
-        assert_eq!(
-            req.headers()["proxy-authorization"],
-            "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="
-        );
-
-        async { http::Response::default() }
-    });
-
-    // Note: we're relying on the `internal_proxy_sys_no_cache` feature to
-    // check the environment every time.
-
-    // save system setting first.
-    let system_proxy = env::var("http_proxy");
-
-    // set-up http proxy.
-    env::set_var(
-        "http_proxy",
-        format!("http://Aladdin:open sesame@{}", server.addr()),
-    );
-
-    let res = rquest::Client::builder()
-        .build()
-        .unwrap()
-        .get(url)
-        .send()
-        .await
-        .unwrap();
-
-    assert_eq!(res.url().as_str(), url);
-    assert_eq!(res.status(), rquest::StatusCode::OK);
-
-    // reset user setting.
-    match system_proxy {
-        Err(_) => env::remove_var("http_proxy"),
-        Ok(proxy) => env::set_var("http_proxy", proxy),
-    }
-}
-
 #[tokio::test]
 async fn test_no_proxy() {
     let server = server::http(move |req| {

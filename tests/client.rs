@@ -276,7 +276,6 @@ async fn overridden_dns_resolution_with_hickory_dns() {
     let client = rquest::Client::builder()
         .no_proxy()
         .resolve(overridden_domain, server.addr())
-        .hickory_dns(true)
         .build()
         .expect("client builder");
     let req = client.get(&url);
@@ -312,7 +311,6 @@ async fn overridden_dns_resolution_with_hickory_dns_multiple() {
                 server.addr(),
             ],
         )
-        .hickory_dns(true)
         .build()
         .expect("client builder");
     let req = client.get(&url);

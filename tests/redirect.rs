@@ -327,6 +327,7 @@ async fn test_redirect_302_with_set_cookies() {
 
     let client = rquest::ClientBuilder::new()
         .cookie_store(true)
+        .redirect(Policy::default())
         .build()
         .unwrap();
     let res = client.get(&url).send().await.unwrap();
