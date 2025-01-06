@@ -474,7 +474,7 @@ impl RequestBuilder {
     }
 
     /// Set the proxy for this request.
-    pub fn proxy<U: IntoUrl>(mut self, proxy: impl IntoUrl) -> RequestBuilder {
+    pub fn proxy<U: IntoUrl>(mut self, proxy: U) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
             match proxy
                 .into_url()
