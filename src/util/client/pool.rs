@@ -51,7 +51,6 @@ impl<T> Key for T where T: Eq + Hash + Clone + Debug + Unpin + Send + 'static {}
 
 /// A marker to identify what version a pooled connection is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[allow(dead_code)]
 pub enum Ver {
     Auto,
     Http2,
@@ -127,7 +126,7 @@ impl<T, K: Key> Pool<T, K> {
         M: hyper2::rt::Timer + Send + Sync + Clone + 'static,
     {
         let exec = Exec::new(executor);
-        let timer = timer.map(|t| Timer::new(t));
+        let timer = timer.map(Timer::new);
         let idle = match config.max_pool_size {
             Some(max_size) => LruCache::new(max_size),
             None => LruCache::unbounded(),
