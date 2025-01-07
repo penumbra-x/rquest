@@ -116,7 +116,6 @@ struct Config {
     http2_max_retry_count: usize,
     tls_info: bool,
     connector_layers: Vec<BoxedConnectorLayer>,
-
     tls: TlsSettings,
 }
 
@@ -174,7 +173,6 @@ impl ClientBuilder {
                 http2_max_retry_count: 2,
                 tls_info: false,
                 connector_layers: Vec::new(),
-
                 tls: Default::default(),
             },
         }
@@ -239,14 +237,16 @@ impl ClientBuilder {
             .pool_max_idle_per_host(config.pool_max_idle_per_host)
             .pool_max_size(config.pool_max_size);
 
+        let hyper = config
+            .builder
+            .build(connector_builder.build(config.connector_layers));
+
         Ok(Client {
             inner: Arc::new(ClientRef {
                 accepts: config.accepts,
                 #[cfg(feature = "cookies")]
                 cookie_store: config.cookie_store,
-                hyper: config
-                    .builder
-                    .build(connector_builder.build(config.connector_layers)),
+                hyper,
                 headers: config.headers,
                 headers_order: config.headers_order,
                 redirect: config.redirect_policy,
@@ -257,76 +257,45 @@ impl ClientBuilder {
                 proxies_maybe_http_auth,
                 base_url: config.base_url,
                 http2_max_retry_count: config.http2_max_retry_count,
-
                 proxies,
                 network_scheme: config.network_scheme,
             }),
         })
     }
 
-    /// Sets the necessary values to mimic the specified impersonate version, including headers and TLS settings.
-    #[inline]
-    pub fn impersonate(self, impersonate: Impersonate) -> ClientBuilder {
-        let settings = mimic::impersonate(impersonate, true);
-        self.apply_impersonate_settings(settings)
-    }
-
-    /// Sets the necessary values to mimic the specified impersonate version, skipping header configuration.
-    #[inline]
-    pub fn impersonate_skip_headers(self, impersonate: Impersonate) -> ClientBuilder {
-        let settings = mimic::impersonate(impersonate, false);
-        self.apply_impersonate_settings(settings)
-    }
-
-    /// Apply the given impersonate settings directly.
-    #[cfg(feature = "impersonate_settings")]
-    #[inline]
-    pub fn impersonate_settings(self, settings: ImpersonateSettings) -> ClientBuilder {
-        self.apply_impersonate_settings(settings)
-    }
-
-    /// Apply the given TLS settings and header function.
-    fn apply_impersonate_settings(mut self, mut settings: ImpersonateSettings) -> ClientBuilder {
-        // Set the headers if needed
-        if let Some(mut headers) = settings.headers {
-            std::mem::swap(&mut self.config.headers, &mut headers);
-        }
-
-        // Set the headers order if needed
-        std::mem::swap(&mut self.config.headers_order, &mut settings.headers_order);
-
-        // Set the TLS settings
-        std::mem::swap(&mut self.config.tls, &mut settings.tls);
-
-        // Set the http2 preference
-        if let Some(http2) = settings.http2 {
-            self.config
-                .builder
-                .with_http2_builder(|builder| apply_http2_settings(builder, http2));
-        }
-
-        self
-    }
-
-    /// Enable Encrypted Client Hello (Secure SNI)
-    pub fn enable_ech_grease(mut self, enabled: bool) -> ClientBuilder {
-        self.config.tls.enable_ech_grease = enabled;
-        self
-    }
-
-    /// Enable TLS permute_extensions
-    pub fn permute_extensions(mut self, enabled: bool) -> ClientBuilder {
-        self.config.tls.permute_extensions = Some(enabled);
-        self
-    }
-
-    /// Enable TLS pre_shared_key
-    pub fn pre_shared_key(mut self, enabled: bool) -> ClientBuilder {
-        self.config.tls.pre_shared_key = enabled;
-        self
-    }
-
     // Higher-level options
+
+    /// Sets a base URL for the client.
+    ///
+    /// The base URL will be used as the root for all relative request paths made by this client.
+    /// If a request specifies an absolute URL, it will override the base URL.
+    ///
+    /// # Parameters
+    /// - `base_url`: A value that can be converted into a URL, representing the base URL for the client.
+    ///
+    /// # Returns
+    /// Returns the `ClientBuilder` with the base URL configured. If the provided `base_url` is invalid,
+    /// an error is stored in the configuration, and the builder can no longer produce a valid client.
+    ///
+    /// # Example
+    /// ```rust
+    /// let client = Client::builder()
+    ///     .base_url("https://api.example.com")
+    ///     .build();
+    ///
+    /// let response = client.get("/users").send().await?; // Resolves to "https://api.example.com/users"
+    /// ```
+    pub fn base_url<U: IntoUrl>(mut self, base_url: U) -> ClientBuilder {
+        match base_url.into_url() {
+            Ok(base_url) => {
+                self.config.base_url = Some(base_url);
+            }
+            Err(e) => {
+                self.config.error = Some(e);
+            }
+        }
+        self
+    }
 
     /// Sets the `User-Agent` header to be used by this client.
     ///
@@ -885,6 +854,67 @@ impl ClientBuilder {
         self
     }
 
+    // TLS/HTTP2 mimic options
+
+    /// Sets the necessary values to mimic the specified impersonate version, including headers and TLS settings.
+    pub fn impersonate(self, impersonate: Impersonate) -> ClientBuilder {
+        let settings = mimic::impersonate(impersonate, true);
+        self.apply_impersonate_settings(settings)
+    }
+
+    /// Sets the necessary values to mimic the specified impersonate version, skipping header configuration.
+    pub fn impersonate_skip_headers(self, impersonate: Impersonate) -> ClientBuilder {
+        let settings = mimic::impersonate(impersonate, false);
+        self.apply_impersonate_settings(settings)
+    }
+
+    /// Apply the given impersonate settings directly.
+    #[cfg(feature = "impersonate_settings")]
+    pub fn impersonate_settings(self, settings: ImpersonateSettings) -> ClientBuilder {
+        self.apply_impersonate_settings(settings)
+    }
+
+    /// Apply the given TLS settings and header function.
+    fn apply_impersonate_settings(mut self, mut settings: ImpersonateSettings) -> ClientBuilder {
+        // Set the headers if needed
+        if let Some(mut headers) = settings.headers {
+            std::mem::swap(&mut self.config.headers, &mut headers);
+        }
+
+        // Set the headers order if needed
+        std::mem::swap(&mut self.config.headers_order, &mut settings.headers_order);
+
+        // Set the TLS settings
+        std::mem::swap(&mut self.config.tls, &mut settings.tls);
+
+        // Set the http2 preference
+        if let Some(http2) = settings.http2 {
+            self.config
+                .builder
+                .with_http2_builder(|builder| apply_http2_settings(builder, http2));
+        }
+
+        self
+    }
+
+    /// Enable Encrypted Client Hello (Secure SNI)
+    pub fn enable_ech_grease(mut self, enabled: bool) -> ClientBuilder {
+        self.config.tls.enable_ech_grease = enabled;
+        self
+    }
+
+    /// Enable TLS permute_extensions
+    pub fn permute_extensions(mut self, enabled: bool) -> ClientBuilder {
+        self.config.tls.permute_extensions = Some(enabled);
+        self
+    }
+
+    /// Enable TLS pre_shared_key
+    pub fn pre_shared_key(mut self, enabled: bool) -> ClientBuilder {
+        self.config.tls.pre_shared_key = enabled;
+        self
+    }
+
     /// Controls the use of certificate validation.
     ///
     /// Defaults to `false`.
@@ -989,6 +1019,8 @@ impl ClientBuilder {
         self
     }
 
+    // DNS options
+
     /// Enables the `hickory-dns` asynchronous resolver instead of the default threadpool-based `getaddrinfo`.
     ///
     /// By default, if the `hickory-dns` feature is enabled, this option is used.
@@ -1049,38 +1081,6 @@ impl ClientBuilder {
     /// still be applied on top of this resolver.
     pub fn dns_resolver<R: Resolve + 'static>(mut self, resolver: Arc<R>) -> ClientBuilder {
         self.config.dns_resolver = Some(resolver as _);
-        self
-    }
-
-    /// Sets a base URL for the client.
-    ///
-    /// The base URL will be used as the root for all relative request paths made by this client.
-    /// If a request specifies an absolute URL, it will override the base URL.
-    ///
-    /// # Parameters
-    /// - `base_url`: A value that can be converted into a URL, representing the base URL for the client.
-    ///
-    /// # Returns
-    /// Returns the `ClientBuilder` with the base URL configured. If the provided `base_url` is invalid,
-    /// an error is stored in the configuration, and the builder can no longer produce a valid client.
-    ///
-    /// # Example
-    /// ```rust
-    /// let client = Client::builder()
-    ///     .base_url("https://api.example.com")
-    ///     .build();
-    ///
-    /// let response = client.get("/users").send().await?; // Resolves to "https://api.example.com/users"
-    /// ```
-    pub fn base_url<U: IntoUrl>(mut self, base_url: U) -> ClientBuilder {
-        match base_url.into_url() {
-            Ok(base_url) => {
-                self.config.base_url = Some(base_url);
-            }
-            Err(e) => {
-                self.config.error = Some(e);
-            }
-        }
         self
     }
 
@@ -1677,7 +1677,6 @@ struct ClientRef {
     proxies_maybe_http_auth: bool,
     base_url: Option<Url>,
     http2_max_retry_count: usize,
-
     proxies: Vec<Proxy>,
     network_scheme: NetworkSchemeBuilder,
 }
