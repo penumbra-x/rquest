@@ -1,12 +1,15 @@
 //! Request network scheme.
 use crate::proxy::ProxyScheme;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::{
+    fmt,
+    net::{IpAddr, Ipv4Addr, Ipv6Addr},
+};
 
 /// Represents the network configuration scheme.
 ///
 /// This enum defines different strategies for configuring network settings,
 /// such as binding to specific interfaces, addresses, or proxy schemes.
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
+#[derive(Clone, Hash, PartialEq, Eq, Default)]
 pub enum NetworkScheme {
     /// Custom network scheme with specific configurations.
     Scheme {
@@ -69,6 +72,45 @@ impl NetworkScheme {
         match self {
             NetworkScheme::Scheme { interface, .. } => interface.take(),
             _ => None,
+        }
+    }
+}
+
+impl fmt::Debug for NetworkScheme {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            NetworkScheme::Scheme {
+                #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+                interface,
+                addresses,
+                proxy_scheme,
+            } => {
+                // Only print the interface value if it is Some and not None
+                #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+                if let Some(interface) = interface {
+                    write!(f, "interface={:?},", interface)?;
+                }
+
+                // Only print the IPv4 address value if it is Some and not None
+                if let Some(v4) = &addresses.0 {
+                    write!(f, "ipv4={:?},", v4)?;
+                }
+
+                // Only print the IPv6 address value if it is Some and not None
+                if let Some(v6) = &addresses.1 {
+                    write!(f, "ipv6={:?}),", v6)?;
+                }
+
+                // Only print the proxy_scheme value if it is Some and not None
+                if let Some(proxy) = proxy_scheme {
+                    write!(f, "proxy={:?},", proxy)?;
+                }
+
+                write!(f, "}}")
+            }
+            NetworkScheme::Default => {
+                write!(f, "NetworkScheme::Default")
+            }
         }
     }
 }
