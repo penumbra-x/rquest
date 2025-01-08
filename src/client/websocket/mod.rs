@@ -12,7 +12,7 @@ use crate::{error::Kind, RequestBuilder};
 use crate::{Error, Response};
 use async_tungstenite::tungstenite;
 use futures_util::{Sink, SinkExt, Stream, StreamExt};
-use http::{header, HeaderName, HeaderValue, StatusCode, Version};
+use http::{header, HeaderValue, StatusCode, Version};
 pub use message::{CloseCode, Message};
 use tokio_util::compat::TokioAsyncReadCompatExt;
 use tungstenite::protocol::WebSocketConfig;
@@ -53,28 +53,6 @@ impl WebSocketRequestBuilder {
         if let Some(p) = self.protocols.as_mut() {
             p.extend(protocols)
         }
-        self
-    }
-
-    /// Add a set of Header to the existing ones on this Request.
-    #[deprecated(since = "1.3.5", note = "use with_builder instead")]
-    pub fn header<K, V>(mut self, key: K, value: V) -> Self
-    where
-        HeaderName: TryFrom<K>,
-        <HeaderName as TryFrom<K>>::Error: Into<http::Error>,
-        HeaderValue: TryFrom<V>,
-        <HeaderValue as TryFrom<V>>::Error: Into<http::Error>,
-    {
-        self.inner = self.inner.header(key, value);
-        self
-    }
-
-    /// Add a set of Headers to the existing ones on this Request.
-    ///
-    /// The headers will be merged in to any already set.
-    #[deprecated(since = "1.3.5", note = "use with_builder instead")]
-    pub fn headers(mut self, headers: crate::header::HeaderMap) -> Self {
-        self.inner = self.inner.headers(headers);
         self
     }
 
