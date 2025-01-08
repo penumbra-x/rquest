@@ -1,5 +1,8 @@
 use url::Url;
 
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct ResponseUrl(pub Url);
+
 /// Extension trait for http::response::Builder objects
 ///
 /// Allows the user to add a `Url` to the http::Response
@@ -11,13 +14,13 @@ pub trait ResponseBuilderExt {
 
 impl ResponseBuilderExt for http::response::Builder {
     fn url(self, url: Url) -> Self {
-        self.extension(url)
+        self.extension(ResponseUrl(url))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::ResponseBuilderExt;
+    use super::{ResponseBuilderExt, ResponseUrl};
     use http::response::Builder;
     use url::Url;
 
@@ -30,6 +33,9 @@ mod tests {
             .body(())
             .unwrap();
 
-        assert_eq!(response.extensions().get::<Url>(), Some(&url));
+        assert_eq!(
+            response.extensions().get::<ResponseUrl>(),
+            Some(&ResponseUrl(url))
+        );
     }
 }
