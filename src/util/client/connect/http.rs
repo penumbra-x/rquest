@@ -387,7 +387,7 @@ impl<R> HttpConnector<R> {
     /// On Linux it can be used to specify a [VRF], but the binary needs
     /// to either have `CAP_NET_RAW` or to be run as root.
     ///
-    /// This function is only available on Android、Fuchsia and Linux.
+    /// This function is only available on Android、Fuchsia、Linux and Apple platforms.
     ///
     /// [VRF]: https://www.kernel.org/doc/Documentation/networking/vrf.txt
     bind_device!(
