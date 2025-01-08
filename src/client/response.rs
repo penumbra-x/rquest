@@ -4,6 +4,7 @@ use std::pin::Pin;
 use std::time::Duration;
 
 use bytes::Bytes;
+use http_body_util::BodyExt;
 use hyper2::{HeaderMap, StatusCode, Version};
 #[cfg(feature = "json")]
 use serde::de::DeserializeOwned;
@@ -14,6 +15,7 @@ use util::client::connect::HttpInfo;
 use super::body::Body;
 use super::body::ResponseBody;
 use super::decoder::{Accepts, Decoder};
+
 #[cfg(feature = "cookies")]
 use crate::cookie;
 use crate::util;
@@ -422,6 +424,27 @@ impl fmt::Debug for Response {
             .field("status", &self.status())
             .field("headers", self.headers())
             .finish()
+    }
+}
+
+impl<T: Into<Body>> From<http::Response<T>> for Response {
+    fn from(r: http::Response<T>) -> Response {
+        let (mut parts, body) = r.into_parts();
+        let body: super::body::Body = body.into();
+        let decoder = Decoder::detect(
+            &mut parts.headers,
+            ResponseBody::new(body.map_err(Into::into)),
+            Accepts::default(),
+        );
+        let url = parts
+            .extensions
+            .remove::<Url>()
+            .unwrap_or_else(|| Url::parse("http://no.url.provided.local").unwrap());
+        let res = hyper2::Response::from_parts(parts, decoder);
+        Response {
+            res,
+            url: Box::new(url),
+        }
     }
 }
 
