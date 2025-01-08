@@ -27,12 +27,12 @@
 //! The `impersonate` module provides a way to simulate various browser fingerprints.
 //!
 //! ```rust,no_run
-//! use rquest::Impersonate;
+//! use rquest::{Client, Impersonate};
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), rquest::Error> {
 //!     // Build a client to mimic Firefox133
-//!     let client = rquest::Client::builder()
+//!     let client = Client::builder()
 //!         .impersonate(Impersonate::Firefox133)
 //!         .build()?;
 //!

@@ -1892,7 +1892,7 @@ impl Future for PendingRequest {
         if let Some(delay) = self.as_mut().total_timeout().as_mut().as_pin_mut() {
             if let Poll::Ready(()) = delay.poll(cx) {
                 return Poll::Ready(Err(
-                    crate::error::request(crate::error::TimedOut).with_url(self.url.clone())
+                    error::request(error::TimedOut).with_url(self.url.clone())
                 ));
             }
         }
@@ -1900,7 +1900,7 @@ impl Future for PendingRequest {
         if let Some(delay) = self.as_mut().read_timeout().as_mut().as_pin_mut() {
             if let Poll::Ready(()) = delay.poll(cx) {
                 return Poll::Ready(Err(
-                    crate::error::request(crate::error::TimedOut).with_url(self.url.clone())
+                    error::request(error::TimedOut).with_url(self.url.clone())
                 ));
             }
         }
@@ -1912,9 +1912,7 @@ impl Future for PendingRequest {
                         if self.as_mut().retry_error(&e) {
                             continue;
                         }
-                        return Poll::Ready(Err(
-                            crate::error::request(e).with_url(self.url.clone())
-                        ));
+                        return Poll::Ready(Err(error::request(e).with_url(self.url.clone())));
                     }
                     Poll::Ready(Ok(res)) => res.map(super::body::boxed),
                     Poll::Pending => return Poll::Pending,
@@ -2083,7 +2081,7 @@ impl Future for PendingRequest {
                             debug!("redirect policy disallowed redirection to '{}'", loc);
                         }
                         redirect::ActionKind::Error(err) => {
-                            return Poll::Ready(Err(crate::error::redirect(err, self.url.clone())));
+                            return Poll::Ready(Err(error::redirect(err, self.url.clone())));
                         }
                     }
                 }

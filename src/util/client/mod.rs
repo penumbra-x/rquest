@@ -324,14 +324,13 @@ where
         let (mut req, network_scheme, http_version_pref) = req.pieces();
         let is_http_connect = req.method() == Method::CONNECT;
         match req.version() {
-            Version::HTTP_11 => (),
             Version::HTTP_10 => {
                 if is_http_connect {
                     warn!("CONNECT is not allowed for HTTP/1.0");
                     return ResponseFuture::new(future::err(e!(UserUnsupportedRequestMethod)));
                 }
             }
-            Version::HTTP_2 => (),
+            Version::HTTP_11 | Version::HTTP_2 => (),
             // completely unsupported HTTP version (like HTTP/0.9)!
             other => return ResponseFuture::error_version(other),
         };

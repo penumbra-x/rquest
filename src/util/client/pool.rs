@@ -553,7 +553,7 @@ impl<T: Poolable, K: Key> Drop for Pooled<T, K> {
     }
 }
 
-impl<T: Poolable, K: Key> fmt::Debug for Pooled<T, K> {
+impl<T: Poolable, K: Key> Debug for Pooled<T, K> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Pooled").field("key", &self.key).finish()
     }

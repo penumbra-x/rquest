@@ -38,12 +38,12 @@ rquest = "1.0.0"
 ```
 
 ```rust,no_run
-use rquest::Impersonate;
+use rquest::{Client, Impersonate};
 
 #[tokio::main]
 async fn main() -> Result<(), rquest::Error> {
     // Build a client to mimic Firefox133
-    let client = rquest::Client::builder()
+    let client = Client::builder()
         .impersonate(Impersonate::Firefox133)
         .build()?;
 
