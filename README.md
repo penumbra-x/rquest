@@ -1,5 +1,6 @@
 # rquest - `r`ust & `quest`
 
+[![CI](https://github.com/penumbra-x/rquest/actions/workflows/ci.yml/badge.svg)](https://github.com/penumbra-x/rquest/actions/workflows/ci.yml)
 [![Crates.io License](https://img.shields.io/crates/l/rquest)](./LICENSE)
 ![Crates.io MSRV](https://img.shields.io/crates/msrv/rquest)
 [![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)
