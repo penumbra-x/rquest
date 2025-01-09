@@ -137,6 +137,7 @@ impl Request {
 
     /// Get a mutable reference to the cookie store.
     #[cfg(feature = "cookies")]
+    #[inline]
     pub fn cookie_store_mut(&mut self) -> &mut Option<Arc<dyn cookie::CookieStore>> {
         &mut self.cookie_store
     }
