@@ -5,8 +5,6 @@
 //! - Various parts of TLS can also be configured or even disabled on the
 //!   `ClientBuilder`.
 
-#![allow(missing_debug_implementations)]
-#![allow(missing_docs)]
 mod conn;
 mod ext;
 
@@ -194,12 +192,16 @@ impl TlsInfo {
 }
 
 /// The root certificate store.
+#[allow(missing_debug_implementations)]
 #[derive(Default)]
 pub enum RootCertsStore {
+    /// An owned `X509Store`.
     Owned(X509Store),
 
+    /// A borrowed `X509Store`.
     Borrowed(&'static X509Store),
 
+    /// Use the system's native certificate store.
     #[default]
     Default,
 }
@@ -246,6 +248,10 @@ where
     }
 }
 
+/// Configuration settings for TLS connections.
+///
+/// This struct defines various parameters to fine-tune the behavior of a TLS connection,
+/// including the root certificate store, certificate verification, ALPN protocols, and more.
 #[derive(TypedBuilder)]
 pub struct TlsSettings {
     /// The root certificate store.
