@@ -10,7 +10,7 @@ pub mod connect;
 // designed.
 mod pool;
 mod request;
-mod scheme;
+mod network;
 
 use std::error::Error as StdError;
 use std::fmt;
@@ -42,7 +42,7 @@ use common::{lazy as hyper_lazy, timer, Exec, Lazy};
 
 use super::into_uri;
 pub use request::InnerRequest;
-pub use scheme::{NetworkScheme, NetworkSchemeBuilder};
+pub use network::{NetworkScheme, NetworkSchemeBuilder};
 
 type BoxSendFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
 
