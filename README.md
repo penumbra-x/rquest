@@ -8,7 +8,7 @@
 
 > 🚀 Help me work seamlessly with open source sharing by [sponsoring me on GitHub](https://github.com/penumbra-x/.github/blob/main/profile/SPONSOR.md)
 
-An ergonomic, all-in-one `TLS`, `JA3`/`JA4`, and `HTTP2` fingerprint `HTTP` Client for spoofing any browser.
+An ergonomic, all-in-one `TLS`, `JA3`/`JA4`, and `HTTP2` fingerprint HTTP Client for spoofing any browser.
 
 - Plain, JSON, urlencoded, multipart bodies
 - Header Order
@@ -128,7 +128,7 @@ By default, `rquest` uses Mozilla's root certificates through the `webpki-roots`
 
 ## Fingerprint
 
-- Customize TLS/HTTP2 fingerprint
+- TLS/HTTP2 fingerprint
 
 Supports custom `TLS`/`HTTP2` fingerprint parameters (disabled by default). Unless you’re highly familiar with `TLS` and `HTTP2`, customization is not recommended, as it may cause unexpected issues. Basic device emulation types are provided by [default](https://github.com/penumbra-x/rquest/blob/07a18e81fdf1931e7c10bfbc23da622156a4dfae/src/mimic/mod.rs#L127).
 
