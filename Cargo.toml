@@ -327,6 +327,10 @@ path = "examples/client.rs"
 required-features = ["full"]
 
 [[example]]
+name = "client_chain"
+path = "examples/client_chain.rs"
+
+[[example]]
 name = "request_with_redirect"
 path = "examples/request_with_redirect.rs"
 required-features = ["full"]
