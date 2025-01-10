@@ -639,7 +639,7 @@ impl ClientBuilder {
     /// This method assumes that the proxy credentials are already set up and
     /// available. Ensure that the Proxy-Authorization header is correctly
     /// configured before using this method.
-    /// 
+    ///
     /// Default is `false`.
     pub fn redirect_with_proxy_auth(mut self, enable: bool) -> ClientBuilder {
         self.config.redirect_with_proxy_auth = enable;
@@ -1478,7 +1478,7 @@ impl Client {
 
     /// Set the cookie provider for this client.
     #[cfg(feature = "cookies")]
-    pub fn set_cookie_provider<C>(&mut self, cookie_store: Arc<C>)
+    pub fn set_cookie_provider<C>(&mut self, cookie_store: Arc<C>) -> &mut Self
     where
         C: cookie::CookieStore + 'static,
     {
@@ -1486,11 +1486,13 @@ impl Client {
             &mut self.inner_mut().cookie_store,
             &mut Some(cookie_store as _),
         );
+
+        self
     }
 
     /// Set the proxies for this client.
     #[inline]
-    pub fn set_proxies<P>(&mut self, proxies: P)
+    pub fn set_proxies<P>(&mut self, proxies: P) -> &mut Self
     where
         P: Into<Option<Vec<Proxy>>>,
     {
@@ -1505,6 +1507,8 @@ impl Client {
                 inner.proxies.clear();
             }
         }
+
+        self
     }
 
     /// Set that all sockets are bound to the configured address before connection.
@@ -1513,70 +1517,78 @@ impl Client {
     ///
     /// Default is `None`.
     #[inline]
-    pub fn set_local_address<T>(&mut self, addr: T)
+    pub fn set_local_address<T>(&mut self, addr: T) -> &mut Self
     where
         T: Into<Option<IpAddr>>,
     {
         self.inner_mut().network_scheme.address(addr.into());
+        self
     }
 
     /// Set that all sockets are bound to the configured IPv4 or IPv6 address
     /// (depending on host's preferences) before connection.
     #[inline]
-    pub fn set_local_addresses<V4, V6>(&mut self, ipv4: V4, ipv6: V6)
+    pub fn set_local_addresses<V4, V6>(&mut self, ipv4: V4, ipv6: V6) -> &mut Self
     where
         V4: Into<Option<Ipv4Addr>>,
         V6: Into<Option<Ipv6Addr>>,
     {
         self.inner_mut().network_scheme.addresses(ipv4, ipv6);
+        self
     }
 
     cfg_bindable_device! {
         /// Bind to an interface by `SO_BINDTODEVICE`.
         #[inline]
-        pub fn set_interface<T>(&mut self, interface: T)
+        pub fn set_interface<T>(&mut self, interface: T)  -> &mut Self
         where
             T: Into<Cow<'static, str>>,
         {
             self.inner_mut().network_scheme.interface(interface);
+            self
         }
     }
 
     /// Set the headers order for this client.
-    pub fn set_headers_order<T>(&mut self, order: T)
+    pub fn set_headers_order<T>(&mut self, order: T) -> &mut Self
     where
         T: Into<Cow<'static, [HeaderName]>>,
     {
         std::mem::swap(&mut self.inner_mut().headers_order, &mut Some(order.into()));
+        self
     }
 
     /// Set the redirect policy for this client.
-    pub fn set_redirect(&mut self, mut policy: redirect::Policy) {
+    pub fn set_redirect(&mut self, mut policy: redirect::Policy) -> &mut Self {
         std::mem::swap(&mut self.inner_mut().redirect, &mut policy);
+        self
     }
 
     /// Set the cross-origin proxy authorization for this client.
-    pub fn set_redirect_with_proxy_auth(&mut self, enabled: bool) {
+    pub fn set_redirect_with_proxy_auth(&mut self, enabled: bool) -> &mut Self {
         self.inner_mut().redirect_with_proxy_auth = enabled;
+        self
     }
 
     /// Set the bash url for this client.
-    pub fn set_base_url<U: IntoUrl>(&mut self, url: U) {
+    pub fn set_base_url<U: IntoUrl>(&mut self, url: U) -> &mut Self {
         if let Ok(url) = url.into_url() {
             std::mem::swap(&mut self.inner_mut().base_url, &mut Some(url));
         }
+
+        self
     }
 
     /// Set the impersonate for this client.
     #[inline]
-    pub fn set_impersonate(&mut self, var: Impersonate) -> crate::Result<()> {
+    pub fn set_impersonate(&mut self, var: Impersonate) -> crate::Result<&mut Self> {
         let settings = mimic::impersonate(var, true);
         self.impersonate_settings(settings)
     }
 
     /// Set the impersonate for this client without setting the headers.
     #[inline]
-    pub fn set_impersonate_skip_headers(&mut self, var: Impersonate) -> crate::Result<()> {
+    pub fn set_impersonate_skip_headers(&mut self, var: Impersonate) -> crate::Result<&mut Self> {
         let settings = mimic::impersonate(var, false);
         self.impersonate_settings(settings)
     }
@@ -1584,13 +1596,19 @@ impl Client {
     /// Set the impersonate for this client with the given settings.
     #[cfg(feature = "impersonate_settings")]
     #[inline]
-    pub fn set_impersonate_settings(&mut self, settings: ImpersonateSettings) -> crate::Result<()> {
+    pub fn set_impersonate_settings(
+        &mut self,
+        settings: ImpersonateSettings,
+    ) -> crate::Result<&mut Self> {
         self.impersonate_settings(settings)
     }
 
     /// Apply the impersonate settings to the client.
     #[inline]
-    fn impersonate_settings(&mut self, mut settings: ImpersonateSettings) -> crate::Result<()> {
+    fn impersonate_settings(
+        &mut self,
+        mut settings: ImpersonateSettings,
+    ) -> crate::Result<&mut Self> {
         let inner = self.inner_mut();
 
         // Set the headers
@@ -1612,10 +1630,11 @@ impl Client {
                 .with_http2_builder(|builder| apply_http2_settings(builder, http2));
         }
 
-        Ok(())
+        Ok(self)
     }
 
     /// private mut ref to inner
+    #[inline(always)]
     fn inner_mut(&mut self) -> &mut ClientRef {
         Arc::make_mut(&mut self.inner)
     }
