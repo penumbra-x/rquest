@@ -9,7 +9,10 @@ use std::{
     task::{Context, Poll},
 };
 
-use crate::{error::Kind, RequestBuilder};
+use crate::{
+    error::{self, Kind},
+    RequestBuilder,
+};
 use crate::{Error, Response};
 use async_tungstenite::tungstenite;
 use futures_util::{Sink, SinkExt, Stream, StreamExt};
@@ -117,17 +120,11 @@ impl WebSocketRequestBuilder {
                     Scheme::HTTPS.as_str()
                 };
                 url.set_scheme(new_scheme)
-                    .expect("unexpected error setting URL scheme");
+                    .map_err(|_| error::url_bad_scheme(url.clone()))?;
             }
             "http" | "https" => {}
-            invalid_scheme => {
-                return Err(Error::new(
-                    Kind::Builder,
-                    Some(format!(
-                        "invalid scheme: {}, expected ws or wss",
-                        invalid_scheme
-                    )),
-                ));
+            _ => {
+                return Err(error::url_bad_scheme(url.clone()));
             }
         }
 
