@@ -7,6 +7,15 @@ All notable changes to this project will be documented in this file.
 ### 🚀 Features
 
 - *(client)* Expose default headers as public API (#296)
+- *(multipart)* Expose a Form::into_stream() method on async multipart forms (#303)
+- *(client)* Optional cross-origin redirect proxy authentication (#304)
+- *(client)* Add chain settings of client
+- *(tls)* Optional disable SSL renegotiation (#306)
+- *(proxy)* Remove system proxy cache (#309)
+
+### 🐛 Bug Fixes
+
+- Fix `Request` `try_clone` missing variables (#301)
 
 ### 🚜 Refactor
 
@@ -17,15 +26,24 @@ All notable changes to this project will be documented in this file.
 
 - *(tls)* Update docs
 
+### ⚡ Performance
+
+- *(pool)* Reduce lock scope to decrease contention (#308)
+
 ### ⚙️ Miscellaneous Tasks
 
 - *(websocket)* Remove deprecated function (#297)
 - Simplify template macro usage for platform-specific config (#299)
+- Add `#[inline]` to `cookie_store_mut`
+- *(websocket)* Simplify URL scheme matching and error handling logic (#302)
+- Update websocket bad url handler
+- Annotating default values ​​improves maintainability
 
 ### Build
 
 - *(deps)* Update env_logger requirement from 0.10.0 to 0.11.6 (#294)
 - *(deps)* Update windows-registry requirement from 0.3.0 to 0.4.0 (#295)
+- Fix conditional compilation (#307)
 
 ## [1.3.6] - 2025-01-08
 
