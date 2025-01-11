@@ -260,7 +260,7 @@ where
 pub struct TlsSettings {
     /// The root certificate store.
     /// Default use system's native certificate store.
-    #[builder(default)]
+    #[builder(default = RootCertsStore::Default)]
     pub root_certs_store: RootCertsStore,
 
     /// SSL may authenticate either endpoint with an X.509 certificate.
@@ -286,7 +286,7 @@ pub struct TlsSettings {
     /// **Usage Example:**
     /// - Commonly used to negotiate **HTTP/2**.
     /// - Default use all protocols (HTTP/1.1/HTTP/2/HTTP/3).
-    #[builder(default)]
+    #[builder(default = AlpnProtos::All)]
     pub alpn_protos: AlpnProtos,
 
     /// The **ALPS extension** (*draft-vvv-tls-alps*) enables exchanging
@@ -358,6 +358,32 @@ pub struct TlsSettings {
     #[builder(default = false)]
     pub enable_ocsp_stapling: bool,
 
+    /// Sets the list of signed certificate timestamps that is sent to clients that request it
+    #[builder(default = false)]
+    pub enable_signed_cert_timestamps: bool,
+
+    /// Sets the context's record size limit.
+    #[builder(default, setter(into))]
+    pub record_size_limit: Option<u16>,
+
+    /// PSK session ticket skip.
+    #[builder(default = false)]
+    pub psk_skip_session_ticket: bool,
+
+    /// Sets the context's key shares length limit.
+    #[builder(default, setter(into))]
+    pub key_shares_length_limit: Option<u8>,
+
+    /// Sets PSK with (EC)DHE key establishment (psk_dhe_ke)
+    /// [Reference](https://github.com/openssl/openssl/issues/13918)
+    #[builder(default = true)]
+    pub psk_dhe_ke: bool,
+
+    /// SSL Renegotiation is enabled by default on many servers.
+    /// This setting allows the client to send a renegotiation_info extension
+    #[builder(default = true)]
+    pub renegotiation: bool,
+
     /// **Delegated Credentials** (RFC 9345) provide a mechanism for TLS 1.3 endpoints
     /// to issue temporary credentials for authentication using their existing certificate.
     ///
@@ -392,35 +418,9 @@ pub struct TlsSettings {
     #[builder(default, setter(into))]
     pub sigalgs_list: Option<Cow<'static, str>>,
 
-    /// Sets the list of signed certificate timestamps that is sent to clients that request it
-    #[builder(default = false)]
-    pub enable_signed_cert_timestamps: bool,
-
     /// Certificates in TLS 1.3 can be compressed [RFC 8879](https://datatracker.ietf.org/doc/html/rfc8879).
     #[builder(default, setter(into))]
     pub cert_compression_algorithm: Option<Cow<'static, [CertCompressionAlgorithm]>>,
-
-    /// Sets the context's record size limit.
-    #[builder(default, setter(into))]
-    pub record_size_limit: Option<u16>,
-
-    /// PSK session ticket skip.
-    #[builder(default = false)]
-    pub psk_skip_session_ticket: bool,
-
-    /// Sets the context's key shares length limit.
-    #[builder(default, setter(into))]
-    pub key_shares_length_limit: Option<u8>,
-
-    /// Sets PSK with (EC)DHE key establishment (psk_dhe_ke)
-    /// [Reference](https://github.com/openssl/openssl/issues/13918)
-    #[builder(default = true)]
-    pub psk_dhe_ke: bool,
-
-    /// SSL Renegotiation is enabled by default on many servers.
-    /// This setting allows the client to send a renegotiation_info extension
-    #[builder(default = true)]
-    pub renegotiation: bool,
 
     /// Sets the context's extension permutation indices.
     #[builder(default, setter(into))]
