@@ -137,7 +137,7 @@ Supports custom `TLS`/`HTTP2` fingerprint parameters (disabled by default). Unle
 
 As `TLS` encryption technology becomes more and more sophisticated and HTTP2 becomes more popular, `JA3`/`JA4`/`Akkmai` fingerprints cannot simulate browser fingerprints very well, and the parsed parameters cannot perfectly imitate the browser's `TLS`/`HTTP2` configuration fingerprints. Therefore, `rquest` has not planned to support parsing `JA3`/`JA4`/`Akkmai` fingerprint strings for simulation, but encourages users to customize the configuration according to their own situation.
 
-Most of the `Akkmai` fingerprint strings obtained by users are not fully calculated. For example, the [website](https://tls.peet.ws/api/all), where the Headers Frame lacks Priority and Stream ID. If I were the server, it would be easy to detect this. For details, please refer to HTTP2 Frame [parser](https://github.com/0x676e67/pingly/blob/main/src/track/inspector/http2.rs)
+Most of the `Akkmai` fingerprint strings obtained by users are not fully calculated. For example, the [website](https://tls.peet.ws/api/all), where the Headers Frame lacks Priority and Stream ID. If I were the server, it would be easy to detect this. For details, please refer to HTTP2 [frame](https://datatracker.ietf.org/doc/html/rfc7540#section-6) [parser](https://github.com/0x676e67/pingly/blob/main/src/track/inspector/http2.rs)
 
 3. Default fingerprint
 
@@ -166,7 +166,6 @@ Most of the `Akkmai` fingerprint strings obtained by users are not fully calcula
 `Firefox109`, `Firefox117`, `Firefox128`, `Firefox133`
 
 </details>
-
 
 ## Requirement
 
