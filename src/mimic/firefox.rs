@@ -3,19 +3,41 @@ use http2::*;
 use tls::*;
 
 macro_rules! mod_generator {
-    ($mod_name:ident, $tls_settings:expr, $http2_settings:expr, $header_initializer:ident, $ua:tt) => {
+    (
+        $mod_name:ident,
+        $tls_settings:expr,
+        $http2_settings:expr,
+        $header_initializer:ident,
+        [($default_os:ident, $default_ua:tt) $(, ($other_os:ident, $other_ua:tt))*]
+    ) => {
         pub(crate) mod $mod_name {
             use super::*;
 
             #[inline(always)]
-            pub fn settings(with_headers: bool) -> ImpersonateSettings {
-                ImpersonateSettings::builder()
-                    .tls($tls_settings)
-                    .http2($http2_settings)
-                    .headers(conditional_headers!(with_headers, || {
-                        $header_initializer($ua)
-                    }))
-                    .build()
+            pub fn settings(with_headers: bool, os_choice: ImpersonateOs) -> ImpersonateSettings {
+                #[allow(unreachable_patterns)]
+                match os_choice {
+                    $(
+                        ImpersonateOs::$other_os => {
+                            ImpersonateSettings::builder()
+                                .tls($tls_settings)
+                                .http2($http2_settings)
+                                .headers(conditional_headers!(with_headers, || {
+                                    $header_initializer($other_ua)
+                                }))
+                                .build()
+                        }
+                    ),*
+                    _ => {
+                        ImpersonateSettings::builder()
+                            .tls($tls_settings)
+                            .http2($http2_settings)
+                            .headers(conditional_headers!(with_headers, || {
+                                $header_initializer($default_ua)
+                            }))
+                            .build()
+                    }
+                }
             }
         }
     };
@@ -99,7 +121,7 @@ macro_rules! http2_settings {
 fn header_initializer(ua: &'static str) -> HeaderMap {
     let mut headers = HeaderMap::new();
     header_firefox_accept!(headers);
-    header_firefox_sec_fetch!(1, headers);
+    header_firefox_sec_fetch!(headers);
     header_firefox_ua!(headers, ua);
     headers
 }
@@ -112,7 +134,7 @@ fn header_initializer_with_zstd(ua: &'static str) -> HeaderMap {
         HeaderName::from_static("priority"),
         HeaderValue::from_static("u=0, i"),
     );
-    header_firefox_sec_fetch!(2, headers);
+    header_firefox_sec_fetch!(headers);
     header_firefox_ua!(headers, ua);
     headers
 }
@@ -362,7 +384,23 @@ mod_generator!(
     tls_settings!(2),
     http2_settings!(2),
     header_initializer,
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/109.0"
+    [
+        (Windows,
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/109.0"
+        ),
+        (MacOs,
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_17; rv:109.0) Gecko/20000101 Firefox/109.0"
+        ),
+        (Android,
+            "Mozilla/5.0 (Android 13; Mobile; rv:109.0) Gecko/109.0 Firefox/109.0"
+        ),
+        (Linux,
+            "Mozilla/5.0 (X11; Linux i686; rv:109.0) Gecko/20100101 Firefox/109.0"
+        ),
+        (Ios,
+            "Mozilla/5.0 (iPad; CPU OS 13_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/109.0 Mobile/15E148 Safari/605.1.15"
+        )
+    ]
 );
 
 mod_generator!(
@@ -370,7 +408,23 @@ mod_generator!(
     tls_settings!(2),
     http2_settings!(2),
     header_initializer,
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/117.0"
+    [
+        (Windows,
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:117.0) Gecko/20100101 Firefox/117.0"
+        ),
+        (MacOs,
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_16_1; rv:117.0) Gecko/20010101 Firefox/117.0"
+        ),
+        (Android,
+            "Mozilla/5.0 (Android 13; Mobile; rv:117.0) Gecko/117.0 Firefox/117.0"
+        ),
+        (Linux,
+            "Mozilla/5.0 (X11; Linux i686; rv:117.0) Gecko/20100101 Firefox/117.0"
+        ),
+        (Ios,
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/117.0 Mobile/15E148 Safari/605.1.15"
+        )
+    ]
 );
 
 mod_generator!(
@@ -378,7 +432,23 @@ mod_generator!(
     tls_settings!(3),
     http2_settings!(3),
     header_initializer_with_zstd,
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:128.0) Gecko/20100101 Firefox/128.0"
+    [
+        (MacOs,
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:128.0) Gecko/20100101 Firefox/128.0"
+        ),
+        (Windows,
+            "Mozilla/5.0 (Windows NT 10.0; rv:128.0) Gecko/20100101 Firefox/128.0"
+        ),
+        (Android,
+            "Mozilla/5.0 (Android 13; Mobile; rv:128.0) Gecko/128.0 Firefox/128.0"
+        ),
+        (Ios,
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/128.0 Mobile/15E148 Safari/605.1.15"
+        ),
+        (Linux,
+            "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0"
+        )
+    ]
 );
 
 mod_generator!(
@@ -386,5 +456,21 @@ mod_generator!(
     tls_settings!(1),
     http2_settings!(1),
     header_initializer_with_zstd,
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:133.0) Gecko/20100101 Firefox/133.0"
+    [
+        (MacOs,
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:133.0) Gecko/20100101 Firefox/133.0"
+        ),
+        (Android,
+            "Mozilla/5.0 (Android 13; Mobile; rv:133.0) Gecko/133.0 Firefox/133.0"
+        ),
+        (Windows,
+            "Mozilla/5.0 (Windows NT 10.0; rv:133.0) Gecko/20100101 Firefox/133.0"
+        ),
+        (Linux,
+            "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0"
+        ),
+        (Ios,
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 18_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/133.4 Mobile/15E148 Safari/605.1.15"
+        )
+    ]
 );

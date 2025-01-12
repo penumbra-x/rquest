@@ -21,7 +21,7 @@ use impersonate_imports::*;
 use tls_imports::TlsSettings;
 
 mod impersonate_imports {
-    pub use crate::{http2::Http2Settings, mimic::ImpersonateSettings};
+    pub use crate::{http2::Http2Settings, mimic::ImpersonateOs, mimic::ImpersonateSettings};
     pub use http::{
         header::{ACCEPT, ACCEPT_LANGUAGE, UPGRADE_INSECURE_REQUESTS, USER_AGENT},
         HeaderMap, HeaderName, HeaderValue,
@@ -63,10 +63,15 @@ pub struct ImpersonateSettings {
 }
 
 #[inline]
-pub fn impersonate(ver: Impersonate, with_headers: bool) -> ImpersonateSettings {
+pub fn impersonate(
+    ver: Impersonate,
+    with_headers: bool,
+    impersonate_os: ImpersonateOs,
+) -> ImpersonateSettings {
     impersonate_match!(
         ver,
         with_headers,
+        impersonate_os,
         Chrome100 => v100::settings,
         Chrome101 => v101::settings,
         Chrome104 => v104::settings,
@@ -189,6 +194,34 @@ pub enum Impersonate {
     Firefox133,
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+pub enum ImpersonateOs {
+    Windows,
+    #[default]
+    MacOs,
+    Linux,
+    Android,
+    Ios,
+}
+
+impl ImpersonateOs {
+    #[inline]
+    fn get_impersonate_platform(&self) -> &'static str {
+        match self {
+            ImpersonateOs::MacOs => "\"macOS\"",
+            ImpersonateOs::Linux => "\"Linux\"",
+            ImpersonateOs::Windows => "\"Windows\"",
+            ImpersonateOs::Android => "\"Android\"",
+            ImpersonateOs::Ios => "\"iOS\"",
+        }
+    }
+
+    #[inline]
+    fn is_mobile(&self) -> bool {
+        matches!(self, ImpersonateOs::Android | ImpersonateOs::Ios)
+    }
+}
+
 #[cfg(feature = "impersonate_str")]
 impl_from_str! {
     (Chrome100, "chrome_100"),
@@ -248,4 +281,13 @@ impl_from_str! {
     (Firefox117, "firefox_117"),
     (Firefox128, "firefox_128"),
     (Firefox133, "firefox_133"),
+}
+
+#[cfg(feature = "impersonate_str")]
+impl_os_from_str! {
+    (Windows, "windows"),
+    (MacOs, "macos"),
+    (Linux, "linux"),
+    (Android, "android"),
+    (Ios, "ios"),
 }

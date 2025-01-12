@@ -24,10 +24,14 @@ macro_rules! conditional_headers {
 
 #[macro_export]
 macro_rules! header_chrome_sec_ch_ua {
-    ($headers:expr, $ua:expr) => {
+    ($headers:expr, $ua:expr, $platform:expr, $is_mobile:expr) => {
+        let mobile = if $is_mobile { "?1" } else { "?0" };
         $headers.insert("sec-ch-ua", HeaderValue::from_static($ua));
-        $headers.insert("sec-ch-ua-mobile", HeaderValue::from_static("?0"));
-        $headers.insert("sec-ch-ua-platform", HeaderValue::from_static("\"macOS\""));
+        $headers.insert("sec-ch-ua-mobile", HeaderValue::from_static(mobile));
+        $headers.insert(
+            "sec-ch-ua-platform",
+            HeaderValue::from_str($platform).unwrap(),
+        );
     };
 }
 
@@ -37,7 +41,6 @@ macro_rules! header_chrome_sec_fetch {
         $headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
         $headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
         $headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        $headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
     };
 }
 
@@ -78,13 +81,7 @@ macro_rules! header_chrome_accpet {
 
 #[macro_export]
 macro_rules! header_firefox_sec_fetch {
-    (1, $headers:expr) => {
-        $headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
-        $headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
-        $headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
-        $headers.insert("sec-fetch-user", HeaderValue::from_static("?1"));
-    };
-    (2, $headers:expr) => {
+    ($headers:expr) => {
         $headers.insert("sec-fetch-dest", HeaderValue::from_static("document"));
         $headers.insert("sec-fetch-mode", HeaderValue::from_static("navigate"));
         $headers.insert("sec-fetch-site", HeaderValue::from_static("none"));
@@ -148,12 +145,10 @@ macro_rules! join {
 }
 
 macro_rules! impersonate_match {
-    ($ver:expr, $with_headers:expr, $($variant:pat => $path:path),+) => {
+    ($ver:expr, $with_headers:expr, $os:expr, $($variant:pat => $path:expr),+) => {
         match $ver {
             $(
-                $variant => {
-                    $path($with_headers)
-                },
+                $variant => $path($with_headers, $os),
             )+
         }
     }
@@ -169,6 +164,22 @@ macro_rules! impl_from_str {
                 match s {
                     $( $string => Ok(Impersonate::$variant), )*
                     _ => Err(format!("Unknown impersonate version: {}", s)),
+                }
+            }
+        }
+    };
+}
+
+#[cfg(feature = "impersonate_str")]
+macro_rules! impl_os_from_str {
+    ($(($variant:ident, $string:expr)),* $(,)?) => {
+        impl std::str::FromStr for ImpersonateOs {
+            type Err = String;
+
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                match s {
+                    $( $string => Ok(ImpersonateOs::$variant), )*
+                    _ => Err(format!("Unknown impersonate os: {}", s)),
                 }
             }
         }

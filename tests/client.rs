@@ -7,7 +7,8 @@ use http::header::{CONTENT_LENGTH, CONTENT_TYPE, TRANSFER_ENCODING};
 #[cfg(feature = "json")]
 use std::collections::HashMap;
 
-use rquest::Client;
+use rquest::mimic::ImpersonateOs;
+use rquest::{Client, Impersonate};
 
 #[tokio::test]
 async fn auto_headers() {
@@ -482,4 +483,40 @@ async fn close_connection_after_idle_timeout() {
         .events()
         .iter()
         .any(|e| matches!(e, server::Event::ConnectionClosed)));
+}
+
+#[tokio::test]
+async fn test_client_os_spoofing() {
+    let server = server::http(move |req| async move {
+        for (name, value) in req.headers() {
+            if name == "user-agent" {
+                assert_eq!(value, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+            }
+            if name == "sec-ch-ua" {
+                assert_eq!(
+                    value,
+                    r#""Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24""#
+                );
+            }
+            if name == "sec-ch-ua-mobile" {
+                assert_eq!(value, "?0");
+            }
+            if name == "sec-ch-ua-platform" {
+                assert_eq!(value, "\"Linux\"");
+            }
+        }
+        http::Response::default()
+    });
+
+    let url = format!("http://{}/ua", server.addr());
+    let res = Client::builder()
+        .impersonate_with_os(Impersonate::Chrome131, ImpersonateOs::Linux)
+        .build()
+        .expect("Unable to build client")
+        .get(&url)
+        .send()
+        .await
+        .expect("request");
+
+    assert_eq!(res.status(), rquest::StatusCode::OK);
 }
