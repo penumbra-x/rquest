@@ -980,7 +980,8 @@ mod_generator!(
             r#""Chromium";v="122", "Not(A:Brand";v="24", "Microsoft Edge";v="122""#,
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0"
         ),
-        (Linux, // This shouldn't exist, edge was never meant to be on linux
+         // This shouldn't exist, edge was never meant to be on linux
+        (Linux,
             r#""Chromium";v="122", "Not(A:Brand";v="24", "Microsoft Edge";v="122""#,
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0"
         ),
@@ -1009,7 +1010,8 @@ mod_generator!(
             r#""Not)A;Brand";v="99", "Microsoft Edge";v="127", "Chromium";v="127""#,
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0"
         ),
-        (Linux, // This shouldn't exist, edge was never meant to be on linux
+         // This shouldn't exist, edge was never meant to be on linux
+        (Linux,
             r#""Not)A;Brand";v="99", "Microsoft Edge";v="127", "Chromium";v="127""#,
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0"
         ),
@@ -1038,7 +1040,8 @@ mod_generator!(
             r#""Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24""#,
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0"
         ),
-        (Linux, // This shouldn't exist, edge was never meant to be on linux
+        // This shouldn't exist, edge was never meant to be on linux
+        (Linux,
             r#""Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24""#,
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0"
         ),

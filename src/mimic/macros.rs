@@ -28,10 +28,7 @@ macro_rules! header_chrome_sec_ch_ua {
         let mobile = if $is_mobile { "?1" } else { "?0" };
         $headers.insert("sec-ch-ua", HeaderValue::from_static($ua));
         $headers.insert("sec-ch-ua-mobile", HeaderValue::from_static(mobile));
-        $headers.insert(
-            "sec-ch-ua-platform",
-            HeaderValue::from_str($platform).unwrap(),
-        );
+        $headers.insert("sec-ch-ua-platform", HeaderValue::from_static($platform));
     };
 }
 
