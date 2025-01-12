@@ -107,11 +107,11 @@ async fn main() -> Result<(), rquest::Error> {
 
 ## Overview
 
-The predecessor of rquest is [reqwest](https://github.com/seanmonstar/reqwest). rquest is a specialized adaptation based on the reqwest project, supporting [BoringSSL](https://github.com/cloudflare/boring) and related `HTTP/2` fingerprints in requests.
+`rquest` is a fork of [reqwest](https://github.com/seanmonstar/reqwest), and most of the APIs remain the same, similar to how [BoringSSL](https://github.com/cloudflare/boring) is a fork of OpenSSL.
 
-It also optimizes commonly used APIs and enhances compatibility with connection pools, making it easier to switch proxies, `IP` addresses, and interfaces. You can directly migrate from a project using reqwest to rquest.
+The fork optimizes commonly used APIs and enhances compatibility with connection pools, making it easier to switch proxies, IP addresses, and interfaces. Projects using reqwest can be migrated to rquest directly with minimal changes.
 
-Due to limited time for maintaining the synchronous APIs, only asynchronous APIs are supported. I may have to give up maintenance; if possible, please consider [sponsoring me](https://github.com/penumbra-x/.github/blob/main/profile/SPONSOR.md).
+As synchronous APIs are not actively maintained due to time constraints, only asynchronous APIs are supported. Maintenance may be discontinued in the future; if you find this project helpful, please consider [sponsoring me](https://github.com/penumbra-x/.github/blob/main/profile/SPONSOR.md).
 
 ## Performance
 
