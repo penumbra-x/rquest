@@ -48,49 +48,42 @@ macro_rules! mod_generator {
 }
 
 macro_rules! tls_settings {
-    (1) => {{
-        ChromeTlsSettings::builder().build().into()
-    }};
-    (2) => {{
-        ChromeTlsSettings::builder()
-            .enable_ech_grease(true)
-            .build()
-            .into()
-    }};
-    (3) => {{
+    (1) => {
+        ChromeTlsSettings::builder().build()
+    };
+    (2) => {
+        ChromeTlsSettings::builder().enable_ech_grease(true).build()
+    };
+    (3) => {
         ChromeTlsSettings::builder()
             .permute_extensions(true)
             .build()
-            .into()
-    }};
-    (4) => {{
+    };
+    (4) => {
         ChromeTlsSettings::builder()
             .permute_extensions(true)
             .enable_ech_grease(true)
             .build()
-            .into()
-    }};
-    (5) => {{
+    };
+    (5) => {
         ChromeTlsSettings::builder()
             .permute_extensions(true)
             .enable_ech_grease(true)
             .pre_shared_key(true)
             .build()
-            .into()
-    }};
-    (6, $curves:expr) => {{
+    };
+    (6, $curves:expr) => {
         ChromeTlsSettings::builder()
             .curves($curves)
             .permute_extensions(true)
             .pre_shared_key(true)
             .enable_ech_grease(true)
             .build()
-            .into()
-    }};
+    };
 }
 
 macro_rules! http2_settings {
-    (1) => {{
+    (1) => {
         Http2Settings::builder()
             .initial_stream_window_size(6291456)
             .initial_connection_window_size(15728640)
@@ -101,8 +94,8 @@ macro_rules! http2_settings {
             .headers_pseudo_order(HEADERS_PSEUDO_ORDER)
             .settings_order(SETTINGS_ORDER)
             .build()
-    }};
-    (2) => {{
+    };
+    (2) => {
         Http2Settings::builder()
             .initial_stream_window_size(6291456)
             .initial_connection_window_size(15728640)
@@ -114,8 +107,8 @@ macro_rules! http2_settings {
             .headers_pseudo_order(HEADERS_PSEUDO_ORDER)
             .settings_order(SETTINGS_ORDER)
             .build()
-    }};
-    (3) => {{
+    };
+    (3) => {
         Http2Settings::builder()
             .initial_stream_window_size(6291456)
             .initial_connection_window_size(15728640)
@@ -126,7 +119,7 @@ macro_rules! http2_settings {
             .headers_pseudo_order(HEADERS_PSEUDO_ORDER)
             .settings_order(SETTINGS_ORDER)
             .build()
-    }};
+    };
 }
 
 #[inline]

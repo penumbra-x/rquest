@@ -50,6 +50,7 @@ mod http2_imports {
 
 #[derive(typed_builder::TypedBuilder, Debug)]
 pub struct ImpersonateSettings {
+    #[builder(setter(into))]
     pub tls: TlsSettings,
 
     #[builder(default, setter(into))]

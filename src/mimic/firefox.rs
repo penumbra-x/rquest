@@ -22,9 +22,7 @@ macro_rules! mod_generator {
                             ImpersonateSettings::builder()
                                 .tls($tls_settings)
                                 .http2($http2_settings)
-                                .headers(conditional_headers!(with_headers, || {
-                                    $header_initializer($other_ua)
-                                }))
+                                .headers(conditional_headers!(with_headers, $header_initializer, $other_ua))
                                 .build()
                         }
                     ),*
@@ -32,9 +30,7 @@ macro_rules! mod_generator {
                         ImpersonateSettings::builder()
                             .tls($tls_settings)
                             .http2($http2_settings)
-                            .headers(conditional_headers!(with_headers, || {
-                                $header_initializer($default_ua)
-                            }))
+                            .headers(conditional_headers!(with_headers, $header_initializer, $default_ua))
                             .build()
                     }
                 }
@@ -44,7 +40,7 @@ macro_rules! mod_generator {
 }
 
 macro_rules! tls_settings {
-    (1) => {{
+    (1) => {
         FirefoxTlsSettings::builder()
             .cert_compression_algorithm(CERT_COMPRESSION_ALGORITHM)
             .enable_ech_grease(true)
@@ -52,16 +48,14 @@ macro_rules! tls_settings {
             .psk_skip_session_tickets(true)
             .key_shares_length_limit(3)
             .build()
-            .into()
-    }};
-    (2) => {{
+    };
+    (2) => {
         FirefoxTlsSettings::builder()
             .curves(CURVES_1)
             .key_shares_length_limit(2)
             .build()
-            .into()
-    }};
-    (3) => {{
+    };
+    (3) => {
         FirefoxTlsSettings::builder()
             .cipher_list(CIPHER_LIST_2)
             .curves(CURVES_1)
@@ -70,12 +64,11 @@ macro_rules! tls_settings {
             .psk_dhe_ke(false)
             .key_shares_length_limit(2)
             .build()
-            .into()
-    }};
+    };
 }
 
 macro_rules! http2_settings {
-    (1) => {{
+    (1) => {
         Http2Settings::builder()
             .initial_stream_id(3)
             .header_table_size(65536)
@@ -87,8 +80,8 @@ macro_rules! http2_settings {
             .headers_pseudo_order(HEADERS_PSEUDO_ORDER)
             .settings_order(SETTINGS_ORDER)
             .build()
-    }};
-    (2) => {{
+    };
+    (2) => {
         Http2Settings::builder()
             .initial_stream_id(15)
             .header_table_size(65536)
@@ -100,8 +93,8 @@ macro_rules! http2_settings {
             .settings_order(SETTINGS_ORDER)
             .priority(Cow::Borrowed(PRIORITY.as_slice()))
             .build()
-    }};
-    (3) => {{
+    };
+    (3) => {
         Http2Settings::builder()
             .initial_stream_id(3)
             .header_table_size(65536)
@@ -114,7 +107,7 @@ macro_rules! http2_settings {
             .headers_pseudo_order(HEADERS_PSEUDO_ORDER)
             .settings_order(SETTINGS_ORDER)
             .build()
-    }};
+    };
 }
 
 #[inline]

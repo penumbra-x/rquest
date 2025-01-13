@@ -20,23 +20,21 @@ macro_rules! mod_generator {
 }
 
 macro_rules! tls_settings {
-    (1, $cipher_list:expr) => {{
+    (1, $cipher_list:expr) => {
         SafariTlsSettings::builder()
             .cipher_list($cipher_list)
             .build()
-            .into()
-    }};
-    (2, $cipher_list:expr, $sigalgs_list:expr) => {{
+    };
+    (2, $cipher_list:expr, $sigalgs_list:expr) => {
         SafariTlsSettings::builder()
             .cipher_list($cipher_list)
             .sigalgs_list($sigalgs_list)
             .build()
-            .into()
-    }};
+    };
 }
 
 macro_rules! http2_settings {
-    (1) => {{
+    (1) => {
         Http2Settings::builder()
             .initial_stream_window_size(2097152)
             .initial_connection_window_size(10551295)
@@ -45,8 +43,8 @@ macro_rules! http2_settings {
             .headers_pseudo_order(HEADERS_PSEUDO_ORDER)
             .settings_order(SETTINGS_ORDER)
             .build()
-    }};
-    (2) => {{
+    };
+    (2) => {
         Http2Settings::builder()
             .initial_stream_window_size(2097152)
             .initial_connection_window_size(10551295)
@@ -56,8 +54,8 @@ macro_rules! http2_settings {
             .headers_pseudo_order(HEADERS_PSEUDO_ORDER)
             .settings_order(SETTINGS_ORDER)
             .build()
-    }};
-    (3) => {{
+    };
+    (3) => {
         Http2Settings::builder()
             .initial_stream_window_size(2097152)
             .initial_connection_window_size(10485760)
@@ -69,8 +67,8 @@ macro_rules! http2_settings {
             .headers_pseudo_order(NEW_HEADERS_PSEUDO_ORDER)
             .settings_order(NEW_SETTINGS_ORDER)
             .build()
-    }};
-    (4) => {{
+    };
+    (4) => {
         Http2Settings::builder()
             .initial_stream_window_size(4194304)
             .initial_connection_window_size(10551295)
@@ -79,8 +77,8 @@ macro_rules! http2_settings {
             .headers_pseudo_order(HEADERS_PSEUDO_ORDER)
             .settings_order(SETTINGS_ORDER)
             .build()
-    }};
-    (5) => {{
+    };
+    (5) => {
         Http2Settings::builder()
             .initial_stream_window_size(4194304)
             .initial_connection_window_size(10551295)
@@ -90,7 +88,7 @@ macro_rules! http2_settings {
             .headers_pseudo_order(HEADERS_PSEUDO_ORDER)
             .settings_order(SETTINGS_ORDER)
             .build()
-    }};
+    };
 }
 
 #[inline]
@@ -294,7 +292,6 @@ mod http2 {
         UnknownSetting8,
         UnknownSetting9,
     ];
-
     pub const NEW_SETTINGS_ORDER: [SettingsOrder; 8] = [
         HeaderTableSize,
         EnablePush,

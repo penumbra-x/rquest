@@ -193,6 +193,7 @@ pub(crate) enum InnerTLS {
 }
 
 impl InnerTLS {
+    #[inline(always)]
     fn get_tls(&self) -> BoringTlsConnector {
         match self {
             InnerTLS::Simple(tls) => tls.clone(),
