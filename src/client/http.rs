@@ -1458,19 +1458,31 @@ impl Client {
 }
 
 impl Client {
-    /// Get the client user agent
+    /// Retrieves the user agent header value for this client.
+    ///
+    /// # Returns
+    ///
+    /// An `Option` containing a reference to the `HeaderValue` of the user agent if it is set, or `None` if it is not.
     #[inline]
     pub fn user_agent(&self) -> Option<&HeaderValue> {
         self.inner.headers.get(USER_AGENT)
     }
 
-    /// Get the reference to the headers for this client.
+    /// Retrieves a reference to the headers for this client.
+    ///
+    /// # Returns
+    ///
+    /// A reference to the `HeaderMap` containing the headers for this client.
     #[inline]
     pub fn headers(&self) -> &HeaderMap {
         &self.inner.headers
     }
 
-    /// Get a mutable reference to the headers for this client.
+    /// Retrieves a mutable reference to the headers for this client.
+    ///
+    /// # Returns
+    ///
+    /// A mutable reference to the `HeaderMap` containing the headers for this client.
     pub fn headers_mut(&mut self) -> &mut HeaderMap {
         self.inner_mut().headers.to_mut()
     }
@@ -1548,7 +1560,18 @@ impl Client {
         self
     }
 
-    /// Set the proxies for this client.
+    /// Sets the proxies for this client.
+    ///
+    /// # Arguments
+    ///
+    /// * `proxies` - An optional vector of `Proxy` instances to set for the client.
+    ///
+    /// If `Some`, the provided proxies will be used, and the client will check if any of them require HTTP authentication.
+    /// If `None`, all proxies will be cleared and HTTP authentication will be disabled.
+    ///
+    /// # Returns
+    ///
+    /// A mutable reference to the `Client` instance with the applied proxy settings.
     #[inline]
     pub fn set_proxies<P>(&mut self, proxies: P) -> &mut Client
     where
@@ -1606,7 +1629,15 @@ impl Client {
         }
     }
 
-    /// Set the headers order for this client.
+    /// Sets the headers order for this client.
+    ///
+    /// # Arguments
+    ///
+    /// * `order` - The order of the headers to set.
+    ///
+    /// # Returns
+    ///
+    /// A mutable reference to the `Client` instance with the applied headers order.
     pub fn set_headers_order<T>(&mut self, order: T) -> &mut Client
     where
         T: Into<Cow<'static, [HeaderName]>>,
@@ -1615,19 +1646,43 @@ impl Client {
         self
     }
 
-    /// Set the redirect policy for this client.
+    /// Sets the redirect policy for this client.
+    ///
+    /// # Arguments
+    ///
+    /// * `policy` - The redirect policy to set.
+    ///
+    /// # Returns
+    ///
+    /// A mutable reference to the `Client` instance with the applied redirect policy.
     pub fn set_redirect(&mut self, mut policy: redirect::Policy) -> &mut Client {
         std::mem::swap(&mut self.inner_mut().redirect, &mut policy);
         self
     }
 
-    /// Set the cross-origin proxy authorization for this client.
+    /// Sets the cross-origin proxy authorization for this client.
+    ///
+    /// # Arguments
+    ///
+    /// * `enabled` - A boolean indicating whether cross-origin proxy authorization is enabled.
+    ///
+    /// # Returns
+    ///
+    /// A mutable reference to the `Client` instance with the applied setting.
     pub fn set_redirect_with_proxy_auth(&mut self, enabled: bool) -> &mut Client {
         self.inner_mut().redirect_with_proxy_auth = enabled;
         self
     }
 
-    /// Set the bash url for this client.
+    /// Sets the base URL for this client.
+    ///
+    /// # Arguments
+    ///
+    /// * `url` - The base URL to set.
+    ///
+    /// # Returns
+    ///
+    /// A mutable reference to the `Client` instance with the applied base URL.
     pub fn set_base_url<U: IntoUrl>(&mut self, url: U) -> &mut Client {
         if let Ok(url) = url.into_url() {
             std::mem::swap(&mut self.inner_mut().base_url, &mut Some(url));
@@ -1709,7 +1764,15 @@ impl Client {
         self.apply_impersonate_settings(settings)
     }
 
-    /// Set the impersonate for this client with the given settings.
+    /// Sets the impersonate settings for this client with the given settings.
+    ///
+    /// # Arguments
+    ///
+    /// * `settings` - The `ImpersonateSettings` to apply.
+    ///
+    /// # Returns
+    ///
+    /// A mutable reference to the `Client` instance with the applied settings.
     #[cfg(feature = "impersonate_settings")]
     #[inline]
     pub fn set_impersonate_settings(
@@ -1719,7 +1782,15 @@ impl Client {
         self.apply_impersonate_settings(settings)
     }
 
-    /// Apply the impersonate settings to the client.
+    /// Applies the given impersonate settings to the client.
+    ///
+    /// # Arguments
+    ///
+    /// * `settings` - The `ImpersonateSettings` to apply.
+    ///
+    /// # Returns
+    ///
+    /// A mutable reference to the `Client` instance with the applied settings.
     #[inline]
     fn apply_impersonate_settings(
         &mut self,
