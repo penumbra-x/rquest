@@ -297,8 +297,10 @@ where
         if uri.scheme() != Some(&Scheme::HTTPS) {
             let connect = self.http.call(uri);
             return Box::pin(async move {
-                let conn = connect.await.map_err(Into::into)?;
-                Ok(MaybeHttpsStream::Http(conn))
+                connect
+                    .await
+                    .map(MaybeHttpsStream::Http)
+                    .map_err(Into::into)
             });
         }
 
