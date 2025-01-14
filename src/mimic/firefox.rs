@@ -40,25 +40,28 @@ macro_rules! mod_generator {
 }
 
 macro_rules! tls_settings {
-    (1) => {
+    (1, $cipher_list:expr, $curves:expr) => {
         FirefoxTlsSettings::builder()
-            .cert_compression_algorithm(CERT_COMPRESSION_ALGORITHM)
+            .cipher_list($cipher_list)
+            .curves($curves)
             .enable_ech_grease(true)
             .pre_shared_key(true)
             .psk_skip_session_tickets(true)
             .key_shares_length_limit(3)
+            .cert_compression_algorithm(CERT_COMPRESSION_ALGORITHM)
             .build()
     };
-    (2) => {
+    (2, $cipher_list:expr, $curves:expr) => {
         FirefoxTlsSettings::builder()
-            .curves(CURVES_1)
+            .cipher_list($cipher_list)
+            .curves($curves)
             .key_shares_length_limit(2)
             .build()
     };
-    (3) => {
+    (3, $cipher_list:expr, $curves:expr) => {
         FirefoxTlsSettings::builder()
-            .cipher_list(CIPHER_LIST_2)
-            .curves(CURVES_1)
+            .cipher_list($cipher_list)
+            .curves($curves)
             .session_ticket(false)
             .enable_ech_grease(true)
             .psk_dhe_ke(false)
@@ -259,14 +262,14 @@ mod tls {
 
     #[derive(TypedBuilder)]
     pub struct FirefoxTlsSettings {
-        #[builder(default = CURVES_2)]
-        curves: &'static [SslCurve],
-
         #[builder(default = SIGALGS_LIST)]
         sigalgs_list: &'static str,
 
-        #[builder(default = CIPHER_LIST_1)]
+        #[builder(setter(into))]
         cipher_list: &'static str,
+
+        #[builder(setter(into))]
+        curves: &'static [SslCurve],
 
         #[builder(default = true)]
         session_ticket: bool,
@@ -302,11 +305,11 @@ mod tls {
     impl From<FirefoxTlsSettings> for TlsSettings {
         fn from(val: FirefoxTlsSettings) -> Self {
             TlsSettings::builder()
-                .curves(Cow::Borrowed(val.curves))
-                .sigalgs_list(Cow::Borrowed(val.sigalgs_list))
-                .cipher_list(Cow::Borrowed(val.cipher_list))
+                .curves(val.curves)
+                .sigalgs_list(val.sigalgs_list)
+                .cipher_list(val.cipher_list)
                 .session_ticket(val.session_ticket)
-                .delegated_credentials(Cow::Borrowed(val.delegated_credentials))
+                .delegated_credentials(val.delegated_credentials)
                 .record_size_limit(val.record_size_limit)
                 .enable_ocsp_stapling(true)
                 .enable_ech_grease(val.enable_ech_grease)
@@ -318,7 +321,7 @@ mod tls {
                 .pre_shared_key(val.pre_shared_key)
                 .psk_skip_session_ticket(val.psk_skip_session_tickets)
                 .psk_dhe_ke(val.psk_dhe_ke)
-                .extension_permutation_indices(Cow::Borrowed(val.extension_permutation_indices))
+                .extension_permutation_indices(val.extension_permutation_indices)
                 .build()
         }
     }
@@ -374,7 +377,7 @@ mod http2 {
 
 mod_generator!(
     ff109,
-    tls_settings!(2),
+    tls_settings!(2, CIPHER_LIST_1, CURVES_1),
     http2_settings!(2),
     header_initializer,
     [
@@ -398,7 +401,7 @@ mod_generator!(
 
 mod_generator!(
     ff117,
-    tls_settings!(2),
+    tls_settings!(2, CIPHER_LIST_1, CURVES_1),
     http2_settings!(2),
     header_initializer,
     [
@@ -422,7 +425,7 @@ mod_generator!(
 
 mod_generator!(
     ff128,
-    tls_settings!(3),
+    tls_settings!(3, CIPHER_LIST_2, CURVES_1),
     http2_settings!(3),
     header_initializer_with_zstd,
     [
@@ -446,7 +449,7 @@ mod_generator!(
 
 mod_generator!(
     ff133,
-    tls_settings!(1),
+    tls_settings!(1, CIPHER_LIST_1, CURVES_2),
     http2_settings!(1),
     header_initializer_with_zstd,
     [

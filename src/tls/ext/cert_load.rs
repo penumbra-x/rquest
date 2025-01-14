@@ -1,6 +1,6 @@
 //! Certificate imports for the boringssl.
-use boring::x509::{store::X509StoreBuilder, X509};
-use boring::{error::ErrorStack, x509::store::X509Store};
+use boring2::x509::{store::X509StoreBuilder, X509};
+use boring2::{error::ErrorStack, x509::store::X509Store};
 use std::sync::LazyLock;
 
 pub static LOAD_CERTS: LazyLock<Result<X509Store, crate::Error>> = LazyLock::new(|| {

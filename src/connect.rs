@@ -9,7 +9,7 @@ use http::uri::Scheme;
 use hyper2::rt::{Read, ReadBufCursor, Write};
 use pin_project_lite::pin_project;
 use sealed::{Conn, Unnameable};
-use tokio_boring::SslStream;
+use tokio_boring2::SslStream;
 use tower::util::{BoxCloneSyncServiceLayer, MapRequestLayer};
 use tower::{timeout::TimeoutLayer, util::BoxCloneSyncService, ServiceBuilder};
 use tower_service::Service;
@@ -566,7 +566,7 @@ mod tls_conn {
         io::{AsyncRead, AsyncWrite},
         net::TcpStream,
     };
-    use tokio_boring::SslStream;
+    use tokio_boring2::SslStream;
 
     pin_project! {
         pub(super) struct BoringTlsConn<T> {

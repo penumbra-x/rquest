@@ -1,11 +1,5 @@
-use boring::{
-    error::ErrorStack,
-    x509::{
-        store::{X509Store, X509StoreBuilder},
-        X509,
-    },
-};
 use rquest::{Client, Impersonate};
+use rquest::{ErrorStack, X509Store, X509StoreBuilder, X509};
 use std::sync::LazyLock;
 
 /// Loads statically the root certificates from the native certificate store.
