@@ -1,11 +1,11 @@
 pub mod cert_compression;
 #[cfg(any(feature = "webpki-roots", feature = "native-roots"))]
 mod cert_load;
-use super::{AlpnProtos, AlpsProto, RootCertsStore, TlsResult, TlsVersion};
+use super::{AlpnProtos, AlpsProtos, RootCertsStore, TlsResult, TlsVersion};
 use ::std::os::raw::c_int;
-use boring::error::ErrorStack;
-use boring::ssl::{ConnectConfiguration, SslConnectorBuilder, SslRef, SslVerifyMode};
-use boring_sys as ffi;
+use boring2::error::ErrorStack;
+use boring2::ssl::{ConnectConfiguration, SslConnectorBuilder, SslRef, SslVerifyMode};
+use boring_sys2 as ffi;
 use cert_compression::CertCompressionAlgorithm;
 use foreign_types::ForeignTypeRef;
 
@@ -60,7 +60,7 @@ pub trait ConnectConfigurationExt {
     fn enable_ech_grease(&mut self, enable: bool) -> TlsResult<&mut ConnectConfiguration>;
 
     /// Configure the ALPS for the given `ConnectConfiguration`.
-    fn alps_proto(&mut self, alps: Option<AlpsProto>) -> TlsResult<&mut ConnectConfiguration>;
+    fn alps_protos(&mut self, alps: Option<AlpsProtos>) -> TlsResult<&mut ConnectConfiguration>;
 
     /// Configure the no session ticket for the given `ConnectConfiguration`.
     fn skip_session_ticket(&mut self) -> TlsResult<&mut ConnectConfiguration>;
@@ -164,7 +164,7 @@ impl ConnectConfigurationExt for ConnectConfiguration {
     }
 
     #[inline]
-    fn alps_proto(&mut self, alps: Option<AlpsProto>) -> TlsResult<&mut ConnectConfiguration> {
+    fn alps_protos(&mut self, alps: Option<AlpsProtos>) -> TlsResult<&mut ConnectConfiguration> {
         if let Some(alps) = alps {
             sv_handler(unsafe {
                 ffi::SSL_add_application_settings(

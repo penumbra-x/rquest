@@ -244,8 +244,8 @@ mod tls {
         #[builder(default = CIPHER_LIST)]
         cipher_list: &'static str,
 
-        #[builder(default = AlpsProto::Http2, setter(into))]
-        alps_proto: AlpsProto,
+        #[builder(default = AlpsProtos::Http2, setter(into))]
+        alps_protos: AlpsProtos,
 
         #[builder(default = false, setter(into))]
         enable_ech_grease: bool,
@@ -263,15 +263,15 @@ mod tls {
                 .grease_enabled(true)
                 .enable_ocsp_stapling(true)
                 .enable_signed_cert_timestamps(true)
-                .curves(Cow::Borrowed(val.curves))
-                .sigalgs_list(Cow::Borrowed(val.sigalgs_list))
-                .cipher_list(Cow::Borrowed(val.cipher_list))
+                .curves(val.curves)
+                .sigalgs_list(val.sigalgs_list)
+                .cipher_list(val.cipher_list)
                 .min_tls_version(TlsVersion::TLS_1_2)
                 .max_tls_version(TlsVersion::TLS_1_3)
                 .permute_extensions(val.permute_extensions)
                 .pre_shared_key(val.pre_shared_key)
                 .enable_ech_grease(val.enable_ech_grease)
-                .alps_proto(val.alps_proto)
+                .alps_protos(val.alps_protos)
                 .cert_compression_algorithm(Cow::Borrowed(CERT_COMPRESSION_ALGORITHM))
                 .build()
         }

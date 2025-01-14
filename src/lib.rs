@@ -241,17 +241,11 @@
 //! [preconfigured]: ./struct.ClientBuilder.html#method.use_preconfigured_tls
 //! [cargo-features]: https://doc.rust-lang.org/stable/cargo/reference/manifest.html#the-features-section
 
-/// Re-export of boring to keep versions in check
-pub use boring;
-
-pub use boring_sys;
 #[cfg(feature = "hickory-dns")]
 pub use hickory_resolver;
 pub use http::header;
 pub use http::Method;
 pub use http::{StatusCode, Version};
-
-pub use tokio_boring;
 pub use url::Url;
 
 // universal mods
@@ -338,10 +332,25 @@ pub use self::client::websocket::{
     CloseCode, Message, WebSocket, WebSocketRequestBuilder, WebSocketResponse,
 };
 pub use self::client::{Body, Client, ClientBuilder, Request, RequestBuilder, Response, Upgraded};
+#[cfg(not(feature = "impersonate_settings"))]
 pub use self::mimic::{Impersonate, ImpersonateOS};
+#[cfg(feature = "impersonate_settings")]
+pub use self::mimic::{Impersonate, ImpersonateOS, ImpersonateSettings};
 pub use self::proxy::{NoProxy, Proxy};
-pub use self::tls::{AlpnProtos, AlpsProto, RootCertsStore, TlsInfo, TlsSettings, TlsVersion};
+pub use self::tls::{
+    AlpnProtos, AlpsProtos, CertCompressionAlgorithm, RootCertsStore, TlsInfo, TlsSettings,
+    TlsVersion,
+};
 pub use self::util::client::Dst;
+pub use boring2::{
+    error::ErrorStack,
+    ssl::{ExtensionType, SslCurve},
+    x509::{
+        store::{X509Store, X509StoreBuilder},
+        X509,
+    },
+};
+pub use http2::Http2Settings;
 pub use hyper2::{Priority, PseudoOrder, SettingsOrder, StreamDependency, StreamId};
 
 mod client;

@@ -5,11 +5,11 @@ mod cache;
 pub mod layer;
 
 pub use self::layer::*;
-use crate::tls::{AlpnProtos, AlpsProto, TlsResult};
+use crate::tls::{AlpnProtos, AlpsProtos, TlsResult};
 use crate::util::client::connect::{Connected, Connection};
 use crate::util::rt::TokioIo;
-use boring::ex_data::Index;
-use boring::ssl::Ssl;
+use boring2::ex_data::Index;
+use boring2::ssl::Ssl;
 use cache::SessionKey;
 use hyper2::rt::{Read, ReadBufCursor, Write};
 use std::fmt;
@@ -18,7 +18,7 @@ use std::pin::Pin;
 use std::sync::LazyLock;
 use std::task::{Context, Poll};
 use tokio::io;
-use tokio_boring::SslStream;
+use tokio_boring2::SslStream;
 
 fn key_index() -> TlsResult<Index<Ssl, SessionKey>> {
     static IDX: LazyLock<TlsResult<Index<Ssl, SessionKey>>> = LazyLock::new(Ssl::new_ex_index);
@@ -33,7 +33,7 @@ pub struct HttpsLayerSettings {
     enable_ech_grease: bool,
     verify_hostname: bool,
     tls_sni: bool,
-    alps_proto: Option<AlpsProto>,
+    alps_protos: Option<AlpsProtos>,
     alpn_protos: AlpnProtos,
 }
 
@@ -50,10 +50,10 @@ impl Default for HttpsLayerSettings {
             session_cache_capacity: 8,
             session_cache: false,
             skip_session_ticket: false,
-            alps_proto: None,
             enable_ech_grease: false,
             verify_hostname: true,
             tls_sni: true,
+            alps_protos: None,
             alpn_protos: AlpnProtos::All,
         }
     }
@@ -85,13 +85,6 @@ impl HttpsLayerSettingsBuilder {
         self
     }
 
-    /// Sets the ALPS. Defaults to `None`.
-    #[inline]
-    pub fn alps_proto(mut self, alps: Option<AlpsProto>) -> Self {
-        self.0.alps_proto = alps;
-        self
-    }
-
     /// Sets whether to enable ECH grease. Defaults to `false`.
     #[inline]
     pub fn enable_ech_grease(mut self, enable: bool) -> Self {
@@ -117,6 +110,13 @@ impl HttpsLayerSettingsBuilder {
     #[inline]
     pub fn alpn_protos(mut self, protos: AlpnProtos) -> Self {
         self.0.alpn_protos = protos;
+        self
+    }
+
+    /// Sets the ALPS. Defaults to `None`.
+    #[inline]
+    pub fn alps_protos(mut self, alps: Option<AlpsProtos>) -> Self {
+        self.0.alps_protos = alps;
         self
     }
 

@@ -9,8 +9,8 @@ use crate::tls::{AlpnProtos, BoringTlsConnector, ConnectConfigurationExt};
 use crate::util::client::connect::Connection;
 use crate::util::rt::TokioIo;
 use antidote::Mutex;
-use boring::error::ErrorStack;
-use boring::ssl::{
+use boring2::error::ErrorStack;
+use boring2::ssl::{
     ConnectConfiguration, Ssl, SslConnector, SslConnectorBuilder, SslRef, SslSessionCacheMode,
 };
 use http::uri::Scheme;
@@ -20,7 +20,7 @@ use std::borrow::Cow;
 use std::error::Error;
 use std::fmt::Debug;
 use std::future::Future;
-use tokio_boring::SslStream;
+use tokio_boring2::SslStream;
 
 use std::net::{self, IpAddr, Ipv4Addr, Ipv6Addr};
 use std::pin::Pin;
@@ -192,7 +192,7 @@ impl HttpsLayer {
             conf.set_verify_hostname(settings.verify_hostname);
 
             // Set ALPS
-            conf.alps_proto(settings.alps_proto)?;
+            conf.alps_protos(settings.alps_protos)?;
 
             Ok(())
         });
@@ -234,7 +234,7 @@ impl Inner {
         A: Read + Write + Unpin + Send + Sync + Debug + 'static,
     {
         let ssl = self.setup_ssl(uri, host)?;
-        tokio_boring::SslStreamBuilder::new(ssl, TokioIo::new(conn))
+        tokio_boring2::SslStreamBuilder::new(ssl, TokioIo::new(conn))
             .connect()
             .await
             .map_err(Into::into)

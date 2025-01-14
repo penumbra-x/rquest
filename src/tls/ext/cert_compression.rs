@@ -1,4 +1,4 @@
-use boring_sys as ffi;
+use boring_sys2 as ffi;
 use std::{io::Read, slice};
 
 /// A certificate compression algorithm.

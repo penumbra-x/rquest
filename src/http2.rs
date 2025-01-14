@@ -98,6 +98,6 @@ pub struct Http2Settings {
     ///
     /// - **Structure:** A borrowed slice of `Priority` settings.
     /// - **Purpose:** Defines stream dependencies and priorities.
-    #[builder(default, setter(into))]
+    #[builder(default, setter(strip_option, into))]
     pub priority: Option<Cow<'static, [Priority]>>,
 }

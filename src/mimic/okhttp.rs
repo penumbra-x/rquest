@@ -113,9 +113,9 @@ mod tls {
         fn from(val: OkHttpTlsSettings) -> Self {
             TlsSettings::builder()
                 .enable_ocsp_stapling(true)
-                .curves(Cow::Borrowed(val.curves))
-                .sigalgs_list(Cow::Borrowed(val.sigalgs_list))
-                .cipher_list(Cow::Borrowed(val.cipher_list))
+                .curves(val.curves)
+                .sigalgs_list(val.sigalgs_list)
+                .cipher_list(val.cipher_list)
                 .min_tls_version(TlsVersion::TLS_1_2)
                 .max_tls_version(TlsVersion::TLS_1_3)
                 .build()

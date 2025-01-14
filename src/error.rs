@@ -244,8 +244,8 @@ impl From<serde_json::Error> for Error {
     }
 }
 
-impl From<boring::error::ErrorStack> for Error {
-    fn from(err: boring::error::ErrorStack) -> Error {
+impl From<boring2::error::ErrorStack> for Error {
+    fn from(err: boring2::error::ErrorStack) -> Error {
         Error::new(Kind::Builder, Some(format!("boring tls error: {:?}", err)))
     }
 }

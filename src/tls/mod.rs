@@ -9,16 +9,15 @@ mod conn;
 mod ext;
 
 use crate::impl_debug;
-use boring::{
+use boring2::{
     error::ErrorStack,
     ssl::{SslConnector, SslMethod, SslOptions, SslVersion},
 };
-use boring::{ssl::SslCurve, x509::store::X509Store};
+use boring2::{ssl::SslCurve, x509::store::X509Store};
 use conn::{HttpsLayer, HttpsLayerSettings};
 use std::borrow::Cow;
 use typed_builder::TypedBuilder;
 
-pub use crate::mimic::Impersonate;
 pub use conn::{HttpsConnector, MaybeHttpsStream};
 pub use ext::{
     cert_compression::CertCompressionAlgorithm, ConnectConfigurationExt, SslConnectorBuilderExt,
@@ -109,7 +108,7 @@ impl BoringTlsConnector {
             .session_cache(settings.pre_shared_key)
             .skip_session_ticket(settings.psk_skip_session_ticket)
             .alpn_protos(settings.alpn_protos)
-            .alps_proto(settings.alps_proto)
+            .alps_protos(settings.alps_protos)
             .enable_ech_grease(settings.enable_ech_grease)
             .tls_sni(settings.tls_sni)
             .verify_hostname(settings.verify_hostname)
@@ -161,14 +160,14 @@ impl Default for AlpnProtos {
 
 /// Application-layer protocol settings for HTTP/1.1 and HTTP/2.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AlpsProto(&'static [u8]);
+pub struct AlpsProtos(&'static [u8]);
 
 #[allow(non_upper_case_globals)]
-impl AlpsProto {
+impl AlpsProtos {
     /// Application Settings protocol for HTTP/1.1
-    pub const Http1: AlpsProto = AlpsProto(b"http/1.1");
+    pub const Http1: AlpsProtos = AlpsProtos(b"http/1.1");
     /// Application Settings protocol for HTTP/2
-    pub const Http2: AlpsProto = AlpsProto(b"h2");
+    pub const Http2: AlpsProtos = AlpsProtos(b"h2");
 
     #[inline(always)]
     pub(crate) fn as_ptr(&self) -> *const u8 {
@@ -294,7 +293,7 @@ pub struct TlsSettings {
     ///
     /// This is specifically for applications negotiated via **ALPN**.
     #[builder(default, setter(into))]
-    pub alps_proto: Option<AlpsProto>,
+    pub alps_protos: Option<AlpsProtos>,
 
     /// **Session Tickets** (RFC 5077) allow **session resumption** without the need for server-side state.
     ///
@@ -392,7 +391,7 @@ pub struct TlsSettings {
     /// these credentials are valid only for a **short duration** (e.g., days, hours, or minutes).
     ///
     /// **Reference:** See [RFC 9345](https://datatracker.ietf.org/doc/html/rfc9345) for details.
-    #[builder(default, setter(into))]
+    #[builder(default, setter(strip_option, into))]
     pub delegated_credentials: Option<Cow<'static, str>>,
 
     /// BoringSSL uses a **mini-language** to configure **cipher suites**.
@@ -407,15 +406,15 @@ pub struct TlsSettings {
     /// their priority, and which ones are explicitly disabled.
     ///
     /// **Reference:** See [BoringSSL Cipher Suite Documentation](https://commondatastorage.googleapis.com/chromium-boringssl-docs/ssl.h.html#SSL_CTX_set_cipher_list) for details.
-    #[builder(default, setter(into))]
+    #[builder(default, setter(strip_option, into))]
     pub cipher_list: Option<Cow<'static, str>>,
 
     /// Sets the context's supported curves.
-    #[builder(default, setter(into))]
+    #[builder(default, setter(strip_option, into))]
     pub curves: Option<Cow<'static, [SslCurve]>>,
 
     /// Sets the context's supported signature algorithms.
-    #[builder(default, setter(into))]
+    #[builder(default, setter(strip_option, into))]
     pub sigalgs_list: Option<Cow<'static, str>>,
 
     /// Certificates in TLS 1.3 can be compressed [RFC 8879](https://datatracker.ietf.org/doc/html/rfc8879).
@@ -423,7 +422,7 @@ pub struct TlsSettings {
     pub cert_compression_algorithm: Option<Cow<'static, [CertCompressionAlgorithm]>>,
 
     /// Sets the context's extension permutation indices.
-    #[builder(default, setter(into))]
+    #[builder(default, setter(strip_option, into))]
     pub extension_permutation_indices: Option<Cow<'static, [u8]>>,
 }
 
@@ -444,7 +443,7 @@ impl_debug!(
         session_ticket,
         min_tls_version,
         max_tls_version,
-        alps_proto,
+        alps_protos,
         psk_dhe_ke,
         pre_shared_key,
         enable_ech_grease,

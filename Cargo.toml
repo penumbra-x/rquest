@@ -117,9 +117,9 @@ lru = { version = "0.12", default-features = false }
 # Optional deps...
 
 ## boring-tls
-boring = { package = "boring2", version = "4", features = ["pq-experimental"] }
-boring-sys = { package = "boring-sys2", version = "4" }
-tokio-boring = { package = "tokio-boring2", version = "4" }
+boring2 = { version = "4", features = ["pq-experimental"] }
+boring-sys2 = "4" 
+tokio-boring2 = "4"
 foreign-types = { version = "0.5.0" }
 typed-builder = { version = "0.20.0" }
 
@@ -273,6 +273,11 @@ path = "examples/impersonate_skip_headers.rs"
 [[example]]
 name = "impersonate_psk"
 path = "examples/impersonate_psk.rs"
+
+[[example]]
+name = "impersonate_settings"
+path = "examples/impersonate_settings.rs"
+required-features = ["impersonate_settings"]
 
 [[example]]
 name = "set_headers"

@@ -34,9 +34,9 @@ mod impersonate_imports {
 
 mod tls_imports {
     pub use crate::tls::{
-        AlpnProtos, AlpsProto, CertCompressionAlgorithm, TlsSettings, TlsVersion,
+        AlpnProtos, AlpsProtos, CertCompressionAlgorithm, TlsSettings, TlsVersion,
     };
-    pub use boring::ssl::{ExtensionType, SslCurve};
+    pub use boring2::ssl::{ExtensionType, SslCurve};
     pub use std::borrow::Cow;
     pub use typed_builder::TypedBuilder;
 }
@@ -59,7 +59,7 @@ pub struct ImpersonateSettings {
     #[builder(default, setter(into))]
     pub headers: Option<HeaderMap>,
 
-    #[builder(default, setter(into))]
+    #[builder(default, setter(strip_option, into))]
     pub headers_order: Option<Cow<'static, [HeaderName]>>,
 }
 
