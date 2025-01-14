@@ -16,7 +16,7 @@ cfg_bindable_device! {
         Scheme {
             /// Specifies the network interface to bind to using `SO_BINDTODEVICE`.
             ///
-            /// - **Supported Platforms:** Android, Fuchsia, Linux.
+            /// - **Supported Platforms:** Android, Fuchsia, Linux and Apple platforms.
             /// - **Purpose:** Allows binding network traffic to a specific network interface.
             interface: Option<std::borrow::Cow<'static, str>>,
 
