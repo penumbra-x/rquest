@@ -114,7 +114,7 @@ const HEADER_ORDER: &[HeaderName] = &[
 #[tokio::main]
 async fn main() -> Result<(), rquest::Error> {
     // TLS settings
-    let tls_settings = TlsSettings::builder()
+    let tls = TlsSettings::builder()
         .curves(CURVES)
         .cipher_list(CIPHER_LIST)
         .sigalgs_list(SIGALGS_LIST)
@@ -131,7 +131,7 @@ async fn main() -> Result<(), rquest::Error> {
         .build();
 
     // HTTP/2 settings
-    let http2_settings = Http2Settings::builder()
+    let http2 = Http2Settings::builder()
         .initial_stream_id(15)
         .header_table_size(65536)
         .initial_stream_window_size(131072)
@@ -196,8 +196,8 @@ async fn main() -> Result<(), rquest::Error> {
 
     // Create impersonate settings
     let settings = ImpersonateSettings::builder()
-        .tls(tls_settings)
-        .http2(http2_settings)
+        .tls(tls)
+        .http2(http2)
         .headers(headers)
         .headers_order(HEADER_ORDER)
         .build();
