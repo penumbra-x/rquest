@@ -1,13 +1,13 @@
-use rquest::{Client, Impersonate};
-use rquest::{ErrorStack, X509Store, X509StoreBuilder, X509};
+use rquest::Client;
+use rquest::{Error, X509Store, X509StoreBuilder, X509};
 use std::sync::LazyLock;
 
 /// Loads statically the root certificates from the native certificate store.
 fn load_static_root_certs() -> Option<&'static X509Store> {
-    static CERT_STORE: LazyLock<Result<X509Store, ErrorStack>> = LazyLock::new(|| {
+    static CERT_STORE: LazyLock<Result<X509Store, Error>> = LazyLock::new(|| {
         let mut cert_store = X509StoreBuilder::new()?;
-        for cert in rustls_native_certs::load_native_certs().certs {
-            let cert = X509::from_der(&cert)?;
+        for cert in webpki_root_certs::TLS_SERVER_ROOT_CERTS {
+            let cert = X509::from_der(&*cert)?;
             cert_store.add_cert(cert)?;
         }
         Ok(cert_store.build())
@@ -25,7 +25,7 @@ fn load_static_root_certs() -> Option<&'static X509Store> {
     }
 }
 
-fn load_dynamic_root_certs() -> Result<X509Store, ErrorStack> {
+fn load_dynamic_root_certs() -> Result<X509Store, Error> {
     let mut cert_store = X509StoreBuilder::new()?;
     for cert in rustls_native_certs::load_native_certs().certs {
         let cert = X509::from_der(&cert)?;
@@ -44,26 +44,35 @@ async fn main() -> Result<(), rquest::Error> {
 }
 
 async fn use_static_root_certs() -> Result<(), rquest::Error> {
-    // Build a client to mimic Edge127
     let client = Client::builder()
-        .impersonate(Impersonate::Edge127)
         .root_certs_store(load_static_root_certs)
         .build()?;
 
-    // Use the API you're already familiar with
-    let resp = client.get("https://tls.peet.ws/api/all").send().await?;
-    println!("{}", resp.text().await?);
+    let text = client
+        .get("https://tls.peet.ws/api/all")
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    println!("{}", text);
 
     Ok(())
 }
 
 async fn use_dynamic_root_certs() -> Result<(), rquest::Error> {
     let client = Client::builder()
-        .impersonate(Impersonate::Edge127)
         .root_certs_store(load_dynamic_root_certs()?)
         .build()?;
-    let resp = client.get("https://tls.peet.ws/api/all").send().await?;
-    println!("{}", resp.text().await?);
+
+    let text = client
+        .get("https://tls.peet.ws/api/all")
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    println!("{}", text);
 
     Ok(())
 }

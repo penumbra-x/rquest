@@ -343,7 +343,6 @@ pub use self::tls::{
 };
 pub use self::util::client::Dst;
 pub use boring2::{
-    error::ErrorStack,
     ssl::{ExtensionType, SslCurve},
     x509::{
         store::{X509Store, X509StoreBuilder},
