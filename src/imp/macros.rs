@@ -1,17 +1,28 @@
 #[macro_export]
 macro_rules! conditional_headers {
-    ($with_headers:expr, $initializer:expr) => {
-        if $with_headers {
-            Some($initializer())
-        } else {
+    ($skip_headers:expr, $initializer:expr) => {
+        if $skip_headers {
             None
+        } else {
+            Some($initializer())
         }
     };
-    ($with_headers:expr, $initializer:expr, $ua:expr) => {
-        if $with_headers {
-            Some($initializer($ua))
-        } else {
+    ($skip_headers:expr, $initializer:expr, $ua:expr) => {
+        if $skip_headers {
             None
+        } else {
+            Some($initializer($ua))
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! conditional_http2 {
+    ($skip_http2:expr, $http2:expr) => {
+        if $skip_http2 {
+            None
+        } else {
+            Some($http2)
         }
     };
 }
@@ -136,10 +147,10 @@ macro_rules! join {
 }
 
 macro_rules! impersonate_match {
-    ($ver:expr, $with_headers:expr, $os:expr, $($variant:pat => $path:expr),+) => {
+    ($ver:expr, $os:expr, $skip_http2:expr, $skip_headers:expr, $($variant:pat => $path:expr),+) => {
         match $ver {
             $(
-                $variant => $path($with_headers, $os),
+                $variant => $path($os, $skip_http2, $skip_headers),
             )+
         }
     }
@@ -148,13 +159,11 @@ macro_rules! impersonate_match {
 #[cfg(feature = "impersonate_str")]
 macro_rules! impl_from_str {
     ($(($variant:ident, $string:expr)),* $(,)?) => {
-        impl std::str::FromStr for Impersonate {
-            type Err = String;
-
-            fn from_str(s: &str) -> Result<Self, Self::Err> {
+        impl From<&str> for Impersonate {
+            fn from(s: &str) -> Self {
                 match s {
-                    $( $string => Ok(Impersonate::$variant), )*
-                    _ => Err(format!("Unknown impersonate version: {}", s)),
+                    $( $string => Impersonate::$variant, )*
+                    _ => Impersonate::default(),
                 }
             }
         }
@@ -164,13 +173,11 @@ macro_rules! impl_from_str {
 #[cfg(feature = "impersonate_str")]
 macro_rules! impl_os_from_str {
     ($(($variant:ident, $string:expr)),* $(,)?) => {
-        impl std::str::FromStr for ImpersonateOS {
-            type Err = String;
-
-            fn from_str(s: &str) -> Result<Self, Self::Err> {
+        impl From<&str> for ImpersonateOS {
+            fn from(s: &str) -> Self {
                 match s {
-                    $( $string => Ok(ImpersonateOS::$variant), )*
-                    _ => Err(format!("Unknown impersonate os: {}", s)),
+                    $( $string => ImpersonateOS::$variant, )*
+                    _ => ImpersonateOS::default(),
                 }
             }
         }
