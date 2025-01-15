@@ -75,7 +75,7 @@ url = "2.5"
 bytes = "1.0"
 serde = "1.0"
 serde_urlencoded = "0.7.1"
-tower = { version = "0.5.0", default-features = false, features = [
+tower = { version = "0.5.2", default-features = false, features = [
     "timeout",
     "util",
 ] }
