@@ -37,7 +37,7 @@ pub struct WebSocketRequestBuilder {
 impl WebSocketRequestBuilder {
     pub(crate) fn new(inner: RequestBuilder) -> Self {
         Self {
-            inner: inner.version(Version::HTTP_11),
+            inner,
             nonce: None,
             protocols: None,
             config: WebSocketConfig::default(),
@@ -47,6 +47,25 @@ impl WebSocketRequestBuilder {
     /// Websocket handshake with a specified websocket key. This returns a wrapped type,
     /// so you must do this after you set up your request, and just before you send the
     /// request.
+    ///
+    /// This method sets the websocket key (nonce) for the handshake. The key is used to
+    /// establish the websocket connection and must be set before sending the request.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The websocket key, which can be converted into a `Cow<'static, str>`.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The modified instance with the updated websocket key.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let request = WebSocketRequestBuilder::new(builder)
+    ///     .key("my-websocket-key")
+    ///     .build();
+    /// ```
     pub fn key<K>(mut self, key: K) -> Self
     where
         K: Into<Cow<'static, str>>,
@@ -56,6 +75,26 @@ impl WebSocketRequestBuilder {
     }
 
     /// Sets the websocket subprotocols to request.
+    ///
+    /// This method allows you to specify the subprotocols that the websocket client
+    /// should request during the handshake. Subprotocols are used to define the type
+    /// of communication expected over the websocket connection.
+    ///
+    /// # Arguments
+    ///
+    /// * `protocols` - A list of subprotocols, which can be converted into a `Cow<'static, [String]>`.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The modified instance with the updated subprotocols.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let request = WebSocketRequestBuilder::new(builder)
+    ///     .protocols(vec!["protocol1".to_string(), "protocol2".to_string()])
+    ///     .build();
+    /// ```
     pub fn protocols<P>(mut self, protocols: P) -> Self
     where
         P: Into<Cow<'static, [String]>>,
@@ -64,9 +103,30 @@ impl WebSocketRequestBuilder {
         self
     }
 
-    /// With request builder
+    /// Modifies the request builder before sending the request.
     ///
-    /// This is a helper function to modify the request builder before sending the request.
+    /// This method allows you to customize the `RequestBuilder` by passing a closure
+    /// that modifies it. The closure receives the current `RequestBuilder` and returns
+    /// a modified `RequestBuilder`. This can be useful for setting additional headers,
+    /// configuring timeouts, or making other adjustments to the request.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - A closure that takes a `RequestBuilder` and returns a modified `RequestBuilder`.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The modified instance with the updated `RequestBuilder`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let client = rquest::Client::builder()
+    ///     .with_builder(|builder| {
+    ///         builder.header("X-Custom-Header", "value")
+    ///     })
+    ///     .build()?;
+    /// ```
     pub fn with_builder<F>(mut self, f: F) -> Self
     where
         F: FnOnce(RequestBuilder) -> RequestBuilder,
@@ -107,8 +167,11 @@ impl WebSocketRequestBuilder {
 
     /// Sends the request and returns and [`WebSocketResponse`].
     pub async fn send(self) -> Result<WebSocketResponse, Error> {
-        let (client, request_result) = self.inner.build_split();
-        let mut request = request_result?;
+        let (client, request) = self.inner.build_split();
+        let mut request = request?;
+
+        // Ensure the request is HTTP 1.1
+        *request.version_mut() = Some(Version::HTTP_11);
 
         // Ensure the scheme is http or https
         let url = request.url_mut();
@@ -147,6 +210,7 @@ impl WebSocketRequestBuilder {
             HeaderValue::from_static("13"),
         );
 
+        // Set websocket subprotocols
         if let Some(ref protocols) = self.protocols {
             // Sets subprotocols
             if !protocols.is_empty() {
@@ -165,12 +229,15 @@ impl WebSocketRequestBuilder {
             }
         }
 
-        Ok(WebSocketResponse {
-            inner: client.execute(request).await?,
-            nonce,
-            protocols: self.protocols,
-            config: self.config,
-        })
+        client
+            .execute(request)
+            .await
+            .map(|inner| WebSocketResponse {
+                inner,
+                nonce,
+                protocols: self.protocols,
+                config: self.config,
+            })
     }
 }
 

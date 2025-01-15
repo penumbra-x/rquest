@@ -877,7 +877,6 @@ impl ClientBuilder {
     }
 
     cfg_bindable_device! {
-
         /// Bind to an interface by `SO_BINDTODEVICE`.
         ///
         /// # Example

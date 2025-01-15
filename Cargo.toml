@@ -111,8 +111,6 @@ ipnet = "2.10.0"
 socket2 = { version = "0.5", features = ["all"] }
 lru = { version = "0.12", default-features = false }
 
-# Optional deps...
-
 ## boring-tls
 boring2 = { version = "4", features = ["pq-experimental"] }
 boring-sys2 = "4" 
@@ -128,6 +126,8 @@ tower-layer = { version = "0.3" }
 brotli = { version = "7" }
 flate2 = { version = "1" }
 zstd = { version = "0.13" }
+
+# Optional deps...
 
 # tls root certs
 rustls-native-certs = { version = "0.8.0", optional = true }
