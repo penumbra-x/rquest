@@ -107,11 +107,13 @@ async fn main() -> Result<(), rquest::Error> {
 
 ## Overview
 
-The predecessor of rquest is [reqwest](https://github.com/seanmonstar/reqwest). rquest is a specialized adaptation based on the reqwest project, supporting [BoringSSL](https://github.com/cloudflare/boring) and related `HTTP/2` fingerprints in requests.
+**`rquest`** is a fork of [reqwest](https://github.com/seanmonstar/reqwest), and most of the APIs remain the same, similar to how [BoringSSL](https://github.com/cloudflare/boring) is a fork of OpenSSL.
 
-It also optimizes commonly used APIs and enhances compatibility with connection pools, making it easier to switch proxies, `IP` addresses, and interfaces. You can directly migrate from a project using reqwest to rquest.
+The fork optimizes commonly used APIs and enhances compatibility with connection pools, making it easier to switch proxies, IP addresses, and interfaces. Projects using reqwest can be migrated to rquest directly with minimal changes.
 
-Due to limited time for maintaining the synchronous APIs, only asynchronous APIs are supported. I may have to give up maintenance; if possible, please consider [sponsoring me](https://github.com/penumbra-x/.github/blob/main/profile/SPONSOR.md).
+Overall, excluding unstable features, **`rquest`** is a superset of reqwest, offering simpler and more practical APIs while also fixing HTTP version negotiation [issues](https://github.com/seanmonstar/reqwest/issues/2116) in requests.
+
+As synchronous APIs are not actively maintained due to time constraints, only asynchronous APIs are supported. Maintenance may be discontinued in the future; if you find this project helpful, please consider [sponsoring me](https://github.com/penumbra-x/.github/blob/main/profile/SPONSOR.md).
 
 ## Performance
 
@@ -133,11 +135,11 @@ By default, `rquest` uses Mozilla's root certificates through the `webpki-roots`
 
 Supports custom `TLS`/`HTTP2` fingerprint parameters (disabled by default). Unless you’re highly familiar with `TLS` and `HTTP2`, customization is not recommended, as it may cause unexpected issues.
 
-2. JA3/JA4/Akkmai fingerprint
+2. JA3/JA4/Akamai fingerprint
 
-As `TLS` encryption technology becomes more and more sophisticated and HTTP2 becomes more popular, `JA3`/`JA4`/`Akkmai` fingerprints cannot simulate browser fingerprints very well, and the parsed parameters cannot perfectly imitate the browser's `TLS`/`HTTP2` configuration fingerprints. Therefore, `rquest` has not planned to support parsing `JA3`/`JA4`/`Akkmai` fingerprint strings for simulation, but encourages users to customize the configuration according to their own situation.
+As `TLS` encryption technology becomes more and more sophisticated and HTTP2 becomes more popular, `JA3`/`JA4`/`Akamai` fingerprints cannot simulate browser fingerprints very well, and the parsed parameters cannot perfectly imitate the browser's `TLS`/`HTTP2` configuration fingerprints. Therefore, `rquest` has not planned to support parsing `JA3`/`JA4`/`Akamai` fingerprint strings for simulation, but encourages users to customize the configuration according to their own situation.
 
-Most of the `Akkmai` fingerprint strings obtained by users are not fully calculated. For example, the [website](https://tls.peet.ws/api/all), where the Headers Frame lacks Priority and Stream ID. If I were the server, it would be easy to detect this. For details, please refer to HTTP2 [frame](https://datatracker.ietf.org/doc/html/rfc7540#section-6) [parser](https://github.com/0x676e67/pingly/blob/main/src/track/inspector/http2.rs)
+Most of the `Akamai` fingerprint strings obtained by users are not fully calculated. For example, the [website](https://tls.peet.ws/api/all), where the Headers Frame lacks Priority and Stream ID. If I were the server, it would be easy to detect this. For details, please refer to HTTP2 [frame](https://datatracker.ietf.org/doc/html/rfc7540#section-6) [parser](https://github.com/0x676e67/pingly/blob/main/src/track/inspector/http2.rs)
 
 3. Default fingerprint
 
