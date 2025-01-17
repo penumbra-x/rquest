@@ -82,8 +82,8 @@ tower = { version = "0.5.2", default-features = false, features = [
 tower-service = "0.3"
 futures-util = { version = "0.3.0", default-features = false }
 sync_wrapper = { version = "1.0", features = ["futures"] }
-antidote = { version = "1" }
-typed-builder = { version = "0.20.0" }
+antidote = "1" 
+typed-builder = "0.20.0"
 
 # Optional deps...
 
@@ -116,13 +116,13 @@ lru = { version = "0.12", default-features = false }
 boring2 = { version = "4.13.0", features = ["pq-experimental"] }
 boring-sys2 = { version = "4.13.0", features = ["pq-experimental"] }
 tokio-boring2 = { version = "4.13.0", features = ["pq-experimental"] }
-foreign-types = { version = "0.5.0" }
-linked_hash_set = { version = "0.1" }
+foreign-types = "0.5.0"
+linked_hash_set = "0.1"
 
 # cert compression
-brotli = { version = "7" }
-flate2 = { version = "1" }
-zstd = { version = "0.13" }
+brotli = "7"
+flate2 = "1"
+zstd = "0.13"
 
 # Optional deps...
 
