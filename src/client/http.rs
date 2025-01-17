@@ -43,9 +43,11 @@ use crate::dns::hickory::HickoryDnsResolver;
 use crate::dns::{gai::GaiResolver, DnsResolverWithOverrides, DynResolver, Resolve};
 use crate::imp::ImpersonateSettings;
 use crate::into_url::try_uri;
-use crate::redirect;
-use crate::tls::{self, AlpnProtos, BoringTlsConnector};
 use crate::{cfg_bindable_device, error, impl_debug};
+use crate::{
+    redirect,
+    tls::{AlpnProtos, BoringTlsConnector, RootCertsStore, TlsVersion},
+};
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
 #[cfg(feature = "hickory-dns")]
 use hickory_resolver::config::LookupIpStrategy;
@@ -1013,7 +1015,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    pub fn min_tls_version(mut self, version: tls::TlsVersion) -> ClientBuilder {
+    pub fn min_tls_version(mut self, version: TlsVersion) -> ClientBuilder {
         self.config.settings.tls.min_tls_version = Some(version);
         self
     }
@@ -1032,7 +1034,7 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// feature to be enabled.
-    pub fn max_tls_version(mut self, version: tls::TlsVersion) -> ClientBuilder {
+    pub fn max_tls_version(mut self, version: TlsVersion) -> ClientBuilder {
         self.config.settings.tls.max_tls_version = Some(version);
         self
     }
@@ -1056,7 +1058,10 @@ impl ClientBuilder {
     }
 
     /// Set root certificate store.
-    pub fn root_certs_store(mut self, store: impl Into<tls::RootCertsStore>) -> ClientBuilder {
+    pub fn root_certs_store<S>(mut self, store: S) -> ClientBuilder
+    where
+        S: Into<RootCertsStore>,
+    {
         self.config.settings.tls.root_certs_store = store.into();
         self
     }
