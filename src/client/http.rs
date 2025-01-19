@@ -1301,6 +1301,7 @@ impl Client {
             mut headers,
             body,
             timeout,
+            read_timeout,
             version,
             redirect,
             _cookie_store,
@@ -1325,9 +1326,7 @@ impl Client {
         }
 
         #[cfg(feature = "cookies")]
-        let cookie_store = _cookie_store
-            .as_ref()
-            .or_else(|| self.inner.cookie_store.as_ref());
+        let cookie_store = _cookie_store.as_ref().or(self.inner.cookie_store.as_ref());
 
         // Add cookies from the cookie store.
         #[cfg(feature = "cookies")]
@@ -1385,11 +1384,9 @@ impl Client {
             .map(tokio::time::sleep)
             .map(Box::pin);
 
-        let read_timeout_fut = self
-            .inner
-            .read_timeout
-            .map(tokio::time::sleep)
-            .map(Box::pin);
+        let read_timeout = read_timeout.or(self.inner.read_timeout);
+
+        let read_timeout_fut = read_timeout.map(tokio::time::sleep).map(Box::pin);
 
         Pending {
             inner: PendingInner::Request(PendingRequest {
@@ -1408,7 +1405,7 @@ impl Client {
                 in_flight,
                 total_timeout,
                 read_timeout_fut,
-                read_timeout: self.inner.read_timeout,
+                read_timeout,
             }),
         }
     }
@@ -2069,7 +2066,7 @@ impl Future for PendingRequest {
             let cookie_store = self
                 .cookie_store
                 .as_ref()
-                .or_else(|| self.client.cookie_store.as_ref());
+                .or(self.client.cookie_store.as_ref());
 
             #[cfg(feature = "cookies")]
             {
