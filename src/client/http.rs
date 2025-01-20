@@ -1438,21 +1438,20 @@ impl Client {
 
     #[inline]
     fn network_scheme(&self, uri: &Uri, default: NetworkScheme) -> NetworkScheme {
-        match default {
-            NetworkScheme::Default => {
-                let mut builder = self.inner.network_scheme.clone();
+        if matches!(default, NetworkScheme::Default) {
+            let mut builder = self.inner.network_scheme.clone();
 
-                // iterate over the client's proxies and use the first valid one
-                for proxy in self.inner.proxies.iter() {
-                    if let Some(proxy_scheme) = proxy.intercept(uri) {
-                        builder.proxy_scheme(proxy_scheme);
-                    }
+            // iterate over the client's proxies and use the first valid one
+            for proxy in self.inner.proxies.iter() {
+                if let Some(proxy_scheme) = proxy.intercept(uri) {
+                    builder.proxy_scheme(proxy_scheme);
                 }
-
-                builder.build()
             }
-            _ => default,
+
+            return builder.build();
         }
+
+        default
     }
 }
 
