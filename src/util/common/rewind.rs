@@ -74,6 +74,7 @@ impl<T> Write for Rewind<T>
 where
     T: Write + Unpin,
 {
+    #[inline(always)]
     fn poll_write(
         mut self: Pin<&mut Self>,
         cx: &mut task::Context<'_>,
