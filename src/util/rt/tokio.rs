@@ -69,16 +69,19 @@ impl<T> TokioIo<T> {
     }
 
     /// Borrow the inner type.
+    #[inline(always)]
     pub fn inner(&self) -> &T {
         &self.inner
     }
 
     /// Mut borrow the inner type.
+    #[inline(always)]
     pub fn inner_mut(&mut self) -> &mut T {
         &mut self.inner
     }
 
     /// Consume this wrapper and get the inner type.
+    #[inline(always)]
     pub fn into_inner(self) -> T {
         self.inner
     }
@@ -112,6 +115,7 @@ impl<T> hyper2::rt::Write for TokioIo<T>
 where
     T: tokio::io::AsyncWrite,
 {
+    #[inline(always)]
     fn poll_write(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
@@ -135,6 +139,7 @@ where
         tokio::io::AsyncWrite::is_write_vectored(&self.inner)
     }
 
+    #[inline(always)]
     fn poll_write_vectored(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
@@ -180,6 +185,7 @@ impl<T> tokio::io::AsyncWrite for TokioIo<T>
 where
     T: hyper2::rt::Write,
 {
+    #[inline(always)]
     fn poll_write(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
@@ -203,6 +209,7 @@ where
         hyper2::rt::Write::is_write_vectored(&self.inner)
     }
 
+    #[inline(always)]
     fn poll_write_vectored(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
