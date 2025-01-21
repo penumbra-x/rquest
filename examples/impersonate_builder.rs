@@ -6,6 +6,7 @@ async fn main() -> Result<(), rquest::Error> {
     let impersonate = Impersonate::builder()
         .impersonate(Impersonate::Firefox128)
         .impersonate_os(ImpersonateOS::Windows)
+        .skip_http2(false)
         .skip_headers(true)
         .build();
 
