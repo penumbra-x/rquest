@@ -6,6 +6,77 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 Features
 
+- Remove internal headers cache (#318)
+- Disable boring module exports (#319)
+- Disable boring module exports
+- Add `read_timeout` option with override support in Request (#334)
+- Remove impersonate from str feature (#350)
+- Add tests for `3DES` and `DH2048` cipher support (#351)
+- `Impersonate`/`ImpersonateOS` impl serde (#352)
+- Rename `RootCertsStore` to `RootCertStore` (#353)
+
+### 🐛 Bug Fixes
+
+- *(network)* Fix `NetworkScheme` debug format (#332)
+
+### 🚜 Refactor
+
+- Simplify client internal settings (#320)
+- Refactor client and impersonate configurations (#321)
+
+### 📚 Documentation
+
+- Update `Client` docs
+- Update network scheme docs
+- *(websocket)* Update docs
+
+### ⚡ Performance
+
+- Improve network scheme to avoid unnecessary clone (#333)
+
+### 🎨 Styling
+
+- Format code style (#314)
+- Format code style
+- Destructive updates, standard naming style (#315)
+
+### ⚙️ Miscellaneous Tasks
+
+- Format code
+- Update examples
+- Simplify dependency version settings
+- Fmt code
+- *(rt)* Inline hotspot code
+- *(rewin)* Inline hotspot code
+- *(http)* Fmt code
+- Optional enable http2 tracing (#335)
+
+### Deps
+
+- *(tower-layer)* Remove unused deps (#322)
+- *(tower)* Pin version v0.5.2
+- *(hyper2)* Pin 1.5.0 version (#330)
+- *(boring2)* Pin 4.13.0 version (#331)
+
+### Workflows
+
+- *(linux)* Remove unused deps install
+
+## [1.5.2] - 2025-01-12
+
+### 🚀 Features
+
+- Send `json` to avoid repeated query of `CONTENT_TYPE` (#311)
+- *(mimic)* Added possibility to choose Client and OS to impersonate (#290)
+
+### ⚙️ Miscellaneous Tasks
+
+- Fmt code
+
+## [1.5.0] - 2025-01-11
+
+### 🚀 Features
+
 - *(client)* Expose default headers as public API (#296)
 - *(multipart)* Expose a Form::into_stream() method on async multipart forms (#303)
 - *(client)* Optional cross-origin redirect proxy authentication (#304)
