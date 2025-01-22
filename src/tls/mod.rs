@@ -9,18 +9,18 @@ mod conn;
 mod ext;
 
 use crate::impl_debug;
+use boring2::ssl::SslCurve;
 use boring2::{
     error::ErrorStack,
     ssl::{SslConnector, SslMethod, SslOptions, SslVersion},
 };
-use boring2::{ssl::SslCurve, x509::store::X509Store};
 use conn::{HttpsLayer, HttpsLayerSettings};
 use std::borrow::Cow;
 use typed_builder::TypedBuilder;
 
 pub use conn::{HttpsConnector, MaybeHttpsStream};
 pub use ext::{
-    cert_compression::CertCompressionAlgorithm, ConnectConfigurationExt, SslConnectorBuilderExt,
+    CertCompressionAlgorithm, ConnectConfigurationExt, RootCertStore, SslConnectorBuilderExt,
     SslRefExt,
 };
 
@@ -194,63 +194,6 @@ impl TlsInfo {
     }
 }
 
-/// The root certificate store.
-#[allow(missing_debug_implementations)]
-#[derive(Default)]
-pub enum RootCertsStore {
-    /// An owned `X509Store`.
-    Owned(X509Store),
-
-    /// A borrowed `X509Store`.
-    Borrowed(&'static X509Store),
-
-    /// Use the system's native certificate store.
-    #[default]
-    Default,
-}
-
-/// ====== impl RootCertsStore ======
-macro_rules! impl_root_cert_store {
-    ($($type:ty => $variant:ident),* $(,)?) => {
-        $(
-            impl From<$type> for RootCertsStore {
-                fn from(store: $type) -> Self {
-                    Self::$variant(store)
-                }
-            }
-        )*
-    };
-
-    ($($type:ty => $variant:ident, $unwrap:expr),* $(,)?) => {
-        $(
-            impl From<$type> for RootCertsStore {
-                fn from(store: $type) -> Self {
-                    $unwrap(store).map(Self::$variant).unwrap_or_default()
-                }
-            }
-        )*
-    };
-}
-
-impl_root_cert_store!(
-    X509Store => Owned,
-    &'static X509Store => Borrowed,
-);
-
-impl_root_cert_store!(
-    Option<X509Store> => Owned, |s| s,
-    Option<&'static X509Store> => Borrowed, |s| s,
-);
-
-impl<F> From<F> for RootCertsStore
-where
-    F: Fn() -> Option<&'static X509Store>,
-{
-    fn from(func: F) -> Self {
-        func().map(Self::Borrowed).unwrap_or_default()
-    }
-}
-
 /// Configuration settings for TLS connections.
 ///
 /// This struct defines various parameters to fine-tune the behavior of a TLS connection,
@@ -259,8 +202,8 @@ where
 pub struct TlsSettings {
     /// The root certificate store.
     /// Default use system's native certificate store.
-    #[builder(default = RootCertsStore::Default)]
-    pub root_certs_store: RootCertsStore,
+    #[builder(default = RootCertStore::Default)]
+    pub root_certs_store: RootCertStore,
 
     /// SSL may authenticate either endpoint with an X.509 certificate.
     /// Typically this is used to authenticate the server to the client.
