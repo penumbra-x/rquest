@@ -88,10 +88,10 @@ async fn test_firefox_7x_100_cipher() -> Result<(), rquest::Error> {
                         .curves(CURVES)
                         .cipher_list(join!(
                             ":",
+                            "TLS_DHE_RSA_WITH_AES_128_CBC_SHA",
+                            "TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
                             "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256",
-                            "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256",
-                            "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256",
-                            "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"
+                            "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256"
                         ))
                         .build(),
                 )
