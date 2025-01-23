@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🧪 Testing
+
+- *(badssl)* Update cipher list
+
+### ⚙️ Miscellaneous Tasks
+
+- Move macros to lib mod (#354)
+- *(tls)* Move `tls/ext/cert` to `tls/cert` (#355)
+- *(tls)* Load and wrap the certificate into `RootCertStore` (#356)
+
+## [2.0.0-rc.1] - 2025-01-22
+
 ### 🚀 Features
 
 - Remove internal headers cache (#318)
@@ -61,6 +73,7 @@ All notable changes to this project will be documented in this file.
 ### Workflows
 
 - *(linux)* Remove unused deps install
+- Add `rc` version check
 
 ## [1.5.2] - 2025-01-12
 
