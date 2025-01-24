@@ -110,7 +110,7 @@ async fn main() -> Result<(), rquest::Error> {
 
 ## Overview
 
-**`rquest`** is a fork of [reqwest](https://github.com/seanmonstar/reqwest), and most of the APIs remain the same, similar to how [BoringSSL](https://github.com/cloudflare/boring) is a fork of OpenSSL.
+This project is a fork of [reqwest](https://github.com/seanmonstar/reqwest), and most of the APIs remain the same, similar to how [BoringSSL](https://github.com/cloudflare/boring) is a fork of OpenSSL.
 
 The fork optimizes commonly used APIs and enhances compatibility with connection pools, making it easier to switch proxies, IP addresses, and interfaces. Projects using reqwest can be migrated to rquest directly with minimal changes.
 
@@ -126,8 +126,7 @@ By default, `HTTP2` tracing is turned off, which will reduce the performance ove
 
 ## Connection Pool
 
-Regarding the design strategy of the connection pool, `rquest` and `reqwest` are implemented differently. `rquest` reconstructs the entire connection layer, treating each host with the same proxy or bound `IP`/`Interface` as the same connection, while `reqwest` treats each host as an independent connection. Specifically, the connection pool of `rquest` is managed based on the host and `Proxy`/`IP`/`Interface`, while the connection pool of `reqwest` is managed only by the host. In other words, when using `rquest`, you can flexibly switch between proxies, `IP` or `Interface` without affecting the management of the connection pool.
-
+`rquest` and `reqwest` handle connection pools differently. `rquest` manages connections based on the host and `Proxy`/`IP`/`Interface`, allowing flexible switching between them without affecting the connection pool. In contrast, `reqwest` manages connections only by the host.
 > `Interface` refers to the network interface of the device, such as `wlan0` or `eth0`.
 
 ## Root Certificate

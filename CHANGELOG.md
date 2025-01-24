@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- Implement `IntoStreamDependency` for tuple and `StreamDependency` (#359)
+
+### 📚 Documentation
+
+- Update performance information
+
+### ⚙️ Miscellaneous Tasks
+
+- Update owner (#358)
+
+## [2.0.0] - 2025-01-23
+
 ### 🧪 Testing
 
 - *(badssl)* Update cipher list
