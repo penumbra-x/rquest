@@ -122,6 +122,8 @@ As synchronous APIs are not actively maintained due to time constraints, only as
 
 `BoringSSL` is a fork of `OpenSSL` that is designed to be more secure and efficient. It is used by Google Chrome and Android, and is also used by Cloudflare. In addition to that, regarding the TLS parrot echo issue in Firefox, we haven’t encountered any serious problems with `BoringSSL` related to Golang [utls issue](https://github.com/refraction-networking/utls/issues/274).
 
+By default, `HTTP2` tracing is turned off, which will reduce the performance overhead by 15%. For more information, see issue: <https://github.com/hyperium/h2/issues/713>
+
 ## Connection Pool
 
 Regarding the design strategy of the connection pool, `rquest` and `reqwest` are implemented differently. `rquest` reconstructs the entire connection layer, treating each host with the same proxy or bound `IP`/`Interface` as the same connection, while `reqwest` treats each host as an independent connection. Specifically, the connection pool of `rquest` is managed based on the host and `Proxy`/`IP`/`Interface`, while the connection pool of `reqwest` is managed only by the host. In other words, when using `rquest`, you can flexibly switch between proxies, `IP` or `Interface` without affecting the management of the connection pool.
