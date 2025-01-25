@@ -123,7 +123,7 @@ By default, `HTTP2` tracing is turned off, which will reduce the performance ove
 
 ## Connection Pool
 
-`rquest` and `reqwest` handle connection pools differently. `rquest` manages connections based on the host and `Proxy`/`IP`/`Interface`, allowing flexible switching between them without affecting the connection pool. In contrast, `reqwest` manages connections only by the host.
+The client can configure the maximum number of connection pools. Request manages connections based on `Host` and `Proxy`/`IP`/`Interface`, and can flexibly switch between them.
 > `Interface` refers to the network interface of the device, such as `wlan0` or `eth0`.
 
 ## Root Certificate
