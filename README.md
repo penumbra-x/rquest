@@ -8,7 +8,7 @@
 
 > 🚀 Help me work seamlessly with open source sharing by [sponsoring me on GitHub](https://github.com/0x676e67/0x676e67/blob/main/SPONSOR.md)
 
-An ergonomic, all-in-one `TLS`, `JA3`/`JA4`, and `HTTP2` fingerprint HTTP Client for spoof any browser.
+An ergonomic, all-in-one HTTP client for spoofing any browser with `TLS`, `JA3`/`JA4`, and `HTTP2` fingerprints.
 
 ## Features
 
@@ -109,11 +109,9 @@ async fn main() -> Result<(), rquest::Error> {
 
 ## Overview
 
-This project is a fork of [reqwest](https://github.com/seanmonstar/reqwest), and most of the APIs remain the same, similar to how [BoringSSL](https://github.com/cloudflare/boring) is a fork of OpenSSL.
+This project is a fork of [reqwest](https://github.com/seanmonstar/reqwest), similar to how [BoringSSL](https://github.com/cloudflare/boring) is a fork of OpenSSL. It optimizes commonly used APIs and enhances compatibility with connection pools, making it easier to switch proxies, IP addresses, and interfaces. Projects using reqwest can be migrated to rquest with minimal changes.
 
-The fork optimizes commonly used APIs and enhances compatibility with connection pools, making it easier to switch proxies, IP addresses, and interfaces. Projects using reqwest can be migrated to rquest directly with minimal changes.
-
-Overall, excluding unstable features, **`rquest`** is a superset of reqwest, offering simpler and more practical APIs while also fixing HTTP version negotiation [issues](https://github.com/seanmonstar/reqwest/issues/2116) in requests.
+Overall, **`rquest`** is a superset of reqwest, offering simpler and more practical APIs while also fixing HTTP version negotiation [issues](https://github.com/seanmonstar/reqwest/issues/2116).
 
 ## Performance
 
@@ -124,7 +122,7 @@ By default, `HTTP2` tracing is turned off, reducing performance overhead by 15%.
 ## Connection Pool
 
 The client can configure the maximum number of connection pools. Request manages connections based on `Host` and `Proxy`/`IP`/`Interface`, and can flexibly switch between them.
-> `Interface` refers to the network interface of the device, such as `wlan0` or `eth0`.
+- `Interface` refers to the network interface of the device, such as `wlan0` or `eth0`.
 
 ## Root Certificate
 
