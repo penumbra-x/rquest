@@ -26,18 +26,17 @@ Additional learning resources include:
 - [API Documentation](https://docs.rs/rquest)
 - [Repository Examples](https://github.com/0x676e67/rquest/tree/main/examples)
 
-## Usage
+## Example
 
-This asynchronous example uses [Tokio](https://tokio.rs) and enables some
-optional features, so your `Cargo.toml` could look like this:
-
-HTTP
+This asynchronous example uses [Tokio](https://tokio.rs) and enables some optional features. Your `Cargo.toml` could look like this:
 
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 rquest = "2.0.0"
 ```
+
+And then the code:
 
 ```rust,no_run
 use rquest::{Client, Impersonate};
@@ -55,56 +54,6 @@ async fn main() -> Result<(), rquest::Error> {
 
     Ok(())
 }
-```
-
-WebSocket
-
-```toml
-[dependencies]
-tokio = { version = "1", features = ["full"] }
-rquest = { version = "2.0.0", features = ["websocket"] }
-futures-util = { version = "0.3.0", default-features = false, features = ["std"] }
-```
-
-```rust,no_run
-use futures_util::{SinkExt, StreamExt, TryStreamExt};
-use rquest::{Impersonate, Client, Message};
-
-#[tokio::main]
-async fn main() -> Result<(), rquest::Error> {
-    // Build a client to impersonate Firefox133
-    let client = Client::builder()
-        .impersonate(Impersonate::Firefox133)
-        .build()?;
-
-    // Use the API you're already familiar with
-    let websocket = client
-        .websocket("wss://echo.websocket.org")
-        .send()
-        .await?
-        .into_websocket()
-        .await?;
-
-    let (mut tx, mut rx) = websocket.split();
-
-    tokio::spawn(async move {
-        for i in 1..11 {
-            tx.send(Message::Text(format!("Hello, World! #{i}")))
-                .await
-                .unwrap();
-        }
-    });
-
-    while let Some(message) = rx.try_next().await? {
-        match message {
-            Message::Text(text) => println!("received: {text}"),
-            _ => {}
-        }
-    }
-
-    Ok(())
-}
-
 ```
 
 ## Overview
