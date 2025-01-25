@@ -1,7 +1,7 @@
 [package]
 name = "rquest"
-version = "2.0.2"
-description = "An ergonomic, all-in-one TLS, JA3/JA4, and HTTP2 fingerprint HTTP Client for spoof any browser"
+version = "2.0.3"
+description = "An ergonomic, all-in-one HTTP Client for spoofing any browser with TLS, JA3/JA4, and HTTP2 fingerprints"
 keywords = ["http", "client", "websocket", "ja3", "ja4"]
 categories = ["web-programming::http-client"]
 repository = "https://github.com/0x676e67/rquest"

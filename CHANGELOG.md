@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 📚 Documentation
+
+- Enhance documentation for `ImpersonateBuilder` methods (#367)
+
+### ⚙️ Miscellaneous Tasks
+
+- Update examples (#368)
+
+## [2.0.2] - 2025-01-25
+
+### 🚀 Features
+
+- Expose `ClientMut` as public API (#362)
+- Add implementations for `IntoCertCompressionAlgorithm` (#363)
+
+### 🚜 Refactor
+
+- Simplify `IntoStreamDependency` implementations using macros (#364)
+
+### ⚙️ Miscellaneous Tasks
+
+- Remove unnecessary type conversions
+
+## [2.0.1] - 2025-01-24
+
 ### 🚀 Features
 
 - Implement `IntoStreamDependency` for tuple and `StreamDependency` (#359)

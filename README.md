@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/0x676e67/rquest/actions/workflows/ci.yml/badge.svg)](https://github.com/0x676e67/rquest/actions/workflows/ci.yml)
 [![Crates.io License](https://img.shields.io/crates/l/rquest)](./LICENSE)
-![Crates.io MSRV](https://img.shields.io/crates/msrv/rquest)
 [![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)
 [![Crates.io Total Downloads](https://img.shields.io/crates/d/rquest)](https://crates.io/crates/rquest)
 
@@ -119,15 +118,13 @@ By default, `rquest` uses Mozilla's root certificates through the `webpki-roots`
 
     </details>
 
-## Requirement
-
-Install the dependencies required to build [BoringSSL](https://github.com/google/boringssl/blob/master/BUILDING.md#build-prerequisites)
+## Requirements
 
 Do not compile with packages that depend on `openssl-sys`; it links with the same prefix symbol as `boring-sys`, which can cause [link failures](https://github.com/cloudflare/boring/issues/197) and other problems. Even if compilation succeeds, using both `openssl-sys` and `boring-sys` as dependencies can cause memory segmentation faults.
 
-If you prefer compiling for the `musl` target, it is recommended to use the [tikv-jemallocator](https://github.com/tikv/jemallocator) memory allocator; otherwise, multithreaded performance may be suboptimal. Only available in version 0.6.0, details: <https://github.com/tikv/jemallocator/pull/70>
-
 ## Building
+
+Install the dependencies required to build [BoringSSL](https://github.com/google/boringssl/blob/master/BUILDING.md#build-prerequisites)
 
 ```shell
 sudo apt-get install build-essential cmake perl pkg-config libclang-dev musl-tools -y
@@ -137,13 +134,9 @@ cargo build --release
 
 You can also use [this GitHub Actions workflow](https://github.com/0x676e67/rquest/blob/main/.github/compilation-guide/build.yml) to compile your project on **Linux**, **Windows**, and **macOS**.
 
-## Contributing
+## Contribution
 
 If you would like to submit your contribution, please open a [Pull Request](https://github.com/0x676e67/rquest/pulls).
-
-## Getting help
-
-Your question might already be answered on the [issues](https://github.com/0x676e67/rquest/issues)
 
 ## License
 
