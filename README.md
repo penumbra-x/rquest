@@ -128,7 +128,7 @@ The client can configure the maximum number of connection pools. Request manages
 
 ## Root Certificate
 
-By default, `rquest` uses Mozilla's root certificates through the `webpki-roots` crate. This is a static root certificate bundle that is not automatically updated. It also ignores any root certificates installed on the host running `rquest`, which may be a good thing or a bad thing, depending on your point of view. But you can turn off `default-features` to cancel the default certificate bundle, and the system default certificate path will be used to load the certificate. In addition, `rquest` also provides a certificate store for users to customize the update certificate.
+By default, `rquest` uses Mozilla's root certificates through the `webpki-roots` crate. This static root certificate bundle is not automatically updated and ignores any root certificates installed on the host. You can disable `default-features` to use the system's default certificate path. Additionally, `rquest` provides a certificate store for users to customize and update certificates.
 
 ## Fingerprint
 
