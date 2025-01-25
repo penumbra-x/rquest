@@ -117,9 +117,9 @@ Overall, excluding unstable features, **`rquest`** is a superset of reqwest, off
 
 ## Performance
 
-`BoringSSL` is a fork of `OpenSSL` that is designed to be more secure and efficient. It is used by Google Chrome and Android, and is also used by Cloudflare. In addition to that, regarding the TLS parrot echo issue in Firefox, we haven’t encountered any serious problems with `BoringSSL` related to Golang [utls issue](https://github.com/refraction-networking/utls/issues/274).
+`BoringSSL` is a fork of `OpenSSL` designed for security and efficiency, used by Google Chrome, Android, and Cloudflare. We haven't encountered serious issues with `BoringSSL` related to the Golang [utls issue](https://github.com/refraction-networking/utls/issues/274).
 
-By default, `HTTP2` tracing is turned off, which will reduce the performance overhead by 15%. For more information, see issue: <https://github.com/hyperium/h2/issues/713>
+By default, `HTTP2` tracing is turned off, reducing performance overhead by 15%. For more information, see issue: <https://github.com/hyperium/h2/issues/713>
 
 ## Connection Pool
 
