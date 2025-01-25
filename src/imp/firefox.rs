@@ -94,7 +94,7 @@ macro_rules! http2_settings {
             .headers_priority((13, 41, false))
             .headers_pseudo_order(HEADERS_PSEUDO_ORDER)
             .settings_order(SETTINGS_ORDER)
-            .priority(Cow::Borrowed(PRIORITY.as_slice()))
+            .priority(PRIORITY.as_slice())
             .build()
     };
     (3) => {

@@ -271,7 +271,7 @@ mod tls {
                 .sigalgs_list(val.sigalgs_list)
                 .cipher_list(val.cipher_list)
                 .min_tls_version(TlsVersion::TLS_1_0)
-                .cert_compression_algorithm(Cow::Borrowed(CERT_COMPRESSION_ALGORITHM))
+                .cert_compression_algorithm(CERT_COMPRESSION_ALGORITHM)
                 .build()
         }
     }

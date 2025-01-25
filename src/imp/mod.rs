@@ -39,7 +39,6 @@ mod tls_imports {
         AlpnProtos, AlpsProtos, CertCompressionAlgorithm, TlsSettings, TlsVersion,
     };
     pub use boring2::ssl::{ExtensionType, SslCurve};
-    pub use std::borrow::Cow;
     pub use typed_builder::TypedBuilder;
 }
 

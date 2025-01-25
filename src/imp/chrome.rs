@@ -272,7 +272,7 @@ mod tls {
                 .pre_shared_key(val.pre_shared_key)
                 .enable_ech_grease(val.enable_ech_grease)
                 .alps_protos(val.alps_protos)
-                .cert_compression_algorithm(Cow::Borrowed(CERT_COMPRESSION_ALGORITHM))
+                .cert_compression_algorithm(CERT_COMPRESSION_ALGORITHM)
                 .build()
         }
     }
