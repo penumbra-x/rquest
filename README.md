@@ -6,7 +6,6 @@
 [![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)
 [![Crates.io Total Downloads](https://img.shields.io/crates/d/rquest)](https://crates.io/crates/rquest)
 
-
 > 🚀 Help me work seamlessly with open source sharing by [sponsoring me on GitHub](https://github.com/0x676e67/0x676e67/blob/main/SPONSOR.md)
 
 An ergonomic, all-in-one `TLS`, `JA3`/`JA4`, and `HTTP2` fingerprint HTTP Client for spoof any browser.
@@ -133,43 +132,45 @@ By default, `rquest` uses Mozilla's root certificates through the `webpki-roots`
 
 ## Fingerprint
 
-- TLS/HTTP2 fingerprint
+- **TLS/HTTP2 Fingerprint**
 
-Supports custom `TLS`/`HTTP2` fingerprint parameters (disabled by default). Unless you’re highly familiar with `TLS` and `HTTP2`, customization is not recommended, as it may cause unexpected issues.
+  Supports custom `TLS`/`HTTP2` fingerprint parameters. Customization is not recommended unless you are highly familiar with `TLS` and `HTTP2`, as it may cause unexpected issues.
 
-- JA3/JA4/Akamai fingerprint
+- **JA3/JA4/Akamai Fingerprint**
 
-As `TLS` encryption technology becomes more and more sophisticated and HTTP2 becomes more popular, `JA3`/`JA4`/`Akamai` fingerprints cannot simulate browser fingerprints very well, and the parsed parameters cannot perfectly imitate the browser's `TLS`/`HTTP2` configuration fingerprints. Therefore, `rquest` has not planned to support parsing `JA3`/`JA4`/`Akamai` fingerprint strings for simulation, but encourages users to customize the configuration according to their own situation.
+  `JA3`/`JA4`/`Akamai` fingerprints cannot accurately simulate browser fingerprints due to the sophistication of `TLS` encryption and the popularity of HTTP2. `rquest` does not plan to support parsing these fingerprint strings for simulation. Users are encouraged to customize the configuration according to their own needs.
 
-Most of the `Akamai` fingerprint strings obtained by users are not fully calculated. For example, the [website](https://tls.peet.ws/api/all), where the Headers Frame lacks Priority and Stream ID. If I were the server, it would be easy to detect this. For details, please refer to `HTTP2` frame [parser](https://github.com/0x676e67/pingly/blob/main/src/track/inspector/http2.rs)
+  Note: Many `Akamai` fingerprint strings are incomplete. For example, the [website](https://tls.peet.ws/api/all) lacks Priority and Stream ID in the Headers Frame, making it easy to detect. For details, refer to the `HTTP2` frame [parser](https://github.com/0x676e67/pingly/blob/main/src/track/inspector/http2.rs).
 
-- Default fingerprint
+- **Default Fingerprint**
 
-<details>
+  In fact, most device models have the same `TLS`/`HTTP2` configuration, except that the `User-Agent` is changed.
 
-  <summary>Basic device emulation types are provided by default</summary>
+    <details>
 
-- **Chrome**
+    <summary>Default device emulation types</summary>
 
-`Chrome100`，`Chrome101`，`Chrome104`，`Chrome105`，`Chrome106`，`Chrome107`，`Chrome108`，`Chrome109`，`Chrome114`，`Chrome116`，`Chrome117`，`Chrome118`，`Chrome119`，`Chrome120`，`Chrome123`，`Chrome124`，`Chrome126`，`Chrome127`，`Chrome128`，`Chrome129`，`Chrome130`，`Chrome131`
+  - **Chrome**
 
-- **Edge**
+    `Chrome100`，`Chrome101`，`Chrome104`，`Chrome105`，`Chrome106`，`Chrome107`，`Chrome108`，`Chrome109`，`Chrome114`，`Chrome116`，`Chrome117`，`Chrome118`，`Chrome119`，`Chrome120`，`Chrome123`，`Chrome124`，`Chrome126`，`Chrome127`，`Chrome128`，`Chrome129`，`Chrome130`，`Chrome131`
 
-`Edge101`，`Edge122`，`Edge127`，`Edge131`
+  - **Edge**
 
-- **Safari**
+    `Edge101`，`Edge122`，`Edge127`，`Edge131`
 
-`SafariIos17_2`，`SafariIos17_4_1`，`SafariIos16_5`，`Safari15_3`，`Safari15_5`，`Safari15_6_1`，`Safari16`，`Safari16_5`，`Safari17_0`，`Safari17_2_1`，`Safari17_4_1`，`Safari17_5`，`Safari18`，`SafariIPad18`, `Safari18_2`, `Safari18_1_1`
+  - **Safari**
 
-- **OkHttp**
+    `SafariIos17_2`，`SafariIos17_4_1`，`SafariIos16_5`，`Safari15_3`，`Safari15_5`，`Safari15_6_1`，`Safari16`，`Safari16_5`，`Safari17_0`，`Safari17_2_1`，`Safari17_4_1`，`Safari17_5`，`Safari18`，`SafariIPad18`, `Safari18_2`, `Safari18_1_1`
 
-`OkHttp3_9`，`OkHttp3_11`，`OkHttp3_13`，`OkHttp3_14`，`OkHttp4_9`，`OkHttp4_10`，`OkHttp5`
+  - **OkHttp**
 
-- **Firefox**
+    `OkHttp3_9`，`OkHttp3_11`，`OkHttp3_13`，`OkHttp3_14`，`OkHttp4_9`，`OkHttp4_10`，`OkHttp5`
 
-`Firefox109`, `Firefox117`, `Firefox128`, `Firefox133`
+  - **Firefox**
 
-</details>
+    `Firefox109`, `Firefox117`, `Firefox128`, `Firefox133`
+
+    </details>
 
 ## Requirement
 
