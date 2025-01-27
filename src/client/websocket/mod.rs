@@ -24,14 +24,6 @@ use tungstenite::protocol::WebSocketConfig;
 pub type WebSocketStream =
     async_tungstenite::WebSocketStream<tokio_util::compat::Compat<crate::Upgraded>>;
 
-/// A marker to identify what version a connection is.
-#[derive(Debug, Default)]
-pub enum Ver {
-    #[default]
-    Http1,
-    Http2,
-}
-
 /// Wrapper for [`RequestBuilder`] that performs the
 /// websocket handshake when sent.
 #[derive(Debug)]
@@ -40,7 +32,7 @@ pub struct WebSocketRequestBuilder {
     accept_key: Option<Cow<'static, str>>,
     protocols: Option<Vec<Cow<'static, str>>>,
     config: WebSocketConfig,
-    ver: Ver,
+    ver: Version,
 }
 
 impl WebSocketRequestBuilder {
@@ -50,7 +42,7 @@ impl WebSocketRequestBuilder {
             accept_key: None,
             protocols: None,
             config: WebSocketConfig::default(),
-            ver: Ver::Http1,
+            ver: Version::HTTP_11,
         }
     }
 
@@ -158,7 +150,7 @@ impl WebSocketRequestBuilder {
 
     /// Sets the HTTP version to HTTP/2 for the WebSocket connection.
     pub fn http2_only(mut self) -> Self {
-        self.ver = Ver::Http2;
+        self.ver = Version::HTTP_2;
         self
     }
 
@@ -185,6 +177,11 @@ impl WebSocketRequestBuilder {
             }
         }
 
+        // Get the version of the request
+        // If the version is not set, use the default version
+        let version = request.version().unwrap_or(self.ver);
+
+        // Set the headers for the websocket handshake
         let headers = request.headers_mut();
         headers.insert(
             header::SEC_WEBSOCKET_VERSION,
@@ -192,8 +189,8 @@ impl WebSocketRequestBuilder {
         );
 
         // Ensure the request is HTTP 1.1/HTTP 2
-        let nonce = match self.ver {
-            Ver::Http1 => {
+        let nonce = match version {
+            Version::HTTP_10 | Version::HTTP_11 => {
                 // Generate a nonce if one wasn't provided
                 let nonce = self
                     .accept_key
@@ -207,11 +204,17 @@ impl WebSocketRequestBuilder {
                 *request.version_mut() = Some(Version::HTTP_11);
                 Some(nonce)
             }
-            Ver::Http2 => {
+            Version::HTTP_2 => {
                 *request.method_mut() = Method::CONNECT;
                 *request.version_mut() = Some(Version::HTTP_2);
                 *request.protocol_mut() = Some(hyper2::ext::Protocol::from_static("websocket"));
                 None
+            }
+            _ => {
+                return Err(Error::new(
+                    Kind::Upgrade,
+                    Some(format!("unsupported version: {:?}", self.ver)),
+                ));
             }
         };
 
@@ -254,7 +257,7 @@ pub struct WebSocketResponse {
     nonce: Option<Cow<'static, str>>,
     protocols: Option<Vec<Cow<'static, str>>>,
     config: WebSocketConfig,
-    var: Ver,
+    var: Version,
 }
 
 impl Deref for WebSocketResponse {
@@ -290,7 +293,7 @@ impl WebSocketResponse {
             }
 
             match self.var {
-                Ver::Http1 => {
+                Version::HTTP_10 | Version::HTTP_11 => {
                     if status != StatusCode::SWITCHING_PROTOCOLS {
                         let body = self.inner.text().await?;
                         return Err(Error::new(
@@ -323,14 +326,19 @@ impl WebSocketResponse {
                         }
                     }
                 }
-                Ver::Http2 => {
+                Version::HTTP_2 => {
                     if status != StatusCode::OK {
-                        let body = self.inner.text().await?;
                         return Err(Error::new(
                             Kind::Upgrade,
-                            Some(format!("unexpected status code: {}", body)),
+                            Some(format!("unexpected status code: {}", status)),
                         ));
                     }
+                }
+                _ => {
+                    return Err(Error::new(
+                        Kind::Upgrade,
+                        Some(format!("unsupported version: {:?}", self.var)),
+                    ));
                 }
             }
 
