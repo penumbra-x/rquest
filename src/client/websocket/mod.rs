@@ -37,7 +37,7 @@ pub enum Ver {
 #[derive(Debug)]
 pub struct WebSocketRequestBuilder {
     inner: RequestBuilder,
-    nonce: Option<Cow<'static, str>>,
+    accept_key: Option<Cow<'static, str>>,
     protocols: Option<Vec<Cow<'static, str>>>,
     config: WebSocketConfig,
     ver: Ver,
@@ -47,40 +47,29 @@ impl WebSocketRequestBuilder {
     pub(crate) fn new(inner: RequestBuilder) -> Self {
         Self {
             inner,
-            nonce: None,
+            accept_key: None,
             protocols: None,
             config: WebSocketConfig::default(),
             ver: Ver::Http1,
         }
     }
 
-    /// Websocket handshake with a specified websocket key. This returns a wrapped type,
-    /// so you must do this after you set up your request, and just before you send the
-    /// request.
+    /// Sets a custom WebSocket accept key.
     ///
-    /// This method sets the websocket key (nonce) for the handshake. The key is used to
-    /// establish the websocket connection and must be set before sending the request.
+    /// This method allows you to set a custom WebSocket accept key for the connection.
     ///
     /// # Arguments
     ///
-    /// * `key` - The websocket key, which can be converted into a `Cow<'static, str>`.
+    /// * `key` - The custom WebSocket accept key to set.
     ///
     /// # Returns
     ///
-    /// * `Self` - The modified instance with the updated websocket key.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let request = WebSocketRequestBuilder::new(builder)
-    ///     .key("my-websocket-key")
-    ///     .build();
-    /// ```
-    pub fn key<K>(mut self, key: K) -> Self
+    /// * `Self` - The modified instance with the custom WebSocket accept key.
+    pub fn accept_key<K>(mut self, key: K) -> Self
     where
         K: Into<Cow<'static, str>>,
     {
-        self.nonce = Some(key.into());
+        self.accept_key = Some(key.into());
         self
     }
 
@@ -207,7 +196,7 @@ impl WebSocketRequestBuilder {
             Ver::Http1 => {
                 // Generate a nonce if one wasn't provided
                 let nonce = self
-                    .nonce
+                    .accept_key
                     .unwrap_or_else(|| Cow::Owned(tungstenite::handshake::client::generate_key()));
 
                 headers.insert(header::CONNECTION, HeaderValue::from_static("upgrade"));
@@ -311,12 +300,10 @@ impl WebSocketResponse {
                     }
 
                     if !header_contains(self.inner.headers(), header::CONNECTION, "upgrade") {
-                        log::debug!("missing Connection header");
                         return Err(Error::new(Kind::Upgrade, Some("missing connection header")));
                     }
 
                     if !header_eq(self.inner.headers(), header::UPGRADE, "websocket") {
-                        log::debug!("server responded with invalid Upgrade header");
                         return Err(Error::new(Kind::Upgrade, Some("invalid upgrade header")));
                     }
 
@@ -325,9 +312,6 @@ impl WebSocketResponse {
                             if !header.to_str().is_ok_and(|s| {
                                 s == tungstenite::handshake::derive_accept_key(nonce.as_bytes())
                             }) {
-                                log::debug!(
-                            "server responded with invalid Sec-Websocket-Accept header: {header:?}"
-                        );
                                 return Err(Error::new(
                                     Kind::Upgrade,
                                     Some(format!("invalid accept key: {:?}", header)),
@@ -335,7 +319,6 @@ impl WebSocketResponse {
                             }
                         }
                         None => {
-                            log::debug!("missing Sec-Websocket-Accept header");
                             return Err(Error::new(Kind::Upgrade, Some("missing accept key")));
                         }
                     }
