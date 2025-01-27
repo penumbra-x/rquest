@@ -176,7 +176,6 @@ hyper-util = { version = "0.1.10", features = [
     "server-auto",
     "tokio",
 ] }
-env_logger = "0.11.6"
 serde = { version = "1.0", features = ["derive"] }
 libflate = "2.0.0"
 zstd = { version = "0.13" }
@@ -189,6 +188,10 @@ futures = { version = "0.3.0", default-features = false, features = ["std"] }
 tower = { version = "0.5.2", default-features = false, features = ["limit"] }
 num_cpus = "1.0"
 libc = "0.2"
+
+env_logger = "0.11.6"
+tracing = "0.1"
+tracing-subscriber = "0.3.19"
 
 [lib]
 doctest = false
@@ -309,7 +312,7 @@ required-features = ["native-roots", "webpki-roots"]
 [[example]]
 name = "websocket"
 path = "examples/websocket.rs"
-required-features = ["websocket", "futures-util/std"]
+required-features = ["websocket", "http2-tracing", "futures-util/std"]
 
 [[example]]
 name = "client_chain"
@@ -358,3 +361,8 @@ required-features = ["full"]
 name = "request_with_interface"
 path = "examples/request_with_interface.rs"
 required-features = ["full"]
+
+[[example]]
+name = "http2_websocket"
+path = "examples/http2_websocket.rs"
+required-features = ["websocket", "http2-tracing", "futures-util/std"]
