@@ -4,6 +4,45 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- Add `HTTP/2` support for `WebSocket` (#373)
+- *(websocket)* Explicitly force the use of ws/wss protocol (#383)
+- Serializing impersonate enums uses legacy naming conventions (#385)
+
+### 🚜 Refactor
+
+- *(client)* Refactor client `HTTP1`/`HTTP2` configuration API (#371)
+- *(websocket)* Improve error handling, rename APIs, and update API signatures (#372)
+- Rename method to accept_key for clarity
+- *(websocket)* Refactor websocket implementation (#380)
+
+### 📚 Documentation
+
+- Added backport reference docs (#382)
+
+### ⚡ Performance
+
+- Always inline `into_tungstenite` (#381)
+
+### 🧪 Testing
+
+- *(upgrade)* Add http2 upgrade test (#384)
+
+### ⚙️ Miscellaneous Tasks
+
+- Improved WebSocket protocols handler (#370)
+- *(websocket)* Improved version protocol handler
+- Update websocket examples
+- Clippy fix
+- Fmt code
+
+### Workflow
+
+- Update workflows check
+
+## [2.0.3] - 2025-01-25
+
 ### 📚 Documentation
 
 - Enhance documentation for `ImpersonateBuilder` methods (#367)

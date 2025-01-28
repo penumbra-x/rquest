@@ -88,7 +88,7 @@ By default, `rquest` uses Mozilla's root certificates through the `webpki-roots`
 
   Note: Many `Akamai` fingerprint strings are incomplete. For example, the [website](https://tls.peet.ws/api/all) lacks Priority and Stream ID in the Headers Frame, making it easy to detect. For details, refer to the `HTTP2` frame [parser](https://github.com/0x676e67/pingly/blob/main/src/track/inspector/http2.rs).
 
-- **Default Fingerprint**
+- **Device Fingerprint**
 
   In fact, most device models have the same `TLS`/`HTTP2` configuration, except that the `User-Agent` is changed.
 
