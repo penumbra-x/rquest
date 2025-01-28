@@ -455,7 +455,7 @@ impl_into_cert_compression_algorithm_for_types!(
 );
 
 impl_into_cert_compression_algorithm_for_types!(
-    Cow<'static, [CertCompressionAlgorithm]> => |s| Some(s),
+    Cow<'static, [CertCompressionAlgorithm]> => Some,
     Option<Cow<'static, [CertCompressionAlgorithm]>> => |s| s
 );
 

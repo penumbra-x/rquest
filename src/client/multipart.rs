@@ -405,7 +405,7 @@ impl<P: PartProps> FormParts<P> {
     // but not if a generic reader has been added;
     pub(crate) fn compute_length(&mut self) -> Option<u64> {
         let mut length = 0u64;
-        for &(ref name, ref field) in self.fields.iter() {
+        for (ref name, ref field) in self.fields.iter() {
             match field.value_len() {
                 Some(value_length) => {
                     // We are constructing the header just to get its length. To not have to
@@ -437,7 +437,7 @@ impl<P: PartProps> FormParts<P> {
 
     /// Take the fields vector of this instance, replacing with an empty vector.
     fn take_fields(&mut self) -> Vec<(Cow<'static, str>, P)> {
-        std::mem::replace(&mut self.fields, Vec::new())
+        std::mem::take(&mut self.fields)
     }
 }
 

@@ -1034,7 +1034,7 @@ pub struct Http2Builder<'a> {
     inner: &'a mut hyper2::client::conn::http2::Builder<Exec>,
 }
 
-impl<'a> Deref for Http2Builder<'a> {
+impl Deref for Http2Builder<'_> {
     type Target = hyper2::client::conn::http2::Builder<Exec>;
 
     fn deref(&self) -> &Self::Target {
@@ -1042,7 +1042,7 @@ impl<'a> Deref for Http2Builder<'a> {
     }
 }
 
-impl<'a> DerefMut for Http2Builder<'a> {
+impl DerefMut for Http2Builder<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.inner
     }

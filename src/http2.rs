@@ -127,6 +127,6 @@ macro_rules! impl_into_stream_dependency {
 impl_into_stream_dependency!(
     (u32, u8, bool) => |(id, weight, exclusive)| Some(StreamDependency::new(StreamId::from(id), weight, exclusive)),
     Option<(u32, u8, bool)> => |opt: Option<(u32, u8, bool)>| opt.map(|(id, weight, exclusive)| StreamDependency::new(StreamId::from(id), weight, exclusive)),
-    StreamDependency => |dep| Some(dep),
+    StreamDependency => Some,
     Option<StreamDependency> => |opt| opt
 );

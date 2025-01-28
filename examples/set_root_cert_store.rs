@@ -17,7 +17,7 @@ fn load_static_root_certs() -> Option<&'static X509Store> {
     static CERT_STORE: LazyLock<Result<X509Store, Error>> = LazyLock::new(|| {
         let mut cert_store = X509StoreBuilder::new()?;
         for cert in webpki_root_certs::TLS_SERVER_ROOT_CERTS {
-            let cert = X509::from_der(&*cert)?;
+            let cert = X509::from_der(cert)?;
             cert_store.add_cert(cert)?;
         }
         Ok(cert_store.build())
