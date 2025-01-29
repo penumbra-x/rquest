@@ -49,6 +49,12 @@ use log::{debug, trace};
 
 type HyperResponseFuture = util::client::ResponseFuture;
 
+#[cfg(feature = "cookies")]
+type CookieStoreOption = Option<Arc<dyn cookie::CookieStore>>;
+
+#[cfg(not(feature = "cookies"))]
+type CookieStoreOption = ();
+
 /// An asynchronous `Client` to make Requests with.
 ///
 /// The Client has various configuration values to tweak, but the defaults
@@ -73,11 +79,6 @@ pub struct Client {
 pub struct ClientBuilder {
     config: Config,
 }
-
-#[cfg(feature = "cookies")]
-type CookieStoreOption = Option<Arc<dyn cookie::CookieStore>>;
-#[cfg(not(feature = "cookies"))]
-type CookieStoreOption = ();
 
 struct Config {
     // NOTE: When adding a new field, update `fmt::Debug for ClientBuilder`
