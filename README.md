@@ -32,7 +32,7 @@ This asynchronous example uses [Tokio](https://tokio.rs) and enables some option
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "2.0.0"
+rquest = "3.0.0"
 ```
 
 And then the code:

@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - *(websocket)* Improve error handling, rename APIs, and update API signatures (#372)
 - Rename method to accept_key for clarity
 - *(websocket)* Refactor websocket implementation (#380)
+- Improve client API design and documentation (#387)
 
 ### 📚 Documentation
 
@@ -36,6 +37,8 @@ All notable changes to this project will be documented in this file.
 - Update websocket examples
 - Clippy fix
 - Fmt code
+- Fmt code
+- Fmt imports (#388)
 
 ### Workflow
 
