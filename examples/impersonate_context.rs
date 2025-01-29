@@ -1,10 +1,10 @@
 use http::{header, HeaderMap, HeaderName, HeaderValue};
 use rquest::{
     join, AlpnProtos, AlpsProtos, CertCompressionAlgorithm, ExtensionType, Http1Builder,
-    Http2Builder, SslCurve, TlsSettings, TlsVersion,
+    Http1Config, Http2Builder, SslCurve, TlsConfig, TlsVersion,
 };
-use rquest::{Client, ImpersonateSettings};
-use rquest::{Http2Settings, PseudoOrder::*, SettingsOrder::*};
+use rquest::{Client, HttpContext};
+use rquest::{Http2Config, PseudoOrder::*, SettingsOrder::*};
 use rquest::{Priority, StreamDependency, StreamId};
 
 // ============== TLS Extension Algorithms ==============
@@ -116,25 +116,31 @@ async fn main() -> Result<(), rquest::Error> {
         .with_max_level(tracing::Level::TRACE)
         .init();
 
-    // TLS settings
-    let tls = TlsSettings::builder()
+    // TLS config
+    let tls = TlsConfig::builder()
         .curves(CURVES)
         .cipher_list(CIPHER_LIST)
         .sigalgs_list(SIGALGS_LIST)
         .delegated_credentials(DELEGATED_CREDENTIALS)
         .cert_compression_algorithm(CERT_COMPRESSION_ALGORITHM)
         .record_size_limit(RECORD_SIZE_LIMIT)
-        .alpn_protos(AlpnProtos::All)
-        .alps_protos(AlpsProtos::Http2)
         .pre_shared_key(true)
         .enable_ech_grease(true)
+        .alpn_protos(AlpnProtos::All)
+        .alps_protos(AlpsProtos::Http2)
         .min_tls_version(TlsVersion::TLS_1_0)
         .max_tls_version(TlsVersion::TLS_1_3)
         .extension_permutation_indices(EXTENSION_PERMUTATION_INDICES)
         .build();
 
-    // HTTP/2 settings
-    let http2 = Http2Settings::builder()
+    // HTTP/1 config
+    let http1 = Http1Config::builder()
+        .allow_obsolete_multiline_headers_in_responses(true)
+        .max_headers(100)
+        .build();
+
+    // HTTP/2 config
+    let http2 = Http2Config::builder()
         .initial_stream_id(15)
         .header_table_size(65536)
         .initial_stream_window_size(131072)
@@ -180,7 +186,7 @@ async fn main() -> Result<(), rquest::Error> {
         ])
         .build();
 
-    // Headers
+    // Default headers
     let headers = {
         let mut headers = HeaderMap::new();
         headers.insert(header::USER_AGENT, HeaderValue::from_static("rquest"));
@@ -197,18 +203,18 @@ async fn main() -> Result<(), rquest::Error> {
         headers
     };
 
-    // Create impersonate settings
-    let settings = ImpersonateSettings::builder()
-        .tls(tls)
-        .http2(http2)
-        .headers(headers)
+    // Create Http context
+    let context = HttpContext::builder()
+        .tls_config(tls)
+        .http1_config(http1)
+        .http2_config(http2)
+        .default_headers(headers)
         .headers_order(HEADER_ORDER)
         .build();
 
-    // Build a client with impersonate settings
+    // Build a client with impersonate config
     let client = Client::builder()
-        .impersonate(settings)
-        .danger_accept_invalid_certs(true)
+        .impersonate(context)
         .http1(http1_configuration)
         .http2(http2_configuration)
         .build()?;

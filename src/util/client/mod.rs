@@ -718,13 +718,17 @@ where
         })
     }
 
-    /// Set the connector for the client.
+    /// Get a reference to the inner connector.
     #[inline]
-    pub(crate) fn with_connector<F>(&mut self, connector: F)
-    where
-        F: FnOnce(&mut C),
-    {
-        connector(&mut self.connector);
+    pub(crate) fn connector_mut(&mut self) -> &mut C {
+        &mut self.connector
+    }
+
+    /// Http1 configuration.
+    pub(crate) fn http1(&mut self) -> Http1Builder<'_> {
+        Http1Builder {
+            inner: &mut self.h1_builder,
+        }
     }
 
     /// Http2 configuration.

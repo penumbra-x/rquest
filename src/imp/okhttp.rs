@@ -8,15 +8,15 @@ macro_rules! mod_generator {
             use super::*;
 
             #[inline(always)]
-            pub fn settings(
+            pub fn http_config(
                 _: ImpersonateOS,
                 skip_http2: bool,
                 skip_headers: bool,
-            ) -> ImpersonateSettings {
-                ImpersonateSettings::builder()
-                    .tls(tls_settings!($cipher_list))
-                    .http2(conditional_http2!(skip_http2, http2_settings!()))
-                    .headers(conditional_headers!(
+            ) -> HttpContext {
+                HttpContext::builder()
+                    .tls_config(tls_config!($cipher_list))
+                    .http2_config(conditional_http2!(skip_http2, http2_config!()))
+                    .default_headers(conditional_headers!(
                         skip_headers,
                         super::header_initializer,
                         $ua
@@ -27,17 +27,15 @@ macro_rules! mod_generator {
     };
 }
 
-macro_rules! tls_settings {
+macro_rules! tls_config {
     ($cipher_list:expr) => {
-        OkHttpTlsSettings::builder()
-            .cipher_list($cipher_list)
-            .build()
+        OkHttpTlsConfig::builder().cipher_list($cipher_list).build()
     };
 }
 
-macro_rules! http2_settings {
+macro_rules! http2_config {
     () => {
-        Http2Settings::builder()
+        Http2Config::builder()
             .initial_stream_window_size(6291456)
             .initial_connection_window_size(15728640)
             .max_concurrent_streams(1000)
@@ -103,7 +101,7 @@ mod tls {
     );
 
     #[derive(TypedBuilder)]
-    pub struct OkHttpTlsSettings {
+    pub struct OkHttpTlsConfig {
         #[builder(default = CURVES)]
         curves: &'static [SslCurve],
 
@@ -113,9 +111,9 @@ mod tls {
         cipher_list: &'static str,
     }
 
-    impl From<OkHttpTlsSettings> for TlsSettings {
-        fn from(val: OkHttpTlsSettings) -> Self {
-            TlsSettings::builder()
+    impl From<OkHttpTlsConfig> for TlsConfig {
+        fn from(val: OkHttpTlsConfig) -> Self {
+            TlsConfig::builder()
                 .enable_ocsp_stapling(true)
                 .curves(val.curves)
                 .sigalgs_list(val.sigalgs_list)
