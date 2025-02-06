@@ -194,11 +194,6 @@ impl Dst {
     }
 
     #[inline(always)]
-    pub(crate) fn is_h2(&self) -> bool {
-        self.alpn_protos == Some(AlpnProtos::Http2)
-    }
-
-    #[inline(always)]
     pub(crate) fn take_addresses(&mut self) -> (Option<Ipv4Addr>, Option<Ipv6Addr>) {
         Arc::make_mut(&mut self.inner).network.take_addresses()
     }
@@ -613,7 +608,7 @@ where
 
         let h1_builder = self.h1_builder.clone();
         let h2_builder = self.h2_builder.clone();
-        let ver = if dst.is_h2() {
+        let ver = if dst.alpn_protos == Some(AlpnProtos::Http2) {
             Ver::Http2
         } else {
             self.config.ver
