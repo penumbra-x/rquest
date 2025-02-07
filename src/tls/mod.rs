@@ -171,12 +171,11 @@ impl Default for AlpnProtos {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AlpsProtos(&'static [u8]);
 
-#[allow(non_upper_case_globals)]
 impl AlpsProtos {
     /// Application Settings protocol for HTTP/1.1
-    pub const Http1: AlpsProtos = AlpsProtos(b"http/1.1");
+    pub const HTTP1: AlpsProtos = AlpsProtos(b"http/1.1");
     /// Application Settings protocol for HTTP/2
-    pub const Http2: AlpsProtos = AlpsProtos(b"h2");
+    pub const HTTP2: AlpsProtos = AlpsProtos(b"h2");
 
     #[inline(always)]
     pub(crate) fn as_ptr(&self) -> *const u8 {
