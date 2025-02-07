@@ -3,6 +3,7 @@
 [![CI](https://github.com/0x676e67/rquest/actions/workflows/ci.yml/badge.svg)](https://github.com/0x676e67/rquest/actions/workflows/ci.yml)
 [![Crates.io License](https://img.shields.io/crates/l/rquest)](./LICENSE)
 [![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)
+[![Documentation](https://docs.rs/rquest/badge.svg)](https://docs.rs/rquest)
 [![Crates.io Total Downloads](https://img.shields.io/crates/d/rquest)](https://crates.io/crates/rquest)
 
 > 🚀 Help me work seamlessly with open source sharing by [sponsoring me on GitHub](https://github.com/0x676e67/0x676e67/blob/main/SPONSOR.md)
@@ -19,11 +20,6 @@ An ergonomic, all-in-one HTTP client for spoofing any browser with `TLS`, `JA3`/
 - WebSocket Upgrade
 - HTTPS via BoringSSL
 - Perfectly Chrome, Safari, and Firefox
-
-Additional learning resources include:
-
-- [API Documentation](https://docs.rs/rquest)
-- [Repository Examples](https://github.com/0x676e67/rquest/tree/main/examples)
 
 ## Example
 
@@ -131,7 +127,7 @@ If you would like to submit your contribution, please open a [Pull Request](http
 
 ## License
 
-Apache-2.0 [LICENSE](LICENSE)
+Licensed under either of Apache-2.0 [License](LICENSE)
 
 ## Accolades
 

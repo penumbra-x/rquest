@@ -103,6 +103,7 @@ percent-encoding = "2.3"
 tokio = { version = "1", default-features = false, features = ["net","time"] }
 pin-project-lite = "0.2.0"
 ipnet = "2.11.0"
+arc-swap = "1.7.0"
 
 ## util
 socket2 = { version = "0.5", features = ["all"] }
@@ -307,11 +308,6 @@ path = "examples/client_chain.rs"
 [[example]]
 name = "request_with_redirect"
 path = "examples/request_with_redirect.rs"
-required-features = ["full"]
-
-[[example]]
-name = "set_redirect"
-path = "examples/set_redirect.rs"
 required-features = ["full"]
 
 [[example]]
