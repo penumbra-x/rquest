@@ -6,6 +6,44 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 Features
 
+- *(client)* Apply configuration sequentially (#391)
+- *(tls)* Add ALPS use new endpoint extension (#396)
+- Add optional clear method to `CookieStore` implementation (#400)
+- *(client)* Adapt thread-safe update client configuration (#404)
+
+### 🐛 Bug Fixes
+
+- Ensure HTTP version negotiation for non-TLS requests (#397)
+
+### 🚜 Refactor
+
+- Replace unsafe methods with safe methods in `ConnectConfiguration` (#398)
+- Replace unsafe methods with safe methods for certificate handler (#399)
+
+### ⚙️ Miscellaneous Tasks
+
+- Fmt code
+- Remove dead code
+- Fix non upper case globals name
+- Fix `AlpnProtos` non upper case globals warning
+- *(websocket)* Fmt code
+- Update client docs
+
+### Build
+
+- *(deps)* Update lru requirement from 0.12 to 0.13 (#393)
+- Update compilation guide (#395)
+- *(deps)* Update brotli requirement from 6.0.0 to 7.0.0 (#401)
+
+### Deps
+
+- *(tokio)* Remove unused `rt` feature (#389)
+- *(ipnet)* Bump version to v2.11.0 (#390)
+
+## [3.0.0] - 2025-01-29
+
+### 🚀 Features
+
 - Add `HTTP/2` support for `WebSocket` (#373)
 - *(websocket)* Explicitly force the use of ws/wss protocol (#383)
 - Serializing impersonate enums uses legacy naming conventions (#385)
