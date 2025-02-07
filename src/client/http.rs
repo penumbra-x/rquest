@@ -1648,10 +1648,10 @@ impl_debug!(ClientInner,{
     network_scheme
 });
 
-/// A reference to a `Client` instance.
+/// A reference to a `ClientInner` instance.
 ///
-/// This struct provides methods to interact with a `Client` instance in a thread-safe manner.
-/// It allows you to access the internal state of the `Client` without modifying it, ensuring
+/// This struct provides methods to interact with a `ClientInner` instance in a thread-safe manner.
+/// It allows you to access the internal state of the `ClientInner` without modifying it, ensuring
 /// that the access is safe and properly synchronized.
 ///
 /// # Example
@@ -1739,9 +1739,9 @@ impl ClientRef {
     }
 }
 
-/// A mutable reference to a `ClientRef`.
+/// A mutable reference to a `ClientInner`.
 ///
-/// This struct provides methods to mutate the state of a `ClientRef`.
+/// This struct provides methods to mutate the state of a `ClientInner`.
 #[derive(Debug)]
 pub struct ClientMut<'c> {
     inner: &'c ArcSwap<ClientInner>,
