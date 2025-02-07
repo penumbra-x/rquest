@@ -197,7 +197,7 @@ impl ClientBuilder {
         }
         let proxies_maybe_http_auth = proxies.iter().any(|p| p.maybe_has_http_auth());
 
-        let http2_only = matches!(config.tls_config.alpn_protos, AlpnProtos::Http2);
+        let http2_only = matches!(config.tls_config.alpn_protos, AlpnProtos::HTTP2);
 
         config
             .builder
@@ -752,13 +752,13 @@ impl ClientBuilder {
 
     /// Only use HTTP/1.
     pub fn http1_only(mut self) -> ClientBuilder {
-        self.config.tls_config.alpn_protos = AlpnProtos::Http1;
+        self.config.tls_config.alpn_protos = AlpnProtos::HTTP1;
         self
     }
 
     /// Only use HTTP/2.
     pub fn http2_only(mut self) -> ClientBuilder {
-        self.config.tls_config.alpn_protos = AlpnProtos::Http2;
+        self.config.tls_config.alpn_protos = AlpnProtos::HTTP2;
         self
     }
 

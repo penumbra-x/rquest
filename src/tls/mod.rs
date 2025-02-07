@@ -151,19 +151,18 @@ impl TlsVersion {
 pub struct AlpnProtos(&'static [u8]);
 
 /// A `AlpnProtos` is used to set the HTTP version preference.
-#[allow(non_upper_case_globals)]
 impl AlpnProtos {
     /// Prefer HTTP/1.1
-    pub const Http1: AlpnProtos = AlpnProtos(b"\x08http/1.1");
+    pub const HTTP1: AlpnProtos = AlpnProtos(b"\x08http/1.1");
     /// Prefer HTTP/2
-    pub const Http2: AlpnProtos = AlpnProtos(b"\x02h2");
+    pub const HTTP2: AlpnProtos = AlpnProtos(b"\x02h2");
     /// Prefer HTTP/1 and HTTP/2
-    pub const All: AlpnProtos = AlpnProtos(b"\x02h2\x08http/1.1");
+    pub const ALL: AlpnProtos = AlpnProtos(b"\x02h2\x08http/1.1");
 }
 
 impl Default for AlpnProtos {
     fn default() -> Self {
-        Self::All
+        Self::ALL
     }
 }
 
@@ -226,7 +225,7 @@ pub struct TlsConfig {
     /// **Usage Example:**
     /// - Commonly used to negotiate **HTTP/2**.
     /// - Default use all protocols (HTTP/1.1/HTTP/2/HTTP/3).
-    #[builder(default = AlpnProtos::All)]
+    #[builder(default = AlpnProtos::ALL)]
     pub alpn_protos: AlpnProtos,
 
     /// The **ALPS extension** (*draft-vvv-tls-alps*) enables exchanging
