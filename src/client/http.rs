@@ -1343,16 +1343,16 @@ impl Client {
             return Pending::new_err(error::url_bad_scheme(url));
         }
 
-        let inner = self.inner.load();
+        let client = self.inner.load();
 
         // check if we're in https_only mode and check the scheme of the current URL
-        if inner.https_only && url.scheme() != "https" {
+        if client.https_only && url.scheme() != "https" {
             return Pending::new_err(error::url_bad_scheme(url));
         }
 
         // insert default headers in the request headers
         // without overwriting already appended headers.
-        for (key, value) in inner.headers.iter() {
+        for (key, value) in client.headers.iter() {
             if let Entry::Vacant(entry) = headers.entry(key) {
                 entry.insert(value.clone());
             }
@@ -1371,7 +1371,7 @@ impl Client {
             }
         }
 
-        let accept_encoding = inner.accepts.as_str();
+        let accept_encoding = client.accepts.as_str();
 
         if let Some(accept_encoding) = accept_encoding {
             if !headers.contains_key(ACCEPT_ENCODING) && !headers.contains_key(RANGE) {
@@ -1392,9 +1392,9 @@ impl Client {
             None => (None, Body::empty()),
         };
 
-        inner.proxy_auth(&uri, &mut headers);
+        client.proxy_auth(&uri, &mut headers);
 
-        let network_scheme = inner.network_scheme(&uri, network_scheme);
+        let network_scheme = client.network_scheme(&uri, network_scheme);
 
         let in_flight = {
             let res = InnerRequest::builder()
@@ -1402,23 +1402,23 @@ impl Client {
                 .method(method.clone())
                 .version(version)
                 .headers(headers.clone())
-                .headers_order(inner.headers_order.as_deref())
+                .headers_order(client.headers_order.as_deref())
                 .network_scheme(network_scheme.clone())
                 .extension(protocal)
                 .body(body);
 
             match res {
-                Ok(req) => ResponseFuture::Default(inner.hyper.request(req)),
+                Ok(req) => ResponseFuture::Default(client.hyper.request(req)),
                 Err(err) => return Pending::new_err(error::builder(err)),
             }
         };
 
         let total_timeout = timeout
-            .or(inner.request_timeout)
+            .or(client.request_timeout)
             .map(tokio::time::sleep)
             .map(Box::pin);
 
-        let read_timeout = read_timeout.or(inner.read_timeout);
+        let read_timeout = read_timeout.or(client.read_timeout);
 
         let read_timeout_fut = read_timeout.map(tokio::time::sleep).map(Box::pin);
 
@@ -1431,11 +1431,11 @@ impl Client {
                 version,
                 urls: Vec::new(),
                 retry_count: 0,
-                max_retry_count: inner.http2_max_retry_count,
+                max_retry_count: client.http2_max_retry_count,
                 redirect,
                 cookie_store: _cookie_store,
                 network_scheme,
-                client: inner.clone(),
+                client,
                 in_flight,
                 total_timeout,
                 read_timeout_fut,
@@ -1987,7 +1987,7 @@ pin_project! {
         redirect: Option<redirect::Policy>,
         cookie_store: CookieStoreOption,
         network_scheme: NetworkScheme,
-        client: Arc<ClientInner>,
+        client: Guard<Arc<ClientInner>>,
         #[pin]
         in_flight: ResponseFuture,
         #[pin]
