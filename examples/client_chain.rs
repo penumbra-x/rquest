@@ -31,10 +31,14 @@ async fn main() -> Result<(), rquest::Error> {
         .impersonate(Impersonate::Safari18)
         .headers_order(HEADER_ORDER)
         .interface("utun4")
-        .base_url("https://tls.peet.ws")
         .apply()?;
 
-    let text = client.get("/api/all").send().await?.text().await?;
+    let text = client
+        .get("https://tls.peet.ws/api/all")
+        .send()
+        .await?
+        .text()
+        .await?;
     println!("{}", text);
 
     Ok(())
