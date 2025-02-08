@@ -1547,23 +1547,23 @@ impl tower_service::Service<Request> for &'_ Client {
 
 #[derive(Clone, Debug, Default)]
 struct Proxies {
-    proxies: Vec<Proxy>,
-    proxies_maybe_http_auth: bool,
+    inner: Vec<Proxy>,
+    maybe_http_auth: bool,
 }
 
 impl Proxies {
     fn new(proxies: Vec<Proxy>) -> Proxies {
         let proxies_maybe_http_auth = proxies.iter().any(|p| p.maybe_has_http_auth());
         Proxies {
-            proxies,
-            proxies_maybe_http_auth,
+            inner: proxies,
+            maybe_http_auth: proxies_maybe_http_auth,
         }
     }
 
     #[inline(always)]
     fn clear(&mut self) {
-        self.proxies.clear();
-        self.proxies_maybe_http_auth = false;
+        self.inner.clear();
+        self.maybe_http_auth = false;
     }
 }
 
@@ -1590,7 +1590,7 @@ struct ClientInner {
 impl ClientInner {
     #[inline]
     fn proxy_auth(&self, dst: &Uri, headers: &mut HeaderMap) {
-        if !self.proxies.proxies_maybe_http_auth {
+        if !self.proxies.maybe_http_auth {
             return;
         }
 
@@ -1603,10 +1603,9 @@ impl ClientInner {
 
         // Find the first proxy that matches the destination URI
         // If a matching proxy provides an HTTP basic auth header, insert it into the headers
-
         if let Some(header) = self
             .proxies
-            .proxies
+            .inner
             .iter()
             .find(|proxy| proxy.maybe_has_http_auth() && proxy.is_match(dst))
             .and_then(|proxy| proxy.http_basic_auth(dst))
@@ -1621,7 +1620,7 @@ impl ClientInner {
             let mut builder = self.network_scheme.clone();
 
             // iterate over the client's proxies and use the first valid one
-            for proxy in self.proxies.proxies.iter() {
+            for proxy in self.proxies.inner.iter() {
                 if let Some(proxy_scheme) = proxy.intercept(uri) {
                     builder.proxy_scheme(proxy_scheme);
                 }
