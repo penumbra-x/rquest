@@ -81,11 +81,16 @@ struct Config {
         target_os = "android",
         target_os = "fuchsia",
         target_os = "linux",
-        target_os = "ios",
-        target_os = "visionos",
-        target_os = "macos",
-        target_os = "tvos",
-        target_os = "watchos",
+        all(
+            feature = "apple-bindable-device",
+            any(
+                target_os = "ios",
+                target_os = "visionos",
+                target_os = "macos",
+                target_os = "tvos",
+                target_os = "watchos",
+            )
+        )
     ))]
     interface: Option<std::borrow::Cow<'static, str>>,
     #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
@@ -246,11 +251,16 @@ impl<R> HttpConnector<R> {
                     target_os = "android",
                     target_os = "fuchsia",
                     target_os = "linux",
-                    target_os = "ios",
-                    target_os = "visionos",
-                    target_os = "macos",
-                    target_os = "tvos",
-                    target_os = "watchos",
+                    all(
+                        feature = "apple-bindable-device",
+                        any(
+                            target_os = "ios",
+                            target_os = "visionos",
+                            target_os = "macos",
+                            target_os = "tvos",
+                            target_os = "watchos",
+                        )
+                    )
                 ))]
                 interface: None,
                 #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
@@ -812,12 +822,15 @@ fn connect(
             .map_err(ConnectError::m("tcp bind interface error"))?;
     }
 
-    #[cfg(any(
-        target_os = "ios",
-        target_os = "visionos",
-        target_os = "macos",
-        target_os = "tvos",
-        target_os = "watchos",
+    #[cfg(all(
+        feature = "apple-bindable-device",
+        any(
+            target_os = "ios",
+            target_os = "visionos",
+            target_os = "macos",
+            target_os = "tvos",
+            target_os = "watchos",
+        )
     ))]
     /// That this only supports ios, visionos, macos, tvos, watchos
     if let Some(interface) = &config.interface {
