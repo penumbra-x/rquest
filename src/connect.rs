@@ -50,7 +50,6 @@ impl ConnectorBuilder {
                 nodelay: self.nodelay,
                 tls_info: self.tls_info,
                 timeout: self.timeout,
-                keepalive: None,
             };
             return Connector::Simple(base_service);
         }
@@ -62,7 +61,6 @@ impl ConnectorBuilder {
             nodelay: self.nodelay,
             tls_info: self.tls_info,
             timeout: None,
-            keepalive: None,
         };
 
         // otherwise we have user provided layers
@@ -180,7 +178,6 @@ impl Connector {
                     base_service.tls_info,
                 )
                 .timeout(base_service.timeout)
-                .keepalive(base_service.keepalive)
                 .verbose(base_service.verbose.0)
                 .build(std::mem::take(layers));
 
@@ -220,7 +217,6 @@ pub(crate) struct ConnectorService {
     /// This lets us avoid an extra `Box::pin` indirection layer
     /// since `tokio::time::Timeout` is `Unpin`
     timeout: Option<Duration>,
-    keepalive: Option<Duration>,
     nodelay: bool,
     tls_info: bool,
 }
