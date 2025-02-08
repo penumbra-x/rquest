@@ -24,7 +24,7 @@ async fn main() -> Result<(), rquest::Error> {
 
     // Use the API you're already familiar with
     let websocket = client
-        .websocket("wss://127.0.0.1:3000/ws")
+        .websocket("wss://echo.websocket.org")
         .configure_request(configure_request)
         .send()
         .await?;
