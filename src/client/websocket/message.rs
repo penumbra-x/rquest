@@ -254,7 +254,7 @@ pub enum Message {
     /// A close message with the optional close frame.
     ///
     /// You may "uncleanly" close a WebSocket connection at any time
-    /// by simply dropping the [`WebSocket`].
+    /// by simply dropping the [`super::WebSocket`].
     /// However, you may also use the graceful closing protocol, in which
     /// 1. peer A sends a close frame, and does not send any further messages;
     /// 2. peer B responds with a close frame, and does not send any further messages;

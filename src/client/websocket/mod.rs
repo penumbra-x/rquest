@@ -1,4 +1,4 @@
-//! Backport from: https://github.com/tokio-rs/axum/blob/main/axum/src/extract/ws.rs
+//! Backport from: <https://github.com/tokio-rs/axum/blob/main/axum/src/extract/ws.rs>
 
 #[cfg(feature = "json")]
 mod json;

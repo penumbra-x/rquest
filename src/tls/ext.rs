@@ -113,6 +113,7 @@ impl ConnectConfigurationExt for ConnectConfiguration {
         if let Some(alps) = alps {
             self.add_application_settings(alps.0)?;
 
+            // By default, the old endpoint is used. Avoid unnecessary FFI calls.
             if new_endpoint {
                 self.set_alps_use_new_codepoint(new_endpoint);
             }
