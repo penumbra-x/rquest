@@ -406,15 +406,15 @@ trait TlsInfoFactory {
     fn tls_info(&self) -> Option<crate::tls::TlsInfo>;
 }
 
-impl<T: TlsInfoFactory> TlsInfoFactory for TokioIo<T> {
-    fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
-        self.inner().tls_info()
-    }
-}
-
 impl TlsInfoFactory for tokio::net::TcpStream {
     fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
         None
+    }
+}
+
+impl<T: TlsInfoFactory> TlsInfoFactory for TokioIo<T> {
+    fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
+        self.inner().tls_info()
     }
 }
 
@@ -431,26 +431,14 @@ impl TlsInfoFactory for SslStream<TokioIo<TokioIo<tokio::net::TcpStream>>> {
 
 impl TlsInfoFactory for SslStream<TokioIo<MaybeHttpsStream<TokioIo<tokio::net::TcpStream>>>> {
     fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
-        self.ssl()
-            .peer_certificate()
-            .and_then(|c| c.to_der().ok())
-            .map(|c| crate::tls::TlsInfo {
-                peer_certificate: Some(c),
-            })
+        self.get_ref().inner().tls_info()
     }
 }
 
 impl TlsInfoFactory for MaybeHttpsStream<TokioIo<tokio::net::TcpStream>> {
     fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
         match self {
-            MaybeHttpsStream::Https(tls) => tls
-                .inner()
-                .ssl()
-                .peer_certificate()
-                .and_then(|c| c.to_der().ok())
-                .map(|c| crate::tls::TlsInfo {
-                    peer_certificate: Some(c),
-                }),
+            MaybeHttpsStream::Https(tls) => tls.inner().tls_info(),
             MaybeHttpsStream::Http(_) => None,
         }
     }
