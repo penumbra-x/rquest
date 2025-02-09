@@ -197,7 +197,7 @@ impl WebSocketRequestBuilder {
         const EXTENSION_PROTOCOL: Protocol = Protocol::from_static("websocket");
 
         // Ensure the request is HTTP 1.1/HTTP 2
-        let nonce = match version {
+        let accept_key = match version {
             Version::HTTP_10 | Version::HTTP_11 => {
                 // Generate a nonce if one wasn't provided
                 let nonce = self
@@ -247,7 +247,7 @@ impl WebSocketRequestBuilder {
             .await
             .map(|inner| WebSocketResponse {
                 inner,
-                nonce,
+                accept_key,
                 protocols: self.protocols,
                 config: self.config,
                 version,
@@ -262,7 +262,7 @@ impl WebSocketRequestBuilder {
 #[derive(Debug)]
 pub struct WebSocketResponse {
     inner: Response,
-    nonce: Option<Cow<'static, str>>,
+    accept_key: Option<Cow<'static, str>>,
     protocols: Option<Vec<Cow<'static, str>>>,
     config: WebSocketConfig,
     version: Version,
@@ -318,7 +318,10 @@ impl WebSocketResponse {
                         return Err(Error::new(Kind::Upgrade, Some("invalid upgrade header")));
                     }
 
-                    match self.nonce.zip(headers.get(header::SEC_WEBSOCKET_ACCEPT)) {
+                    match self
+                        .accept_key
+                        .zip(headers.get(header::SEC_WEBSOCKET_ACCEPT))
+                    {
                         Some((nonce, header)) => {
                             if !header.to_str().is_ok_and(|s| {
                                 s == tungstenite::handshake::derive_accept_key(nonce.as_bytes())

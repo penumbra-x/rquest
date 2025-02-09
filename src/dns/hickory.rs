@@ -21,7 +21,10 @@ impl HickoryDnsResolver {
     /// which reads from `/etc/resolve.conf`. The options are
     /// overriden to look up for both IPv4 and IPv6 addresses
     /// to work with "happy eyeballs" algorithm.
-    pub fn new<S: Into<Option<LookupIpStrategy>>>(strategy: S) -> crate::Result<Self> {
+    pub fn new<S>(strategy: S) -> crate::Result<Self>
+    where
+        S: Into<Option<LookupIpStrategy>>,
+    {
         let (config, mut opts) = match system_conf::read_system_conf() {
             Ok((config, opts)) => (config, opts),
             Err(err) => {
