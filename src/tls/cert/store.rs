@@ -1,9 +1,5 @@
 #![allow(missing_debug_implementations)]
-use crate::{
-    error,
-    tls::{cert::load, TlsResult},
-    Error,
-};
+use crate::{error, tls::TlsResult, Error};
 use boring2::{
     error::ErrorStack,
     ssl::SslConnectorBuilder,
@@ -240,7 +236,7 @@ impl RootCertStoreProvider {
                 // WebPKI root certificates are enabled (regardless of whether native-roots is also enabled).
                 #[cfg(any(feature = "webpki-roots", feature = "native-roots"))]
                 {
-                    if let Some(cert_store) = load::LOAD_CERTS.as_ref() {
+                    if let Some(cert_store) = super::load::LOAD_CERTS.as_ref() {
                         log::debug!("Using CA certs from webpki/native roots");
                         builder.set_verify_cert_store_ref(&cert_store.0)
                     } else {
