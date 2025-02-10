@@ -7,3 +7,5 @@ Cargo.lock
 result
 curl
 .idea
+**/*.rs.bk
+/.DS_Store
