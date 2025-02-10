@@ -1,30 +1,34 @@
 /// referrer: https://github.com/cloudflare/boring/blob/master/hyper-boring/src/lib.rs
 use super::cache::{SessionCache, SessionKey};
-use super::{key_index, HttpsConnectorBuilder, HttpsLayerSettings, MaybeHttpsStream};
+use super::{key_index, HandshakeSettings, MaybeHttpsStream};
+
 use crate::connect::HttpConnector;
 use crate::error::BoxError;
-
-use crate::tls::ConnectConfigurationExt;
+use crate::tls::ext::SslRefExt;
+use crate::tls::{ConnectConfigurationExt, SslConnectorBuilderExt, TlsConfig, TlsResult};
 use crate::util::client::connect::Connection;
 use crate::util::rt::TokioIo;
+
 use antidote::Mutex;
 use boring2::error::ErrorStack;
 use boring2::ssl::{
-    ConnectConfiguration, Ssl, SslConnector, SslConnectorBuilder, SslRef, SslSessionCacheMode,
+    ConnectConfiguration, Ssl, SslConnector, SslConnectorBuilder, SslMethod, SslOptions, SslRef,
+    SslSessionCacheMode,
 };
 use http::uri::Scheme;
 use http::Uri;
 use hyper2::rt::{Read, Write};
+
+use tokio_boring2::SslStream;
+use tower_service::Service;
+
 use std::error::Error;
 use std::fmt::Debug;
 use std::future::Future;
-use std::net::Ipv6Addr;
-use tokio_boring2::SslStream;
-
+use std::net::{IpAddr, Ipv6Addr};
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use tower_service::Service;
 
 /// A Connector using BoringSSL to support `http` and `https` schemes.
 #[derive(Clone)]
@@ -34,9 +38,44 @@ pub struct HttpsConnector<T> {
 }
 
 impl HttpsConnector<HttpConnector> {
-    /// Creates a new `HttpsConnectorBuilder`
-    pub fn builder(http: HttpConnector) -> HttpsConnectorBuilder {
-        HttpsConnectorBuilder::new(http)
+    /// Creates a new `HttpsConnector`
+    pub fn new(
+        mut http: HttpConnector,
+        connector: BoringTlsConnector,
+        dst: &mut crate::Dst,
+    ) -> HttpsConnector<HttpConnector> {
+        // Get the ALPN protocols from the destination
+        let alpn_protos = dst.alpn_protos();
+
+        // Set the local address and interface
+        match dst.take_addresses() {
+            (Some(a), Some(b)) => http.set_local_addresses(a, b),
+            (Some(a), None) => http.set_local_address(Some(IpAddr::V4(a))),
+            (None, Some(b)) => http.set_local_address(Some(IpAddr::V6(b))),
+            _ => (),
+        }
+
+        // Set the interface
+        #[cfg(any(
+            target_os = "android",
+            target_os = "fuchsia",
+            target_os = "linux",
+            all(
+                feature = "apple-bindable-device",
+                any(
+                    target_os = "ios",
+                    target_os = "visionos",
+                    target_os = "macos",
+                    target_os = "tvos",
+                    target_os = "watchos",
+                )
+            )
+        ))]
+        http.set_interface(dst.take_interface());
+
+        let mut connector = HttpsConnector::with_connector(http, connector);
+        connector.set_ssl_callback(move |ssl, _| ssl.alpn_protos(alpn_protos));
+        connector
     }
 }
 
@@ -48,10 +87,10 @@ where
     T: Read + Write + Connection + Unpin + Debug + Sync + Send + 'static,
 {
     /// Creates a new `HttpsConnector` with a given `HttpConnector`
-    pub fn with_connector_layer(http: S, layer: HttpsLayer) -> HttpsConnector<S> {
+    pub fn with_connector(http: S, connector: BoringTlsConnector) -> HttpsConnector<S> {
         HttpsConnector {
             http,
-            inner: layer.inner,
+            inner: connector.inner,
         }
     }
 
@@ -85,7 +124,7 @@ where
 
 /// A layer which wraps services in an `HttpsConnector`.
 #[derive(Clone)]
-pub struct HttpsLayer {
+pub struct BoringTlsConnector {
     inner: Inner,
 }
 
@@ -102,12 +141,99 @@ type Callback =
     Arc<dyn Fn(&mut ConnectConfiguration, &Uri) -> Result<(), ErrorStack> + Sync + Send>;
 type SslCallback = Arc<dyn Fn(&mut SslRef, &Uri) -> Result<(), ErrorStack> + Sync + Send>;
 
-impl HttpsLayer {
-    /// Creates a new `HttpsLayer` with settings
-    pub fn with_connector_and_settings(
+impl BoringTlsConnector {
+    /// Creates a new `BoringTlsConnector` with the given `TlsConfig`.
+    pub fn new(config: TlsConfig) -> TlsResult<BoringTlsConnector> {
+        let mut connector = SslConnector::no_default_verify_builder(SslMethod::tls_client())?
+            .root_cert_store(config.root_certs_store)?
+            .cert_verification(config.certs_verification)?
+            .alpn_protos(config.alpn_protos)?
+            .min_tls_version(config.min_tls_version)?
+            .max_tls_version(config.max_tls_version)?;
+
+        if config.enable_ocsp_stapling {
+            connector.enable_ocsp_stapling();
+        }
+
+        if config.enable_signed_cert_timestamps {
+            connector.enable_signed_cert_timestamps();
+        }
+
+        if !config.session_ticket {
+            connector.set_options(SslOptions::NO_TICKET);
+        }
+
+        if !config.psk_dhe_ke {
+            connector.set_options(SslOptions::NO_PSK_DHE_KE);
+        }
+
+        if !config.renegotiation {
+            connector.set_options(SslOptions::NO_RENEGOTIATION);
+        }
+
+        if let Some(grease_enabled) = config.grease_enabled {
+            connector.set_grease_enabled(grease_enabled);
+        }
+
+        if let Some(permute_extensions) = config.permute_extensions {
+            connector.set_permute_extensions(permute_extensions);
+        }
+
+        if let Some(curves) = config.curves.as_deref() {
+            connector.set_curves(curves)?;
+        }
+
+        if let Some(sigalgs_list) = config.sigalgs_list.as_deref() {
+            connector.set_sigalgs_list(sigalgs_list)?;
+        }
+
+        if let Some(delegated_credentials) = config.delegated_credentials.as_deref() {
+            connector.set_delegated_credentials(delegated_credentials)?;
+        }
+
+        if let Some(cipher_list) = config.cipher_list.as_deref() {
+            connector.set_cipher_list(cipher_list)?;
+        }
+
+        if let Some(cert_compression_algorithm) = config.cert_compression_algorithm {
+            for algorithm in cert_compression_algorithm.iter() {
+                connector = connector.add_cert_compression_algorithm(*algorithm)?;
+            }
+        }
+
+        if let Some(record_size_limit) = config.record_size_limit {
+            connector.set_record_size_limit(record_size_limit);
+        }
+
+        if let Some(limit) = config.key_shares_limit {
+            connector.set_key_shares_limit(limit);
+        }
+
+        if let Some(indices) = config.extension_permutation_indices {
+            connector.set_extension_permutation_indices(indices.as_ref())?;
+        }
+
+        // Create the `TlsSettings` with the default session cache capacity.
+        let settings = HandshakeSettings::builder()
+            .session_cache(config.pre_shared_key)
+            .skip_session_ticket(config.psk_skip_session_ticket)
+            .alps_protos(config.alps_protos)
+            .alps_use_new_codepoint(config.alps_use_new_codepoint)
+            .enable_ech_grease(config.enable_ech_grease)
+            .tls_sni(config.tls_sni)
+            .verify_hostname(config.verify_hostname)
+            .build();
+
+        Ok(BoringTlsConnector::with_connector_and_settings(
+            connector, settings,
+        ))
+    }
+
+    /// Creates a new `BoringTlsConnector` with settings
+    fn with_connector_and_settings(
         mut ssl: SslConnectorBuilder,
-        settings: HttpsLayerSettings,
-    ) -> HttpsLayer {
+        settings: HandshakeSettings,
+    ) -> BoringTlsConnector {
         // If the session cache is disabled, we don't need to set up any callbacks.
         let cache = if settings.session_cache {
             let cache = Arc::new(Mutex::new(SessionCache::with_capacity(
@@ -146,7 +272,7 @@ impl HttpsLayer {
             Ok(())
         });
 
-        HttpsLayer {
+        BoringTlsConnector {
             inner: Inner {
                 ssl: ssl.build(),
                 cache,
