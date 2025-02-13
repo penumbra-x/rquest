@@ -53,31 +53,36 @@ async fn main() -> Result<(), rquest::Error> {
 
 ## Performance
 
-BoringSSL is a fork of OpenSSL designed for security and efficiency, used by Google Chrome, Android, and Cloudflare. We haven't encountered serious issues with BoringSSL related to the Golang utls [issue](https://github.com/refraction-networking/utls/issues/274).
+BoringSSL is a security- and efficiency-focused fork of OpenSSL, used by Google Chrome, Android, and Cloudflare. Unlike Golang utls, we haven’t encountered major issues related to [this issue](https://github.com/refraction-networking/utls/issues/274). By default, HTTP2 tracing is disabled, cutting performance overhead by 15%. For more details, see [this issue](https://github.com/hyperium/h2/issues/713).
 
-By default, HTTP2 tracing is turned off, reducing performance overhead by 15%. For more information, see [issue](https://github.com/hyperium/h2/issues/713).
+## FFI Bindings
 
-## Connection Pool
+- [rnet](https://github.com/0x676e67/rnet): Python HTTP client with a touch of black magic.
+- [ktor-impersonate](https://github.com/rushiiMachine/ktor-impersonate): KMP Ktor engine bindings for `rquest` to spoof JA3/JA4/H2 fingerprints.
 
-The client can configure the maximum number of connection pools. Request manages connections based on `Host` and `Proxy`/`IP`/`Interface`, and can flexibly switch between them.
+## Requirements
 
-- `Interface` refers to the network interface of the device, such as `wlan0` or `eth0`.
+Do not compile with packages that depend on openssl-sys; it links with the same prefix symbol as boring-sys, which can cause [link failures](https://github.com/cloudflare/boring/issues/197) and other problems. Even if compilation succeeds, using both `openssl-sys` and `boring-sys` as dependencies can cause memory segmentation faults.
 
-## Root Certificate
+Install the dependencies required to build [BoringSSL](https://github.com/google/boringssl/blob/master/BUILDING.md#build-prerequisites)
 
-By default, `rquest` uses Mozilla's root certificates through the `webpki-roots` crate. This static root certificate bundle is not automatically updated and ignores any root certificates installed on the host. You can disable `default-features` to use the system's default certificate path. Additionally, `rquest` provides a certificate store for users to customize and update certificates.
+```shell
+sudo apt-get install build-essential cmake perl pkg-config libclang-dev musl-tools -y
+
+cargo build --release
+```
+
+This GitHub Actions [workflow](https://github.com/0x676e67/rquest/blob/main/.github/compilation-guide/build.yml) can be used to compile the project on **Linux**, **Windows**, and **macOS**.
 
 ## Fingerprint
 
-- **JA3/JA4/Akamai Fingerprint**
+- **HTTP/2 over TLS**
 
-  Supports custom `TLS`/`HTTP2` fingerprint parameters. Customization is not recommended unless you are highly familiar with TLS and HTTP2, as it may cause unexpected issues.
+  **JA3**/**JA4**/**Akamai** fingerprints cannot accurately simulate browser fingerprints due to the sophistication of TLS encryption and the popularity of HTTP/2. `rquest` does not plan to support parsing these fingerprint strings for simulation. Users are encouraged to customize the configuration according to their own needs.
 
-  `JA3`/`JA4`/`Akamai` fingerprints cannot accurately simulate browser fingerprints due to the sophistication of TLS encryption and the popularity of HTTP2. `rquest` does not plan to support parsing these fingerprint strings for simulation. Users are encouraged to customize the configuration according to their own needs.
+  Note: Many `Akamai` fingerprint strings are incomplete. For example, the [website](https://tls.peet.ws/api/all) lacks Priority and Stream ID in the Headers Frame, making it easy to detect. For details, refer to the HTTP/2 frame [parser](https://github.com/0x676e67/pingly/blob/main/src/track/inspector/http2.rs).
 
-  Note: Many `Akamai` fingerprint strings are incomplete. For example, the [website](https://tls.peet.ws/api/all) lacks Priority and Stream ID in the Headers Frame, making it easy to detect. For details, refer to the HTTP2 frame [parser](https://github.com/0x676e67/pingly/blob/main/src/track/inspector/http2.rs).
-
-- **Device Fingerprint**
+- **Browser Device**
 
   In fact, most device models have the same `TLS`/`HTTP2` configuration, except that the `User-Agent` is changed.
 
@@ -107,20 +112,6 @@ By default, `rquest` uses Mozilla's root certificates through the `webpki-roots`
 
     </details>
 
-## Building
-
-Do not compile with packages that depend on openssl-sys; it links with the same prefix symbol as boring-sys, which can cause [link failures](https://github.com/cloudflare/boring/issues/197) and other problems. Even if compilation succeeds, using both `openssl-sys` and `boring-sys` as dependencies can cause memory segmentation faults.
-
-Install the dependencies required to build [BoringSSL](https://github.com/google/boringssl/blob/master/BUILDING.md#build-prerequisites)
-
-```shell
-sudo apt-get install build-essential cmake perl pkg-config libclang-dev musl-tools -y
-
-cargo build --release
-```
-
-This GitHub Actions [workflow](https://github.com/0x676e67/rquest/blob/main/.github/compilation-guide/build.yml) can be used to compile the project on **Linux**, **Windows**, and **macOS**.
-
 ## Contribution
 
 If you would like to submit your contribution, please open a [Pull Request](https://github.com/0x676e67/rquest/pulls).
@@ -128,6 +119,9 @@ If you would like to submit your contribution, please open a [Pull Request](http
 ## License
 
 Licensed under either of Apache-2.0 [License](LICENSE)
+
+## Sponsors
+Support this project by becoming a [sponsor](https://github.com/0x676e67/0x676e67/blob/main/SPONSOR.md).
 
 ## Accolades
 
