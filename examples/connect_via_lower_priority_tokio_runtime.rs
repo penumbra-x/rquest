@@ -71,7 +71,7 @@ mod background_threadpool {
             .spawn(move || {
                 let rt = tokio::runtime::Builder::new_multi_thread()
                     .thread_name("cpu-heavy-background-pool-thread")
-                    .worker_threads(num_cpus::get())
+                    .worker_threads(std::thread::available_parallelism().unwrap().get() as usize)
                     // ref: https://github.com/tokio-rs/tokio/issues/4941
                     // consider uncommenting if seeing heavy task contention
                     // .disable_lifo_slot()
