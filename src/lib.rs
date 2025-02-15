@@ -345,7 +345,7 @@ fn _assert_impls() {
 #[cfg(test)]
 doc_comment::doctest!("../README.md");
 
-#[cfg(feature = "emulation")]
+#[cfg(feature = "emulation-device")]
 pub use self::client::emulation::{Emulation, EmulationOS, EmulationOption};
 #[cfg(feature = "multipart")]
 pub use self::client::multipart;
@@ -355,8 +355,8 @@ pub use self::client::websocket::{
     WebSocketResponse,
 };
 pub use self::client::{
-    Body, Client, ClientBuilder, ClientMut, ClientRef, Http1Config, Http2Config, HttpContext,
-    HttpContextProvider, Request, RequestBuilder, Response, Upgraded,
+    Body, Client, ClientBuilder, ClientMut, ClientRef, EmulationProvider, EmulationProviderFactory,
+    Http1Config, Http2Config, Request, RequestBuilder, Response, Upgraded,
 };
 pub use self::proxy::{NoProxy, Proxy};
 pub use self::tls::{

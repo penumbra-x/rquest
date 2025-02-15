@@ -38,7 +38,7 @@ use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
 use super::decoder::Accepts;
 use super::request::{Request, RequestBuilder};
 use super::response::Response;
-use super::{Body, HttpContextProvider};
+use super::{Body, EmulationProviderFactory};
 
 use arc_swap::{ArcSwap, Guard};
 use bytes::Bytes;
@@ -918,7 +918,7 @@ impl ClientBuilder {
     ///
     /// # Arguments
     ///
-    /// * `provider` - The HTTP context provider, which can be any type that implements the `HttpContextProvider` trait.
+    /// * `provider` - The HTTP context provider, which can be any type that implements the `EmulationProvider2` trait.
     ///
     /// # Returns
     ///
@@ -934,30 +934,30 @@ impl ClientBuilder {
     ///     .build()
     ///     .unwrap();
     /// ```
-    pub fn emulation<P>(mut self, provider: P) -> ClientBuilder
+    pub fn emulation<P>(mut self, factory: P) -> ClientBuilder
     where
-        P: HttpContextProvider,
+        P: EmulationProviderFactory,
     {
-        let mut http_context = provider.context();
+        let mut emulation = factory.emulation();
 
-        if let Some(mut headers) = http_context.default_headers {
+        if let Some(mut headers) = emulation.default_headers {
             std::mem::swap(&mut self.config.headers, &mut headers);
         }
 
-        if let Some(headers_order) = http_context.headers_order {
+        if let Some(headers_order) = emulation.headers_order {
             std::mem::swap(&mut self.config.headers_order, &mut Some(headers_order));
         }
 
-        if let Some(http1_config) = http_context.http1_config.take() {
+        if let Some(http1_config) = emulation.http1_config.take() {
             let builder = self.config.builder.http1();
             apply_http1_config(builder, http1_config);
         }
-        if let Some(http2_config) = http_context.http2_config.take() {
+        if let Some(http2_config) = emulation.http2_config.take() {
             let builder = self.config.builder.http2();
             apply_http2_config(builder, http2_config)
         }
 
-        std::mem::swap(&mut self.config.tls_config, &mut http_context.tls_config);
+        std::mem::swap(&mut self.config.tls_config, &mut emulation.tls_config);
         self
     }
 
@@ -1874,7 +1874,7 @@ impl<'c> ClientMut<'c> {
     ///
     /// # Arguments
     ///
-    /// * `provider` - The HTTP context provider, which can be any type that implements the `HttpContextProvider` trait.
+    /// * `provider` - The HTTP context provider, which can be any type that implements the `EmulationProvider2` trait.
     ///
     /// # Returns
     ///
@@ -1888,29 +1888,29 @@ impl<'c> ClientMut<'c> {
     /// let mut client = Client::builder().build().unwrap();
     /// client.emulation(Emulation::Firefox128);
     /// ```
-    pub fn emulation<P>(mut self, provider: P) -> ClientMut<'c>
+    pub fn emulation<P>(mut self, factory: P) -> ClientMut<'c>
     where
-        P: HttpContextProvider,
+        P: EmulationProviderFactory,
     {
-        let context = provider.context();
+        let emulation = factory.emulation();
 
-        if let Some(mut headers) = context.default_headers {
+        if let Some(mut headers) = emulation.default_headers {
             std::mem::swap(&mut self.inner_ref.headers, &mut headers);
         }
 
-        if let Some(headers_order) = context.headers_order {
+        if let Some(headers_order) = emulation.headers_order {
             std::mem::swap(&mut self.inner_ref.headers_order, &mut Some(headers_order));
         }
 
-        if let Some(http1_config) = context.http1_config {
+        if let Some(http1_config) = emulation.http1_config {
             apply_http1_config(self.inner_ref.hyper.http1(), http1_config);
         }
 
-        if let Some(http2_config) = context.http2_config {
+        if let Some(http2_config) = emulation.http2_config {
             apply_http2_config(self.inner_ref.hyper.http2(), http2_config);
         }
 
-        match BoringTlsConnector::new(context.tls_config) {
+        match BoringTlsConnector::new(emulation.tls_config) {
             Ok(connector) => {
                 self.inner_ref
                     .hyper
