@@ -10,15 +10,35 @@ All notable changes to this project will be documented in this file.
 - *(tls)* Add ALPS use new endpoint extension (#396)
 - Add optional clear method to `CookieStore` implementation (#400)
 - *(client)* Adapt thread-safe update client configuration (#404)
+- Removal of base url feature  (#411)
+- *(proxy)* Add `socks4a` proxy protocol support (#416)
+- *(tls)* Encapsulate and simplify certificate loading (#417)
+- *(imp)* Add `chrome 132`/`chrome 133` impersonate (#423)
+- *(pool)* Connection pool distinguishes request versions (#431)
+- *(websocket)* Chain call wrapper `RequestBuilder` (#432)
 
 ### 🐛 Bug Fixes
 
 - Ensure HTTP version negotiation for non-TLS requests (#397)
+- Ignore Content-Length for methods without payload semantics (#429)
 
 ### 🚜 Refactor
 
 - Replace unsafe methods with safe methods in `ConnectConfiguration` (#398)
 - Replace unsafe methods with safe methods for certificate handler (#399)
+- *(tls)* Refactor TLS connector structure (#421)
+- Replace "impersonate" with "emulation" for clarity and accuracy (#434)
+- Replace `HttpContext` with `EmulationProvider` for clarity and accuracy (#436)
+
+### 📚 Documentation
+
+- *(client)* Update client `cloned` method documentation (#409)
+
+### ⚡ Performance
+
+- *(connector)* Optimize performance of switching TLS connector (#406)
+- *(connect)* Delay connector layer initialization to improve performance (#408)
+- *(socks)* Socks connection process DNS uses non-blocking query (#420)
 
 ### ⚙️ Miscellaneous Tasks
 
@@ -28,12 +48,33 @@ All notable changes to this project will be documented in this file.
 - Fix `AlpnProtos` non upper case globals warning
 - *(websocket)* Fmt code
 - Update client docs
+- Move `http1`/`http2` config to `conf` mod
+- *(client)* Rename client builder http2 timer name from `timer` to `http2_timer` (#407)
+- *(client)* Delete unnecessary clone
+- *(connect)* Delete connector unnecessary keepalive field
+- Update docs
+- *(tls)* Move `TlsConfig` to conf module
+- *(tls)* Move `conf` to `client/conf` module
+- *(example)* Update websocket example
+- Rename `Proxies` internal fields
+- Simplified error qualifier types (#412)
+- Fmt code
+- *(websocket)* Simplify error handling and improve code readability (#418)
+- *(connect)* Delete duplicate tls info acquisition logic
+- Improve Debug implementation (#422)
 
 ### Build
 
 - *(deps)* Update lru requirement from 0.12 to 0.13 (#393)
 - Update compilation guide (#395)
 - *(deps)* Update brotli requirement from 6.0.0 to 7.0.0 (#401)
+- *(deps)* MacOS platform dependency is minimized (#413)
+- *(deps)* Apple platform dependencies are minimized as much as possible (#414)
+- Visualize macro conditional compilation (#415)
+- Fix no default feature build
+- *(deps)* Update boring requirement from 4.15.2 to 4.15.3 (#425)
+- *(feature)* `apple-bindable-device` rename to `apple-network-device-binding` (#426)
+- *(deps)* Update boring requirement from 4.15.3 to 4.15.5 (#437)
 
 ### Deps
 
@@ -143,7 +184,7 @@ All notable changes to this project will be documented in this file.
 - Add `read_timeout` option with override support in Request (#334)
 - Remove impersonate from str feature (#350)
 - Add tests for `3DES` and `DH2048` cipher support (#351)
-- `Impersonate`/`EmulationOS` impl serde (#352)
+- `Impersonate`/`ImpersonateOS` impl serde (#352)
 - Rename `RootCertsStore` to `RootCertStore` (#353)
 
 ### 🐛 Bug Fixes
