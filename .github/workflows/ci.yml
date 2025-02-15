@@ -1,4 +1,4 @@
-name: Style
+name: CI
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
 jobs:
   
   style:
-    name: Style
+    name: CI
     runs-on: ubuntu-latest
     environment: Linux
 
