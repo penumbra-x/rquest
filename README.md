@@ -1,9 +1,8 @@
-# rquest - `r`ust & quest
+# rquest
 
 [![CI](https://github.com/0x676e67/rquest/actions/workflows/ci.yml/badge.svg)](https://github.com/0x676e67/rquest/actions/workflows/ci.yml)
 [![Crates.io License](https://img.shields.io/crates/l/rquest)](./LICENSE)
 [![crates.io](https://img.shields.io/crates/v/rquest.svg)](https://crates.io/crates/rquest)
-[![Documentation](https://docs.rs/rquest/badge.svg)](https://docs.rs/rquest)
 [![Crates.io Total Downloads](https://img.shields.io/crates/d/rquest)](https://crates.io/crates/rquest)
 
 > 🚀 Help me work seamlessly with open source sharing by [sponsoring me on GitHub](https://github.com/0x676e67/0x676e67/blob/main/SPONSOR.md)
@@ -51,30 +50,12 @@ async fn main() -> Result<(), rquest::Error> {
 }
 ```
 
-## Performance
-
-BoringSSL is a security- and efficiency-focused fork of OpenSSL, used by Google Chrome, Android, and Cloudflare. Unlike Golang utls, we haven’t encountered major issues related to [this issue](https://github.com/refraction-networking/utls/issues/274). By default, HTTP2 tracing is disabled, cutting performance overhead by 15%. For more details, see [this issue](https://github.com/hyperium/h2/issues/713).
-
-## FFI Bindings
+## FFI bindings
 
 - [rnet](https://github.com/0x676e67/rnet): Python HTTP client with a touch of black magic.
 - [ktor-impersonate](https://github.com/rushiiMachine/ktor-impersonate): KMP Ktor engine bindings for `rquest` to spoof JA3/JA4/H2 fingerprints.
 
-## Requirements
-
-Do not compile with packages that depend on openssl-sys; it links with the same prefix symbol as boring-sys, which can cause [link failures](https://github.com/cloudflare/boring/issues/197) and other problems. Even if compilation succeeds, using both `openssl-sys` and `boring-sys` as dependencies can cause memory segmentation faults.
-
-Install the dependencies required to build [BoringSSL](https://github.com/google/boringssl/blob/master/BUILDING.md#build-prerequisites)
-
-```shell
-sudo apt-get install build-essential cmake perl pkg-config libclang-dev musl-tools -y
-
-cargo build --release
-```
-
-This GitHub Actions [workflow](https://github.com/0x676e67/rquest/blob/main/.github/compilation-guide/build.yml) can be used to compile the project on **Linux**, **Windows**, and **macOS**.
-
-## Fingerprint
+## Emulation
 
 - **HTTP/2 over TLS**
 
@@ -82,7 +63,7 @@ This GitHub Actions [workflow](https://github.com/0x676e67/rquest/blob/main/.git
 
   Note: Many `Akamai` fingerprint strings are incomplete. For example, the [website](https://tls.peet.ws/api/all) lacks Priority and Stream ID in the Headers Frame, making it easy to detect. For details, refer to the HTTP/2 frame [parser](https://github.com/0x676e67/pingly/blob/main/src/track/inspector/http2.rs).
 
-- **Browser Device**
+- **Emulation Device**
 
   In fact, most device models have the same `TLS`/`HTTP2` configuration, except that the `User-Agent` is changed.
 
@@ -92,7 +73,7 @@ This GitHub Actions [workflow](https://github.com/0x676e67/rquest/blob/main/.git
 
   - **Chrome**
 
-    `Chrome100`，`Chrome101`，`Chrome104`，`Chrome105`，`Chrome106`，`Chrome107`，`Chrome108`，`Chrome109`，`Chrome114`，`Chrome116`，`Chrome117`，`Chrome118`，`Chrome119`，`Chrome120`，`Chrome123`，`Chrome124`，`Chrome126`，`Chrome127`，`Chrome128`，`Chrome129`，`Chrome130`，`Chrome131`
+    `Chrome100`，`Chrome101`，`Chrome104`，`Chrome105`，`Chrome106`，`Chrome107`，`Chrome108`，`Chrome109`，`Chrome114`，`Chrome116`，`Chrome117`，`Chrome118`，`Chrome119`，`Chrome120`，`Chrome123`，`Chrome124`，`Chrome126`，`Chrome127`，`Chrome128`，`Chrome129`，`Chrome130`，`Chrome131`，`Chrome132`，`Chrome133`
 
   - **Edge**
 
@@ -111,6 +92,20 @@ This GitHub Actions [workflow](https://github.com/0x676e67/rquest/blob/main/.git
     `Firefox109`, `Firefox117`, `Firefox128`, `Firefox133`
 
     </details>
+
+## Building
+
+Do not compile with packages that depend on openssl-sys; it links with the same prefix symbol as boring-sys, which can cause [link failures](https://github.com/cloudflare/boring/issues/197) and other problems. Even if compilation succeeds, using both `openssl-sys` and `boring-sys` as dependencies can cause memory segmentation faults.
+
+Install the dependencies required to build [BoringSSL](https://github.com/google/boringssl/blob/master/BUILDING.md#build-prerequisites)
+
+```shell
+sudo apt-get install build-essential cmake perl pkg-config libclang-dev musl-tools -y
+
+cargo build --release
+```
+
+This GitHub Actions [workflow](https://github.com/0x676e67/rquest/blob/main/.github/compilation-guide/build.yml) can be used to compile the project on **Linux**, **Windows**, and **macOS**.
 
 ## Contribution
 
