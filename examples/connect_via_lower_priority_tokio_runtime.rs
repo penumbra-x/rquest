@@ -11,7 +11,6 @@
 // This is using the `tokio` runtime and certain other dependencies:
 //
 // `tokio = { version = "1", features = ["full"] }`
-// `num_cpus = "1.0"`
 // `libc = "0"`
 // `pin-project-lite = "0.2"`
 // `tower = { version = "0.5", default-features = false}`
@@ -71,7 +70,7 @@ mod background_threadpool {
             .spawn(move || {
                 let rt = tokio::runtime::Builder::new_multi_thread()
                     .thread_name("cpu-heavy-background-pool-thread")
-                    .worker_threads(std::thread::available_parallelism().unwrap().get() as usize)
+                    .worker_threads(std::thread::available_parallelism().unwrap().get())
                     // ref: https://github.com/tokio-rs/tokio/issues/4941
                     // consider uncommenting if seeing heavy task contention
                     // .disable_lifo_slot()
