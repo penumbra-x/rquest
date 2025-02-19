@@ -2,7 +2,7 @@ use rquest::Emulation;
 
 #[tokio::main]
 async fn main() -> Result<(), rquest::Error> {
-    // Build a client to emulation Chrome133
+    // Build a client to emulation FirefoxPrivate135
     let client = rquest::Client::builder()
         .emulation(Emulation::FirefoxPrivate135)
         .build()?;
