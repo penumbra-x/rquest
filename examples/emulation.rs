@@ -4,7 +4,7 @@ use rquest::Emulation;
 async fn main() -> Result<(), rquest::Error> {
     // Build a client to emulation Chrome133
     let client = rquest::Client::builder()
-        .emulation(Emulation::Chrome133)
+        .emulation(Emulation::FirefoxPrivate135)
         .build()?;
 
     // Use the API you're already familiar with

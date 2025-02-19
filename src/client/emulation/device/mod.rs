@@ -186,6 +186,12 @@ pub enum Emulation {
     Firefox128,
     #[serde(rename = "firefox_133")]
     Firefox133,
+    #[serde(rename = "firefox_135")]
+    Firefox135,
+    #[serde(rename = "firefox_private_135")]
+    FirefoxPrivate135,
+    #[serde(rename = "firefox_android_135")]
+    FirefoxAndroid135,
 }
 
 /// ======== Emulation impls ========
@@ -341,7 +347,10 @@ impl EmulationProviderFactory for EmulationOption {
             Emulation::Firefox109 => ff109::emulation,
             Emulation::Firefox117 => ff117::emulation,
             Emulation::Firefox128 => ff128::emulation,
-            Emulation::Firefox133 => ff133::emulation
+            Emulation::Firefox133 => ff133::emulation,
+            Emulation::Firefox135 => ff135::emulation,
+            Emulation::FirefoxPrivate135 => ff_private_135::emulation,
+            Emulation::FirefoxAndroid135 => ff_android_135::emulation
         )
     }
 }
