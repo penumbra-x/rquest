@@ -9,8 +9,6 @@
 
 An ergonomic, all-in-one HTTP client for emulating any browser with TLS, JA3/JA4, and HTTP2 fingerprints.
 
-## Features
-
 - Plain, JSON, urlencoded, multipart bodies
 - Header Order
 - Redirect Policy
@@ -18,7 +16,7 @@ An ergonomic, all-in-one HTTP client for emulating any browser with TLS, JA3/JA4
 - HTTP Proxies
 - WebSocket Upgrade
 - HTTPS via BoringSSL
-- Perfectly emulation Chrome, Safari, and Firefox
+- Perfectly Chrome, Safari, and Firefox
 
 ## Example
 
@@ -49,11 +47,6 @@ async fn main() -> Result<(), rquest::Error> {
     Ok(())
 }
 ```
-
-## FFI bindings
-
-- [rnet](https://github.com/0x676e67/rnet): Python HTTP client with a touch of black magic.
-- [ktor-emulation](https://github.com/rushiiMachine/ktor-emulation): KMP Ktor engine bindings for `rquest` to spoof JA3/JA4/H2 fingerprints.
 
 ## Emulation
 
@@ -93,6 +86,11 @@ async fn main() -> Result<(), rquest::Error> {
 
     </details>
 
+## FFI bindings
+
+- [rnet](https://github.com/0x676e67/rnet): Python HTTP client with a touch of black magic.
+- [ktor-impersonate](https://github.com/rushiiMachine/ktor-impersonate): KMP Ktor engine bindings for rquest to spoof JA3/JA4/H2 fingerprints.
+
 ## Building
 
 Do not compile with packages that depend on openssl-sys; it links with the same prefix symbol as boring-sys, which can cause [link failures](https://github.com/cloudflare/boring/issues/197) and other problems. Even if compilation succeeds, using both `openssl-sys` and `boring-sys` as dependencies can cause memory segmentation faults.
@@ -107,15 +105,16 @@ cargo build --release
 
 This GitHub Actions [workflow](https://github.com/0x676e67/rquest/blob/main/.github/compilation-guide/build.yml) can be used to compile the project on **Linux**, **Windows**, and **macOS**.
 
-## Contribution
-
-If you would like to submit your contribution, please open a [Pull Request](https://github.com/0x676e67/rquest/pulls).
-
 ## License
 
-Licensed under either of Apache-2.0 [License](LICENSE)
+Released under the [Apache-2.0](./LICENSE) License.
+
+## Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the [Apache-2.0](./LICENSE) license, shall be licensed as above, without any additional terms or conditions.
 
 ## Sponsors
+
 Support this project by becoming a [sponsor](https://github.com/0x676e67/0x676e67/blob/main/SPONSOR.md).
 
 ## Accolades
