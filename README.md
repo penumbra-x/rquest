@@ -54,8 +54,6 @@ async fn main() -> Result<(), rquest::Error> {
 
   **JA3**/**JA4**/**Akamai** fingerprints cannot accurately simulate browser fingerprints due to the sophistication of TLS encryption and the popularity of HTTP/2. `rquest` does not plan to support parsing these fingerprint strings for simulation. Users are encouraged to customize the configuration according to their own needs.
 
-  Note: Many `Akamai` fingerprint strings are incomplete. For example, the [website](https://tls.peet.ws/api/all) lacks Priority and Stream ID in the Headers Frame, making it easy to detect. For details, refer to the HTTP/2 frame [parser](https://github.com/0x676e67/pingly/blob/main/src/track/inspector/http2.rs).
-
 - **Emulation Device**
 
   In fact, most device models have the same `TLS`/`HTTP2` configuration, except that the `User-Agent` is changed.
