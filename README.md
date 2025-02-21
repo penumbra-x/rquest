@@ -9,6 +9,8 @@
 
 An ergonomic, all-in-one HTTP client for emulating any browser with TLS, JA3/JA4, and HTTP2 fingerprints.
 
+## Features
+
 - Plain, JSON, urlencoded, multipart bodies
 - Header Order
 - Redirect Policy
@@ -83,11 +85,6 @@ async fn main() -> Result<(), rquest::Error> {
     `Firefox109`, `Firefox117`, `Firefox128`, `Firefox133`, `Firefox135`, `FirefoxPrivate135`, `FirefoxAndroid135`
 
     </details>
-
-## FFI bindings
-
-- [rnet](https://github.com/0x676e67/rnet): Python HTTP client with a touch of black magic.
-- [ktor-impersonate](https://github.com/rushiiMachine/ktor-impersonate): KMP Ktor engine bindings for rquest to spoof JA3/JA4/H2 fingerprints.
 
 ## Building
 
