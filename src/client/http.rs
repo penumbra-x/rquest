@@ -1719,6 +1719,22 @@ impl ClientRef {
             }
         }
     }
+
+    /// Clears all cookies from the `CookieStore`.
+    ///
+    /// This method removes all cookies stored in the client's `CookieStore`.
+    /// It can be useful in scenarios where you want to reset the client's state
+    /// or ensure that no cookies are sent with subsequent requests.
+    ///
+    /// # Note
+    ///
+    /// This method requires the `cookies` feature to be enabled.
+    #[cfg(feature = "cookies")]
+    pub fn clear_cookies(&self) {
+        if let Some(ref cookie_store) = self.inner.cookie_store {
+            cookie_store.clear();
+        }
+    }
 }
 
 /// A mutable reference to a `ClientInner`.
