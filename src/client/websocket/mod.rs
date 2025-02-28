@@ -293,10 +293,6 @@ impl WebSocketRequestBuilder {
             HeaderValue::from_static("13"),
         );
 
-        const UPGRADE_HEADER: HeaderValue = HeaderValue::from_static("websocket");
-        const CONNECTION_HEADER: HeaderValue = HeaderValue::from_static("upgrade");
-        const EXTENSION_PROTOCOL: Protocol = Protocol::from_static("websocket");
-
         // Ensure the request is HTTP 1.1/HTTP 2
         let accept_key = match version {
             Version::HTTP_10 | Version::HTTP_11 => {
@@ -305,8 +301,8 @@ impl WebSocketRequestBuilder {
                     .accept_key
                     .unwrap_or_else(|| Cow::Owned(tungstenite::handshake::client::generate_key()));
 
-                headers.insert(header::UPGRADE, UPGRADE_HEADER);
-                headers.insert(header::CONNECTION, CONNECTION_HEADER);
+                headers.insert(header::UPGRADE, HeaderValue::from_static("websocket"));
+                headers.insert(header::CONNECTION, HeaderValue::from_static("upgrade"));
                 headers.insert(header::SEC_WEBSOCKET_KEY, HeaderValue::from_str(&nonce)?);
 
                 *request.method_mut() = Method::GET;
@@ -316,7 +312,7 @@ impl WebSocketRequestBuilder {
             Version::HTTP_2 => {
                 *request.method_mut() = Method::CONNECT;
                 *request.version_mut() = Some(Version::HTTP_2);
-                *request.protocol_mut() = Some(EXTENSION_PROTOCOL);
+                *request.protocol_mut() = Some(Protocol::from_static("websocket"));
                 None
             }
             _ => {
