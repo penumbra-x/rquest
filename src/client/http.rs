@@ -222,9 +222,9 @@ impl ClientBuilder {
         if config.auto_sys_proxy {
             proxies.push(Proxy::system());
         }
+        let proxies_maybe_http_auth = proxies.iter().any(Proxy::maybe_has_http_auth);
 
         let http2_only = matches!(config.tls_config.alpn_protos, AlpnProtos::HTTP2);
-
         config
             .builder
             .http2_only(http2_only)
@@ -280,7 +280,8 @@ impl ClientBuilder {
                 read_timeout: config.read_timeout,
                 https_only: config.https_only,
                 http2_max_retry_count: config.http2_max_retry_count,
-                proxies: Proxies::new(proxies),
+                proxies,
+                proxies_maybe_http_auth,
                 network_scheme: config.network_scheme,
             })),
         })
@@ -1520,8 +1521,7 @@ impl Client {
     /// ```
     pub fn update(&self) -> ClientUpdate<'_> {
         ClientUpdate {
-            inner: self.inner.as_ref(),
-            inner_ref: (**self.inner.load()).clone(),
+            inner: (self.inner.as_ref(), (**self.inner.load()).clone()),
             error: None,
         }
     }
@@ -1575,28 +1575,6 @@ impl tower_service::Service<Request> for &'_ Client {
     }
 }
 
-#[derive(Clone, Debug, Default)]
-struct Proxies {
-    inner: Vec<Proxy>,
-    maybe_http_auth: bool,
-}
-
-impl Proxies {
-    fn new(proxies: Vec<Proxy>) -> Proxies {
-        let maybe_http_auth = proxies.iter().any(|p| p.maybe_has_http_auth());
-        Proxies {
-            inner: proxies,
-            maybe_http_auth,
-        }
-    }
-
-    #[inline(always)]
-    fn clear(&mut self) {
-        self.inner.clear();
-        self.maybe_http_auth = false;
-    }
-}
-
 #[derive(Clone)]
 struct ClientInner {
     accepts: Accepts,
@@ -1611,14 +1589,15 @@ struct ClientInner {
     read_timeout: Option<Duration>,
     https_only: bool,
     http2_max_retry_count: usize,
-    proxies: Proxies,
+    proxies: Vec<Proxy>,
+    proxies_maybe_http_auth: bool,
     network_scheme: NetworkSchemeBuilder,
 }
 
 impl ClientInner {
     #[inline]
     fn proxy_auth(&self, dst: &Uri, headers: &mut HeaderMap) {
-        if !self.proxies.maybe_http_auth {
+        if !self.proxies_maybe_http_auth {
             return;
         }
 
@@ -1633,7 +1612,6 @@ impl ClientInner {
         // If a matching proxy provides an HTTP basic auth header, insert it into the headers
         if let Some(header) = self
             .proxies
-            .inner
             .iter()
             .find(|proxy| proxy.maybe_has_http_auth() && proxy.is_match(dst))
             .and_then(|proxy| proxy.http_basic_auth(dst))
@@ -1648,7 +1626,7 @@ impl ClientInner {
             let mut builder = self.network_scheme.clone();
 
             // iterate over the client's proxies and use the first valid one
-            for proxy in self.proxies.inner.iter() {
+            for proxy in self.proxies.iter() {
                 if let Some(proxy_scheme) = proxy.intercept(uri) {
                     builder.proxy_scheme(proxy_scheme);
                 }
@@ -1681,8 +1659,7 @@ impl_debug!(ClientInner,{
 /// This struct provides methods to mutate the state of a `ClientInner`.
 #[derive(Debug)]
 pub struct ClientUpdate<'c> {
-    inner: &'c ArcSwap<ClientInner>,
-    inner_ref: ClientInner,
+    inner: (&'c ArcSwap<ClientInner>, ClientInner),
     error: Option<Error>,
 }
 
@@ -1703,7 +1680,7 @@ impl<'c> ClientUpdate<'c> {
     where
         F: FnOnce(&mut HeaderMap),
     {
-        f(&mut self.inner_ref.headers);
+        f(&mut self.inner.1.headers);
         self
     }
 
@@ -1720,7 +1697,7 @@ impl<'c> ClientUpdate<'c> {
     where
         T: Into<Cow<'static, [HeaderName]>>,
     {
-        std::mem::swap(&mut self.inner_ref.headers_order, &mut Some(order.into()));
+        std::mem::swap(&mut self.inner.1.headers_order, &mut Some(order.into()));
         self
     }
 
@@ -1730,10 +1707,7 @@ impl<'c> ClientUpdate<'c> {
     where
         C: cookie::CookieStore + 'static,
     {
-        std::mem::swap(
-            &mut self.inner_ref.cookie_store,
-            &mut Some(cookie_store as _),
-        );
+        std::mem::swap(&mut self.inner.1.cookie_store, &mut Some(cookie_store as _));
         self
     }
 
@@ -1747,7 +1721,7 @@ impl<'c> ClientUpdate<'c> {
     where
         T: Into<Option<IpAddr>>,
     {
-        self.inner_ref.network_scheme.address(addr.into());
+        self.inner.1.network_scheme.address(addr.into());
         self
     }
 
@@ -1759,7 +1733,7 @@ impl<'c> ClientUpdate<'c> {
         V4: Into<Option<Ipv4Addr>>,
         V6: Into<Option<Ipv6Addr>>,
     {
-        self.inner_ref.network_scheme.addresses(ipv4, ipv6);
+        self.inner.1.network_scheme.addresses(ipv4, ipv6);
         self
     }
 
@@ -1784,7 +1758,7 @@ impl<'c> ClientUpdate<'c> {
     where
         T: Into<Cow<'static, str>>,
     {
-        self.inner_ref.network_scheme.interface(interface);
+        self.inner.1.network_scheme.interface(interface);
         self
     }
 
@@ -1804,8 +1778,9 @@ impl<'c> ClientUpdate<'c> {
         P: IntoIterator,
         P::Item: Into<Proxy>,
     {
-        let mut proxies = Proxies::new(proxies.into_iter().map(Into::into).collect::<Vec<Proxy>>());
-        std::mem::swap(&mut self.inner_ref.proxies, &mut proxies);
+        let proxies = proxies.into_iter().map(Into::into).collect::<Vec<Proxy>>();
+        self.inner.1.proxies_maybe_http_auth = proxies.iter().any(Proxy::maybe_has_http_auth);
+        self.inner.1.proxies = proxies;
         self
     }
 
@@ -1814,7 +1789,8 @@ impl<'c> ClientUpdate<'c> {
     /// This method allows you to clear the proxies for the client, ensuring thread safety. It will
     /// remove the current proxies and return the old proxies, if any.
     pub fn unset_proxies(mut self) -> ClientUpdate<'c> {
-        self.inner_ref.proxies.clear();
+        self.inner.1.proxies.clear();
+        self.inner.1.proxies_maybe_http_auth = false;
         self
     }
 
@@ -1850,31 +1826,28 @@ impl<'c> ClientUpdate<'c> {
         let emulation = factory.emulation();
 
         if let Some(mut headers) = emulation.default_headers {
-            std::mem::swap(&mut self.inner_ref.headers, &mut headers);
+            std::mem::swap(&mut self.inner.1.headers, &mut headers);
         }
 
         if let Some(headers_order) = emulation.headers_order {
-            std::mem::swap(&mut self.inner_ref.headers_order, &mut Some(headers_order));
+            std::mem::swap(&mut self.inner.1.headers_order, &mut Some(headers_order));
         }
 
         if let Some(http1_config) = emulation.http1_config {
-            apply_http1_config(self.inner_ref.hyper.http1(), http1_config);
+            apply_http1_config(self.inner.1.hyper.http1(), http1_config);
         }
 
         if let Some(http2_config) = emulation.http2_config {
-            apply_http2_config(self.inner_ref.hyper.http2(), http2_config);
+            apply_http2_config(self.inner.1.hyper.http2(), http2_config);
         }
 
         match BoringTlsConnector::new(emulation.tls_config) {
             Ok(connector) => {
-                self.inner_ref
-                    .hyper
-                    .connector_mut()
-                    .set_connector(connector);
+                self.inner.1.hyper.connector_mut().set_connector(connector);
             }
             Err(err) => {
                 self.error = Some(error::builder(format!(
-                    "Failed to create BoringTlsConnector: {}",
+                    "failed to create BoringTlsConnector: {}",
                     err
                 )))
             }
@@ -1890,8 +1863,7 @@ impl<'c> ClientUpdate<'c> {
             return Err(err);
         }
 
-        self.inner.store(Arc::new(self.inner_ref));
-
+        self.inner.0.store(Arc::new(self.inner.1));
         Ok(())
     }
 }
