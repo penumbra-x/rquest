@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚜 Refactor
+
+- *(client)* Rename `as_mut` to `update` for clarity and consistency   (#482)
+
+### 🎨 Styling
+
+- *(client)* Fmt code
+
+### 🧪 Testing
+
+- Add client headers update test (#483)
+- Add client emulation update test (#484)
+- Add client cloned test (#485)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(client)* Update docs
+
+## [3.0.1-rc1] - 2025-03-03
+
 ### 🚀 Features
 
 - *(client)* Apply configuration sequentially (#391)
@@ -16,11 +36,36 @@ All notable changes to this project will be documented in this file.
 - *(imp)* Add `chrome 132`/`chrome 133` impersonate (#423)
 - *(pool)* Connection pool distinguishes request versions (#431)
 - *(websocket)* Chain call wrapper `RequestBuilder` (#432)
+- *(websocket)* Added `read_buffer_size` optional config (#457)
+- *(client)* Added a clear cookies function (#472)
+- *(client)* Remove `set_cookies_by_ref` (#474)
+- *(client)* Added a remove cookie function (#475)
+- *(client)* Remove cross-origin redirect proxy support (#477)
 
 ### 🐛 Bug Fixes
 
 - Ensure HTTP version negotiation for non-TLS requests (#397)
 - Ignore Content-Length for methods without payload semantics (#429)
+- *(deps)* Fix alps use new endpoint negotiation (#464)
+- *(proxy)* Fix `no_proxy` on Windows (#470)
+
+### 💼 Other
+
+- *(tokio)* Remove unused `rt` feature (#389)
+- *(ipnet)* Bump version to v2.11.0 (#390)
+- *(deps)* Update lru requirement from 0.12 to 0.13 (#393)
+- Update compilation guide (#395)
+- *(deps)* Update brotli requirement from 6.0.0 to 7.0.0 (#401)
+- *(deps)* MacOS platform dependency is minimized (#413)
+- *(deps)* Apple platform dependencies are minimized as much as possible (#414)
+- Visualize macro conditional compilation (#415)
+- Fix no default feature build
+- *(deps)* Update boring requirement from 4.15.2 to 4.15.3 (#425)
+- *(feature)* `apple-bindable-device` rename to `apple-network-device-binding` (#426)
+- *(deps)* Update boring requirement from 4.15.3 to 4.15.5 (#437)
+- *(deps)* Update boring requirement from 4.15.5 to 4.15.6
+- *(deps)* Update boring requirement from 4.15.7 to 4.15.8 (#468)
+- *(deps)* Update windows-registry requirement from 0.4.0 to 0.5.0 (#471)
 
 ### 🚜 Refactor
 
@@ -29,6 +74,9 @@ All notable changes to this project will be documented in this file.
 - *(tls)* Refactor TLS connector structure (#421)
 - Replace "impersonate" with "emulation" for clarity and accuracy (#434)
 - Replace `HttpContext` with `EmulationProvider` for clarity and accuracy (#436)
+- Reduce dependency on `futures-core` / `futures-util` (#449)
+- *(client)* Simplify client reference handling by removing unnecessary operations (#476)
+- Move device fingerprinting to rquest-util maintenance (#480)
 
 ### 📚 Documentation
 
@@ -39,6 +87,15 @@ All notable changes to this project will be documented in this file.
 - *(connector)* Optimize performance of switching TLS connector (#406)
 - *(connect)* Delay connector layer initialization to improve performance (#408)
 - *(socks)* Socks connection process DNS uses non-blocking query (#420)
+
+### 🎨 Styling
+
+- Fmt code
+
+### 🧪 Testing
+
+- Serialize tests that read/write the same environment variable (#443)
+- Add unit test for cookie getter and setter functionality (#451)
 
 ### ⚙️ Miscellaneous Tasks
 
@@ -62,24 +119,11 @@ All notable changes to this project will be documented in this file.
 - *(websocket)* Simplify error handling and improve code readability (#418)
 - *(connect)* Delete duplicate tls info acquisition logic
 - Improve Debug implementation (#422)
-
-### Build
-
-- *(deps)* Update lru requirement from 0.12 to 0.13 (#393)
-- Update compilation guide (#395)
-- *(deps)* Update brotli requirement from 6.0.0 to 7.0.0 (#401)
-- *(deps)* MacOS platform dependency is minimized (#413)
-- *(deps)* Apple platform dependencies are minimized as much as possible (#414)
-- Visualize macro conditional compilation (#415)
-- Fix no default feature build
-- *(deps)* Update boring requirement from 4.15.2 to 4.15.3 (#425)
-- *(feature)* `apple-bindable-device` rename to `apple-network-device-binding` (#426)
-- *(deps)* Update boring requirement from 4.15.3 to 4.15.5 (#437)
-
-### Deps
-
-- *(tokio)* Remove unused `rt` feature (#389)
-- *(ipnet)* Bump version to v2.11.0 (#390)
+- Merge v2 branch
+- Update compilation-guide (#456)
+- Update the compilation guide (#466)
+- Add Crates.io MSRV
+- Update examples
 
 ## [3.0.0] - 2025-01-29
 
@@ -88,6 +132,10 @@ All notable changes to this project will be documented in this file.
 - Add `HTTP/2` support for `WebSocket` (#373)
 - *(websocket)* Explicitly force the use of ws/wss protocol (#383)
 - Serializing impersonate enums uses legacy naming conventions (#385)
+
+### 💼 Other
+
+- Update workflows check
 
 ### 🚜 Refactor
 
@@ -118,10 +166,6 @@ All notable changes to this project will be documented in this file.
 - Fmt code
 - Fmt code
 - Fmt imports (#388)
-
-### Workflow
-
-- Update workflows check
 
 ## [2.0.3] - 2025-01-25
 
@@ -191,6 +235,15 @@ All notable changes to this project will be documented in this file.
 
 - *(network)* Fix `NetworkScheme` debug format (#332)
 
+### 💼 Other
+
+- *(tower-layer)* Remove unused deps (#322)
+- *(tower)* Pin version v0.5.2
+- *(linux)* Remove unused deps install
+- *(hyper2)* Pin 1.5.0 version (#330)
+- *(boring2)* Pin 4.13.0 version (#331)
+- Add `rc` version check
+
 ### 🚜 Refactor
 
 - Simplify client internal settings (#320)
@@ -223,18 +276,6 @@ All notable changes to this project will be documented in this file.
 - *(http)* Fmt code
 - Optional enable http2 tracing (#335)
 
-### Deps
-
-- *(tower-layer)* Remove unused deps (#322)
-- *(tower)* Pin version v0.5.2
-- *(hyper2)* Pin 1.5.0 version (#330)
-- *(boring2)* Pin 4.13.0 version (#331)
-
-### Workflows
-
-- *(linux)* Remove unused deps install
-- Add `rc` version check
-
 ## [1.5.2] - 2025-01-12
 
 ### 🚀 Features
@@ -261,6 +302,12 @@ All notable changes to this project will be documented in this file.
 
 - Fix `Request` `try_clone` missing variables (#301)
 
+### 💼 Other
+
+- *(deps)* Update env_logger requirement from 0.10.0 to 0.11.6 (#294)
+- *(deps)* Update windows-registry requirement from 0.3.0 to 0.4.0 (#295)
+- Fix conditional compilation (#307)
+
 ### 🚜 Refactor
 
 - *(websocket)* Change parameters to `Cow` types for improved flexibility (#298)
@@ -282,12 +329,6 @@ All notable changes to this project will be documented in this file.
 - *(websocket)* Simplify URL scheme matching and error handling logic (#302)
 - Update websocket bad url handler
 - Annotating default values ​​improves maintainability
-
-### Build
-
-- *(deps)* Update env_logger requirement from 0.10.0 to 0.11.6 (#294)
-- *(deps)* Update windows-registry requirement from 0.3.0 to 0.4.0 (#295)
-- Fix conditional compilation (#307)
 
 ## [1.3.6] - 2025-01-08
 
@@ -334,6 +375,11 @@ All notable changes to this project will be documented in this file.
 - *(redirect)* Fix redirect test
 - *(timeout)* Fix timeout test
 
+### 💼 Other
+
+- Replace `futures_core` with `futures_util` (#269)
+- Fix linux build (#277)
+
 ### 📚 Documentation
 
 - Update `http2`/`network` docs (#273)
@@ -353,14 +399,6 @@ All notable changes to this project will be documented in this file.
 - Sync upstream tests
 - Add all features tests
 
-### Build
-
-- Fix linux build (#277)
-
-### Deps
-
-- Replace `futures_core` with `futures_util` (#269)
-
 ## [1.3.3] - 2025-01-05
 
 ### 🚀 Features
@@ -368,13 +406,13 @@ All notable changes to this project will be documented in this file.
 - *(mimic)* Optional mimic http2 (#262)
 - *(mimic)* Add Tor browser `Firefox 128` mimic (#267)
 
+### 💼 Other
+
+- *(pool)* Replace `futures_channel::mpsc` with `tokio::sync::mpsc` in Hyper (#264)
+
 ### ⚙️ Miscellaneous Tasks
 
 - Simplify http2 configuration
-
-### Deps
-
-- *(pool)* Replace `futures_channel::mpsc` with `tokio::sync::mpsc` in Hyper (#264)
 
 ## [1.3.2] - 2025-01-04
 
@@ -406,16 +444,16 @@ All notable changes to this project will be documented in this file.
 
 ## [1.2.6] - 2025-01-03
 
+### 💼 Other
+
+- Build request failures return errors instead of panic (#254)
+
 ### ⚙️ Miscellaneous Tasks
 
 - Internal request for redundant method boundary (#253)
 - Simplify method signatures
 - Inline suggestions
 - *(tls/ext)* Clearer naming
-
-### Pref
-
-- Build request failures return errors instead of panic (#254)
 
 ## [1.2.5] - 2025-01-02
 
@@ -574,6 +612,10 @@ All notable changes to this project will be documented in this file.
 - *(http2)* Fix http2 header frame initial `stream_id` settings (#185)
 - Fix http protocol auto-negotiation (#189)
 
+### 💼 Other
+
+- *(tokio-util)* V0.7.0 (#190)
+
 ### ⚙️ Miscellaneous Tasks
 
 - Remove dead code (#182)
@@ -598,10 +640,6 @@ All notable changes to this project will be documented in this file.
 - *(tls)* Compile-time calculation of extended permutation (#207)
 - *(tls)* Disable custom TLS builder (#208)
 - Refactor connect network request extension (#210)
-
-### Deps
-
-- *(tokio-util)* V0.7.0 (#190)
 
 ## [0.33.5] - 2024-12-19
 
@@ -640,6 +678,10 @@ All notable changes to this project will be documented in this file.
 - *(client)* Return an error instead of panic when parsing invalid URL (#164)
 - *(connect)* Unnecessarily panic when parsing invalid URI (#166)
 
+### 💼 Other
+
+- *(async-tungstenite)* Downgrade `async-tungstenite` to `0.27.0` (#161)
+
 ### ⚙️ Miscellaneous Tasks
 
 - Do not pre-append `content-length` in non-header sorting state (#152)
@@ -654,10 +696,6 @@ All notable changes to this project will be documented in this file.
 ### ◀️ Revert
 
 - Remove `proxies_maybe_http_auth` state
-
-### Deps
-
-- *(async-tungstenite)* Downgrade `async-tungstenite` to `0.27.0` (#161)
 
 ## [0.32.1] - 2024-12-12
 
@@ -759,6 +797,10 @@ All notable changes to this project will be documented in this file.
 - Support changing cookie provider after initialization (#114)
 - *(client)* Limit number of connections in pool (#118)
 
+### 💼 Other
+
+- Fix `android`/`fuchsia`/`linux` --no-default-features build (#110)
+
 ### 🚜 Refactor
 
 - Reduce `unsafe` scope for improved safety and readability (#115)
@@ -775,10 +817,6 @@ All notable changes to this project will be documented in this file.
 - Simplify pre-configured TLS settings
 - Simplify impersonate template
 - *(tls)* Export extension as public API
-
-### Build
-
-- Fix `android`/`fuchsia`/`linux` --no-default-features build (#110)
 
 ## [0.30.5] - 2024-12-07
 
@@ -893,7 +931,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.27.0] - 2024-10-31
 
-### Deps
+### 💼 Other
 
 - *(hyper)* Bump version to v0.14.60 (#74)
 
@@ -941,7 +979,7 @@ All notable changes to this project will be documented in this file.
 
 - *(client)* Default send header names as title case (only http1) (#61)
 
-### Deps
+### 💼 Other
 
 - *(h2)* Use h2 dependencies export by hyper (#63)
 
@@ -955,13 +993,13 @@ All notable changes to this project will be documented in this file.
 
 - *(http)* Compatible with some CDN servers, Http1 retains case by default when sending headers(#56)
 
+### 💼 Other
+
+- Remove unnecessary libc dependencies (#53)
+
 ### 📚 Documentation
 
 - Update docs (#54)
-
-### Deps
-
-- Remove unnecessary libc dependencies (#53)
 
 ## [0.25.5] - 2024-10-23
 
@@ -999,7 +1037,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.23.2] - 2024-10-16
 
-### Deps
+### 💼 Other
 
 - *(hyper)* Bump version to v0.14.50 (#45)
 
@@ -1067,7 +1105,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.21.15] - 2024-10-09
 
-### Deps
+### 💼 Other
 
 - *(brotli)* 7.0.0 (#22)
 - *(tokio-socks)* 0.5.2 (#23)
@@ -1076,12 +1114,9 @@ All notable changes to this project will be documented in this file.
 
 ## [0.21.12] - 2024-10-06
 
-### Deps
+### 💼 Other
 
 - *(ipnet)* 2.10.0 (#15)
-
-### Dpes
-
 - *(typed-builder)* V0.20.0 (#16)
 
 ## [0.21.11] - 2024-09-27
@@ -1149,13 +1184,13 @@ All notable changes to this project will be documented in this file.
 
 - *(client)* Suggest `inline` to the compiler (#122)
 
-### Remove
+### 💼 Other
 
 - *(client)* Remove blocking client support (#123) (#124) (#125)
 
 ## [0.20.30] - 2024-08-15
 
-### Build
+### 💼 Other
 
 - Fix `--no-default-features` build
 
@@ -1165,7 +1200,7 @@ All notable changes to this project will be documented in this file.
 
 - *(client)* Fix http version setting order (#120)
 
-### Refractor
+### 💼 Other
 
 - *(tls/settings)* Generate configuration using builder mode (#121)
 
@@ -1200,13 +1235,13 @@ All notable changes to this project will be documented in this file.
 - *(client)* Simplify client configuration (#110)
 - *(tls)* Add `CA Certificate` settings (#112)
 
+### 💼 Other
+
+- *(boring/hyper/h2)* Migration patch crate name (#109)
+
 ### 🚜 Refactor
 
 - *(tls)* Refactor TLS connection layer configuration (#111)
-
-### Deps
-
-- *(boring/hyper/h2)* Migration patch crate name (#109)
 
 ## [0.20.10] - 2024-08-10
 
@@ -1234,6 +1269,11 @@ All notable changes to this project will be documented in this file.
 
 - *(tls)* Fix setting config TLS version
 
+### 💼 Other
+
+- *(system-configuration)* V0.6.0
+- *(winreg)* V0.52.0
+
 ### 🚜 Refactor
 
 - *(tls)* Simplify TLS connector configuration (#103)
@@ -1241,11 +1281,6 @@ All notable changes to this project will be documented in this file.
 ### ◀️ Revert
 
 - *(client)* Remove use of unused TLS Server Name Indication
-
-### Deps
-
-- *(system-configuration)* V0.6.0
-- *(winreg)* V0.52.0
 
 ## [0.20.0] - 2024-08-07
 
@@ -1308,14 +1343,14 @@ All notable changes to this project will be documented in this file.
 - *(impersonate)* Fix `safari15_3`/`safari15_5` http2 fingerprint (#70)
 - *(impersonate)* Fix safari header order (#72)
 
-### ⚙️ Miscellaneous Tasks
-
-- 1.80 as MSRV (#74)
-
-### Deps
+### 💼 Other
 
 - *(percent-encoding)* V2.3 (#75)
 - *(boring)* V4.x (#76)
+
+### ⚙️ Miscellaneous Tasks
+
+- 1.80 as MSRV (#74)
 
 ## [0.11.97] - 2024-07-28
 
@@ -1352,6 +1387,12 @@ All notable changes to this project will be documented in this file.
 
 - *(connector)* Fix TLS session failure when changing address (#55)
 
+### 💼 Other
+
+- *(ipnet)* V2.9.0 (#56)
+- *(mime)* V0.3.17 (#57)
+- *(url)* V2.5 (#58)
+
 ### 🚜 Refactor
 
 - Remove unused crates (#54)
@@ -1366,22 +1407,16 @@ All notable changes to this project will be documented in this file.
 - 1.70 as MSRV (#53)
 - 1.70 as MSRV
 
-### Deps
-
-- *(ipnet)* V2.9.0 (#56)
-- *(mime)* V0.3.17 (#57)
-- *(url)* V2.5 (#58)
-
 ## [0.11.91] - 2024-07-25
+
+### 💼 Other
+
+- *(base64)* Bump version to v0.22.x (#46)
+- *(cookie_store)* Bump version to v0.21.x (#47)
 
 ### 🎨 Styling
 
 - *(connect)* Replace all non-refutable if let patterns with let statements (#44)
-
-### Deps
-
-- *(base64)* Bump version to v0.22.x (#46)
-- *(cookie_store)* Bump version to v0.21.x (#47)
 
 ## [0.11.90] - 2024-07-25
 
@@ -1389,14 +1424,14 @@ All notable changes to this project will be documented in this file.
 
 - *(impersonate)* Optimize TLS connector context handle (#37)
 
-### ◀️ Revert
-
-- *(impersonate)* Remove chrome99 impersonate (#38)
-
-### Build
+### 💼 Other
 
 - *(deps)* Bump softprops/action-gh-release from 1 to 2 (#36)
 - *(deps)* Bump actions/checkout from 3 to 4 (#35)
+
+### ◀️ Revert
+
+- *(impersonate)* Remove chrome99 impersonate (#38)
 
 ## [0.11.89] - 2024-07-25
 
@@ -1427,21 +1462,18 @@ All notable changes to this project will be documented in this file.
 - *(impersonate)* Add Safari_IOS_17_4_1 impersonate
 - Add zstd support
 
+### 💼 Other
+
+- Chrome_123, chrome_125 - add `zstd` to Accept-Encoding header
+- Bugfix `chrome_123`, `chrome_124` headers
+- Add `chrome_126`
+
 ### 🚜 Refactor
 
 - *(impersonate)* Refactor unnecessary settings
 - Migrate trust-dns to hickory-dns
 - Migrate trust-dns to hickory-dns
 - *(impersonate)* Reuse code
-
-### Impersonate
-
-- Bugfix `chrome_123`, `chrome_124` headers
-
-### Impersonate
-
-- Chrome_123, chrome_125 - add `zstd` to Accept-Encoding header
-- Add `chrome_126`
 
 ## [0.11.78] - 2024-05-08
 
@@ -1453,7 +1485,7 @@ All notable changes to this project will be documented in this file.
 - *(websocket)* Add upgrade with custom handshake key
 - *(impersonate)* Add Chrome124 impersonate
 
-### Deps
+### 💼 Other
 
 - *(tungstenite)* Backport dependencies
 
@@ -1514,36 +1546,27 @@ All notable changes to this project will be documented in this file.
 
 - Set nodelay correctly to handle when a tls feature is enabled but connection is to an http server (#2062)
 
+### 💼 Other
+
+- Add method `user_agent` to `ClientBuilder`. (#2018)
+- Upgrade dependencies (#2028)
+- Add support for proxy authentication with user-specified header values (#2053)
+- *(hyper)* Bump version to v0.14.33
+
 ### 📚 Documentation
 
 - Remove redundant link targets (#2019)
 - Add cfg notes about http3 builder methods (#2070)
 
-### Deps
-
-- *(hyper)* Bump version to v0.14.33
-
-### Http3
-
-- Upgrade dependencies (#2028)
-
-### Proxy
-
-- Add support for proxy authentication with user-specified header values (#2053)
-
-### Wasm
-
-- Add method `user_agent` to `ClientBuilder`. (#2018)
-
 ## [0.11.46] - 2023-12-23
 
-### Deps
+### 💼 Other
 
 - *(boring-sys)* Bump version to v2.0.6
 
 ## [0.11.45] - 2023-12-22
 
-### Deps
+### 💼 Other
 
 - *(boring-sys)* Bump version to v2.0.5
 
@@ -1553,7 +1576,7 @@ All notable changes to this project will be documented in this file.
 
 - *(impersonate)* Add Safari16_5 impersonate
 
-### Deps
+### 💼 Other
 
 - *(boring-sys)* Bump version to v2.0.4
 
@@ -1563,7 +1586,7 @@ All notable changes to this project will be documented in this file.
 
 - *(impersonate)* Add Chrome117 impersonate
 
-### Deps
+### 💼 Other
 
 - *(boring-sys)* Bump version to v2.0.3
 
@@ -1576,7 +1599,7 @@ All notable changes to this project will be documented in this file.
 - *(impersonate)* Add Chrome101 impersonate
 - *(impersonate)* Improve safari fingerprint impersonate
 
-### Deps
+### 💼 Other
 
 - *(hyper_imp)* Bump version to v0.14.30
 
@@ -1610,7 +1633,7 @@ All notable changes to this project will be documented in this file.
 - *(impersonate)* Support more OkHttp fingerprints
 - *(impersonate)* Add Safari 12 Impersonate
 
-### Deps
+### 💼 Other
 
 - *(hyper)* Bump version to v0.14.28
 
@@ -1657,6 +1680,67 @@ All notable changes to this project will be documented in this file.
 - Strip BOM in `Response::text_with_charset` (#1898)
 - Split connect timeout for multiple IPs (#1940)
 
+### 💼 Other
+
+- Add convenience method for DELETE
+- Use upstream git repo for hyper-native-tls
+- Add conversions from static slices to Body
+- Force a CRLF at the end of request
+- :Response> for Response (#360)
+- Fix docs markup
+- Return a impl Future on json()
+- Return a impl Future on send()
+- Add a basic example for send()
+- Return a impl Future on execute()
+- Don't call poll_ready on tx when 0 bytes remaining. (#479)
+- Test adding duplicate headers to the request (#519)
+- Update to rustls 0.16
+- Translate over response headers (#689)
+- Upgrade base64 to latest version (#692)
+- Add bytes method to wasm response (#694)
+- Add request body in the form of Bytes (#696)
+- Add url function to wasm response (#777)
+- Add error_for_status to wasm response (#779)
+- Opt-out CPUs auto-detection in debug mode (#807)
+- Remove --all flag from rustfmt (#795)
+- Add functions to check more error types. (#945)
+- *(chore)* Update to the latest rustls (#969)
+- Impl TryFrom<HttpRequest<T>> for Request (#997)
+- Omit request body if it's empty (#1012)
+- Add tcp_keepalive option (#1100)
+- Update usage doc for blocking example (#1112)
+- Fix unused `Identity` if only using `default-tls` (#1164)
+- Refactor a collapsible_match (#1214)
+- Check documentation (#1246)
+- Set RequestCredentials to None by default (#1249)
+- Add `try_clone` implementations to `Request` and `RequestBuilder` (#1286)
+- Make a single final job that depends on all others (#1291)
+- Avoid dependency on serde-serialize feature (#1337)
+- Add missing `as_bytes` method to `Body` implementation (#1270)
+- Don't send request body as plain uint8 array (#1358)
+- Wasm body (#1359)
+- Fix standalone/multipart body conversion to JsValue (#1364)
+- Allow passing URL via CLI
+- `stream` feature is needed for `wrap_stream` and `From<File>` for `Body` (#1456)
+- Implement `basic_auth` for WASM
+- Add Identiy::from_pkcs8_pem (#1655)
+- Add SSL_set_permute_extensions
+- Upgrade latest version
+- Fix custom content-type overidden by json method
+- Add methods to split and reassemble a RequestBuilder (#1770)
+- Fix premature abort for streaming bodies (#1782)
+- Blob url support (#1797)
+- Update async-compression v0.3.13 => v0.4.0 (#1828)
+- Enable dependabot for GitHub Action Workflow (#1831)
+- Fix custom content-type overidden by json method (#1833)
+- Update rustls v0.20.1 -> v0.21.0 (#1791)
+- Don't force `webpki` when experiemental `http3` is enabled (#1845)
+- Enable `runtime-tokio` for `quinn` (#1846)
+- Update winrege 0.10 -> 0.50 (#1869)
+- Bump to 1.63 (#1947)
+- Auto detect MacOS proxy settings (#1955)
+- Upgrade trust-dns-resolver from v0.22 to v0.23 (#1965)
+
 ### 🚜 Refactor
 
 - Disable ssl verify
@@ -1690,168 +1774,5 @@ All notable changes to this project will be documented in this file.
 - *(docs)* Fix missing link for 'blocking'
 - Update changelog for 0.11.15
 - A few simple cleanups/lints (#1849)
-
-### Body
-
-- Don't call poll_ready on tx when 0 bytes remaining. (#479)
-
-### CI
-
-- Check documentation (#1246)
-- Make a single final job that depends on all others (#1291)
-- Enable dependabot for GitHub Action Workflow (#1831)
-
-### Doc
-
-- `stream` feature is needed for `wrap_stream` and `From<File>` for `Body` (#1456)
-
-### Error
-
-- Add functions to check more error types. (#945)
-
-### Examples
-
-- Allow passing URL via CLI
-
-### Feature
-
-- Auto detect MacOS proxy settings (#1955)
-
-### From<http
-
-- :Response> for Response (#360)
-
-### Lint
-
-- Fix unused `Identity` if only using `default-tls` (#1164)
-
-### Response.copy_to
-
-- Fix docs markup
-
-### WASM
-
-- Set RequestCredentials to None by default (#1249)
-- Add `try_clone` implementations to `Request` and `RequestBuilder` (#1286)
-
-### [#1095]
-
-- Implement `basic_auth` for WASM
-
-### Actions
-
-- Remove --all flag from rustfmt (#795)
-
-### Async
-
-- Add conversions from static slices to Body
-
-### Async/client
-
-- Return a impl Future on execute()
-
-### Async/reponse
-
-- Return a impl Future on json()
-
-### Async/request
-
-- Return a impl Future on send()
-- Add a basic example for send()
-- Add methods to split and reassemble a RequestBuilder (#1770)
-
-### Blocking
-
-- Opt-out CPUs auto-detection in debug mode (#807)
-- Add tcp_keepalive option (#1100)
-
-### Boring
-
-- Upgrade latest version
-
-### Boringssl
-
-- Add SSL_set_permute_extensions
-
-### Bug
-
-- Fix custom content-type overidden by json method
-- Fix custom content-type overidden by json method (#1833)
-
-### Cargo
-
-- Update to rustls 0.16
-
-### Client
-
-- Add convenience method for DELETE
-
-### Dep
-
-- Upgrade trust-dns-resolver from v0.22 to v0.23 (#1965)
-
-### Dependencies
-
-- Upgrade base64 to latest version (#692)
-
-### Deps
-
-- *(chore)* Update to the latest rustls (#969)
-- Update async-compression v0.3.13 => v0.4.0 (#1828)
-- Update rustls v0.20.1 -> v0.21.0 (#1791)
-- Update winrege 0.10 -> 0.50 (#1869)
-
-### Example
-
-- Update usage doc for blocking example (#1112)
-
-### Fmt
-
-- Wasm body (#1359)
-
-### Http3
-
-- Don't force `webpki` when experiemental `http3` is enabled (#1845)
-- Enable `runtime-tokio` for `quinn` (#1846)
-
-### Msrv
-
-- Bump to 1.63 (#1947)
-
-### Multipart
-
-- Force a CRLF at the end of request
-
-### Native-tls
-
-- Add Identiy::from_pkcs8_pem (#1655)
-
-### Proxy
-
-- Refactor a collapsible_match (#1214)
-
-### Request
-
-- Test adding duplicate headers to the request (#519)
-
-### Tmp
-
-- Use upstream git repo for hyper-native-tls
-
-### Wasm
-
-- Translate over response headers (#689)
-- Add bytes method to wasm response (#694)
-- Add request body in the form of Bytes (#696)
-- Add url function to wasm response (#777)
-- Add error_for_status to wasm response (#779)
-- Impl TryFrom<HttpRequest<T>> for Request (#997)
-- Omit request body if it's empty (#1012)
-- Avoid dependency on serde-serialize feature (#1337)
-- Add missing `as_bytes` method to `Body` implementation (#1270)
-- Don't send request body as plain uint8 array (#1358)
-- Fix standalone/multipart body conversion to JsValue (#1364)
-- Fix premature abort for streaming bodies (#1782)
-- Blob url support (#1797)
 
 <!-- generated by git-cliff -->
