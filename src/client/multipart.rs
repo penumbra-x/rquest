@@ -14,7 +14,7 @@ use percent_encoding::{self, AsciiSet, NON_ALPHANUMERIC};
 #[cfg(feature = "stream")]
 use tokio::fs::File;
 
-use futures_util::{future, stream, Stream, StreamExt};
+use futures_util::{Stream, StreamExt, future, stream};
 
 use super::Body;
 use crate::header::HeaderMap;
@@ -180,7 +180,7 @@ impl Form {
         &mut self,
         name: T,
         part: Part,
-    ) -> impl Stream<Item = Result<Bytes, crate::Error>>
+    ) -> impl Stream<Item = Result<Bytes, crate::Error>> + use<T>
     where
         T: Into<Cow<'static, str>>,
     {
@@ -405,7 +405,7 @@ impl<P: PartProps> FormParts<P> {
     // but not if a generic reader has been added;
     pub(crate) fn compute_length(&mut self) -> Option<u64> {
         let mut length = 0u64;
-        for (ref name, ref field) in self.fields.iter() {
+        for (name, field) in self.fields.iter() {
             match field.value_len() {
                 Some(value_length) => {
                     // We are constructing the header just to get its length. To not have to
