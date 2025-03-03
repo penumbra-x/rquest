@@ -3,7 +3,7 @@ use http::{header, HeaderValue};
 #[tokio::main]
 async fn main() -> Result<(), rquest::Error> {
     // Build a client
-    let client = rquest::Client::builder().build()?;
+    let client = rquest::Client::new();
 
     // Use the API you're already familiar with
     let resp = client.get("https://tls.peet.ws/api/all").send().await?;

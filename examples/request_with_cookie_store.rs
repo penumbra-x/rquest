@@ -15,7 +15,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let url = Url::parse("https://google.com/")?;
 
     // Build a client
-    let client = rquest::Client::builder().build()?;
+    let client = rquest::Client::new();
 
     // Create a cookie store
     // Used to store cookies for specific multiple requests without using the client's cookie store

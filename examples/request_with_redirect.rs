@@ -7,7 +7,7 @@ async fn main() -> Result<(), rquest::Error> {
         .init();
 
     // Build a client
-    let client = rquest::Client::builder().build()?;
+    let client = rquest::Client::new();
 
     let resp = client
         .get("http://google.com/")
