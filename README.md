@@ -8,7 +8,7 @@
 
 > 🚀 Help me work seamlessly with open source sharing by [sponsoring me on GitHub](https://github.com/0x676e67/0x676e67/blob/main/SPONSOR.md)
 
-An ergonomic, all-in-one HTTP client for emulating any browser with TLS, JA3/JA4, and HTTP2 fingerprints.
+An ergonomic all-in-one HTTP client for browser emulation with TLS, JA3/JA4, and HTTP/2 fingerprinting.
 
 ## Features
 
@@ -23,7 +23,7 @@ An ergonomic, all-in-one HTTP client for emulating any browser with TLS, JA3/JA4
 
 ## Example
 
-This asynchronous example uses [Tokio](https://tokio.rs) and enables some optional features. Your `Cargo.toml` could look like this:
+This asynchronous example utilizes [Tokio](https://tokio.rs) with optional features enabled, requiring the following configuration in Cargo.toml:
 
 ```toml
 [dependencies]
