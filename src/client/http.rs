@@ -1698,7 +1698,7 @@ impl<'c> ClientUpdate<'c> {
     ///
     /// # Returns
     ///
-    /// * `ClientMut<'c>` - The modified client with the updated headers.
+    /// * `ClientUpdate<'c>` - The modified client with the updated headers.
     pub fn headers<F>(mut self, f: F) -> ClientUpdate<'c>
     where
         F: FnOnce(&mut HeaderMap),
@@ -1833,7 +1833,7 @@ impl<'c> ClientUpdate<'c> {
     ///
     /// # Returns
     ///
-    /// * `&mut ClientMut<'c>` - The modified client with the applied HTTP context.
+    /// * `&mut ClientUpdate<'c>` - The modified client with the applied HTTP context.
     ///
     /// # Example
     ///
@@ -1883,7 +1883,7 @@ impl<'c> ClientUpdate<'c> {
         self
     }
 
-    /// Applies the changes made to the `ClientMut` to the `Client`.
+    /// Applies the changes made to the `ClientUpdate` to the `Client`.
     #[inline]
     pub fn apply(self) -> Result<(), Error> {
         if let Some(err) = self.error {
