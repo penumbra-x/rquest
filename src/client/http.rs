@@ -13,7 +13,7 @@ use crate::connect::{
     BoxedConnectorLayer, BoxedConnectorService, Connector, ConnectorBuilder,
     sealed::{Conn, Unnameable},
 };
-#[cfg(feature = "cookies")]
+#[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
 use crate::cookie;
 #[cfg(feature = "hickory-dns")]
 use crate::dns::hickory::{HickoryDnsResolver, LookupIpStrategy};
@@ -59,12 +59,6 @@ use tower::{Layer, Service};
 
 type HyperResponseFuture = util::client::ResponseFuture;
 
-#[cfg(feature = "cookies")]
-type CookieStoreOption = Option<Arc<dyn cookie::CookieStore>>;
-
-#[cfg(not(feature = "cookies"))]
-type CookieStoreOption = ();
-
 /// An asynchronous `Client` to make Requests with.
 ///
 /// The Client has various configuration values to tweak, but the defaults
@@ -109,8 +103,8 @@ struct Config {
     read_timeout: Option<Duration>,
     network_scheme: NetworkSchemeBuilder,
     nodelay: bool,
-    #[cfg(feature = "cookies")]
-    cookie_store: CookieStoreOption,
+    #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
+    cookie_store: Option<Arc<dyn cookie::CookieStore>>,
     hickory_dns: bool,
     error: Option<Error>,
     dns_overrides: HashMap<String, Vec<SocketAddr>>,
@@ -191,7 +185,7 @@ impl ClientBuilder {
                 hickory_dns: cfg!(feature = "hickory-dns"),
                 #[cfg(feature = "hickory-dns")]
                 dns_strategy: None,
-                #[cfg(feature = "cookies")]
+                #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
                 cookie_store: None,
                 dns_overrides: HashMap::new(),
                 dns_resolver: None,
@@ -269,7 +263,7 @@ impl ClientBuilder {
         Ok(Client {
             inner: Arc::new(ArcSwap::from_pointee(ClientInner {
                 accepts: config.accepts,
-                #[cfg(feature = "cookies")]
+                #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
                 cookie_store: config.cookie_store,
                 hyper: config.builder.build(connector),
                 headers: config.headers,
@@ -416,8 +410,11 @@ impl ClientBuilder {
     /// # Optional
     ///
     /// This requires the optional `cookies` feature to be enabled.
-    #[cfg(feature = "cookies")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "cookies")))]
+    #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(any(feature = "cookies", feature = "cookies-abstract")))
+    )]
     pub fn cookie_provider<C: cookie::CookieStore + 'static>(
         mut self,
         cookie_store: Arc<C>,
@@ -1286,7 +1283,6 @@ impl Client {
             read_timeout,
             version,
             redirect,
-            _cookie_store,
             network_scheme,
             protocal,
         ) = req.pieces();
@@ -1310,13 +1306,10 @@ impl Client {
             }
         }
 
-        #[cfg(feature = "cookies")]
-        let cookie_store = _cookie_store.as_ref().or(client.cookie_store.as_ref());
-
         // Add cookies from the cookie store.
-        #[cfg(feature = "cookies")]
+        #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
         {
-            if let Some(cookie_store) = cookie_store {
+            if let Some(cookie_store) = client.cookie_store.as_ref() {
                 if headers.get(crate::header::COOKIE).is_none() {
                     add_cookie_header(&mut headers, &**cookie_store, &url);
                 }
@@ -1347,7 +1340,6 @@ impl Client {
         client.proxy_auth(&uri, &mut headers);
 
         let network_scheme = client.network_scheme(&uri, network_scheme);
-
         let in_flight = {
             let res = InnerRequest::builder()
                 .uri(uri)
@@ -1385,7 +1377,6 @@ impl Client {
                 retry_count: 0,
                 max_retry_count: client.http2_max_retry_count,
                 redirect,
-                cookie_store: _cookie_store,
                 network_scheme,
                 client,
                 in_flight,
@@ -1425,7 +1416,7 @@ impl Client {
     }
 
     /// Returns a `String` of the header-value of all `Cookie` in a `Url`.
-    #[cfg(feature = "cookies")]
+    #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
     pub fn get_cookies(&self, url: &Url) -> Option<HeaderValue> {
         self.inner
             .load()
@@ -1447,7 +1438,7 @@ impl Client {
     ///
     /// This method ensures that cookies are only set if at least one cookie
     /// exists in the collection.
-    #[cfg(feature = "cookies")]
+    #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
     pub fn set_cookies<C>(&self, url: &Url, cookies: C)
     where
         C: AsRef<[HeaderValue]>,
@@ -1475,7 +1466,7 @@ impl Client {
     /// # Note
     ///
     /// This method requires the `cookies` feature to be enabled.
-    #[cfg(feature = "cookies")]
+    #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
     pub fn remove_cookie(&self, url: &Url, name: &str) {
         if let Some(ref cookie_store) = self.inner.load().cookie_store {
             cookie_store.remove_cookie(url, name);
@@ -1491,7 +1482,7 @@ impl Client {
     /// # Note
     ///
     /// This method requires the `cookies` feature to be enabled.
-    #[cfg(feature = "cookies")]
+    #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
     pub fn clear_cookies(&self) {
         if let Some(ref cookie_store) = self.inner.load().cookie_store {
             cookie_store.clear();
@@ -1578,7 +1569,7 @@ impl tower_service::Service<Request> for &'_ Client {
 #[derive(Clone)]
 struct ClientInner {
     accepts: Accepts,
-    #[cfg(feature = "cookies")]
+    #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
     cookie_store: Option<Arc<dyn cookie::CookieStore>>,
     headers: HeaderMap,
     headers_order: Option<Cow<'static, [HeaderName]>>,
@@ -1711,7 +1702,7 @@ impl<'c> ClientUpdate<'c> {
     }
 
     /// Set the cookie provider for this client.
-    #[cfg(feature = "cookies")]
+    #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
     pub fn cookie_provider<C>(mut self, cookie_store: Arc<C>) -> ClientUpdate<'c>
     where
         C: cookie::CookieStore + 'static,
@@ -1900,7 +1891,6 @@ pin_project! {
         retry_count: usize,
         max_retry_count: usize,
         redirect: Option<redirect::Policy>,
-        cookie_store: CookieStoreOption,
         network_scheme: NetworkScheme,
         client: Guard<Arc<ClientInner>>,
         #[pin]
@@ -2081,15 +2071,9 @@ impl Future for PendingRequest {
                 },
             };
 
-            #[cfg(feature = "cookies")]
-            let cookie_store = self
-                .cookie_store
-                .as_ref()
-                .or(self.client.cookie_store.as_ref());
-
-            #[cfg(feature = "cookies")]
+            #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
             {
-                if let Some(cookie_store) = cookie_store {
+                if let Some(cookie_store) = self.client.cookie_store.as_ref() {
                     let mut cookies =
                         cookie::extract_response_cookie_headers(res.headers()).peekable();
                     if cookies.peek().is_some() {
@@ -2212,16 +2196,10 @@ impl Future for PendingRequest {
                                 _ => Body::empty(),
                             };
 
-                            #[cfg(feature = "cookies")]
-                            let cookie_store = self
-                                .cookie_store
-                                .as_ref()
-                                .or_else(|| self.client.cookie_store.as_ref());
-
                             // Add cookies from the cookie store.
-                            #[cfg(feature = "cookies")]
+                            #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
                             {
-                                if let Some(cookie_store) = cookie_store {
+                                if let Some(cookie_store) = self.client.cookie_store.as_ref() {
                                     add_cookie_header(&mut headers, &**cookie_store, &self.url);
                                 }
                             }
@@ -2289,7 +2267,7 @@ fn make_referer(next: &Url, previous: &Url) -> Option<HeaderValue> {
     referer.as_str().parse().ok()
 }
 
-#[cfg(feature = "cookies")]
+#[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
 fn add_cookie_header(headers: &mut HeaderMap, cookie_store: &dyn cookie::CookieStore, url: &Url) {
     if let Some(header) = cookie_store.cookies(url) {
         headers.insert(crate::header::COOKIE, header);

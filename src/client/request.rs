@@ -12,43 +12,9 @@ use super::http::{Client, Pending};
 #[cfg(feature = "multipart")]
 use super::multipart;
 use super::response::Response;
-#[cfg(feature = "cookies")]
-use crate::cookie;
 use crate::header::{CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue};
 use crate::util::client::{NetworkScheme, NetworkSchemeBuilder};
 use crate::{IntoUrl, Method, Proxy, Url, redirect};
-#[cfg(feature = "cookies")]
-use std::sync::Arc;
-
-#[cfg(not(feature = "cookies"))]
-type PiecesWithCookieStore = (
-    Method,
-    Url,
-    HeaderMap,
-    Option<Body>,
-    Option<Duration>,
-    Option<Duration>,
-    Option<Version>,
-    Option<redirect::Policy>,
-    (),
-    NetworkScheme,
-    Option<hyper2::ext::Protocol>,
-);
-
-#[cfg(feature = "cookies")]
-type PiecesWithCookieStore = (
-    Method,
-    Url,
-    HeaderMap,
-    Option<Body>,
-    Option<Duration>,
-    Option<Duration>,
-    Option<Version>,
-    Option<redirect::Policy>,
-    Option<Arc<dyn cookie::CookieStore>>,
-    NetworkScheme,
-    Option<hyper2::ext::Protocol>,
-);
 
 /// A request which can be executed with `Client::execute()`.
 pub struct Request {
@@ -60,8 +26,6 @@ pub struct Request {
     read_timeout: Option<Duration>,
     version: Option<Version>,
     redirect: Option<redirect::Policy>,
-    #[cfg(feature = "cookies")]
-    cookie_store: Option<Arc<dyn cookie::CookieStore>>,
     network_scheme: NetworkSchemeBuilder,
     protocol: Option<hyper2::ext::Protocol>,
 }
@@ -88,8 +52,6 @@ impl Request {
             read_timeout: None,
             version: None,
             redirect: None,
-            #[cfg(feature = "cookies")]
-            cookie_store: None,
             network_scheme: NetworkScheme::builder(),
             protocol: None,
         }
@@ -141,13 +103,6 @@ impl Request {
     #[inline]
     pub fn network_scheme_mut(&mut self) -> &mut NetworkSchemeBuilder {
         &mut self.network_scheme
-    }
-
-    /// Get a mutable reference to the cookie store.
-    #[cfg(feature = "cookies")]
-    #[inline]
-    pub fn cookie_store_mut(&mut self) -> &mut Option<Arc<dyn cookie::CookieStore>> {
-        &mut self.cookie_store
     }
 
     /// Get the body.
@@ -219,15 +174,25 @@ impl Request {
         *req.version_mut() = self.version();
         *req.redirect_mut() = self.redirect.clone();
         *req.network_scheme_mut() = self.network_scheme.clone();
-        #[cfg(feature = "cookies")]
-        {
-            *req.cookie_store_mut() = self.cookie_store.clone();
-        }
         req.body = body;
         Some(req)
     }
 
-    pub(super) fn pieces(self) -> PiecesWithCookieStore {
+    #[allow(clippy::type_complexity)]
+    pub(super) fn pieces(
+        self,
+    ) -> (
+        Method,
+        Url,
+        HeaderMap,
+        Option<Body>,
+        Option<Duration>,
+        Option<Duration>,
+        Option<Version>,
+        Option<redirect::Policy>,
+        NetworkScheme,
+        Option<hyper2::ext::Protocol>,
+    ) {
         (
             self.method,
             self.url,
@@ -237,10 +202,6 @@ impl Request {
             self.read_timeout,
             self.version,
             self.redirect,
-            #[cfg(feature = "cookies")]
-            self.cookie_store,
-            #[cfg(not(feature = "cookies"))]
-            (),
             self.network_scheme.build(),
             self.protocol,
         )
@@ -606,15 +567,6 @@ impl RequestBuilder {
         self
     }
 
-    /// Set the cookie store for this request.
-    #[cfg(feature = "cookies")]
-    pub fn cookie_store(mut self, cookie_store: Arc<dyn cookie::CookieStore>) -> RequestBuilder {
-        if let Ok(ref mut req) = self.request {
-            req.cookie_store = Some(cookie_store);
-        }
-        self
-    }
-
     /// Send a form body.
     ///
     /// Sets the body to the url encoded serialization of the passed value,
@@ -846,8 +798,6 @@ where
             // TODO: Add version
             version: None,
             redirect: None,
-            #[cfg(feature = "cookies")]
-            cookie_store: None,
             network_scheme: NetworkScheme::builder(),
             protocol: None,
         })
