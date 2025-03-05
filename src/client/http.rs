@@ -28,7 +28,7 @@ use crate::util::{
     },
     rt::{TokioExecutor, tokio::TokioTimer},
 };
-use crate::{Http1Config, Http2Config, TlsConfig, error, impl_debug};
+use crate::{Http1Config, Http2Config, TlsConfig, error};
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
 use crate::{
     redirect,
@@ -56,6 +56,20 @@ use pin_project_lite::pin_project;
 use tokio::time::Sleep;
 use tower::util::BoxCloneSyncServiceLayer;
 use tower::{Layer, Service};
+
+macro_rules! impl_debug {
+    ($type:ty, { $($field_name:ident),* }) => {
+        impl std::fmt::Debug for $type {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                let mut debug_struct = f.debug_struct(stringify!($type));
+                $(
+                    debug_struct.field(stringify!($field_name), &self.$field_name);
+                )*
+                debug_struct.finish()
+            }
+        }
+    }
+}
 
 type HyperResponseFuture = util::client::ResponseFuture;
 
