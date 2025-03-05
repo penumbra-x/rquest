@@ -694,11 +694,8 @@ impl ClientBuilder {
     }
 
     /// Sets the maximum number of connections in the pool.
-    pub fn pool_max_size<D>(mut self, max: D) -> ClientBuilder
-    where
-        D: Into<Option<NonZeroUsize>>,
-    {
-        self.config.pool_max_size = max.into();
+    pub fn pool_max_size(mut self, max: usize) -> ClientBuilder {
+        self.config.pool_max_size = NonZeroUsize::new(max);
         self
     }
 
