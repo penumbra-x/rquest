@@ -2,7 +2,59 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [3.0.1-rc4] - 2025-03-05
+
+### 🚀 Features
+
+- *(cert)* Expose `RootCertStoreBuilder` as public API (#494)
+
+### 🚜 Refactor
+
+- *(client)* `pool_max_size` signature changed from `Into<Option<NonZeroUsize>>` to `usize` (#498)
+- *(client)* Simplify DNS resolver initialization in ClientBuilder (#499)
+
+### 📚 Documentation
+
+- Update docs (#496)
+- *(emulation)* Improve emulation documentation
+
+### ⚡ Performance
+
+- *(clinet)* Reading `user-agent` to avoid full clone (#495)
+- *(decoder)* Statically check compression headers (#503)
+
+### 🎨 Styling
+
+- *(network)* Fmt code
+
+### ⚙️ Miscellaneous Tasks
+
+- Revert `impl_debug` export
+
+## [3.0.1-rc3] - 2025-03-04
+
+### 🚀 Features
+
+- *(proxy)* Supports `http`/`https` proxy custom headers (#490)
+- *(cookie)* Abstract public cookie store trait (#493)
+
+### 💼 Other
+
+- `MSRV 1.85` / `edition 2024` (#488)
+
+### 🧪 Testing
+
+- Update badssl test (#487)
+
+### ⚙️ Miscellaneous Tasks
+
+- Replace `get_or_insert_with(Vec::new)` to `get_or_insert_default()`
+
+## [3.0.1-rc2] - 2025-03-03
+
+### 💼 Other
+
+- Fix docs build (#486)
 
 ### 🚜 Refactor
 

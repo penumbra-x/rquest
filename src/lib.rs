@@ -5,15 +5,16 @@
 
 //! # rquest
 //!
-//! An ergonomic, all-in-one `TLS`, `JA3`/`JA4`, and `HTTP2` fingerprint `HTTP` Client  for spoofing any browser.
+//! An ergonomic all-in-one HTTP client for browser emulation with TLS, JA3/JA4, and HTTP/2 fingerprinting.
 //!
-//! - Plain bodies, [JSON](#json), [urlencoded](#forms), [multipart], [websocket](#websocket)
+//! - Plain bodies, [JSON](#json), [urlencoded](#forms), [multipart] bodies
 //! - Header Order
 //! - Cookies Store
 //! - [Redirect policy](#redirect-policies)
-//! - Uses [BoringSSL](#tls)
 //! - HTTP [Proxies](#proxies)
-//! - Perfectly emulation Chrome, Safari, and Firefox
+//! - [WebSocket](#websocket) Upgrade
+//! - HTTPS via [BoringSSL](#tls)
+//! - Perfectly Chrome, Safari, and Firefox
 //! - [Changelog](https://github.com/0x676e67/rquest/blob/main/CHANGELOG.md)
 //!
 //! Additional learning resources include:
