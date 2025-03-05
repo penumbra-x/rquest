@@ -565,7 +565,14 @@ impl Accepts {
         }
     }
 
-    pub(super) fn as_str(&self) -> Option<&'static str> {
+    #[cfg(any(
+        feature = "gzip",
+        feature = "brotli",
+        feature = "zstd",
+        feature = "deflate",
+        test
+    ))]
+    pub(super) const fn as_str(&self) -> Option<&'static str> {
         match (
             self.is_gzip(),
             self.is_brotli(),
@@ -591,52 +598,24 @@ impl Accepts {
         }
     }
 
-    fn is_gzip(&self) -> bool {
-        #[cfg(feature = "gzip")]
-        {
-            self.gzip
-        }
-
-        #[cfg(not(feature = "gzip"))]
-        {
-            false
-        }
+    #[cfg(any(feature = "gzip", test))]
+    const fn is_gzip(&self) -> bool {
+        cfg!(feature = "gzip")
     }
 
-    fn is_brotli(&self) -> bool {
-        #[cfg(feature = "brotli")]
-        {
-            self.brotli
-        }
-
-        #[cfg(not(feature = "brotli"))]
-        {
-            false
-        }
+    #[cfg(any(feature = "brotli", test))]
+    const fn is_brotli(&self) -> bool {
+        cfg!(feature = "brotli")
     }
 
-    fn is_zstd(&self) -> bool {
-        #[cfg(feature = "zstd")]
-        {
-            self.zstd
-        }
-
-        #[cfg(not(feature = "zstd"))]
-        {
-            false
-        }
+    #[cfg(any(feature = "zstd", test))]
+    const fn is_zstd(&self) -> bool {
+        cfg!(feature = "zstd")
     }
 
-    fn is_deflate(&self) -> bool {
-        #[cfg(feature = "deflate")]
-        {
-            self.deflate
-        }
-
-        #[cfg(not(feature = "deflate"))]
-        {
-            false
-        }
+    #[cfg(any(feature = "deflate", test))]
+    const fn is_deflate(&self) -> bool {
+        cfg!(feature = "deflate")
     }
 }
 
