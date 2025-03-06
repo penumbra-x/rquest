@@ -294,7 +294,7 @@ where
 ///
 /// `true` if the method has defined payload semantics, otherwise `false`.
 #[inline]
-pub(super) fn method_has_defined_payload_semantics(method: Method) -> bool {
+fn method_has_defined_payload_semantics(method: Method) -> bool {
     !matches!(
         method,
         Method::GET | Method::HEAD | Method::DELETE | Method::CONNECT
