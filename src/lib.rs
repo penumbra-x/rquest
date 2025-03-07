@@ -7,7 +7,7 @@
 //!
 //! An ergonomic all-in-one HTTP client for browser emulation with TLS, JA3/JA4, and HTTP/2 fingerprinting.
 //!
-//! - Plain bodies, [JSON](#json), [urlencoded](#forms), [multipart] bodies
+//! - Plain bodies, [JSON](#json), [urlencoded](#forms), [multipart]
 //! - Header Order
 //! - Cookies Store
 //! - [Redirect policy](#redirect-policies)
