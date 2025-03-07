@@ -16,8 +16,7 @@ async fn main() -> Result<(), rquest::Error> {
 /// Loads the system root certificates.
 fn load_system_root_certs() -> Option<&'static RootCertStore> {
     static LOAD_CERTS: LazyLock<Option<RootCertStore>> = LazyLock::new(|| {
-        match (|| Ok::<RootCertStore, Error>(RootCertStore::builder().set_default_paths().build()?))(
-        ) {
+        match RootCertStore::builder().set_default_paths().build() {
             Ok(store) => Some(store),
             Err(err) => {
                 log::error!("tls failed to load root certificates: {err}");
