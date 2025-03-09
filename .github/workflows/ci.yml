@@ -4,6 +4,11 @@ on:
   push:
     tags: ["v*"]
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.github/**'
+      - 'README.md'
   workflow_dispatch:
 
 concurrency:
