@@ -137,6 +137,22 @@ impl Error {
         false
     }
 
+    /// Returns true if the error is related to a connection reset.
+    pub fn is_connection_reset(&self) -> bool {
+        let mut source = self.source();
+
+        while let Some(err) = source {
+            if let Some(io) = err.downcast_ref::<io::Error>() {
+                if io.kind() == io::ErrorKind::ConnectionReset {
+                    return true;
+                }
+            }
+            source = err.source();
+        }
+
+        false
+    }
+
     /// Returns true if the error is related to the request or response body
     pub fn is_body(&self) -> bool {
         matches!(self.inner.kind, Kind::Body)
@@ -426,5 +442,18 @@ mod tests {
         let io = io::Error::new(io::ErrorKind::Other, err);
         let nested = super::request(io);
         assert!(nested.is_timeout());
+    }
+
+    #[test]
+    fn is_connection_reset() {
+        let err = super::request(io::Error::new(
+            io::ErrorKind::ConnectionReset,
+            "connection reset",
+        ));
+        assert!(err.is_connection_reset());
+
+        let io = io::Error::new(io::ErrorKind::Other, err);
+        let nested = super::request(io);
+        assert!(nested.is_connection_reset());
     }
 }
