@@ -99,7 +99,6 @@ pub struct ClientBuilder {
 }
 
 struct Config {
-    // NOTE: When adding a new field, update `fmt::Debug for ClientBuilder`
     headers: HeaderMap,
     headers_order: Option<Cow<'static, [HeaderName]>>,
     accepts: Accepts,
@@ -887,6 +886,10 @@ impl ClientBuilder {
     /// to use the specified HTTP context. It allows the client to mimic the behavior of different
     /// versions or setups, which can be useful for testing or ensuring compatibility with various environments.
     ///
+    /// # Note
+    /// This will overwrite the existing configuration.
+    /// You must set emulation before you can perform subsequent HTTP1/HTTP2/TLS fine-tuning.
+    ///
     /// # Example
     ///
     /// ```rust
@@ -994,20 +997,20 @@ impl ClientBuilder {
         self
     }
 
-    /// Restrict the Client to be used with HTTPS only requests.
-    ///
-    /// Defaults to false.
-    pub fn https_only(mut self, enabled: bool) -> ClientBuilder {
-        self.config.https_only = enabled;
-        self
-    }
-
     /// Set root certificate store.
     pub fn root_cert_store<S>(mut self, store: S) -> ClientBuilder
     where
         S: Into<RootCertStoreProvider>,
     {
         self.config.tls_config.root_certs_store = store.into();
+        self
+    }
+
+    /// Restrict the Client to be used with HTTPS only requests.
+    ///
+    /// Defaults to false.
+    pub fn https_only(mut self, enabled: bool) -> ClientBuilder {
+        self.config.https_only = enabled;
         self
     }
 
