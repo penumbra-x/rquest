@@ -621,8 +621,8 @@ impl ClientBuilder {
     ///
     /// # Example
     /// ```
-    /// use reqwest::Client;
-    /// use reqwest::Proxy;
+    /// use rquest::Client;
+    /// use rquest::Proxy;
     ///
     /// let proxy = Proxy::http("http://proxy:8080").unwrap();
     /// let client = Client::builder().proxy(proxy).build().unwrap();

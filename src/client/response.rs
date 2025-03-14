@@ -439,7 +439,7 @@ impl fmt::Debug for Response {
 }
 
 // I'm not sure this conversion is that useful... People should be encouraged
-// to use `http::Response`, not `reqwest::Response`.
+// to use `http::Response`, not `rquest::Response`.
 impl<T: Into<Body>> From<http::Response<T>> for Response {
     fn from(r: http::Response<T>) -> Response {
         use crate::response::ResponseUrl;
