@@ -34,11 +34,11 @@ pub trait IntoCookie {
 }
 
 /// A single HTTP cookie.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Cookie<'a>(cookie_crate::Cookie<'a>);
 
 /// A builder for a `Cookie`.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct CookieBuilder<'a>(cookie_crate::CookieBuilder<'a>);
 
 /// A good default `CookieStore` implementation.
@@ -154,7 +154,7 @@ impl<'a> Cookie<'a> {
     }
 }
 
-impl fmt::Debug for Cookie<'_> {
+impl fmt::Display for Cookie<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.fmt(f)
     }
@@ -236,12 +236,6 @@ impl<'c> CookieBuilder<'c> {
     }
 }
 
-impl fmt::Debug for CookieBuilder<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
 pub(crate) fn extract_response_cookie_headers(
     headers: &hyper2::HeaderMap,
 ) -> impl Iterator<Item = &'_ HeaderValue> {
@@ -251,24 +245,21 @@ pub(crate) fn extract_response_cookie_headers(
 pub(crate) fn extract_response_cookies(
     headers: &hyper2::HeaderMap,
 ) -> impl Iterator<Item = Result<Cookie<'_>, crate::Error>> {
-    headers
-        .get_all(SET_COOKIE)
-        .iter()
-        .map(|val| Cookie::parse(val.as_bytes()))
+    headers.get_all(SET_COOKIE).iter().map(Cookie::parse)
 }
 
 // ===== impl IntoCookie =====
 impl IntoCookie for &HeaderValue {
     #[inline]
     fn into(&self) -> Result<Cow<'_, Cookie<'_>>, crate::Error> {
-        Cookie::parse(self.as_bytes()).map(Cow::Owned)
+        Cookie::parse(self).map(Cow::Owned)
     }
 }
 
 impl IntoCookie for HeaderValue {
     #[inline]
     fn into(&self) -> Result<Cow<'_, Cookie<'_>>, crate::Error> {
-        Cookie::parse(self.as_bytes()).map(Cow::Owned)
+        Cookie::parse(self).map(Cow::Owned)
     }
 }
 
