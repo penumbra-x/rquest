@@ -28,8 +28,8 @@ This asynchronous example utilizes [Tokio](https://tokio.rs) with optional featu
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rquest = "3.0.5"
-rquest-util = "0.2.5"
+rquest = "4"
+rquest-util = "1"
 ```
 
 And then the code:
@@ -42,7 +42,7 @@ use rquest_util::Emulation;
 async fn main() -> Result<(), rquest::Error> {
     // Build a client
     let client = Client::builder()
-        .emulation(Emulation::Firefox135)
+        .emulation(Emulation::Firefox136)
         .build()?;
 
     // Use the API you're already familiar with
@@ -71,7 +71,7 @@ async fn main() -> Result<(), rquest::Error> {
 
     | **Browser**   | **Versions**                                                                                     |
     |---------------|--------------------------------------------------------------------------------------------------|
-    | **Chrome**    | `Chrome100`, `Chrome101`, `Chrome104`, `Chrome105`, `Chrome106`, `Chrome107`, `Chrome108`, `Chrome109`, `Chrome114`, `Chrome116`, `Chrome117`, `Chrome118`, `Chrome119`, `Chrome120`, `Chrome123`, `Chrome124`, `Chrome126`, `Chrome127`, `Chrome128`, `Chrome129`, `Chrome130`, `Chrome131`, `Chrome132`, `Chrome133` |
+    | **Chrome**    | `Chrome100`, `Chrome101`, `Chrome104`, `Chrome105`, `Chrome106`, `Chrome107`, `Chrome108`, `Chrome109`, `Chrome114`, `Chrome116`, `Chrome117`, `Chrome118`, `Chrome119`, `Chrome120`, `Chrome123`, `Chrome124`, `Chrome126`, `Chrome127`, `Chrome128`, `Chrome129`, `Chrome130`, `Chrome131`, `Chrome132`, `Chrome133`, `Chrome134` |
     | **Edge**      | `Edge101`, `Edge122`, `Edge127`, `Edge131`, `Edge134`                                                       |
     | **Safari**    | `SafariIos17_2`, `SafariIos17_4_1`, `SafariIos16_5`, `Safari15_3`, `Safari15_5`, `Safari15_6_1`, `Safari16`, `Safari16_5`, `Safari17_0`, `Safari17_2_1`, `Safari17_4_1`, `Safari17_5`, `Safari18`,             `SafariIPad18`, `Safari18_2`, `Safari18_1_1`, `Safari18_3` |
     | **OkHttp**    | `OkHttp3_9`, `OkHttp3_11`, `OkHttp3_13`, `OkHttp3_14`, `OkHttp4_9`, `OkHttp4_10`, `OkHttp4_12`, `OkHttp5`         |

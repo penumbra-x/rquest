@@ -33,7 +33,7 @@
 //! async fn main() -> Result<(), rquest::Error> {
 //!     // Build a client
 //!     let client = Client::builder()
-//!         .emulation(Emulation::Firefox135)
+//!         .emulation(Emulation::Firefox136)
 //!         .build()?;
 //!
 //!     // Use the API you're already familiar with
@@ -57,7 +57,7 @@
 //! async fn main() -> Result<(), rquest::Error> {
 //!     // Build a client
 //!     let websocket = Client::builder()
-//!         .emulation(Emulation::Firefox135)
+//!         .emulation(Emulation::Firefox136)
 //!         .build()?
 //!         .websocket("wss://echo.websocket.org")
 //!         .send()
