@@ -1440,8 +1440,23 @@ impl Client {
         if let Some(ref cookie_store) = self.inner.load().cookie_store {
             let mut cookies = cookies.as_ref().iter().peekable();
             if cookies.peek().is_some() {
-                cookie_store.set_cookies(&mut cookies, url);
+                cookie_store.set_cookies(url, &mut cookies);
             }
+        }
+    }
+
+    /// Inserts a cookie into the `CookieStore` for the specified URL.
+    ///
+    /// # Note
+    ///
+    /// This method requires the `cookies` feature to be enabled.
+    #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
+    pub fn set_cookie<'c, C>(&self, url: &Url, cookie: C)
+    where
+        C: cookie::IntoCookie + 'c,
+    {
+        if let Some(ref cookie_store) = self.inner.load().cookie_store {
+            cookie_store.set_cookie(url, &cookie);
         }
     }
 
@@ -1463,7 +1478,7 @@ impl Client {
     #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
     pub fn remove_cookie(&self, url: &Url, name: &str) {
         if let Some(ref cookie_store) = self.inner.load().cookie_store {
-            cookie_store.remove_cookie(url, name);
+            cookie_store.remove(url, name);
         }
     }
 
@@ -2036,7 +2051,7 @@ impl Future for PendingRequest {
                     let mut cookies =
                         cookie::extract_response_cookie_headers(res.headers()).peekable();
                     if cookies.peek().is_some() {
-                        cookie_store.set_cookies(&mut cookies, &self.url);
+                        cookie_store.set_cookies(&self.url, &mut cookies);
                     }
                 }
             }

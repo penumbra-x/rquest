@@ -1,5 +1,6 @@
 mod support;
 use http::HeaderValue;
+use rquest::cookie::{self, Cookie};
 use support::server;
 
 #[tokio::test]
@@ -258,6 +259,74 @@ async fn clear_cookies() {
 
     let cookies = client.get_cookies(&url);
     assert!(cookies.is_none());
+}
+
+#[tokio::test]
+async fn set_cookie() {
+    let server = server::http(move |req| async move {
+        assert_eq!(req.headers().get("cookie"), None);
+        http::Response::builder()
+            .header("Set-Cookie", "key=val")
+            .body(Default::default())
+            .unwrap()
+    });
+
+    let client = rquest::Client::builder()
+        .cookie_store(true)
+        .build()
+        .unwrap();
+
+    let url = format!("http://{}/", server.addr()).parse().unwrap();
+    client.get(&url).send().await.unwrap();
+
+    let cookies = client.get_cookies(&url).unwrap();
+    let value = cookies.to_str().unwrap();
+    assert!(value == "key=val");
+    client.clear_cookies();
+
+    let url = "https://google.com".parse().unwrap();
+    let cookie = HeaderValue::from_static("key1=val1");
+    client.set_cookie(&url, &cookie);
+    let cookies = client.get_cookies(&url).unwrap();
+    let value = cookies.to_str().unwrap();
+    assert!(value == "key1=val1");
+    client.clear_cookies();
+
+    client.set_cookie(&url, cookie);
+    let cookies = client.get_cookies(&url).unwrap();
+    let value = cookies.to_str().unwrap();
+    assert!(value == "key1=val1");
+    client.clear_cookies();
+
+    let cookie = Cookie::new("key3", "val3");
+    client.set_cookie(&url, cookie);
+    let cookies = client.get_cookies(&url).unwrap();
+    let value = cookies.to_str().unwrap();
+    assert!(value == "key3=val3");
+    client.clear_cookies();
+
+    let cookie = Cookie::builder("key4", "val4")
+        .domain("google.com")
+        .path("/")
+        .secure(true)
+        .http_only(true)
+        .max_age(cookie::Duration::hours(1))
+        .same_site(cookie::SameSite::Strict)
+        .build();
+
+    client.set_cookie(&url, &cookie);
+    // The built-in cookie store implementation ignores some cookie attributes
+    let cookies = client.get_cookies(&url).unwrap();
+    let value = cookies.to_str().unwrap();
+    assert!(value == "key4=val4");
+    client.clear_cookies();
+
+    client.set_cookie(&url, cookie);
+    // The built-in cookie store implementation ignores some cookie attributes
+    let cookies = client.get_cookies(&url).unwrap();
+    let value = cookies.to_str().unwrap();
+    assert!(value == "key4=val4");
+    client.clear_cookies();
 }
 
 #[tokio::test]
