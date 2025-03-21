@@ -8,6 +8,7 @@
 use futures_util::{SinkExt, StreamExt, TryStreamExt};
 use http::header;
 use rquest::{Client, Message};
+use std::time::Duration;
 
 #[tokio::main]
 async fn main() -> Result<(), rquest::Error> {
@@ -17,7 +18,8 @@ async fn main() -> Result<(), rquest::Error> {
 
     // Build a client
     let client = Client::builder()
-        .danger_accept_invalid_certs(true)
+        .connect_timeout(Duration::from_secs(10))
+        .cert_verification(false)
         .build()?;
 
     // Use the API you're already familiar with
