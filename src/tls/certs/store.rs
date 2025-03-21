@@ -179,6 +179,7 @@ impl RootCertStoreBuilder {
 }
 
 /// A collection of certificates Store.
+#[derive(Clone)]
 pub struct RootCertStore(X509Store);
 
 /// ====== impl RootCertStore ======
@@ -314,7 +315,7 @@ where
 }
 
 /// The root certificate store.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub enum RootCertStoreProvider {
     /// An owned `X509Store`.
     Owned(RootCertStore),
