@@ -11,7 +11,7 @@ use typed_builder::TypedBuilder;
 pub struct TlsConfig {
     /// The root certificate store.
     /// Default use system's native certificate store.
-    #[builder(default, setter(transform = |input: impl IntoRootCertStore| input.into()))]
+    #[builder(default, setter(transform = |input: impl IntoCertStore| input.into()))]
     pub cert_store: Option<Cow<'static, CertStore>>,
 
     /// SSL may authenticate either endpoint with an X.509 certificate.
@@ -207,14 +207,14 @@ impl Default for TlsConfig {
 ///
 /// This trait is used to provide a unified way to convert different types
 /// into an optional `Cow` containing a `CertStore`.
-pub trait IntoRootCertStore {
+pub trait IntoCertStore {
     fn into(self) -> Option<Cow<'static, CertStore>>;
 }
 
 macro_rules! impl_into_root_cert_store_for_types {
     ($($t:ty => $body:expr),*) => {
         $(
-            impl IntoRootCertStore for $t {
+            impl IntoCertStore for $t {
                 fn into(self) -> Option<Cow<'static, CertStore>> {
                     $body(self)
                 }

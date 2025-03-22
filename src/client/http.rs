@@ -21,7 +21,7 @@ use crate::dns::{DnsResolverWithOverrides, DynResolver, Resolve, gai::GaiResolve
 use crate::error::{BoxError, Error};
 use crate::into_url::try_uri;
 use crate::proxy::IntoProxy;
-use crate::tls::IntoRootCertStore;
+use crate::tls::IntoCertStore;
 use crate::util::{
     self,
     client::{
@@ -1108,7 +1108,7 @@ impl ClientBuilder {
     /// # Parameters
     ///
     /// - `store`: The verify certificate store to use. This can be a custom implementation
-    ///   of the `IntoRootCertStore` trait or one of the predefined options.
+    ///   of the `IntoCertStore` trait or one of the predefined options.
     ///
     /// # Notes
     ///
@@ -1118,7 +1118,7 @@ impl ClientBuilder {
     ///   potential security risks.
     pub fn cert_store<S>(mut self, store: S) -> ClientBuilder
     where
-        S: IntoRootCertStore,
+        S: IntoCertStore,
     {
         self.config.cert_store = store.into();
         self
