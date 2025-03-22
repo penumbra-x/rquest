@@ -54,7 +54,7 @@ pub trait EmulationProviderFactory {
 #[derive(TypedBuilder, Default, Debug)]
 pub struct EmulationProvider {
     /// TLS configuration for secure connections.
-    #[builder(setter(into))]
+    #[builder(default, setter(into))]
     pub(crate) tls_config: Option<TlsConfig>,
 
     /// HTTP/1 connection settings.
