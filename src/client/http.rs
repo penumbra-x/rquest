@@ -90,7 +90,7 @@ type HyperResponseFuture = util::client::ResponseFuture;
 /// [`Rc`]: std::rc::Rc
 #[derive(Clone, Debug)]
 pub struct Client {
-    inner: Arc<ArcSwap<ClientInner>>,
+    inner: Arc<ArcSwap<ClientRef>>,
 }
 
 /// A `ClientBuilder` can be used to create a `Client` with custom configuration.
@@ -325,7 +325,7 @@ impl ClientBuilder {
         };
 
         Ok(Client {
-            inner: Arc::new(ArcSwap::from_pointee(ClientInner {
+            inner: Arc::new(ArcSwap::from_pointee(ClientRef {
                 accepts: config.accepts,
                 #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
                 cookie_store: config.cookie_store,
@@ -1722,7 +1722,7 @@ impl tower_service::Service<Request> for &'_ Client {
 }
 
 #[derive(Clone)]
-struct ClientInner {
+struct ClientRef {
     accepts: Accepts,
     #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
     cookie_store: Option<Arc<dyn cookie::CookieStore>>,
@@ -1747,7 +1747,7 @@ struct ClientInner {
     max_tls_version: Option<TlsVersion>,
 }
 
-impl ClientInner {
+impl ClientRef {
     #[inline]
     fn proxy_auth(&self, dst: &Uri, headers: &mut HeaderMap) {
         if !self.proxies_maybe_http_auth {
@@ -1801,7 +1801,7 @@ impl ClientInner {
     }
 }
 
-impl_debug!(ClientInner,{
+impl_debug!(ClientRef,{
     accepts,
     headers,
     headers_order,
@@ -1817,13 +1817,13 @@ impl_debug!(ClientInner,{
     cert_verification
 });
 
-/// A mutable reference to a `ClientInner`.
+/// A mutable reference to a `ClientRef`.
 ///
-/// This struct provides methods to mutate the state of a `ClientInner`.
+/// This struct provides methods to mutate the state of a `ClientRef`.
 #[derive(Debug)]
 pub struct ClientUpdate<'c> {
-    inner: &'c ArcSwap<ClientInner>,
-    current: ClientInner,
+    inner: &'c ArcSwap<ClientRef>,
+    current: ClientRef,
     emulation: Option<EmulationProvider>,
 }
 
@@ -2041,7 +2041,7 @@ pin_project! {
         http2_max_retry_count: usize,
         redirect: Option<redirect::Policy>,
         network_scheme: NetworkScheme,
-        client: Guard<Arc<ClientInner>>,
+        client: Guard<Arc<ClientRef>>,
         #[pin]
         in_flight: ResponseFuture,
         #[pin]
