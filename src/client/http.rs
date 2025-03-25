@@ -3,11 +3,11 @@ use std::future::Future;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::num::NonZeroUsize;
 use std::pin::Pin;
+
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use std::time::Duration;
 use std::{collections::HashMap, convert::TryInto, net::SocketAddr};
-use std::{fmt, str};
 
 use crate::connect::{
     BoxedConnectorLayer, BoxedConnectorService, Connector, ConnectorBuilder,
@@ -1488,8 +1488,8 @@ impl Client {
                 .headers(headers.clone())
                 .headers_order(client.headers_order.as_deref())
                 .version(version)
-                .network_scheme(network_scheme.clone())
                 .extension(protocal)
+                .network_scheme(network_scheme.clone())
                 .body(body);
 
             match res {
@@ -2244,7 +2244,9 @@ impl Future for PendingRequest {
                         // Some sites may send a utf-8 Location header,
                         // even though we're supposed to treat those bytes
                         // as opaque, we'll check specifically for utf8.
-                        self.url.join(str::from_utf8(val.as_bytes()).ok()?).ok()
+                        self.url
+                            .join(std::str::from_utf8(val.as_bytes()).ok()?)
+                            .ok()
                     })();
 
                     // Check that the `url` is also a valid `http::Uri`.
@@ -2361,19 +2363,6 @@ impl Future for PendingRequest {
                 self.read_timeout,
             );
             return Poll::Ready(Ok(res));
-        }
-    }
-}
-
-impl fmt::Debug for Pending {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.inner {
-            PendingInner::Request(ref req) => f
-                .debug_struct("Pending")
-                .field("method", &req.method)
-                .field("url", &req.url)
-                .finish(),
-            PendingInner::Error(ref err) => f.debug_struct("Pending").field("error", err).finish(),
         }
     }
 }
