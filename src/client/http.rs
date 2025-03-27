@@ -2412,6 +2412,19 @@ fn add_cookie_header(
     url: &Url,
 ) {
     if let Some(header) = cookie_store.cookies(url) {
+        #[cfg(feature = "cookies-multiple")]
+        header
+            .as_bytes()
+            .split(|b| *b == b';')
+            .filter_map(|s| {
+                let s = s.strip_prefix(b" ").unwrap_or(s);
+                HeaderValue::from_bytes(s).ok()
+            })
+            .for_each(|header| {
+                headers.append(crate::header::COOKIE, header);
+            });
+
+        #[cfg(not(feature = "cookies-multiple"))]
         headers.insert(crate::header::COOKIE, header);
     }
 }
