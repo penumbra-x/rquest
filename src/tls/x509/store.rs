@@ -1,6 +1,5 @@
 #![allow(missing_debug_implementations)]
-use super::{Certificate, CertificateInput};
-use crate::Identity;
+use super::{Certificate, CertificateInput, Identity};
 use boring2::x509::store::{X509Store, X509StoreBuilder};
 use std::{fmt::Debug, path::Path};
 
