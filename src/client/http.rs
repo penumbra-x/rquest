@@ -40,6 +40,8 @@ use crate::{
 use super::decoder::Accepts;
 use super::request::{Request, RequestBuilder};
 use super::response::Response;
+#[cfg(feature = "websocket")]
+use super::websocket::WebSocketRequestBuilder;
 use super::{Body, EmulationProvider, EmulationProviderFactory};
 
 use arc_swap::{ArcSwap, Guard};
@@ -1324,8 +1326,8 @@ impl Client {
     /// this after you set up your request, and just before you send the
     /// request.
     #[cfg(feature = "websocket")]
-    pub fn websocket<U: IntoUrl>(&self, url: U) -> crate::WebSocketRequestBuilder {
-        crate::WebSocketRequestBuilder::new(self.request(Method::GET, url))
+    pub fn websocket<U: IntoUrl>(&self, url: U) -> WebSocketRequestBuilder {
+        WebSocketRequestBuilder::new(self.request(Method::GET, url))
     }
 
     /// Convenience method to make a `POST` request to a URL.
