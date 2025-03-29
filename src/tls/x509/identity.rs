@@ -1,4 +1,3 @@
-use crate::tls::error::Error;
 use boring2::{
     pkcs12::Pkcs12,
     pkey::{PKey, Private},
@@ -45,7 +44,7 @@ impl Identity {
     /// # Optional
     ///
     /// This requires the `native-tls` Cargo feature enabled.
-    pub fn from_pkcs12_der(buf: &[u8], pass: &str) -> Result<Identity, Error> {
+    pub fn from_pkcs12_der(buf: &[u8], pass: &str) -> crate::Result<Identity> {
         let pkcs12 = Pkcs12::from_der(buf)?;
         let parsed = pkcs12.parse(pass)?;
         Ok(Identity {
@@ -82,14 +81,16 @@ impl Identity {
     /// # Optional
     ///
     /// This requires the `native-tls` Cargo feature enabled.
-    pub fn from_pkcs8_pem(buf: &[u8], key: &[u8]) -> Result<Identity, Error> {
+    pub fn from_pkcs8_pem(buf: &[u8], key: &[u8]) -> crate::Result<Identity> {
         if !key.starts_with(b"-----BEGIN PRIVATE KEY-----") {
-            return Err(Error::NotPkcs8);
+            return Err(crate::error::builder("expected PKCS#8 PEM"));
         }
 
         let pkey = PKey::private_key_from_pem(key)?;
         let mut cert_chain = X509::stack_from_pem(buf)?.into_iter();
-        let cert = cert_chain.next().ok_or(Error::EmptyChain)?;
+        let cert = cert_chain.next().ok_or_else(|| {
+            crate::error::builder("at least one certificate must be provided to create an identity")
+        })?;
         let chain = cert_chain.collect();
         Ok(Identity { pkey, cert, chain })
     }

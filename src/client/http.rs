@@ -21,7 +21,7 @@ use crate::dns::{DnsResolverWithOverrides, DynResolver, Resolve, gai::GaiResolve
 use crate::error::{BoxError, Error};
 use crate::into_url::try_uri;
 use crate::proxy::IntoProxy;
-use crate::tls::IntoCertStore;
+use crate::tls::{CertificateInput, IntoCertStore};
 use crate::util::{
     self,
     client::{
@@ -34,7 +34,7 @@ use crate::{CertStore, Http1Config, Http2Config, TlsConfig, error};
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
 use crate::{
     redirect,
-    tls::{AlpnProtos, BoringTlsConnector, TlsVersion},
+    tls::{AlpnProtos, TlsConnector, TlsVersion},
 };
 
 use super::decoder::Accepts;
@@ -314,7 +314,7 @@ impl ClientBuilder {
                     tls_config.max_tls_version = config.max_tls_version;
                 }
 
-                BoringTlsConnector::new(tls_config)?
+                TlsConnector::new(tls_config)?
             };
 
             ConnectorBuilder::new(http, tls, config.nodelay, config.tls_info)
@@ -1070,10 +1070,10 @@ impl ClientBuilder {
     ///
     /// If the provided certificates are invalid or cannot be parsed, this method will set an error
     /// in the builder, and the `build` method will return an error.
-    pub fn ssl_pinning<C>(mut self, certs: C) -> ClientBuilder
+    pub fn ssl_pinning<'c, I>(mut self, certs: I) -> ClientBuilder
     where
-        C: IntoIterator,
-        C::Item: AsRef<[u8]>,
+        I: IntoIterator,
+        I::Item: Into<CertificateInput<'c>>,
     {
         match CertStore::from_certs(certs) {
             Ok(store) => {
@@ -2007,7 +2007,7 @@ impl<'c> ClientUpdate<'c> {
                     tls_config.max_tls_version = current.max_tls_version;
                 }
 
-                let connector = BoringTlsConnector::new(tls_config)?;
+                let connector = TlsConnector::new(tls_config)?;
                 current.hyper.connector_mut().set_connector(connector);
             }
         }
