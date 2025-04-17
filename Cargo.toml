@@ -78,6 +78,9 @@ http2-tracing = ["hyper2/http2-tracing"]
 # Optional disable internal proxy cache
 internal_proxy_sys_no_cache = []
 
+# Deprecated features
+apple-network-device-binding = []
+
 [dependencies]
 base64 = "0.22"
 http = "1"
