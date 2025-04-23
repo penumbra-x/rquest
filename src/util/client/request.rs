@@ -251,7 +251,7 @@ where
             .cloned()
             .zip(self.builder.headers_mut())
         {
-            add_content_length_header(method, headers, &body);
+            set_content_length_if_missing(method, headers, &body);
             if let Some(headers_order) = self.headers_order {
                 sort_headers(headers, headers_order);
             }
@@ -266,14 +266,8 @@ where
 }
 
 /// Adds the `Content-Length` header to the request.
-///
-/// # Arguments
-///
-/// * `method` - The HTTP method of the request.
-/// * `headers` - The headers of the request.
-/// * `body` - The body of the request.
 #[inline]
-fn add_content_length_header<B>(method: Method, headers: &mut HeaderMap, body: &B)
+fn set_content_length_if_missing<B>(method: Method, headers: &mut HeaderMap, body: &B)
 where
     B: Body,
 {
@@ -287,14 +281,6 @@ where
 }
 
 /// Checks if the method has defined payload semantics.
-///
-/// # Arguments
-///
-/// * `method` - The HTTP method to check.
-///
-/// # Returns
-///
-/// `true` if the method has defined payload semantics, otherwise `false`.
 #[inline]
 fn method_has_defined_payload_semantics(method: Method) -> bool {
     !matches!(
@@ -307,11 +293,6 @@ fn method_has_defined_payload_semantics(method: Method) -> bool {
 ///
 /// Headers in `headers_order` are sorted to the front, preserving their order.
 /// Remaining headers are appended in their original order.
-///
-/// # Arguments
-///
-/// * `headers` - The headers to be sorted.
-/// * `headers_order` - The order in which headers should be sent.
 #[inline]
 fn sort_headers(headers: &mut HeaderMap, headers_order: &[HeaderName]) {
     if headers.len() <= 1 {
