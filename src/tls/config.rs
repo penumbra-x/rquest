@@ -7,13 +7,13 @@ use typed_builder::TypedBuilder;
 ///
 /// This struct defines various parameters to fine-tune the behavior of a TLS connection,
 /// including the root certificate store, certificate verification, ALPN protocols, and more.
-#[derive(Debug, TypedBuilder)]
+#[derive(Clone, Debug, TypedBuilder)]
 pub struct TlsConfig {
     #[builder(default, setter(into))]
     pub(crate) tls_keylog_file: Option<PathBuf>,
 
-    #[builder(default, setter(transform = |input: impl IntoCertStore| input.into()))]
-    pub(crate) cert_store: Option<Cow<'static, CertStore>>,
+    #[builder(default, setter(strip_option, into))]
+    pub(crate) cert_store: Option<CertStore>,
 
     #[builder(default = true)]
     pub(crate) cert_verification: bool,
@@ -117,11 +117,8 @@ impl TlsConfig {
     }
 
     /// Sets the certificate store used for TLS verification.
-    pub fn set_cert_store<T>(&mut self, store: T) -> &mut Self
-    where
-        T: IntoCertStore,
-    {
-        self.cert_store = store.into();
+    pub fn set_cert_store<T>(&mut self, store: CertStore) -> &mut Self {
+        self.cert_store = Some(store);
         self
     }
 
@@ -330,36 +327,6 @@ impl TlsConfig {
     pub fn set_random_aes_hw_override(&mut self, enabled: bool) -> &mut Self {
         self.random_aes_hw_override = enabled;
         self
-    }
-}
-
-/// A trait for converting various types into an optional `Cow` containing a `CertStore`.
-///
-/// This trait is used to provide a unified way to convert different types
-/// into an optional `Cow` containing a `CertStore`.
-pub trait IntoCertStore {
-    /// Converts the given value into an optional `Cow` containing a `CertStore`.
-    fn into(self) -> Option<Cow<'static, CertStore>>;
-}
-
-macro_rules! impl_into_cert_store {
-    ($($t:ty => $body:expr),* $(,)?) => {
-        $(impl IntoCertStore for $t {
-            fn into(self) -> Option<Cow<'static, CertStore>> {
-                $body(self)
-            }
-        })*
-    };
-}
-
-impl_into_cert_store!(
-    &'static CertStore => |s| Some(Cow::Borrowed(s)),
-    CertStore => |s| Some(Cow::Owned(s))
-);
-
-impl<T: IntoCertStore> IntoCertStore for Option<T> {
-    fn into(self) -> Option<Cow<'static, CertStore>> {
-        self.and_then(|v| v.into())
     }
 }
 
