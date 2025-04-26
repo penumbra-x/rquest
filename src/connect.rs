@@ -108,23 +108,6 @@ impl ConnectorBuilder {
         }
     }
 
-    pub(crate) fn new(
-        mut http: HttpConnector,
-        tls: TlsConnector,
-        nodelay: bool,
-        tls_info: bool,
-    ) -> ConnectorBuilder {
-        http.enforce_http(false);
-        ConnectorBuilder {
-            http,
-            tls,
-            verbose: verbose::OFF,
-            timeout: None,
-            nodelay,
-            tls_info,
-        }
-    }
-
     #[inline]
     pub(crate) fn keepalive(mut self, dur: Option<Duration>) -> ConnectorBuilder {
         self.http.set_keepalive(dur);
@@ -158,6 +141,23 @@ pub(crate) enum Connector {
 }
 
 impl Connector {
+    pub(crate) fn builder(
+        mut http: HttpConnector,
+        tls: TlsConnector,
+        nodelay: bool,
+        tls_info: bool,
+    ) -> ConnectorBuilder {
+        http.enforce_http(false);
+        ConnectorBuilder {
+            http,
+            tls,
+            verbose: verbose::OFF,
+            timeout: None,
+            nodelay,
+            tls_info,
+        }
+    }
+
     pub(crate) fn set_connector(&mut self, mut connector: TlsConnector) {
         match self {
             Connector::Simple(service) => {
@@ -168,7 +168,7 @@ impl Connector {
                 base_service,
                 ..
             } => {
-                let mut connector = ConnectorBuilder::new(
+                let mut connector = Connector::builder(
                     base_service.http.clone(),
                     connector,
                     base_service.nodelay,

@@ -11,7 +11,7 @@ use std::time::Duration;
 use std::{collections::HashMap, convert::TryInto, net::SocketAddr};
 
 use crate::connect::{
-    BoxedConnectorLayer, BoxedConnectorService, Connector, ConnectorBuilder,
+    BoxedConnectorLayer, BoxedConnectorService, Connector,
     sealed::{Conn, Unnameable},
 };
 #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
@@ -365,7 +365,7 @@ impl ClientBuilder {
                 TlsConnector::new(tls_config)?
             };
 
-            ConnectorBuilder::new(http, tls, config.nodelay, config.tls_info)
+            Connector::builder(http, tls, config.nodelay, config.tls_info)
                 .timeout(config.connect_timeout)
                 .keepalive(config.tcp_keepalive)
                 .verbose(config.connection_verbose)
