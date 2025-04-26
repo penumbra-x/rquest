@@ -484,9 +484,7 @@ impl ClientBuilder {
     /// # }
     /// ```
     pub fn default_headers(mut self, headers: HeaderMap) -> ClientBuilder {
-        for (key, value) in headers.iter() {
-            self.config.headers.insert(key, value.clone());
-        }
+        crate::util::replace_headers(&mut self.config.headers, headers);
         self
     }
 
@@ -1052,31 +1050,24 @@ impl ClientBuilder {
     {
         let mut emulation = factory.emulation();
 
-        // apply default headers
-        if let Some(headers) = emulation.default_headers {
-            for (key, value) in headers.iter() {
-                self.config.headers.insert(key, value.clone());
-            }
+        if let Some(mut headers) = emulation.default_headers {
+            std::mem::swap(&mut self.config.headers, &mut headers);
         }
 
-        // apply headers order
         if let Some(headers_order) = emulation.headers_order {
             std::mem::swap(&mut self.config.headers_order, &mut Some(headers_order));
         }
 
-        // apply http1 config
         if let Some(http1_config) = emulation.http1_config.take() {
             let builder = self.config.builder.http1();
             apply_http1_config(builder, http1_config);
         }
 
-        // apply http2 config
         if let Some(http2_config) = emulation.http2_config.take() {
             let builder = self.config.builder.http2();
             apply_http2_config(builder, http2_config)
         }
 
-        // apply tls config
         std::mem::swap(&mut self.config.tls_config, &mut emulation.tls_config);
         self
     }
@@ -2044,29 +2035,22 @@ impl<'c> ClientUpdate<'c> {
         let mut current = self.current;
 
         if let Some(emulation) = self.emulation {
-            // apply default headers
-            if let Some(headers) = emulation.default_headers {
-                for (key, value) in headers.iter() {
-                    current.headers.insert(key, value.clone());
-                }
+            if let Some(mut headers) = emulation.default_headers {
+                std::mem::swap(&mut current.headers, &mut headers);
             }
 
-            // apply headers order
             if let Some(headers_order) = emulation.headers_order {
                 std::mem::swap(&mut current.headers_order, &mut Some(headers_order));
             }
 
-            // apply http1 config
             if let Some(http1_config) = emulation.http1_config {
                 apply_http1_config(current.hyper.http1(), http1_config);
             }
 
-            // apply http2 config
             if let Some(http2_config) = emulation.http2_config {
                 apply_http2_config(current.hyper.http2(), http2_config);
             }
 
-            // apply tls config
             if let Some(mut tls_config) = emulation.tls_config {
                 if let Some(alpn_protos) = current.alpn_protos {
                     tls_config.alpn_protos = alpn_protos;
