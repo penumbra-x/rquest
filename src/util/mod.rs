@@ -38,7 +38,6 @@ where
     header
 }
 
-// xor-shift
 pub(crate) fn fast_random() -> u64 {
     use std::cell::Cell;
     use std::collections::hash_map::RandomState;
@@ -103,7 +102,6 @@ pub(crate) fn replace_headers(dst: &mut HeaderMap, src: HeaderMap) {
     }
 }
 
-/// Convert a scheme and host to a URI
 #[inline]
 pub(crate) fn into_uri(scheme: Scheme, host: Authority) -> Result<Uri, http::Error> {
     // TODO: Should the `http` crate get `From<(Scheme, Authority)> for Uri`?
