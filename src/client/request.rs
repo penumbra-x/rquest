@@ -9,7 +9,7 @@ use http::{Request as HttpRequest, Version, request::Parts};
 use serde::Serialize;
 
 use super::body::Body;
-use super::http::{Client, Pending};
+use super::client::{Client, Pending};
 #[cfg(feature = "multipart")]
 use super::multipart;
 use super::response::Response;
