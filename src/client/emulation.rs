@@ -1,7 +1,6 @@
 use crate::{Http1Config, Http2Config, TlsConfig};
 use http::{HeaderMap, HeaderName};
 use std::borrow::Cow;
-use typed_builder::TypedBuilder;
 
 /// Trait defining the interface for providing an `EmulationProvider`.
 ///
@@ -29,6 +28,12 @@ pub trait EmulationProviderFactory {
     fn emulation(self) -> EmulationProvider;
 }
 
+/// Builder for creating an `EmulationProvider`.
+#[derive(Debug)]
+pub struct EmulationProviderBuilder {
+    provider: EmulationProvider,
+}
+
 /// HTTP connection context that manages both HTTP and TLS configurations.
 ///
 /// The `EmulationProvider` provides a complete environment for HTTP connections,
@@ -51,27 +56,78 @@ pub trait EmulationProviderFactory {
 ///     .tls_config(TlsConfig::default())
 ///     .build();
 /// ```
-#[derive(TypedBuilder, Default, Debug)]
+#[derive(Default, Debug)]
 pub struct EmulationProvider {
-    /// TLS configuration for secure connections.
-    #[builder(default, setter(into))]
     pub(crate) tls_config: Option<TlsConfig>,
-
-    /// HTTP/1 connection settings.
-    #[builder(default, setter(into))]
     pub(crate) http1_config: Option<Http1Config>,
-
-    /// HTTP/2 connection settings.
-    #[builder(default, setter(into))]
     pub(crate) http2_config: Option<Http2Config>,
-
-    /// Default headers for all requests.
-    #[builder(default, setter(into))]
     pub(crate) default_headers: Option<HeaderMap>,
-
-    /// Header ordering for requests.
-    #[builder(default, setter(strip_option, into))]
     pub(crate) headers_order: Option<Cow<'static, [HeaderName]>>,
+}
+
+impl EmulationProviderBuilder {
+    /// Sets the TLS configuration for the `EmulationProvider`.
+    pub fn tls_config<C>(mut self, config: C) -> Self
+    where
+        C: Into<Option<TlsConfig>>,
+    {
+        self.provider.tls_config = config.into();
+        self
+    }
+
+    /// Sets the HTTP/1 configuration for the `EmulationProvider`.
+    pub fn http1_config<C>(mut self, config: C) -> Self
+    where
+        C: Into<Option<Http1Config>>,
+    {
+        self.provider.http1_config = config.into();
+        self
+    }
+
+    /// Sets the HTTP/2 configuration for the `EmulationProvider`.
+    pub fn http2_config<C>(mut self, config: C) -> Self
+    where
+        C: Into<Option<Http2Config>>,
+    {
+        self.provider.http2_config = config.into();
+        self
+    }
+
+    /// Sets the default headers for the `EmulationProvider`.
+    pub fn default_headers<H>(mut self, headers: H) -> Self
+    where
+        H: Into<Option<HeaderMap>>,
+    {
+        self.provider.default_headers = headers.into();
+        self
+    }
+
+    /// Sets the order of headers for the `EmulationProvider`.
+    pub fn headers_order<O>(mut self, order: O) -> Self
+    where
+        O: Into<Cow<'static, [HeaderName]>>,
+    {
+        self.provider.headers_order = Some(order.into());
+        self
+    }
+
+    /// Builds the `EmulationProvider` instance.
+    pub fn build(self) -> EmulationProvider {
+        self.provider
+    }
+}
+
+impl EmulationProvider {
+    /// Creates a new `EmulationProviderBuilder`.
+    ///
+    /// # Returns
+    ///
+    /// Returns a new `EmulationProviderBuilder` instance.
+    pub fn builder() -> EmulationProviderBuilder {
+        EmulationProviderBuilder {
+            provider: EmulationProvider::default(),
+        }
+    }
 }
 
 /// Implement `EmulationProviderFactory` for `EmulationProvider`.
