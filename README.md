@@ -1,4 +1,4 @@
-# rquest
+# [rquest](https://crates.io/crates/rquest)
 
 [![CI](https://github.com/0x676e67/rquest/actions/workflows/ci.yml/badge.svg)](https://github.com/0x676e67/rquest/actions/workflows/ci.yml)
 [![Crates.io License](https://img.shields.io/crates/l/rquest)](./LICENSE)
