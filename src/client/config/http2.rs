@@ -3,6 +3,7 @@ use hyper2::{Priority, PseudoOrder, SettingsOrder, StreamDependency, StreamId};
 use std::borrow::Cow;
 
 /// Builder for `Http2Config`.
+#[must_use]
 #[derive(Debug)]
 pub struct Http2ConfigBuilder {
     config: Http2Config,
@@ -12,7 +13,7 @@ pub struct Http2ConfigBuilder {
 ///
 /// This struct defines various parameters to fine-tune the behavior of an HTTP/2 connection,
 /// including stream management, window sizes, frame limits, and header config.
-#[derive(Clone, Debug, Default)]
+#[derive(Debug, Default)]
 pub struct Http2Config {
     pub(crate) initial_stream_id: Option<u32>,
     pub(crate) initial_connection_window_size: Option<u32>,

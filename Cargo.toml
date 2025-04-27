@@ -253,8 +253,8 @@ path = "examples/headers_order.rs"
 required-features = ["cookies"]
 
 [[example]]
-name = "emulation_provider"
-path = "examples/emulation_provider.rs"
+name = "emulation_firefox"
+path = "examples/emulation_firefox.rs"
 required-features = ["full"]
 
 [[example]]

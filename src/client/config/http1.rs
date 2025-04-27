@@ -1,4 +1,5 @@
 /// Builder for `Http1Config`.
+#[must_use]
 #[derive(Debug)]
 pub struct Http1ConfigBuilder {
     config: Http1Config,
@@ -9,7 +10,7 @@ pub struct Http1ConfigBuilder {
 /// The `Http1Config` struct provides various configuration options for HTTP/1 connections.
 /// These config allow you to customize the behavior of the HTTP/1 client, such as
 /// enabling support for HTTP/0.9 responses, allowing spaces after header names, and more.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Http1Config {
     pub(crate) http09_responses: bool,
     pub(crate) writev: Option<bool>,

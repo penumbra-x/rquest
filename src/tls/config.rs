@@ -3,6 +3,7 @@ use boring2::ssl::{CertCompressionAlgorithm, SslCurve};
 use std::{borrow::Cow, path::PathBuf};
 
 /// Builder for `[`TlsConfig`]`.
+#[must_use]
 #[derive(Debug)]
 pub struct TlsConfigBuilder {
     config: TlsConfig,
@@ -12,7 +13,7 @@ pub struct TlsConfigBuilder {
 ///
 /// This struct defines various parameters to fine-tune the behavior of a TLS connection,
 /// including the root certificate store, certificate verification, ALPN protocols, and more.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct TlsConfig {
     pub(crate) tls_keylog_file: Option<PathBuf>,
     pub(crate) cert_store: Option<CertStore>,

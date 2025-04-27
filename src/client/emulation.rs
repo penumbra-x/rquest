@@ -29,6 +29,7 @@ pub trait EmulationProviderFactory {
 }
 
 /// Builder for creating an `EmulationProvider`.
+#[must_use]
 #[derive(Debug)]
 pub struct EmulationProviderBuilder {
     provider: EmulationProvider,
