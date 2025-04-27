@@ -248,20 +248,6 @@ impl CertStore {
         CertStoreBuilder::default()
     }
 
-    /// Creates a new `CertStore` from an `Identity`.
-    ///
-    /// # Parameters
-    ///
-    /// - `identity`: An `Identity` object.
-    ///
-    #[inline]
-    pub fn from_identity(identity: Identity) -> CertStore {
-        CertStore {
-            store: None,
-            identity: Some(identity),
-        }
-    }
-
     /// Creates a new `CertStore` from a collection of DER/PEM-encoded certificates.
     ///
     /// # Parameters
