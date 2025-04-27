@@ -1081,56 +1081,14 @@ impl ClientBuilder {
     ///
     /// # Parameters
     ///
-    /// - `certs`: An iterator of PEM-encoded certificates. Each certificate should be provided
+    /// - `certs`: An iterator of DER-encoded certificates. Each certificate should be provided
     ///   as a byte slice (`&[u8]`).
-    ///
-    /// # How It Works
-    ///
-    /// SSL pinning ensures that the client only trusts the specified certificates, bypassing
-    /// the system's default root certificate store. This is particularly useful in scenarios
-    /// where:
-    /// - You want to trust a specific self-signed certificate.
-    /// - You want to restrict trust to a specific server's certificate, even if it is signed
-    ///   by a public CA.
-    ///
-    /// The certificates provided to this method can be:
-    /// - **Self-signed certificates**: Useful for internal systems or development environments.
-    /// - **Server certificates**: The exact certificate presented by the server during the TLS handshake.
-    /// - **Intermediate certificates**: Certificates in the chain between the server and the root CA.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use rquest::Client;
-    ///
-    /// let client = Client::builder()
-    ///     .ssl_pinning(vec![
-    ///         include_bytes!("certs/server_cert.pem"),
-    ///         include_bytes!("certs/intermediate_cert.pem"),
-    ///     ])
-    ///     .build()
-    ///     .unwrap();
-    /// ```
-    ///
-    /// # Notes
-    ///
-    /// - If the server's certificate does not match any of the pinned certificates, the connection
-    ///   will fail.
-    /// - Ensure that the provided certificates are up-to-date. If the server's certificate changes
-    ///   (e.g., due to expiration), you will need to update the pinned certificates in your client.
-    /// - This method does not support public key pinning. If you need to pin to a public key instead
-    ///   of a certificate, you will need to implement custom logic.
-    ///
-    /// # Errors
-    ///
-    /// If the provided certificates are invalid or cannot be parsed, this method will set an error
-    /// in the builder, and the `build` method will return an error.
     pub fn ssl_pinning<'c, I>(mut self, certs: I) -> ClientBuilder
     where
         I: IntoIterator,
         I::Item: Into<CertificateInput<'c>>,
     {
-        match CertStore::from_certs(certs) {
+        match CertStore::from_der_certs(certs) {
             Ok(store) => {
                 self.config.cert_store = Some(store);
             }

@@ -44,32 +44,6 @@ impl<'c, T: AsRef<[u8]> + ?Sized + 'c> From<&'c T> for CertificateInput<'c> {
 pub struct Certificate(X509);
 
 impl Certificate {
-    /// Parse a certificate from DER or PEM data.
-    pub fn from<C: AsRef<[u8]>>(cert: C) -> crate::Result<Self> {
-        let cert = cert.as_ref();
-        let parser = if cert.len() >= 10 {
-            // Quick check: if data starts with "-----BEGIN"
-            if cert.starts_with(b"-----BEGIN") {
-                X509::from_pem
-            } else {
-                // Try to skip leading whitespace
-                let start = cert
-                    .iter()
-                    .position(|&b| !b.is_ascii_whitespace())
-                    .unwrap_or(0);
-
-                if cert[start..].starts_with(b"-----BEGIN") {
-                    X509::from_pem
-                } else {
-                    X509::from_der
-                }
-            }
-        } else {
-            X509::from_der
-        };
-
-        parser(cert).map(Self).map_err(Into::into)
-    }
 
     /// Parse a certificate from DER data.
     #[inline(always)]

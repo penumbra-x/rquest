@@ -37,19 +37,6 @@ impl CertStoreBuilder {
         self
     }
 
-    /// Adds a DER/PEM-encoded certificate to the certificate store.
-    ///
-    /// # Parameters
-    ///
-    /// - `cert`: A reference to a byte slice containing the DER/PEM-encoded certificate.
-    #[inline]
-    pub fn add_cert<'c, C>(self, cert: C) -> Self
-    where
-        C: Into<CertificateInput<'c>>,
-    {
-        self.parse_cert(cert, Certificate::from)
-    }
-
     /// Adds a DER-encoded certificate to the certificate store.
     ///
     /// # Parameters
@@ -74,20 +61,6 @@ impl CertStoreBuilder {
         C: Into<CertificateInput<'c>>,
     {
         self.parse_cert(cert, Certificate::from_pem)
-    }
-
-    /// Adds multiple DER/PEM-encoded certificates to the certificate store.
-    ///
-    /// # Parameters
-    ///
-    /// - `certs`: An iterator over DER/PEM-encoded certificates.
-    #[inline]
-    pub fn add_certs<'c, I>(self, certs: I) -> Self
-    where
-        I: IntoIterator,
-        I::Item: Into<CertificateInput<'c>>,
-    {
-        self.parse_certs(certs, Certificate::from)
     }
 
     /// Adds multiple DER-encoded certificates to the certificate store.
@@ -246,20 +219,6 @@ impl CertStore {
     #[inline]
     pub fn builder() -> CertStoreBuilder {
         CertStoreBuilder::default()
-    }
-
-    /// Creates a new `CertStore` from a collection of DER/PEM-encoded certificates.
-    ///
-    /// # Parameters
-    ///
-    /// - `certs`: An iterator over DER/PEM-encoded certificates.
-    #[inline]
-    pub fn from_certs<'c, I>(certs: I) -> crate::Result<CertStore>
-    where
-        I: IntoIterator,
-        I::Item: Into<CertificateInput<'c>>,
-    {
-        parse_certs_from_iter(certs, Certificate::from)
     }
 
     /// Creates a new `CertStore` from a collection of DER-encoded certificates.
