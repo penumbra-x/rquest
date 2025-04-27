@@ -16,7 +16,7 @@ async fn main() -> Result<(), rquest::Error> {
         .apply()?;
 
     // Set a cookie
-    client.set_cookies(&url, [HeaderValue::from_static("foo=bar")]);
+    client.set_cookie(&url, HeaderValue::from_static("foo=bar"));
 
     // Use the API you're already familiar with
     let resp = client.get(url).send().await?.text().await?;

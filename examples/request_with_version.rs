@@ -7,10 +7,7 @@ async fn main() -> Result<(), rquest::Error> {
         .with_max_level(tracing::Level::TRACE)
         .init();
 
-    // Build a client
-    let client = rquest::Client::new();
-
-    let resp = client
+    let resp = rquest::Client::new()
         .get("http://google.com/")
         .redirect(Policy::default())
         .version(Version::HTTP_11)

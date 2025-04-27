@@ -1,5 +1,3 @@
-use rquest::Client;
-
 #[cfg(any(
     target_os = "android",
     target_os = "fuchsia",
@@ -16,10 +14,7 @@ async fn main() -> Result<(), rquest::Error> {
         .with_max_level(tracing::Level::TRACE)
         .init();
 
-    // Build a client
-    let client = Client::builder().build()?;
-
-    let text = client
+    let text = rquest::Client::new()
         .get("https://api.ip.sb/ip")
         .interface("utun4")
         .send()

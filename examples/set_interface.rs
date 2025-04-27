@@ -1,5 +1,3 @@
-use rquest::Client;
-
 #[cfg(any(
     target_os = "android",
     target_os = "fuchsia",
@@ -13,7 +11,7 @@ use rquest::Client;
 #[tokio::main]
 async fn main() -> Result<(), rquest::Error> {
     // Build a client
-    let client = Client::builder().interface("eth0").build()?;
+    let client = rquest::Client::new();
 
     // Set the interface to eth1
     client.update().interface("eth1").apply()?;

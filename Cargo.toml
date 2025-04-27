@@ -294,10 +294,6 @@ path = "examples/set_cert_store.rs"
 required-features = ["native-roots", "webpki-roots"]
 
 [[example]]
-name = "client_chain"
-path = "examples/client_chain.rs"
-
-[[example]]
 name = "request_with_redirect"
 path = "examples/request_with_redirect.rs"
 required-features = ["full"]
