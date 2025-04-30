@@ -3,14 +3,14 @@ use std::net::SocketAddr;
 use std::pin::Pin;
 use std::time::Duration;
 
+use crate::core::client::connect::HttpInfo;
+use crate::core::{HeaderMap, StatusCode, Version};
 use bytes::Bytes;
 use http_body_util::BodyExt;
-use hyper2::{HeaderMap, StatusCode, Version};
 #[cfg(feature = "json")]
 use serde::de::DeserializeOwned;
 use tokio::time::Sleep;
 use url::Url;
-use util::client::connect::HttpInfo;
 
 use super::body::Body;
 use super::body::ResponseBody;
@@ -18,7 +18,6 @@ use super::decoder::{Accepts, Decoder};
 
 #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
 use crate::cookie;
-use crate::util;
 
 #[cfg(feature = "charset")]
 use encoding_rs::{Encoding, UTF_8};
@@ -27,7 +26,7 @@ use mime::Mime;
 
 /// A Response to a submitted `Request`.
 pub struct Response {
-    pub(super) res: hyper2::Response<Decoder>,
+    pub(super) res: crate::core::Response<Decoder>,
     // Boxed to save space (11 words to 1 word), and it's not accessed
     // frequently internally.
     url: Box<Url>,
@@ -35,7 +34,7 @@ pub struct Response {
 
 impl Response {
     pub(super) fn new(
-        res: hyper2::Response<ResponseBody>,
+        res: crate::core::Response<ResponseBody>,
         url: Url,
         accepts: Accepts,
         total_timeout: Option<Pin<Box<Sleep>>>,
@@ -47,7 +46,7 @@ impl Response {
             super::body::response(body, total_timeout, read_timeout),
             accepts,
         );
-        let res = hyper2::Response::from_parts(parts, decoder);
+        let res = crate::core::Response::from_parts(parts, decoder);
 
         Response {
             res,
@@ -92,7 +91,7 @@ impl Response {
     /// - The response is gzipped and automatically decoded (thus changing the
     ///   actual decoded length).
     pub fn content_length(&self) -> Option<u64> {
-        use hyper2::body::Body;
+        use crate::core::body::Body;
 
         Body::size_hint(self.res.body()).exact()
     }
@@ -464,7 +463,7 @@ impl<T: Into<Body>> From<http::Response<T>> for Response {
             .remove::<ResponseUrl>()
             .unwrap_or_else(|| ResponseUrl(Url::parse("http://no.url.provided.local").unwrap()));
         let url = url.0;
-        let res = hyper2::Response::from_parts(parts, decoder);
+        let res = crate::core::Response::from_parts(parts, decoder);
         Response {
             res,
             url: Box::new(url),

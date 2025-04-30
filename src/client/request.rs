@@ -13,9 +13,9 @@ use super::client::{Client, Pending};
 #[cfg(feature = "multipart")]
 use super::multipart;
 use super::response::Response;
+use crate::core::client::{NetworkScheme, NetworkSchemeBuilder};
 use crate::header::{CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue};
 use crate::proxy::IntoProxy;
-use crate::util::client::{NetworkScheme, NetworkSchemeBuilder};
 use crate::{Method, Url, redirect};
 
 /// A request which can be executed with `Client::execute()`.
@@ -31,7 +31,7 @@ pub struct Request {
     redirect: Option<redirect::Policy>,
     allow_compression: bool,
     network_scheme: NetworkSchemeBuilder,
-    protocol: Option<hyper2::ext::Protocol>,
+    protocol: Option<crate::core::ext::Protocol>,
 }
 
 /// A builder to construct the properties of a `Request`.
@@ -190,7 +190,7 @@ impl Request {
 
     /// Set the mutable reference to the protocol.
     #[inline]
-    pub fn protocol_mut(&mut self) -> &mut Option<hyper2::ext::Protocol> {
+    pub fn protocol_mut(&mut self) -> &mut Option<crate::core::ext::Protocol> {
         &mut self.protocol
     }
 
@@ -239,7 +239,7 @@ impl Request {
         Option<redirect::Policy>,
         bool,
         NetworkScheme,
-        Option<hyper2::ext::Protocol>,
+        Option<crate::core::ext::Protocol>,
     ) {
         (
             self.method,

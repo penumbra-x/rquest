@@ -262,7 +262,7 @@
 //!   threadpool using `getaddrinfo`.
 //! - **native-roots**: Use the native system root certificate store.
 //! - **webpki-roots**: Use the webpki-roots crate for root certificates.
-//! - **http2-tracing**: Enable HTTP/2 tracing.
+//! - **tracing**: Enable tracing.
 //! - **internal_proxy_sys_no_cache**: Use the internal proxy system with no cache.
 //!
 //! [hyper]: http://hyper.rs
@@ -275,6 +275,9 @@
 //! [Proxy]: ./struct.Proxy.html
 //! [cargo-features]: https://doc.rust-lang.org/stable/cargo/reference/manifest.html#the-features-section
 
+#[macro_use]
+mod trace;
+
 #[cfg(feature = "hickory-dns")]
 pub use hickory_resolver;
 pub use http::Method;
@@ -282,7 +285,6 @@ pub use http::header;
 pub use http::{StatusCode, Version};
 pub use url::Url;
 
-// universal mods
 #[macro_use]
 mod error;
 mod into_url;
@@ -332,18 +334,22 @@ pub use self::client::{
     Body, Client, ClientBuilder, ClientUpdate, EmulationProvider, EmulationProviderFactory,
     Http1Config, Http2Config, Request, RequestBuilder, Response, Upgraded,
 };
+pub use self::core::client::{Dst, Http1Builder, Http2Builder};
 pub use self::proxy::{NoProxy, Proxy};
 pub use self::tls::{AlpnProtos, AlpsProtos, CertStore, Identity, TlsConfig, TlsInfo, TlsVersion};
-pub use self::util::client::{Dst, Http1Builder, Http2Builder};
+
 pub use boring2::ssl::{CertCompressionAlgorithm, ExtensionType, SslCurve};
-pub use hyper2::{Priority, PseudoOrder, SettingsOrder, StreamDependency, StreamId};
+pub use http2::frame::{Priority, PseudoOrder, SettingsOrder, StreamDependency, StreamId};
 
 mod client;
 mod connect;
 #[cfg(any(feature = "cookies", feature = "cookies-abstract"))]
 pub mod cookie;
+
+mod core;
 pub mod dns;
 mod proxy;
+
 pub mod redirect;
 
 pub mod tls;
