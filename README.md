@@ -58,11 +58,11 @@ async fn main() -> Result<(), rquest::Error> {
 
 - **HTTP/2 over TLS**
 
-  **JA3**/**JA4**/**Akamai** fingerprints cannot accurately simulate browser fingerprints due to the sophistication of TLS encryption and the popularity of HTTP/2. rquest does not plan to support parsing these fingerprint strings for simulation. Users are encouraged to customize the configuration according to their own needs.
+Due to the complexity of TLS encryption and the widespread adoption of HTTP/2, browser fingerprints such as **JA3**, **JA4**, and **Akamai** cannot be reliably emulated using simple fingerprint strings. Instead of parsing and emulating these string-based fingerprints, `rquest` provides fine-grained control over TLS and HTTP/2 extensions and settings for precise browser behavior emulation.
 
-- **Emulation Device**
+- **Device Emulation**
 
-  Most browser device models share the same TLS and HTTP/2 configuration, differing only in the User-Agent. The browser device emulation template is managed by [rquest-util](https://github.com/0x676e67/rquest-util).
+Most browser device models share identical TLS and HTTP/2 configurations, differing only in the `User-Agent` string. Common browser device emulation templates are maintained in [`rquest-util`](https://github.com/0x676e67/rquest-util), a companion utility crate.
 
 ## Building
 
@@ -71,7 +71,7 @@ Avoid compiling with packages that depend on `openssl-sys`, as it shares the sam
 Install the dependencies required to build [BoringSSL](https://github.com/google/boringssl/blob/master/BUILDING.md#build-prerequisites)
 
 ```shell
-sudo apt-get install build-essential cmake perl pkg-config libclang-dev musl-tools -y
+sudo apt-get install build-essential cmake perl pkg-config libclang-dev musl-tools git -y
 
 cargo build --release
 ```
