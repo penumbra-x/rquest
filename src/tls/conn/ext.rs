@@ -10,7 +10,7 @@ use boring2::{
 /// SslConnectorBuilderExt trait for `SslConnectorBuilder`.
 pub trait SslConnectorBuilderExt {
     /// Configure the CertStore for the given `SslConnectorBuilder`.
-    fn cert_store(self, provider: Option<CertStore>) -> crate::Result<SslConnectorBuilder>;
+    fn cert_store(self, store: Option<CertStore>) -> crate::Result<SslConnectorBuilder>;
 
     /// Configure the certificate verification for the given `SslConnectorBuilder`.
     fn cert_verification(self, enable: bool) -> crate::Result<SslConnectorBuilder>;

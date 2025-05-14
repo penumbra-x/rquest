@@ -15,7 +15,7 @@ use crate::core::rt::{Read, Write};
 use antidote::Mutex;
 use boring2::error::ErrorStack;
 use boring2::ssl::{
-    ConnectConfiguration, Ssl, SslConnector, SslConnectorBuilder, SslMethod, SslOptions, SslRef,
+    ConnectConfiguration, SslConnector, SslConnectorBuilder, SslMethod, SslOptions, SslRef,
     SslSessionCacheMode,
 };
 use http::Uri;
@@ -322,14 +322,6 @@ impl Inner {
     where
         A: Read + Write + Unpin + Send + Sync + Debug + 'static,
     {
-        let ssl = self.setup_ssl(uri, host)?;
-        tokio_boring2::SslStreamBuilder::new(ssl, TokioIo::new(conn))
-            .connect()
-            .await
-            .map_err(Into::into)
-    }
-
-    fn setup_ssl(&self, uri: &Uri, host: &str) -> Result<Ssl, ErrorStack> {
         let mut conf = self.ssl.configure()?;
 
         if let Some(ref callback) = self.callback {
@@ -361,7 +353,10 @@ impl Inner {
             ssl_callback(&mut ssl, uri)?;
         }
 
-        Ok(ssl)
+        tokio_boring2::SslStreamBuilder::new(ssl, TokioIo::new(conn))
+            .connect()
+            .await
+            .map_err(Into::into)
     }
 }
 
