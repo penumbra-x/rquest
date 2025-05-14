@@ -9,27 +9,6 @@ use bytes::Bytes;
 /// response's status code. For example, if a server returns `HTTP/1.1 200 Awesome`, the
 /// `ReasonPhrase` will be present and contain `Awesome`, but if a server returns `HTTP/1.1 200 OK`,
 /// the response will not contain a `ReasonPhrase`.
-///
-/// ```no_run
-/// # #[cfg(all(feature = "tcp", feature = "client", feature = "http1"))]
-/// # async fn fake_fetch() -> crate::core::Result<()> {
-/// use crate::core::{Client, Uri};
-/// use crate::core::ext::ReasonPhrase;
-///
-/// let res = Client::new().get(Uri::from_static("http://example.com/non_canonical_reason")).await?;
-///
-/// // Print out the non-canonical reason phrase, if it has one...
-/// if let Some(reason) = res.extensions().get::<ReasonPhrase>() {
-///     println!("non-canonical reason: {}", std::str::from_utf8(reason.as_bytes()).unwrap());
-/// }
-/// # Ok(())
-/// # }
-/// ```
-///
-/// # Servers
-///
-/// When a `ReasonPhrase` is present in the extensions of the `http::Response` written by a server,
-/// its contents will be written in place of the canonical reason phrase when responding via HTTP/1.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ReasonPhrase(Bytes);
 

@@ -15,22 +15,12 @@
 //!
 //! [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Protocol_upgrade_mechanism
 //!
-//! # Client
-//!
 //! Sending an HTTP upgrade from the [`client`](super::client) involves setting
 //! either the appropriate method, if wanting to `CONNECT`, or headers such as
 //! `Upgrade` and `Connection`, on the `http::Request`. Once receiving the
 //! `http::Response` back, you must check for the specific information that the
 //! upgrade is agreed upon by the server (such as a `101` status code), and then
 //! get the `Future` from the `Response`.
-//!
-//! # Server
-//!
-//! Receiving upgrade requests in a server requires you to check the relevant
-//! headers in a `Request`, and if an upgrade should be done, you then send the
-//! corresponding headers in a response. To then wait for crate::core: to finish the
-//! upgrade, you call `on()` with the `Request`, and then can spawn a task
-//! awaiting it.
 
 use std::any::TypeId;
 use std::error::Error as StdError;
