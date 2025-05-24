@@ -135,6 +135,7 @@ struct PoolKey {
     network: NetworkScheme,
 }
 
+#[allow(clippy::large_enum_variant)]
 enum TrySendError<B> {
     Retryable {
         error: Error,

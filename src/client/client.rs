@@ -1884,6 +1884,7 @@ pin_project! {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 enum PendingInner {
     Request(PendingRequest),
     Error(Option<Error>),
