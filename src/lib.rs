@@ -280,7 +280,6 @@ pub use http::header;
 pub use http::{StatusCode, Version};
 pub use url::Url;
 
-#[macro_use]
 mod error;
 mod into_url;
 mod response;
@@ -323,14 +322,14 @@ pub use self::client::websocket;
 
 pub use self::client::{
     Body, Client, ClientBuilder, ClientUpdate, EmulationProvider, EmulationProviderFactory,
-    Http1Config, Http2Config, Request, RequestBuilder, Response, Upgraded,
+    Request, RequestBuilder, Response, Upgraded,
 };
 pub use self::core::client::Dst;
+pub use self::core::config::{http1, http2};
 pub use self::proxy::{NoProxy, Proxy};
-pub use self::tls::{AlpnProtos, AlpsProtos, CertStore, Identity, TlsConfig, TlsInfo, TlsVersion};
 
+pub use self::tls::{AlpnProtos, AlpsProtos, CertStore, Identity, TlsConfig, TlsInfo, TlsVersion};
 pub use boring2::ssl::{CertCompressionAlgorithm, ExtensionType};
-pub use http2::frame::{Priority, PseudoOrder, SettingsOrder, StreamDependency, StreamId};
 
 mod client;
 mod connect;

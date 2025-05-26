@@ -17,8 +17,8 @@ use crate::connect::{
 #[cfg(feature = "cookies")]
 use crate::cookie;
 use crate::core::client::{
-    Builder, Client as HyperClient, Http1Builder, Http2Builder, InnerRequest, NetworkScheme,
-    NetworkSchemeBuilder, connect::HttpConnector,
+    Builder, Client as HyperClient, InnerRequest, NetworkScheme, NetworkSchemeBuilder,
+    connect::HttpConnector,
 };
 use crate::core::rt::{TokioExecutor, tokio::TokioTimer};
 #[cfg(feature = "hickory-dns")]
@@ -28,7 +28,7 @@ use crate::error::{BoxError, Error};
 use crate::into_url::try_uri;
 use crate::proxy::IntoProxy;
 use crate::tls::CertificateInput;
-use crate::{CertStore, Http1Config, Http2Config, Identity, TlsConfig, error};
+use crate::{CertStore, Identity, TlsConfig, error};
 use crate::{IntoUrl, Method, Proxy, StatusCode, Url};
 use crate::{
     redirect,
@@ -994,13 +994,11 @@ impl ClientBuilder {
         }
 
         if let Some(http1_config) = emulation.http1_config.take() {
-            let builder = self.config.builder.http1();
-            apply_http1_config(builder, http1_config);
+            self.config.builder.http1_config(http1_config);
         }
 
         if let Some(http2_config) = emulation.http2_config.take() {
-            let builder = self.config.builder.http2();
-            apply_http2_config(builder, http2_config)
+            self.config.builder.http2_config(http2_config);
         }
 
         std::mem::swap(&mut self.config.tls_config, &mut emulation.tls_config);
@@ -1823,11 +1821,11 @@ impl<'c> ClientUpdate<'c> {
             }
 
             if let Some(http1_config) = emulation.http1_config {
-                apply_http1_config(current.hyper.http1(), http1_config);
+                current.hyper.set_http1_config(http1_config);
             }
 
             if let Some(http2_config) = emulation.http2_config {
-                apply_http2_config(current.hyper.http2(), http2_config);
+                current.hyper.set_http2_config(http2_config);
             }
 
             if let Some(mut tls_config) = emulation.tls_config {
@@ -2297,56 +2295,5 @@ fn add_accpet_encoding_header(accepts: &Accepts, headers: &mut HeaderMap) {
                 HeaderValue::from_static(accept_encoding),
             );
         }
-    }
-}
-
-fn apply_http1_config(mut builder: Http1Builder<'_>, http1: Http1Config) {
-    builder
-        .http09_responses(http1.http09_responses)
-        .max_headers(http1.max_headers)
-        .max_buf_size(http1.max_buf_size)
-        .read_buf_exact_size(http1.read_buf_exact_size)
-        .preserve_header_case(http1.preserve_header_case)
-        .title_case_headers(http1.title_case_headers)
-        .ignore_invalid_headers_in_responses(http1.ignore_invalid_headers_in_responses)
-        .allow_spaces_after_header_name_in_responses(
-            http1.allow_spaces_after_header_name_in_responses,
-        )
-        .allow_obsolete_multiline_headers_in_responses(
-            http1.allow_obsolete_multiline_headers_in_responses,
-        );
-
-    if let Some(writev) = http1.writev {
-        builder.writev(writev);
-    }
-}
-
-fn apply_http2_config(mut builder: Http2Builder<'_>, http2: Http2Config) {
-    builder
-        .initial_stream_id(http2.initial_stream_id)
-        .initial_stream_window_size(http2.initial_stream_window_size)
-        .initial_connection_window_size(http2.initial_connection_window_size)
-        .max_concurrent_streams(http2.max_concurrent_streams)
-        .header_table_size(http2.header_table_size)
-        .max_frame_size(http2.max_frame_size)
-        .headers_priority(http2.headers_priority)
-        .headers_pseudo_order(http2.headers_pseudo_order)
-        .settings_order(http2.settings_order)
-        .priority(http2.priority);
-
-    if let Some(max_header_list_size) = http2.max_header_list_size {
-        builder.max_header_list_size(max_header_list_size);
-    }
-
-    if let Some(enable_push) = http2.enable_push {
-        builder.enable_push(enable_push);
-    }
-
-    if let Some(enable_connect_protocol) = http2.enable_connect_protocol {
-        builder.enable_connect_protocol(enable_connect_protocol);
-    }
-
-    if let Some(unknown_setting9) = http2.unknown_setting9 {
-        builder.unknown_setting9(unknown_setting9);
     }
 }
