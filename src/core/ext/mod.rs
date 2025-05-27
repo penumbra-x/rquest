@@ -19,15 +19,11 @@ pub struct Protocol {
 
 impl Protocol {
     /// Converts a static string to a protocol name.
+    #[allow(unused)]
     pub const fn from_static(value: &'static str) -> Self {
         Self {
             inner: http2::ext::Protocol::from_static(value),
         }
-    }
-
-    /// Returns a str representation of the header.
-    pub fn as_str(&self) -> &str {
-        self.inner.as_str()
     }
 
     pub(crate) fn into_inner(self) -> http2::ext::Protocol {
