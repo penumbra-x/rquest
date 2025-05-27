@@ -9,7 +9,7 @@ use crate::connect::HttpConnector;
 use crate::core::client::connect::Connection;
 use crate::core::rt::TokioIo;
 use crate::error::BoxError;
-use crate::tls::{CertStore, Identity, TlsConfig};
+use crate::tls::{CertStore, Identity, KeyLogPolicy, TlsConfig};
 
 use crate::core::rt::{Read, Write};
 use antidote::Mutex;
@@ -26,11 +26,8 @@ use tower_service::Service;
 
 use std::error::Error;
 use std::fmt::Debug;
-use std::fs::OpenOptions;
 use std::future::Future;
-use std::io::Write as IOWrite;
 use std::net::{IpAddr, Ipv6Addr};
-use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
@@ -133,7 +130,7 @@ pub struct TlsConnector {
 /// A builder for creating a `TlsConnector`.
 pub struct TlsConnectorBuilder {
     config: TlsConfig,
-    tls_keylog_file: Option<PathBuf>,
+    keylog_policy: Option<KeyLogPolicy>,
     identity: Option<Identity>,
     cert_store: Option<CertStore>,
     cert_verification: bool,
@@ -159,7 +156,7 @@ impl TlsConnector {
     pub fn builder(config: TlsConfig) -> TlsConnectorBuilder {
         TlsConnectorBuilder {
             config,
-            tls_keylog_file: None,
+            keylog_policy: None,
             identity: None,
             cert_store: None,
             cert_verification: true,
@@ -227,13 +224,10 @@ impl TlsConnector {
 }
 
 impl TlsConnectorBuilder {
-    /// Sets the file path for TLS key logging.
+    /// Sets the TLS keylog policy.
     #[inline]
-    pub fn tls_keylog_file<P>(mut self, path: P) -> Self
-    where
-        P: Into<Option<PathBuf>>,
-    {
-        self.tls_keylog_file = path.into();
+    pub fn keylog(mut self, policy: Option<KeyLogPolicy>) -> Self {
+        self.keylog_policy = policy;
         self
     }
 
@@ -353,17 +347,11 @@ impl TlsConnectorBuilder {
             connector.set_aes_hw_override(aes_hw_override);
         }
 
-        if let Some(tls_keylog_file) = self.tls_keylog_file {
-            let file = OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(tls_keylog_file)
-                .map_err(crate::error::builder)?;
-
+        if let Some(policy) = self.keylog_policy {
+            let handle = policy.open_handle().map_err(crate::error::builder)?;
             connector.set_keylog_callback(move |_, line| {
-                if let Err(_e) = writeln!(&file, "{}", line) {
-                    error!("failed to write to tls key log file {}", _e);
-                }
+                let line = format!("{}\n", line);
+                handle.write_log_line(line);
             });
         }
 
