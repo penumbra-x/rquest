@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fmt;
 use std::future::Future;
@@ -13,24 +12,37 @@ use super::client::{Client, Pending};
 #[cfg(feature = "multipart")]
 use super::multipart;
 use super::response::Response;
-use crate::config::{RequestConfig, RequestTimeout};
-use crate::core::client::{NetworkScheme, NetworkSchemeBuilder};
+use crate::config::RequestTimeout;
+#[cfg(any(
+    target_os = "android",
+    target_os = "fuchsia",
+    target_os = "illumos",
+    target_os = "ios",
+    target_os = "linux",
+    target_os = "macos",
+    target_os = "solaris",
+    target_os = "tvos",
+    target_os = "visionos",
+    target_os = "watchos",
+))]
+use crate::core::ext::RequestInterface;
+use crate::core::ext::{
+    RequestConfig, RequestHttpVersionPref, RequestIpv4Addr, RequestIpv6Addr,
+    RequestOriginalHeaders, RequestProxyScheme,
+};
 use crate::header::{CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue};
-use crate::proxy::IntoProxy;
-use crate::{Method, Url, redirect};
+use crate::proxy::{IntoProxy, ProxyScheme};
+use crate::{Method, OriginalHeaders, Url, redirect};
 
 /// A request which can be executed with `Client::execute()`.
 pub struct Request {
     method: Method,
     url: Url,
     headers: HeaderMap,
-    headers_order: Option<Cow<'static, [HeaderName]>>,
     body: Option<Body>,
     extensions: Extensions,
-    version: Option<Version>,
     redirect: Option<redirect::Policy>,
     allow_compression: bool,
-    network_scheme: NetworkSchemeBuilder,
 }
 
 /// A builder to construct the properties of a `Request`.
@@ -50,9 +62,7 @@ impl Request {
             method,
             url,
             headers: HeaderMap::new(),
-            headers_order: None,
             body: None,
-            version: None,
             extensions: Extensions::new(),
             redirect: None,
             allow_compression: cfg!(any(
@@ -61,7 +71,6 @@ impl Request {
                 feature = "deflate",
                 feature = "zstd"
             )),
-            network_scheme: NetworkScheme::builder(),
         }
     }
 
@@ -101,16 +110,22 @@ impl Request {
         &mut self.headers
     }
 
-    /// Get the headers order.
+    /// Get the original headers.
     #[inline]
-    pub fn headers_order(&self) -> Option<&Cow<'static, [HeaderName]>> {
-        self.headers_order.as_ref()
+    pub fn original_headers(&self) -> Option<&OriginalHeaders> {
+        RequestConfig::<RequestOriginalHeaders>::get(&self.extensions)
     }
 
-    /// Get a mutable reference to the headers order.
+    /// Get a mutable reference to the original headers.
     #[inline]
-    pub fn headers_order_mut(&mut self) -> &mut Option<Cow<'static, [HeaderName]>> {
-        &mut self.headers_order
+    pub fn original_headers_mut(&mut self) -> &mut Option<OriginalHeaders> {
+        RequestConfig::<RequestOriginalHeaders>::get_mut(&mut self.extensions)
+    }
+
+    /// Get the redirect policy.
+    #[inline]
+    pub fn redirect(&self) -> Option<&redirect::Policy> {
+        self.redirect.as_ref()
     }
 
     /// Get a mutable reference to the redirect policy.
@@ -131,12 +146,6 @@ impl Request {
         &mut self.allow_compression
     }
 
-    /// Get a mutable reference to the network scheme.
-    #[inline]
-    pub fn network_scheme_mut(&mut self) -> &mut NetworkSchemeBuilder {
-        &mut self.network_scheme
-    }
-
     /// Get the body.
     #[inline]
     pub fn body(&self) -> Option<&Body> {
@@ -147,6 +156,18 @@ impl Request {
     #[inline]
     pub fn body_mut(&mut self) -> &mut Option<Body> {
         &mut self.body
+    }
+
+    /// Get the http version.
+    #[inline]
+    pub fn version(&self) -> Option<&Version> {
+        RequestConfig::<RequestHttpVersionPref>::get(&self.extensions)
+    }
+
+    /// Get a mutable reference to the http version.
+    #[inline]
+    pub fn version_mut(&mut self) -> &mut Option<Version> {
+        RequestConfig::<RequestHttpVersionPref>::get_mut(&mut self.extensions)
     }
 
     /// Get the timeout.
@@ -173,16 +194,40 @@ impl Request {
         RequestConfig::<RequestTimeout>::get_mut(&mut self.extensions)
     }
 
-    /// Get the http version.
+    /// Get a mutable reference to the local ipv4 address.
     #[inline]
-    pub fn version(&self) -> Option<Version> {
-        self.version
+    pub fn local_ipv4_address_mut(&mut self) -> &mut Option<Ipv4Addr> {
+        RequestConfig::<RequestIpv4Addr>::get_mut(&mut self.extensions)
     }
 
-    /// Get a mutable reference to the http version.
+    /// Get a mutable reference to the local ipv6 address.
     #[inline]
-    pub fn version_mut(&mut self) -> &mut Option<Version> {
-        &mut self.version
+    pub fn local_ipv6_address_mut(&mut self) -> &mut Option<Ipv6Addr> {
+        RequestConfig::<RequestIpv6Addr>::get_mut(&mut self.extensions)
+    }
+
+    /// Get a mutable reference to the interface.
+    #[cfg(any(
+        target_os = "android",
+        target_os = "fuchsia",
+        target_os = "illumos",
+        target_os = "ios",
+        target_os = "linux",
+        target_os = "macos",
+        target_os = "solaris",
+        target_os = "tvos",
+        target_os = "visionos",
+        target_os = "watchos",
+    ))]
+    #[inline]
+    pub fn interface_mut(&mut self) -> &mut Option<std::borrow::Cow<'static, str>> {
+        RequestConfig::<RequestInterface>::get_mut(&mut self.extensions)
+    }
+
+    /// Get a mutable reference to the proxy.
+    #[inline]
+    pub fn proxy_scheme_mut(&mut self) -> &mut Option<ProxyScheme> {
+        RequestConfig::<RequestProxyScheme>::get_mut(&mut self.extensions)
     }
 
     /// Get the extensions.
@@ -209,9 +254,8 @@ impl Request {
         *req.timeout_mut() = self.timeout().copied();
         *req.read_timeout_mut() = self.read_timeout().copied();
         *req.headers_mut() = self.headers().clone();
-        *req.headers_order_mut() = self.headers_order().cloned();
-        *req.version_mut() = self.version();
-        *req.redirect_mut() = self.redirect.clone();
+        *req.version_mut() = self.version().cloned();
+        *req.redirect_mut() = self.redirect().cloned();
         #[cfg(any(
             feature = "gzip",
             feature = "brotli",
@@ -221,7 +265,6 @@ impl Request {
         {
             *req.allow_compression_mut() = self.allow_compression;
         }
-        *req.network_scheme_mut() = self.network_scheme.clone();
         *req.extensions_mut() = self.extensions().clone();
         req.body = body;
         Some(req)
@@ -234,25 +277,19 @@ impl Request {
         Method,
         Url,
         HeaderMap,
-        Option<Cow<'static, [HeaderName]>>,
         Option<Body>,
         Extensions,
-        Option<Version>,
         Option<redirect::Policy>,
         bool,
-        NetworkScheme,
     ) {
         (
             self.method,
             self.url,
             self.headers,
-            self.headers_order,
             self.body,
             self.extensions,
-            self.version,
             self.redirect,
             self.allow_compression,
-            self.network_scheme.build(),
         )
     }
 }
@@ -369,12 +406,10 @@ impl RequestBuilder {
         self
     }
 
-    /// Set the order of the headers.
-    ///
-    /// The headers order will override client default order.
-    pub fn headers_order(mut self, order: impl Into<Cow<'static, [HeaderName]>>) -> RequestBuilder {
+    /// Set the original headers for this request.
+    pub fn original_headers(mut self, original_headers: OriginalHeaders) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
-            *req.headers_order_mut() = Some(order.into());
+            *req.original_headers_mut() = Some(original_headers);
         }
         self
     }
@@ -548,7 +583,7 @@ impl RequestBuilder {
     /// Set HTTP version
     pub fn version(mut self, version: Version) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
-            req.version = Some(version);
+            *req.version_mut() = Some(version);
         }
         self
     }
@@ -609,7 +644,7 @@ impl RequestBuilder {
             match proxy.into_proxy() {
                 Ok(proxy) => {
                     if let Some(proxy_scheme) = proxy.intercept(req.url()) {
-                        req.network_scheme.proxy_scheme(proxy_scheme);
+                        *req.proxy_scheme_mut() = Some(proxy_scheme);
                     }
                 }
                 Err(err) => {
@@ -626,7 +661,12 @@ impl RequestBuilder {
         V: Into<Option<IpAddr>>,
     {
         if let Ok(ref mut req) = self.request {
-            req.network_scheme.address(local_address);
+            if let Some(addr) = local_address.into() {
+                match addr {
+                    IpAddr::V4(ipv4) => *req.local_ipv4_address_mut() = Some(ipv4),
+                    IpAddr::V6(ipv6) => *req.local_ipv6_address_mut() = Some(ipv6),
+                }
+            }
         }
         self
     }
@@ -638,7 +678,8 @@ impl RequestBuilder {
         V6: Into<Option<Ipv6Addr>>,
     {
         if let Ok(ref mut req) = self.request {
-            req.network_scheme.addresses(ipv4, ipv6);
+            *req.local_ipv4_address_mut() = ipv4.into();
+            *req.local_ipv6_address_mut() = ipv6.into();
         }
         self
     }
@@ -676,7 +717,7 @@ impl RequestBuilder {
         I: Into<std::borrow::Cow<'static, str>>,
     {
         if let Ok(ref mut req) = self.request {
-            req.network_scheme.interface(interface);
+            *req.interface_mut() = Some(interface.into());
         }
         self
     }
@@ -899,10 +940,7 @@ where
             method,
             url,
             headers,
-            headers_order: None,
             body: Some(body.into()),
-            // TODO: Add version
-            version: None,
             redirect: None,
             allow_compression: cfg!(any(
                 feature = "gzip",
@@ -910,7 +948,6 @@ where
                 feature = "deflate",
                 feature = "zstd"
             )),
-            network_scheme: NetworkScheme::builder(),
             extensions: Extensions::new(),
         })
     }
@@ -920,12 +957,13 @@ impl TryFrom<Request> for HttpRequest<Body> {
     type Error = crate::Error;
 
     fn try_from(req: Request) -> crate::Result<Self> {
+        let version = req.version().cloned();
+
         let Request {
             method,
             url,
             headers,
             body,
-            version,
             ..
         } = req;
 
