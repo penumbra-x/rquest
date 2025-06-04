@@ -1,8 +1,5 @@
 use bytes::Bytes;
-use http::{
-    HeaderMap, HeaderName,
-    header::{IntoHeaderName, ValueIter},
-};
+use http::{HeaderMap, HeaderName, header::IntoHeaderName};
 
 /// Maintains an ordered collection of original HTTP header names and their spellings.
 ///
@@ -74,12 +71,6 @@ impl OriginalHeaders {
         &'a self,
         name: &HeaderName,
     ) -> impl Iterator<Item = impl AsRef<[u8]> + 'a> + 'a {
-        self.get_all_internal(name)
-    }
-
-    /// Returns a view of all spellings associated with that header name,
-    /// in the order they were found.
-    pub(crate) fn get_all_internal(&self, name: &HeaderName) -> ValueIter<'_, Bytes> {
         self.0.get_all(name).into_iter()
     }
 
