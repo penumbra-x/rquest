@@ -220,13 +220,20 @@ impl SocketAddrs {
         local_addr_ipv4: Option<Ipv4Addr>,
         local_addr_ipv6: Option<Ipv6Addr>,
     ) -> (SocketAddrs, SocketAddrs) {
-        // Filter out based on what the local addr can use
         match (local_addr_ipv4, local_addr_ipv6) {
             (Some(_), None) => (self.filter(SocketAddr::is_ipv4), SocketAddrs::new(vec![])),
             (None, Some(_)) => (self.filter(SocketAddr::is_ipv6), SocketAddrs::new(vec![])),
             _ => {
-                // Happy Eyeballs says we always give a preference to v6 if available
-                let (preferred, fallback) = self.iter.partition::<Vec<_>, _>(SocketAddr::is_ipv6);
+                let preferring_v6 = self
+                    .iter
+                    .as_slice()
+                    .first()
+                    .map(SocketAddr::is_ipv6)
+                    .unwrap_or(false);
+
+                let (preferred, fallback) = self
+                    .iter
+                    .partition::<Vec<_>, _>(|addr| addr.is_ipv6() == preferring_v6);
 
                 (SocketAddrs::new(preferred), SocketAddrs::new(fallback))
             }
@@ -257,7 +264,6 @@ mod sealed {
     use super::{Name, SocketAddr};
     use tower_service::Service;
 
-    // "Trait alias" for `Service<Name, Response = Addrs>`
     pub trait Resolve {
         type Addrs: Iterator<Item = SocketAddr>;
         type Error: Into<Box<dyn std::error::Error + Send + Sync>>;
@@ -307,13 +313,12 @@ mod tests {
         let v4_addr = (ip_v4, 80).into();
         let v6_addr = (ip_v6, 80).into();
 
-        // Even if ipv4 started first, prefer ipv6
         let (mut preferred, mut fallback) = SocketAddrs {
             iter: vec![v4_addr, v6_addr].into_iter(),
         }
         .split_by_preference(None, None);
-        assert!(preferred.next().unwrap().is_ipv6());
-        assert!(fallback.next().unwrap().is_ipv4());
+        assert!(preferred.next().unwrap().is_ipv4());
+        assert!(fallback.next().unwrap().is_ipv6());
 
         let (mut preferred, mut fallback) = SocketAddrs {
             iter: vec![v6_addr, v4_addr].into_iter(),
@@ -326,8 +331,8 @@ mod tests {
             iter: vec![v4_addr, v6_addr].into_iter(),
         }
         .split_by_preference(Some(ip_v4), Some(ip_v6));
-        assert!(preferred.next().unwrap().is_ipv6());
-        assert!(fallback.next().unwrap().is_ipv4());
+        assert!(preferred.next().unwrap().is_ipv4());
+        assert!(fallback.next().unwrap().is_ipv6());
 
         let (mut preferred, mut fallback) = SocketAddrs {
             iter: vec![v6_addr, v4_addr].into_iter(),
