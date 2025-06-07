@@ -287,31 +287,9 @@ impl ClientBuilder {
                 DynResolver::new(resolver)
             };
 
-            let mut http = HttpConnector::new_with_resolver(resolver.clone());
-            #[cfg(any(
-                target_os = "android",
-                target_os = "fuchsia",
-                target_os = "illumos",
-                target_os = "ios",
-                target_os = "linux",
-                target_os = "macos",
-                target_os = "solaris",
-                target_os = "tvos",
-                target_os = "visionos",
-                target_os = "watchos",
-            ))]
-            http.set_interface(config.interface);
-            match (config.local_ipv4_address, config.local_ipv6_address) {
-                (Some(ipv4), None) => http.set_local_address(Some(IpAddr::from(ipv4))),
-                (None, Some(ipv6)) => http.set_local_address(Some(IpAddr::from(ipv6))),
-                (Some(ipv4), Some(ipv6)) => {
-                    http.set_local_addresses(ipv4, ipv6);
-                }
-                (None, None) => {}
-            }
-            http.set_connect_timeout(config.connect_timeout);
+            let http_connector = HttpConnector::new_with_resolver(resolver.clone());
 
-            let tls = {
+            let tls_connector = {
                 let mut tls_config = config.tls_config;
 
                 if let Some(alpn_protos) = config.alpn_protos {
@@ -336,13 +314,20 @@ impl ClientBuilder {
                     .build()?
             };
 
-            let builder =
-                Connector::builder(http, tls, proxies.clone(), config.nodelay, config.tls_info)
-                    .timeout(config.connect_timeout)
-                    .keepalive(config.tcp_keepalive)
-                    .tcp_keepalive_interval(config.tcp_keepalive_interval)
-                    .tcp_keepalive_retries(config.tcp_keepalive_retries)
-                    .verbose(config.connection_verbose);
+            let builder = Connector::builder(
+                http_connector,
+                tls_connector,
+                proxies.clone(),
+                config.nodelay,
+                config.tls_info,
+            )
+            .timeout(config.connect_timeout)
+            .keepalive(config.tcp_keepalive)
+            .tcp_keepalive_interval(config.tcp_keepalive_interval)
+            .tcp_keepalive_retries(config.tcp_keepalive_retries)
+            .interface(config.interface)
+            .local_addresses(config.local_ipv4_address, config.local_ipv6_address)
+            .verbose(config.connection_verbose);
 
             #[cfg(feature = "socks")]
             {

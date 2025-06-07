@@ -19,6 +19,7 @@ use tower_service::Service;
 
 use std::future::Future;
 use std::io::{self, IoSlice};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
@@ -140,6 +141,45 @@ impl ConnectorBuilder {
     #[inline]
     pub(crate) fn timeout(mut self, timeout: Option<Duration>) -> ConnectorBuilder {
         self.timeout = timeout;
+        self.http.set_connect_timeout(timeout);
+        self
+    }
+
+    #[cfg(any(
+        target_os = "android",
+        target_os = "fuchsia",
+        target_os = "illumos",
+        target_os = "ios",
+        target_os = "linux",
+        target_os = "macos",
+        target_os = "solaris",
+        target_os = "tvos",
+        target_os = "visionos",
+        target_os = "watchos",
+    ))]
+    #[inline]
+    pub(crate) fn interface(
+        mut self,
+        iface: Option<std::borrow::Cow<'static, str>>,
+    ) -> ConnectorBuilder {
+        self.http.set_interface(iface);
+        self
+    }
+
+    pub(crate) fn local_addresses(
+        mut self,
+        local_ipv4_address: Option<Ipv4Addr>,
+        local_ipv6_address: Option<Ipv6Addr>,
+    ) -> ConnectorBuilder {
+        match (local_ipv4_address, local_ipv6_address) {
+            (Some(ipv4), None) => self.http.set_local_address(Some(IpAddr::from(ipv4))),
+            (None, Some(ipv6)) => self.http.set_local_address(Some(IpAddr::from(ipv6))),
+            (Some(ipv4), Some(ipv6)) => {
+                self.http.set_local_addresses(ipv4, ipv6);
+            }
+            (None, None) => {}
+        }
+
         self
     }
 
