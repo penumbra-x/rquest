@@ -222,14 +222,9 @@ where
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         match self {
-            Self::SocksV5(socks_v5) => {
-                std::task::ready!(socks_v5.poll_ready(cx))?;
-            }
-            Self::SocksV4(socks_v4) => {
-                std::task::ready!(socks_v4.poll_ready(cx))?;
-            }
+            Self::SocksV5(socks_v5) => socks_v5.poll_ready(cx),
+            Self::SocksV4(socks_v4) => socks_v4.poll_ready(cx),
         }
-        Poll::Ready(Ok(()))
     }
 
     fn call(&mut self, dst: Uri) -> Self::Future {
