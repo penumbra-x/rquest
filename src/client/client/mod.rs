@@ -333,17 +333,7 @@ impl ClientBuilder {
                 builder = builder.interface(config.interface)
             }
 
-            #[cfg(feature = "socks")]
-            {
-                builder
-                    .socks_resolver(resolver)
-                    .build(config.connector_layers)
-            }
-
-            #[cfg(not(feature = "socks"))]
-            {
-                builder.build(config.connector_layers)
-            }
+            builder.build(config.connector_layers)
         };
 
         let policy = {
