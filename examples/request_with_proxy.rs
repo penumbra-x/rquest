@@ -7,8 +7,8 @@ async fn main() -> wreq::Result<()> {
         .init();
 
     let resp = Client::new()
-        .get("https://api.ipify.org?format=json")
-        .proxy(Proxy::all("socks5h://127.0.0.1:6153")?)
+        .get("https://api.ip.sb/ip")
+        .proxy(Proxy::all("socks5h://localhost:6153")?)
         .send()
         .await?
         .text()
