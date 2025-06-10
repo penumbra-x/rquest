@@ -732,13 +732,7 @@ mod tls_conn {
 }
 
 mod verbose {
-    use crate::core::client::connect::{Connected, Connection};
-    use crate::core::rt::{Read, ReadBufCursor, Write};
-    use std::cmp::min;
-    use std::fmt;
-    use std::io::{self, IoSlice};
-    use std::pin::Pin;
-    use std::task::{Context, Poll};
+    use super::{AsyncConnWithInfo, BoxConn};
 
     pub(super) const OFF: Wrapper = Wrapper(false);
 
@@ -746,166 +740,179 @@ mod verbose {
     pub(super) struct Wrapper(pub(super) bool);
 
     impl Wrapper {
-        pub(super) fn wrap<T: super::AsyncConnWithInfo>(&self, conn: T) -> super::BoxConn {
-            if self.0 && cfg!(feature = "tracing") {
-                Box::new(Verbose {
-                    // truncate is fine
-                    id: crate::util::fast_random() as u32,
-                    inner: conn,
-                })
-            } else {
-                Box::new(conn)
+        #[cfg_attr(not(feature = "tracing"), inline(always))]
+        pub(super) fn wrap<T: AsyncConnWithInfo>(&self, conn: T) -> BoxConn {
+            #[cfg(feature = "tracing")]
+            {
+                if self.0 {
+                    return Box::new(sealed::Verbose {
+                        // truncate is fine
+                        id: crate::util::fast_random() as u32,
+                        inner: conn,
+                    });
+                }
+            }
+
+            Box::new(conn)
+        }
+    }
+
+    #[cfg(feature = "tracing")]
+    mod sealed {
+        use super::super::TlsInfoFactory;
+        use crate::core::client::connect::{Connected, Connection};
+        use crate::core::rt::{Read, ReadBufCursor, Write};
+        use crate::tls::TlsInfo;
+        use std::fmt;
+        use std::io::{self, IoSlice};
+        use std::pin::Pin;
+        use std::task::{Context, Poll};
+
+        pub(super) struct Verbose<T> {
+            pub(super) id: u32,
+            pub(super) inner: T,
+        }
+
+        impl<T: Connection + Read + Write + Unpin> Connection for Verbose<T> {
+            fn connected(&self) -> Connected {
+                self.inner.connected()
             }
         }
-    }
 
-    struct Verbose<T> {
-        #[allow(dead_code)]
-        id: u32,
-        inner: T,
-    }
-
-    impl<T: Connection + Read + Write + Unpin> Connection for Verbose<T> {
-        fn connected(&self) -> Connected {
-            self.inner.connected()
-        }
-    }
-
-    impl<T: Read + Write + Unpin> Read for Verbose<T> {
-        fn poll_read(
-            mut self: Pin<&mut Self>,
-            cx: &mut Context,
-            mut buf: ReadBufCursor<'_>,
-        ) -> Poll<std::io::Result<()>> {
-            // TODO: This _does_ forget the `init` len, so it could result in
-            // re-initializing twice. Needs upstream support, perhaps.
-            // SAFETY: Passing to a ReadBuf will never de-initialize any bytes.
-            let mut vbuf = crate::core::rt::ReadBuf::uninit(unsafe { buf.as_mut() });
-            match Pin::new(&mut self.inner).poll_read(cx, vbuf.unfilled()) {
-                Poll::Ready(Ok(())) => {
-                    trace!("{:08x} read: {:?}", self.id, Escape(vbuf.filled()));
-                    let len = vbuf.filled().len();
-                    // SAFETY: The two cursors were for the same buffer. What was
-                    // filled in one is safe in the other.
-                    unsafe {
-                        buf.advance(len);
+        impl<T: Read + Write + Unpin> Read for Verbose<T> {
+            fn poll_read(
+                mut self: Pin<&mut Self>,
+                cx: &mut Context,
+                mut buf: ReadBufCursor<'_>,
+            ) -> Poll<std::io::Result<()>> {
+                // TODO: This _does_ forget the `init` len, so it could result in
+                // re-initializing twice. Needs upstream support, perhaps.
+                // SAFETY: Passing to a ReadBuf will never de-initialize any bytes.
+                let mut vbuf = crate::core::rt::ReadBuf::uninit(unsafe { buf.as_mut() });
+                match Pin::new(&mut self.inner).poll_read(cx, vbuf.unfilled()) {
+                    Poll::Ready(Ok(())) => {
+                        trace!("{:08x} read: {:?}", self.id, Escape(vbuf.filled()));
+                        let len = vbuf.filled().len();
+                        // SAFETY: The two cursors were for the same buffer. What was
+                        // filled in one is safe in the other.
+                        unsafe {
+                            buf.advance(len);
+                        }
+                        Poll::Ready(Ok(()))
                     }
-                    Poll::Ready(Ok(()))
-                }
-                Poll::Ready(Err(e)) => Poll::Ready(Err(e)),
-                Poll::Pending => Poll::Pending,
-            }
-        }
-    }
-
-    impl<T: Read + Write + Unpin> Write for Verbose<T> {
-        fn poll_write(
-            mut self: Pin<&mut Self>,
-            cx: &mut Context,
-            buf: &[u8],
-        ) -> Poll<Result<usize, std::io::Error>> {
-            match Pin::new(&mut self.inner).poll_write(cx, buf) {
-                Poll::Ready(Ok(n)) => {
-                    trace!("{:08x} write: {:?}", self.id, Escape(&buf[..n]));
-                    Poll::Ready(Ok(n))
-                }
-                Poll::Ready(Err(e)) => Poll::Ready(Err(e)),
-                Poll::Pending => Poll::Pending,
-            }
-        }
-
-        fn poll_write_vectored(
-            mut self: Pin<&mut Self>,
-            cx: &mut Context<'_>,
-            bufs: &[IoSlice<'_>],
-        ) -> Poll<Result<usize, io::Error>> {
-            match Pin::new(&mut self.inner).poll_write_vectored(cx, bufs) {
-                Poll::Ready(Ok(nwritten)) => {
-                    trace!(
-                        "{:08x} write (vectored): {:?}",
-                        self.id,
-                        Vectored { bufs, nwritten }
-                    );
-                    Poll::Ready(Ok(nwritten))
-                }
-                Poll::Ready(Err(e)) => Poll::Ready(Err(e)),
-                Poll::Pending => Poll::Pending,
-            }
-        }
-
-        fn is_write_vectored(&self) -> bool {
-            self.inner.is_write_vectored()
-        }
-
-        fn poll_flush(
-            mut self: Pin<&mut Self>,
-            cx: &mut Context,
-        ) -> Poll<Result<(), std::io::Error>> {
-            Pin::new(&mut self.inner).poll_flush(cx)
-        }
-
-        fn poll_shutdown(
-            mut self: Pin<&mut Self>,
-            cx: &mut Context,
-        ) -> Poll<Result<(), std::io::Error>> {
-            Pin::new(&mut self.inner).poll_shutdown(cx)
-        }
-    }
-
-    impl<T: super::TlsInfoFactory> super::TlsInfoFactory for Verbose<T> {
-        fn tls_info(&self) -> Option<crate::tls::TlsInfo> {
-            self.inner.tls_info()
-        }
-    }
-
-    #[allow(dead_code)]
-    struct Escape<'a>(&'a [u8]);
-
-    impl fmt::Debug for Escape<'_> {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            write!(f, "b\"")?;
-            for &c in self.0 {
-                // https://doc.rust-lang.org/reference.html#byte-escapes
-                if c == b'\n' {
-                    write!(f, "\\n")?;
-                } else if c == b'\r' {
-                    write!(f, "\\r")?;
-                } else if c == b'\t' {
-                    write!(f, "\\t")?;
-                } else if c == b'\\' || c == b'"' {
-                    write!(f, "\\{}", c as char)?;
-                } else if c == b'\0' {
-                    write!(f, "\\0")?;
-                    // ASCII printable
-                } else if (0x20..0x7f).contains(&c) {
-                    write!(f, "{}", c as char)?;
-                } else {
-                    write!(f, "\\x{:02x}", c)?;
+                    Poll::Ready(Err(e)) => Poll::Ready(Err(e)),
+                    Poll::Pending => Poll::Pending,
                 }
             }
-            write!(f, "\"")?;
-            Ok(())
         }
-    }
 
-    #[allow(dead_code)]
-    struct Vectored<'a, 'b> {
-        bufs: &'a [IoSlice<'b>],
-        nwritten: usize,
-    }
-
-    impl fmt::Debug for Vectored<'_, '_> {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            let mut left = self.nwritten;
-            for buf in self.bufs.iter() {
-                if left == 0 {
-                    break;
+        impl<T: Read + Write + Unpin> Write for Verbose<T> {
+            fn poll_write(
+                mut self: Pin<&mut Self>,
+                cx: &mut Context,
+                buf: &[u8],
+            ) -> Poll<Result<usize, std::io::Error>> {
+                match Pin::new(&mut self.inner).poll_write(cx, buf) {
+                    Poll::Ready(Ok(n)) => {
+                        trace!("{:08x} write: {:?}", self.id, Escape(&buf[..n]));
+                        Poll::Ready(Ok(n))
+                    }
+                    Poll::Ready(Err(e)) => Poll::Ready(Err(e)),
+                    Poll::Pending => Poll::Pending,
                 }
-                let n = min(left, buf.len());
-                Escape(&buf[..n]).fmt(f)?;
-                left -= n;
             }
-            Ok(())
+
+            fn poll_write_vectored(
+                mut self: Pin<&mut Self>,
+                cx: &mut Context<'_>,
+                bufs: &[IoSlice<'_>],
+            ) -> Poll<Result<usize, io::Error>> {
+                match Pin::new(&mut self.inner).poll_write_vectored(cx, bufs) {
+                    Poll::Ready(Ok(nwritten)) => {
+                        trace!(
+                            "{:08x} write (vectored): {:?}",
+                            self.id,
+                            Vectored { bufs, nwritten }
+                        );
+                        Poll::Ready(Ok(nwritten))
+                    }
+                    Poll::Ready(Err(e)) => Poll::Ready(Err(e)),
+                    Poll::Pending => Poll::Pending,
+                }
+            }
+
+            fn is_write_vectored(&self) -> bool {
+                self.inner.is_write_vectored()
+            }
+
+            fn poll_flush(
+                mut self: Pin<&mut Self>,
+                cx: &mut Context,
+            ) -> Poll<Result<(), std::io::Error>> {
+                Pin::new(&mut self.inner).poll_flush(cx)
+            }
+
+            fn poll_shutdown(
+                mut self: Pin<&mut Self>,
+                cx: &mut Context,
+            ) -> Poll<Result<(), std::io::Error>> {
+                Pin::new(&mut self.inner).poll_shutdown(cx)
+            }
+        }
+
+        impl<T: TlsInfoFactory> TlsInfoFactory for Verbose<T> {
+            fn tls_info(&self) -> Option<TlsInfo> {
+                self.inner.tls_info()
+            }
+        }
+
+        struct Escape<'a>(&'a [u8]);
+
+        impl fmt::Debug for Escape<'_> {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(f, "b\"")?;
+                for &c in self.0 {
+                    // https://doc.rust-lang.org/reference.html#byte-escapes
+                    if c == b'\n' {
+                        write!(f, "\\n")?;
+                    } else if c == b'\r' {
+                        write!(f, "\\r")?;
+                    } else if c == b'\t' {
+                        write!(f, "\\t")?;
+                    } else if c == b'\\' || c == b'"' {
+                        write!(f, "\\{}", c as char)?;
+                    } else if c == b'\0' {
+                        write!(f, "\\0")?;
+                        // ASCII printable
+                    } else if (0x20..0x7f).contains(&c) {
+                        write!(f, "{}", c as char)?;
+                    } else {
+                        write!(f, "\\x{:02x}", c)?;
+                    }
+                }
+                write!(f, "\"")?;
+                Ok(())
+            }
+        }
+
+        struct Vectored<'a, 'b> {
+            bufs: &'a [IoSlice<'b>],
+            nwritten: usize,
+        }
+
+        impl fmt::Debug for Vectored<'_, '_> {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                let mut left = self.nwritten;
+                for buf in self.bufs.iter() {
+                    if left == 0 {
+                        break;
+                    }
+                    let n = std::cmp::min(left, buf.len());
+                    Escape(&buf[..n]).fmt(f)?;
+                    left -= n;
+                }
+                Ok(())
+            }
         }
     }
 }
