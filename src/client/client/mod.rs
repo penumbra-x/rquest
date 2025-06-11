@@ -17,9 +17,11 @@ use crate::connect::{
 };
 #[cfg(feature = "cookies")]
 use crate::cookie;
+use crate::core::body::Incoming;
 use crate::core::client::{Builder, Client as HyperClient, connect::HttpConnector};
 use crate::core::ext::{RequestConfig, RequestOriginalHeaders};
 use crate::core::rt::{TokioExecutor, tokio::TokioTimer};
+use crate::core::service::Oneshot;
 #[cfg(feature = "hickory-dns")]
 use crate::dns::hickory::{HickoryDnsResolver, LookupIpStrategy};
 use crate::dns::{DnsResolverWithOverrides, DynResolver, Resolve, gai::GaiResolver};
@@ -52,9 +54,19 @@ use http::{
 };
 
 use service::ClientService;
-use tower::util::BoxCloneSyncServiceLayer;
-use tower::{Layer, Service};
+use tower::util::{BoxCloneSyncService, BoxCloneSyncServiceLayer};
+use tower::{Layer, Service, ServiceBuilder};
 use tower_http::follow_redirect::FollowRedirect;
+
+type BoxedRequestService =
+    BoxCloneSyncService<http::Request<Body>, http::Response<Incoming>, BoxError>;
+
+type BoxedRequestLayer = BoxCloneSyncServiceLayer<
+    BoxedRequestService,
+    http::Request<Body>,
+    http::Response<Incoming>,
+    BoxError,
+>;
 
 /// An asynchronous `Client` to make Requests with.
 ///
@@ -83,7 +95,7 @@ struct ClientRef {
     original_headers: RequestConfig<RequestOriginalHeaders>,
     total_timeout: RequestConfig<RequestTimeout>,
     read_timeout: RequestConfig<RequestTimeout>,
-    client: FollowRedirect<ClientService, TowerRedirectPolicy>,
+    client: BoxedRequestService,
     https_only: bool,
     http2_max_retry_count: usize,
     proxies: Arc<Vec<ProxyMatcher>>,
@@ -144,6 +156,7 @@ struct Config {
     http1_config: Http1Config,
     http2_config: Http2Config,
     http2_max_retry_count: usize,
+    request_layers: Option<Vec<BoxedRequestLayer>>,
     connector_layers: Option<Vec<BoxedConnectorLayer>>,
     builder: Builder,
     alpn_protos: Option<AlpnProtos>,
@@ -221,6 +234,7 @@ impl ClientBuilder {
                 http1_config: Http1Config::default(),
                 http2_config: Http2Config::default(),
                 http2_max_retry_count: 2,
+                request_layers: None,
                 connector_layers: None,
                 alpn_protos: None,
                 keylog_policy: None,
@@ -347,25 +361,37 @@ impl ClientBuilder {
             builder.build(config.connector_layers)
         };
 
-        let policy = {
-            let mut p = TowerRedirectPolicy::new(config.redirect_policy);
-            p.with_referer(config.referer)
-                .with_https_only(config.https_only);
-            p
-        };
-
-        let client_service = ClientService::new(
-            config.builder.build(connector),
-            #[cfg(feature = "cookies")]
-            config.cookie_store.clone(),
+        let mut client = BoxCloneSyncService::new(
+            ServiceBuilder::new().service(FollowRedirect::with_policy(
+                ClientService::new(
+                    config.builder.build(connector),
+                    #[cfg(feature = "cookies")]
+                    config.cookie_store.clone(),
+                ),
+                TowerRedirectPolicy::new(config.redirect_policy)
+                    .with_referer(config.referer)
+                    .with_https_only(config.https_only),
+            )),
         );
+
+        if let Some(layers) = config.request_layers {
+            for layer in layers {
+                client = BoxCloneSyncService::new(
+                    ServiceBuilder::new().layer(layer.clone()).service(client),
+                );
+            }
+        }
+
+        let client = ServiceBuilder::new()
+            .map_err(error::cast_timeout_to_request_error)
+            .service(client);
 
         Ok(Client {
             inner: Arc::new(ClientRef {
                 accepts: config.accepts,
                 #[cfg(feature = "cookies")]
                 cookie_store: config.cookie_store,
-                client: FollowRedirect::with_policy(client_service, policy),
+                client: BoxCloneSyncService::new(client),
                 headers: config.headers,
                 original_headers: RequestConfig::new(config.original_headers),
                 total_timeout: RequestConfig::new(config.timeout),
@@ -1185,6 +1211,27 @@ impl ClientBuilder {
     }
 
     /// Adds a new Tower [`Layer`](https://docs.rs/tower/latest/tower/trait.Layer.html) to the
+    /// request [`Service`](https://docs.rs/tower/latest/tower/trait.Service.html) which is responsible
+    /// for request processing.
+    pub fn layer<L>(mut self, layer: L) -> ClientBuilder
+    where
+        L: Layer<BoxedRequestService> + Clone + Send + Sync + 'static,
+        L::Service: Service<http::Request<Body>, Response = http::Response<Incoming>, Error = BoxError>
+            + Clone
+            + Send
+            + Sync
+            + 'static,
+        <L::Service as Service<http::Request<Body>>>::Future: Send + 'static,
+    {
+        let layer = BoxCloneSyncServiceLayer::new(layer);
+        self.config
+            .request_layers
+            .get_or_insert_default()
+            .push(layer);
+        self
+    }
+
+    /// Adds a new Tower [`Layer`](https://docs.rs/tower/latest/tower/trait.Layer.html) to the
     /// base connector [`Service`](https://docs.rs/tower/latest/tower/trait.Service.html) which
     /// is responsible for connection establishment.a
     ///
@@ -1410,8 +1457,7 @@ impl Client {
 
             *req.headers_mut() = headers.clone();
             *req.extensions_mut() = extensions.clone();
-            let mut client = self.inner.client.clone();
-            client.call(req)
+            Box::pin(Oneshot::new(self.inner.client.clone(), req))
         };
 
         let total_timeout = self

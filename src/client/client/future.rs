@@ -8,21 +8,22 @@ use std::{
     time::Duration,
 };
 use tokio::time::Sleep;
-use tower::Service;
 use url::Url;
 
-use super::{Body, ClientRef, Response, service::ClientService};
+use super::{Body, ClientRef, Response};
 
 use crate::{
     Error,
     client::body,
-    error,
+    core::{body::Incoming, service::Oneshot},
+    error::{self, BoxError},
     into_url::try_uri,
-    redirect::{self, TowerRedirectPolicy},
+    redirect::{self},
 };
 
-type ResponseFuture =
-    tower_http::follow_redirect::ResponseFuture<ClientService, Body, TowerRedirectPolicy>;
+type ResponseFuture = std::pin::Pin<
+    Box<dyn Future<Output = Result<http::Response<Incoming>, BoxError>> + Send + 'static>,
+>;
 
 pin_project! {
     pub struct Pending {
@@ -112,8 +113,7 @@ impl PendingRequest {
 
             *req.headers_mut() = self.headers.clone();
             *req.extensions_mut() = self.extensions.clone();
-            let mut client = self.inner.client.clone();
-            client.call(req)
+            Box::pin(Oneshot::new(self.inner.client.clone(), req))
         };
 
         true
@@ -171,14 +171,18 @@ impl Future for PendingRequest {
                 let r = self.as_mut().in_flight().get_mut();
                 match Pin::new(r).poll(cx) {
                     Poll::Ready(Err(e)) => {
-                        if e.is_request() {
-                            if let Some(e) = std::error::Error::source(&e) {
-                                if self.as_mut().retry_error(e) {
-                                    continue;
-                                }
+                        // Http2 errors are retryable, so we check if we can retry
+                        if let Some(e) = e.source() {
+                            if self.as_mut().retry_error(e) {
+                                continue;
                             }
                         }
-                        return Poll::Ready(Err(e));
+
+                        // If the error is an Error, we return it
+                        return match e.downcast::<Error>() {
+                            Ok(e) => Poll::Ready(Err(*e)),
+                            Err(e) => Poll::Ready(Err(error::request(e))),
+                        };
                     }
                     Poll::Ready(Ok(res)) => res.map(body::boxed),
                     Poll::Pending => return Poll::Pending,
@@ -202,7 +206,7 @@ impl Future for PendingRequest {
             {
                 self.url = match Url::parse(&url.0.to_string()) {
                     Ok(url) => url,
-                    Err(e) => return Poll::Ready(Err(crate::error::decode(e))),
+                    Err(e) => return Poll::Ready(Err(error::decode(e))),
                 }
             };
 

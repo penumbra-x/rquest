@@ -104,6 +104,7 @@ impl Error {
             if err.is::<TimedOut>() {
                 return true;
             }
+
             if let Some(io) = err.downcast_ref::<io::Error>() {
                 if io.kind() == io::ErrorKind::TimedOut {
                     return true;
@@ -175,22 +176,28 @@ impl Error {
             _ => None,
         }
     }
-
-    // private
-
-    #[allow(unused)]
-    pub(crate) fn into_io(self) -> io::Error {
-        io::Error::other(self)
-    }
 }
 
 /// Converts from external types to wreq's
 /// internal equivalents.
 ///
 /// Currently only is used for `tower::timeout::error::Elapsed`.
-pub(crate) fn cast_to_internal_error(error: BoxError) -> BoxError {
+#[inline]
+pub(crate) fn cast_timeout_to_error(error: BoxError) -> BoxError {
     if error.is::<tower::timeout::error::Elapsed>() {
-        Box::new(crate::error::TimedOut) as BoxError
+        Box::new(TimedOut) as BoxError
+    } else {
+        error
+    }
+}
+
+/// Converts from external types to wreq's
+/// internal equivalents.
+/// Currently only is used for `tower::timeout::error::Elapsed`.
+#[inline]
+pub(crate) fn cast_timeout_to_request_error(error: BoxError) -> BoxError {
+    if error.is::<tower::timeout::error::Elapsed>() {
+        Box::new(request(TimedOut)) as BoxError
     } else {
         error
     }
@@ -284,12 +291,6 @@ impl From<boring2::error::ErrorStack> for Error {
     }
 }
 
-impl From<http::Error> for Error {
-    fn from(err: http::Error) -> Error {
-        Error::new(Kind::Builder, Some(format!("http error: {:?}", err)))
-    }
-}
-
 #[cfg(feature = "hickory-dns")]
 impl From<hickory_resolver::ResolveError> for Error {
     fn from(err: hickory_resolver::ResolveError) -> Error {
@@ -307,8 +308,6 @@ pub(crate) enum Kind {
     Decode,
     Upgrade,
 }
-
-// constructors
 
 pub(crate) fn builder<E: Into<BoxError>>(e: E) -> Error {
     Error::new(Kind::Builder, Some(e))
@@ -350,8 +349,6 @@ pub(crate) fn uri_bad_host() -> Error {
     Error::new(Kind::Builder, Some("no host in url"))
 }
 
-// io::Error helpers
-
 #[cfg(any(
     feature = "gzip",
     feature = "zstd",
@@ -362,7 +359,13 @@ pub(crate) fn into_io(e: BoxError) -> io::Error {
     io::Error::other(e)
 }
 
-#[allow(unused)]
+#[cfg(any(
+    test,
+    feature = "gzip",
+    feature = "zstd",
+    feature = "brotli",
+    feature = "deflate",
+))]
 pub(crate) fn decode_io(e: io::Error) -> Error {
     if e.get_ref().map(|r| r.is::<Error>()).unwrap_or(false) {
         *e.into_inner()
@@ -373,8 +376,6 @@ pub(crate) fn decode_io(e: io::Error) -> Error {
         decode(e)
     }
 }
-
-// internal Error "sources"
 
 #[derive(Debug)]
 pub(crate) struct TimedOut;
@@ -404,6 +405,12 @@ mod tests {
 
     fn assert_send<T: Send>() {}
     fn assert_sync<T: Sync>() {}
+
+    impl super::Error {
+        fn into_io(self) -> io::Error {
+            io::Error::other(self)
+        }
+    }
 
     #[test]
     fn test_source_chain() {
