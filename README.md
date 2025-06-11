@@ -18,6 +18,7 @@ An ergonomic all-in-one HTTP client for browser emulation with TLS, JA3/JA4, and
 - Redirect Policy
 - Rotating Proxies
 - Certificate Store
+- Tower Middleware
 - WebSocket Upgrade
 - HTTPS via BoringSSL
 - HTTP/2 over TLS Emulation
