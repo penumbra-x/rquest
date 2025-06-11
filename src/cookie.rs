@@ -221,12 +221,6 @@ impl<'c> CookieBuilder<'c> {
     }
 }
 
-pub(crate) fn extract_response_cookie_headers(
-    headers: &http::HeaderMap,
-) -> impl Iterator<Item = &'_ HeaderValue> {
-    headers.get_all(SET_COOKIE).iter()
-}
-
 pub(crate) fn extract_response_cookies(
     headers: &http::HeaderMap,
 ) -> impl Iterator<Item = Result<Cookie<'_>, CookieParseError>> {
@@ -410,7 +404,11 @@ mod future {
             // We use `peekable` to check if there are any cookies before setting them.
             // This avoids unnecessary writes to the cookie store if there are no cookies.
             if let Some(cookie_store) = this.cookie_store {
-                let mut cookies = super::extract_response_cookie_headers(res.headers()).peekable();
+                let mut cookies = res
+                    .headers()
+                    .get_all(http::header::SET_COOKIE)
+                    .iter()
+                    .peekable();
                 if cookies.peek().is_some() {
                     cookie_store.set_cookies(&mut cookies, this.url);
                 }
@@ -464,7 +462,11 @@ mod service {
             if let Some(ref cookie_store) = self.cookie_store {
                 if req.headers().get(crate::header::COOKIE).is_none() {
                     let headers = req.headers_mut();
-                    crate::util::add_cookie_header(cookie_store, &url, headers);
+                    if let Some(cookie_headers) = cookie_store.cookies(&url) {
+                        for header in cookie_headers {
+                            headers.append(http::header::COOKIE, header);
+                        }
+                    }
                 }
             }
 

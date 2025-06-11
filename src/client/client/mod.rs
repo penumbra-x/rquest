@@ -21,7 +21,6 @@ use crate::core::body::Incoming;
 use crate::core::client::{Builder, Client as HyperClient, connect::HttpConnector};
 use crate::core::ext::{RequestConfig, RequestOriginalHeaders};
 use crate::core::rt::{TokioExecutor, tokio::TokioTimer};
-use crate::core::service::Oneshot;
 #[cfg(feature = "hickory-dns")]
 use crate::dns::hickory::{HickoryDnsResolver, LookupIpStrategy};
 use crate::dns::{DnsResolverWithOverrides, DynResolver, Resolve, gai::GaiResolver};
@@ -54,7 +53,7 @@ use http::{
 };
 
 use service::ClientService;
-use tower::util::{BoxCloneSyncService, BoxCloneSyncServiceLayer};
+use tower::util::{BoxCloneSyncService, BoxCloneSyncServiceLayer, Oneshot};
 use tower::{Layer, Service, ServiceBuilder};
 use tower_http::follow_redirect::FollowRedirect;
 
