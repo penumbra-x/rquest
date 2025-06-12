@@ -14,8 +14,15 @@ use std::time::Duration;
 // ================================
 
 #[derive(Clone, Copy)]
-pub(crate) struct RequestTimeout;
+pub(crate) struct RequestTotalTimeout;
 
-impl RequestConfigValue for RequestTimeout {
+impl RequestConfigValue for RequestTotalTimeout {
+    type Value = Duration;
+}
+
+#[derive(Clone, Copy)]
+pub(crate) struct RequestReadTimeout;
+
+impl RequestConfigValue for RequestReadTimeout {
     type Value = Duration;
 }
