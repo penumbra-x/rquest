@@ -10,26 +10,19 @@ use std::{
 use tokio::time::{Sleep, sleep};
 
 pin_project! {
+    /// A wrapper body that applies timeout strategies to an inner HTTP body.
     pub struct TimeoutBody<B> {
         #[pin]
-        inner: InnerTimeoutBody<B>,
+        inner: InnerBody<B>,
     }
 }
 
-enum InnerTimeoutBody<B> {
-    /// A body with a total timeout.
-    Total(Pin<Box<TotalTimeoutBody<B>>>),
-    /// A body with a read timeout.
-    Read(Pin<Box<ReadTimeoutBody<B>>>),
-    /// A body with both a total and read timeout.
-    TotalAndRead(Pin<Box<TotalTimeoutBody<ReadTimeoutBody<B>>>>),
-}
-
 pin_project! {
-    /// A body with a total timeout.
+    /// A body wrapper that enforces a total timeout for the entire stream.
     ///
-    /// The timeout does not reset upon each chunk, but rather requires the whole
-    /// body be streamed before the deadline is reached.
+    /// The timeout applies to the whole body: if the deadline is reached before
+    /// the body is fully read, an error is returned. The timer does **not** reset
+    /// between chunks.
     pub struct TotalTimeoutBody<B> {
         #[pin]
         body: B,
@@ -38,7 +31,10 @@ pin_project! {
 }
 
 pin_project! {
-    /// Middleware that applies a timeout to request and response bodies.
+    /// A body wrapper that enforces a timeout for each read operation.
+    ///
+    /// The timeout resets after every successful read. If a single read
+    /// takes longer than the specified duration, an error is returned.
     pub struct ReadTimeoutBody<B> {
         timeout: Duration,
         #[pin]
@@ -46,6 +42,18 @@ pin_project! {
         #[pin]
         body: B,
     }
+}
+
+/// Represents the different timeout strategies for the HTTP body.
+enum InnerBody<B> {
+    /// Applies a timeout to the entire body stream.
+    TotalTimeout(Pin<Box<TotalTimeoutBody<B>>>),
+    /// Applies a timeout to each read operation.
+    ReadTimeout(Pin<Box<ReadTimeoutBody<B>>>),
+    /// Applies both total and per-read timeouts.
+    CombinedTimeout(Pin<Box<TotalTimeoutBody<ReadTimeoutBody<B>>>>),
+    /// No timeout applied.
+    Plain(Pin<Box<B>>),
 }
 
 /// ==== impl TimeoutBody ====
@@ -58,26 +66,23 @@ impl<B> TimeoutBody<B> {
                 let body = ReadTimeoutBody::new(read, body);
                 let body = TotalTimeoutBody::new(total, body);
                 TimeoutBody {
-                    inner: InnerTimeoutBody::TotalAndRead(Box::pin(body)),
+                    inner: InnerBody::CombinedTimeout(Box::pin(body)),
                 }
             }
             (Some(total), None) => {
                 let body = TotalTimeoutBody::new(total, body);
                 TimeoutBody {
-                    inner: InnerTimeoutBody::Total(Box::pin(body)),
+                    inner: InnerBody::TotalTimeout(Box::pin(body)),
                 }
             }
             (None, Some(read)) => {
                 let body = ReadTimeoutBody::new(read, body);
                 TimeoutBody {
-                    inner: InnerTimeoutBody::Read(Box::pin(body)),
+                    inner: InnerBody::ReadTimeout(Box::pin(body)),
                 }
             }
             (None, None) => TimeoutBody {
-                inner: InnerTimeoutBody::Read(Box::pin(ReadTimeoutBody::new(
-                    Duration::from_secs(u64::MAX),
-                    body,
-                ))),
+                inner: InnerBody::Plain(Box::pin(body)),
             },
         }
     }
@@ -86,7 +91,7 @@ impl<B> TimeoutBody<B> {
 impl<B> Body for TimeoutBody<B>
 where
     B: Body,
-    B::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+    B::Error: Into<BoxError>,
 {
     type Data = B::Data;
     type Error = crate::Error;
@@ -97,27 +102,33 @@ where
     ) -> Poll<Option<Result<http_body::Frame<Self::Data>, Self::Error>>> {
         let mut this = self.project();
         match *this.inner.as_mut() {
-            InnerTimeoutBody::Total(ref mut body) => poll_and_map_body(body.as_mut(), cx),
-            InnerTimeoutBody::Read(ref mut body) => poll_and_map_body(body.as_mut(), cx),
-            InnerTimeoutBody::TotalAndRead(ref mut body) => poll_and_map_body(body.as_mut(), cx),
+            InnerBody::TotalTimeout(ref mut body) => poll_and_map_body(body.as_mut(), cx),
+            InnerBody::ReadTimeout(ref mut body) => poll_and_map_body(body.as_mut(), cx),
+            InnerBody::CombinedTimeout(ref mut body) => poll_and_map_body(body.as_mut(), cx),
+            InnerBody::Plain(ref mut body) => {
+                // If no timeout is set, just poll the inner body directly.
+                poll_and_map_body(body.as_mut(), cx)
+            }
         }
     }
 
-    #[inline]
+    #[inline(always)]
     fn size_hint(&self) -> http_body::SizeHint {
         match &self.inner {
-            InnerTimeoutBody::Total(body) => body.size_hint(),
-            InnerTimeoutBody::Read(body) => body.size_hint(),
-            InnerTimeoutBody::TotalAndRead(body) => body.size_hint(),
+            InnerBody::TotalTimeout(body) => body.size_hint(),
+            InnerBody::ReadTimeout(body) => body.size_hint(),
+            InnerBody::CombinedTimeout(body) => body.size_hint(),
+            InnerBody::Plain(body) => body.size_hint(),
         }
     }
 
-    #[inline]
+    #[inline(always)]
     fn is_end_stream(&self) -> bool {
         match &self.inner {
-            InnerTimeoutBody::Total(body) => body.is_end_stream(),
-            InnerTimeoutBody::Read(body) => body.is_end_stream(),
-            InnerTimeoutBody::TotalAndRead(body) => body.is_end_stream(),
+            InnerBody::TotalTimeout(body) => body.is_end_stream(),
+            InnerBody::ReadTimeout(body) => body.is_end_stream(),
+            InnerBody::CombinedTimeout(body) => body.is_end_stream(),
+            InnerBody::Plain(body) => body.is_end_stream(),
         }
     }
 }
@@ -145,7 +156,7 @@ impl<B> TotalTimeoutBody<B> {
 impl<B> Body for TotalTimeoutBody<B>
 where
     B: Body,
-    B::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+    B::Error: Into<BoxError>,
 {
     type Data = B::Data;
     type Error = crate::Error;
@@ -163,12 +174,12 @@ where
         )
     }
 
-    #[inline]
+    #[inline(always)]
     fn size_hint(&self) -> http_body::SizeHint {
         self.body.size_hint()
     }
 
-    #[inline]
+    #[inline(always)]
     fn is_end_stream(&self) -> bool {
         self.body.is_end_stream()
     }
@@ -192,7 +203,7 @@ where
     B::Error: Into<BoxError>,
 {
     type Data = B::Data;
-    type Error = Box<dyn std::error::Error + Send + Sync>;
+    type Error = BoxError;
 
     fn poll_frame(
         self: Pin<&mut Self>,
@@ -224,12 +235,12 @@ where
         }
     }
 
-    #[inline]
+    #[inline(always)]
     fn size_hint(&self) -> http_body::SizeHint {
         self.body.size_hint()
     }
 
-    #[inline]
+    #[inline(always)]
     fn is_end_stream(&self) -> bool {
         self.body.is_end_stream()
     }
