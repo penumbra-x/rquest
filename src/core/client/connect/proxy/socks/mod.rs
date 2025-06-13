@@ -1,17 +1,17 @@
 mod v4;
 mod v5;
 
-use bytes::BytesMut;
-use http::Uri;
-use pin_project_lite::pin_project;
 use std::{
     error::Error as StdError,
     marker::PhantomData,
     pin::Pin,
     task::{Context, Poll},
 };
-use tower_service::Service;
 
+use bytes::BytesMut;
+use http::Uri;
+use pin_project_lite::pin_project;
+use tower_service::Service;
 use v4::{SocksV4, SocksV4Error};
 use v5::{SocksV5, SocksV5Error};
 
@@ -173,10 +173,12 @@ where
     /// Create a new SOCKS service with the given inner service, resolver, proxy destination,
     /// and optional authentication credentials.
     ///
-    /// The `proxy_dst` should be a valid URI with a scheme of `socks5`, `socks5h`, `socks4`, or `socks4a`.
+    /// The `proxy_dst` should be a valid URI with a scheme of `socks5`, `socks5h`, `socks4`, or
+    /// `socks4a`.
     ///
     /// The `auth` parameter is optional and can be used to provide a username and password for
-    /// SOCKS authentication. If provided, it should be a tuple containing the username and password.
+    /// SOCKS authentication. If provided, it should be a tuple containing the username and
+    /// password.
     pub fn new_with_resolver(
         inner: C,
         resolver: R,
@@ -237,8 +239,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use tokio::net::{TcpListener, TcpStream};
+    use tokio::{
+        io::{AsyncReadExt, AsyncWriteExt},
+        net::{TcpListener, TcpStream},
+    };
     use tower_service::Service;
 
     use super::{SocksV4, SocksV5};

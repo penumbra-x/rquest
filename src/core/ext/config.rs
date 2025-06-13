@@ -6,17 +6,19 @@
 //! This module is centered around two abstractions:
 //!
 //! - The [`RequestConfigValue`] trait, used to associate a config key type with its value type.
-//! - The [`RequestConfig`] struct, which wraps an optional value of the type linked via [`RequestConfigValue`].
+//! - The [`RequestConfig`] struct, which wraps an optional value of the type linked via
+//!   [`RequestConfigValue`].
 //!
-//! Under the hood, the [`RequestConfig`] struct holds a single value for the associated config type.
-//! This value can be conveniently accessed, inserted, or mutated using [`http::Extensions`],
+//! Under the hood, the [`RequestConfig`] struct holds a single value for the associated config
+//! type. This value can be conveniently accessed, inserted, or mutated using [`http::Extensions`],
 //! enabling type-safe configuration storage and retrieval on a per-request basis.
 //!
 //! # Motivation
 //!
-//! The key design benefit is the ability to store multiple config types—potentially even with the same
-//! value type (e.g., [`std::time::Duration`])—without code duplication or ambiguity. By leveraging trait association,
-//! each config key is distinct at the type level, while code for storage and access remains totally generic.
+//! The key design benefit is the ability to store multiple config types—potentially even with the
+//! same value type (e.g., [`std::time::Duration`])—without code duplication or ambiguity. By
+//! leveraging trait association, each config key is distinct at the type level, while code for
+//! storage and access remains totally generic.
 //!
 //! # Usage
 //!
@@ -24,8 +26,9 @@
 //! specifying the associated value type. Then use [`RequestConfig<T>`] in [`Extensions`]
 //! to set or retrieve config values for each key type in a uniform way.
 
-use http::Extensions;
 use std::fmt::Debug;
+
+use http::Extensions;
 
 /// This trait is empty and is only used to associate a configuration key type with its
 /// corresponding value type.

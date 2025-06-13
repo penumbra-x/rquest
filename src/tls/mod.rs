@@ -2,13 +2,14 @@
 //!
 //! By default, a `Client` will make use of BoringSSL for TLS.
 //!
-//! - Various parts of TLS can also be configured or even disabled on the
-//!   `ClientBuilder`.
+//! - Various parts of TLS can also be configured or even disabled on the `ClientBuilder`.
 
 mod config;
 mod conn;
 mod keylog;
 mod x509;
+
+pub use boring2::ssl::{CertCompressionAlgorithm, ExtensionType};
 
 pub(crate) use self::conn::{HttpsConnector, MaybeHttpsStream, TlsConnector};
 pub use self::{
@@ -16,7 +17,6 @@ pub use self::{
     keylog::KeyLogPolicy,
     x509::{CertStore, CertStoreBuilder, Certificate, CertificateInput, Identity},
 };
-pub use boring2::ssl::{CertCompressionAlgorithm, ExtensionType};
 
 /// A TLS protocol version.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

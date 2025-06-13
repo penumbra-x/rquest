@@ -1,18 +1,21 @@
-use std::convert::TryFrom;
-use std::fmt;
-use std::future::Future;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
-use std::time::Duration;
+use std::{
+    convert::TryFrom,
+    fmt,
+    future::Future,
+    net::{IpAddr, Ipv4Addr, Ipv6Addr},
+    time::Duration,
+};
 
 use http::{Extensions, Request as HttpRequest, Version, request::Parts};
 use serde::Serialize;
 
-use super::body::Body;
-use super::client::{Client, future::Pending};
 #[cfg(feature = "multipart")]
 use super::multipart;
-use super::response::Response;
-use crate::config::{RequestReadTimeout, RequestTotalTimeout};
+use super::{
+    body::Body,
+    client::{Client, future::Pending},
+    response::Response,
+};
 #[cfg(any(
     target_os = "android",
     target_os = "fuchsia",
@@ -26,13 +29,17 @@ use crate::config::{RequestReadTimeout, RequestTotalTimeout};
     target_os = "watchos",
 ))]
 use crate::core::ext::RequestInterface;
-use crate::core::ext::{
-    RequestConfig, RequestHttpVersionPref, RequestIpv4Addr, RequestIpv6Addr,
-    RequestOriginalHeaders, RequestProxyMatcher,
+use crate::{
+    Method, OriginalHeaders, Proxy, Url,
+    config::{RequestReadTimeout, RequestTotalTimeout},
+    core::ext::{
+        RequestConfig, RequestHttpVersionPref, RequestIpv4Addr, RequestIpv6Addr,
+        RequestOriginalHeaders, RequestProxyMatcher,
+    },
+    header::{CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue},
+    proxy::Matcher as ProxyMatcher,
+    redirect,
 };
-use crate::header::{CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue};
-use crate::proxy::Matcher as ProxyMatcher;
-use crate::{Method, OriginalHeaders, Proxy, Url, redirect};
 
 /// A request which can be executed with `Client::execute()`.
 pub struct Request {
@@ -376,7 +383,8 @@ impl RequestBuilder {
                             value.set_sensitive(true);
                         }
 
-                        // If or_insert is true, we want to skip the insertion if the header already exists
+                        // If or_insert is true, we want to skip the insertion if the header already
+                        // exists
                         if or_insert {
                             req.headers_mut().entry(key).or_insert(value);
                         } else if overwrite {
@@ -430,7 +438,8 @@ impl RequestBuilder {
     ///
     /// # async fn run() -> Result<(), Error> {
     /// let client = wreq::Client::new();
-    /// let resp = client.delete("http://httpbin.org/delete")
+    /// let resp = client
+    ///     .delete("http://httpbin.org/delete")
     ///     .basic_auth("admin", Some("good password"))
     ///     .send()
     ///     .await?;
@@ -510,11 +519,7 @@ impl RequestBuilder {
     ///     .text("key3", "value3")
     ///     .text("key4", "value4");
     ///
-    ///
-    /// let response = client.post("your url")
-    ///     .multipart(form)
-    ///     .send()
-    ///     .await?;
+    /// let response = client.post("your url").multipart(form).send().await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -598,8 +603,8 @@ impl RequestBuilder {
 
     /// Sets if this request will announce that it accepts compression.
     ///
-    /// This value defaults to true. Note that this only lets the browser know that this request supports
-    /// compression, the server might choose not to compress the content.
+    /// This value defaults to true. Note that this only lets the browser know that this request
+    /// supports compression, the server might choose not to compress the content.
     #[cfg(any(
         feature = "gzip",
         feature = "brotli",
@@ -618,8 +623,10 @@ impl RequestBuilder {
     /// # Examples
     ///
     /// ```
-    /// use wreq::Client;
-    /// use wreq::Proxy;
+    /// use wreq::{
+    ///     Client,
+    ///     Proxy,
+    /// };
     ///
     /// let client = Client::new();
     /// let proxy = Proxy::all("http://hyper.rs/prox")?.basic_auth("Aladdin", "open sesame");
@@ -719,7 +726,8 @@ impl RequestBuilder {
     /// params.insert("lang", "rust");
     ///
     /// let client = wreq::Client::new();
-    /// let res = client.post("http://httpbin.org")
+    /// let res = client
+    ///     .post("http://httpbin.org")
     ///     .form(&params)
     ///     .send()
     ///     .await?;
@@ -805,10 +813,7 @@ impl RequestBuilder {
     /// # use wreq::Error;
     /// #
     /// # async fn run() -> Result<(), Error> {
-    /// let response = wreq::Client::new()
-    ///     .get("https://hyper.rs")
-    ///     .send()
-    ///     .await?;
+    /// let response = wreq::Client::new().get("https://hyper.rs").send().await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -831,8 +836,7 @@ impl RequestBuilder {
     /// #
     /// # fn run() -> Result<(), Error> {
     /// let client = wreq::Client::new();
-    /// let builder = client.post("http://httpbin.org/post")
-    ///     .body("from a &str!");
+    /// let builder = client.post("http://httpbin.org/post").body("from a &str!");
     /// let clone = builder.try_clone();
     /// assert!(clone.is_some());
     /// # Ok(())

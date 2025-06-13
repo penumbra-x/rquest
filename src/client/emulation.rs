@@ -1,7 +1,6 @@
-use crate::http2::Http2Config;
-use crate::tls::TlsConfig;
-use crate::{OriginalHeaders, http1::Http1Config};
 use http::HeaderMap;
+
+use crate::{OriginalHeaders, http1::Http1Config, http2::Http2Config, tls::TlsConfig};
 
 /// Trait defining the interface for providing an `EmulationProvider`.
 ///
@@ -12,7 +11,10 @@ use http::HeaderMap;
 /// # Example
 ///
 /// ```rust
-/// use wreq::{EmulationProviderFactory, EmulationProvider};
+/// use wreq::{
+///     EmulationProvider,
+///     EmulationProviderFactory,
+/// };
 ///
 /// struct MyEmulationProvider;
 ///
@@ -51,8 +53,10 @@ pub struct EmulationProviderBuilder {
 /// # Example
 ///
 /// ```rust
-/// use wreq::EmulationProvider;
-/// use wreq::TlsConfig;
+/// use wreq::{
+///     EmulationProvider,
+///     TlsConfig,
+/// };
 ///
 /// let provider = EmulationProvider::builder()
 ///     .tls_config(TlsConfig::default())

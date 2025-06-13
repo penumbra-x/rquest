@@ -4,25 +4,29 @@
 //! maximum redirect chain of 10 hops. To customize this behavior, a
 //! `redirect::Policy` can be used with a `ClientBuilder`.
 
-use std::fmt;
-use std::{error::Error as StdError, sync::Arc};
+use std::{error::Error as StdError, fmt, sync::Arc};
 
 use http::{HeaderMap, HeaderValue, StatusCode};
 
-use crate::client::middleware::redirect::policy::{
-    Action as TowerAction, Attempt as TowerAttempt, Policy as TowerPolicy,
+use crate::{
+    Url,
+    client::{
+        Body,
+        middleware::redirect::policy::{
+            Action as TowerAction, Attempt as TowerAttempt, Policy as TowerPolicy,
+        },
+    },
+    error::{self, BoxError},
+    header::{AUTHORIZATION, COOKIE, PROXY_AUTHORIZATION, REFERER, WWW_AUTHENTICATE},
 };
-use crate::error::{self, BoxError};
-use crate::header::{AUTHORIZATION, COOKIE, PROXY_AUTHORIZATION, REFERER, WWW_AUTHENTICATE};
-use crate::{Url, client::Body};
 
 /// A type that controls the policy on how to handle the following of redirects.
 ///
 /// The default value will catch redirect loops, and has a maximum of 10
 /// redirects it will follow in a chain before returning an error.
 ///
-/// - `limited` can be used have the same as the default behavior, but adjust
-///   the allowed maximum redirect hops in a chain.
+/// - `limited` can be used have the same as the default behavior, but adjust the allowed maximum
+///   redirect hops in a chain.
 /// - `none` can be used to disable all redirect behavior.
 /// - `custom` can be used to create a customized policy.
 #[derive(Clone)]
@@ -92,9 +96,7 @@ impl Policy {
     ///         attempt.follow()
     ///     }
     /// });
-    /// let client = wreq::Client::builder()
-    ///     .redirect(custom)
-    ///     .build()?;
+    /// let client = wreq::Client::builder().redirect(custom).build()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -133,7 +135,8 @@ impl Policy {
         match self.inner {
             PolicyKind::Custom(ref custom) => custom(attempt),
             PolicyKind::Limit(max) => {
-                // The first URL in the previous is the initial URL and not a redirection. It needs to be excluded.
+                // The first URL in the previous is the initial URL and not a redirection. It needs
+                // to be excluded.
                 if attempt.previous.len() > max {
                     attempt.error(TooManyRedirects)
                 } else {

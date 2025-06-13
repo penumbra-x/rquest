@@ -9,27 +9,25 @@
 //!
 //! # BDP Algorithm
 //!
-//! 1. When receiving a DATA frame, if a BDP ping isn't outstanding:
-//!    1a. Record current time.
-//!    1b. Send a BDP ping.
+//! 1. When receiving a DATA frame, if a BDP ping isn't outstanding: 1a. Record current time. 1b.
+//!    Send a BDP ping.
 //! 2. Increment the number of received bytes.
-//! 3. When the BDP ping ack is received:
-//!    3a. Record duration from sent time.
-//!    3b. Merge RTT with a running average.
-//!    3c. Calculate bdp as bytes/rtt.
-//!    3d. If bdp is over 2/3 max, set new max to bdp and update windows.
+//! 3. When the BDP ping ack is received: 3a. Record duration from sent time. 3b. Merge RTT with a
+//!    running average. 3c. Calculate bdp as bytes/rtt. 3d. If bdp is over 2/3 max, set new max to
+//!    bdp and update windows.
 
-use std::fmt;
-use std::future::Future;
-use std::pin::Pin;
-use std::sync::{Arc, Mutex};
-use std::task::{self, Poll};
-use std::time::{Duration, Instant};
+use std::{
+    fmt,
+    future::Future,
+    pin::Pin,
+    sync::{Arc, Mutex},
+    task::{self, Poll},
+    time::{Duration, Instant},
+};
 
 use http2::{Ping, PingPong};
 
-use crate::core::common::time::Time;
-use crate::core::rt::Sleep;
+use crate::core::{common::time::Time, rt::Sleep};
 
 type WindowSize = u32;
 

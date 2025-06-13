@@ -1,14 +1,17 @@
-use std::cmp;
-use std::fmt;
-use std::io::{self, IoSlice};
-use std::pin::Pin;
-use std::task::{Context, Poll, ready};
+use std::{
+    cmp, fmt,
+    io::{self, IoSlice},
+    pin::Pin,
+    task::{Context, Poll, ready},
+};
 
-use crate::core::rt::{Read, ReadBuf, Write};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use super::{Http1Transaction, ParseContext, ParsedMessage};
-use crate::core::common::buf::BufList;
+use crate::core::{
+    common::buf::BufList,
+    rt::{Read, ReadBuf, Write},
+};
 
 /// The initial buffer size allocated before trying to read from IO.
 pub(crate) const INIT_BUFFER_SIZE: usize = 8192;
@@ -114,8 +117,7 @@ where
     /// Return whether we can append to the headers buffer.
     ///
     /// Reasons we can't:
-    /// - The write buf is in queue mode, and some of the past body is still
-    ///   needing to be flushed.
+    /// - The write buf is in queue mode, and some of the past body is still needing to be flushed.
     pub(crate) fn can_headers_buf(&self) -> bool {
         !self.write_buf.queue.has_remaining()
     }
@@ -617,11 +619,12 @@ enum WriteStrategy {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::core::common::io::Compat;
     use std::time::Duration;
 
     use tokio_test::io::Builder as Mock;
+
+    use super::*;
+    use crate::core::common::io::Compat;
 
     // #[cfg(feature = "nightly")]
     // use test::Bencher;

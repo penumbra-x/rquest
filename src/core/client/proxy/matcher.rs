@@ -12,8 +12,7 @@
 //! An [`Intercept`] includes the destination for the proxy, and any parsed
 //! authentication to be used.
 
-use std::fmt;
-use std::net::IpAddr;
+use std::{fmt, net::IpAddr};
 
 use http::header::HeaderValue;
 use ipnet::IpNet;
@@ -268,14 +267,15 @@ impl Builder {
     ///
     /// The rules are as follows:
     /// * Entries are expected to be comma-separated (whitespace between entries is ignored)
-    /// * IP addresses (both IPv4 and IPv6) are allowed, as are optional subnet masks (by adding /size,
-    ///   for example "`192.168.1.0/24`").
+    /// * IP addresses (both IPv4 and IPv6) are allowed, as are optional subnet masks (by adding
+    ///   /size, for example "`192.168.1.0/24`").
     /// * An entry "`*`" matches all hostnames (this is the only wildcard allowed)
-    /// * Any other entry is considered a domain name (and may contain a leading dot, for example `google.com`
-    ///   and `.google.com` are equivalent) and would match both that domain AND all subdomains.
+    /// * Any other entry is considered a domain name (and may contain a leading dot, for example
+    ///   `google.com` and `.google.com` are equivalent) and would match both that domain AND all
+    ///   subdomains.
     ///
-    /// For example, if `"NO_PROXY=google.com, 192.168.1.0/24"` was set, all of the following would match
-    /// (and therefore would bypass the proxy):
+    /// For example, if `"NO_PROXY=google.com, 192.168.1.0/24"` was set, all of the following would
+    /// match (and therefore would bypass the proxy):
     /// * `http://google.com/`
     /// * `http://www.google.com/`
     /// * `http://192.168.1.42/`
@@ -369,9 +369,9 @@ fn parse_env_uri(val: &str) -> Option<Intercept> {
 }
 
 fn encode_basic_auth(user: &str, pass: Option<&str>) -> HeaderValue {
-    use base64::prelude::BASE64_STANDARD;
-    use base64::write::EncoderWriter;
     use std::io::Write;
+
+    use base64::{prelude::BASE64_STANDARD, write::EncoderWriter};
 
     let mut buf = b"Basic ".to_vec();
     {
@@ -400,14 +400,15 @@ impl NoProxy {
     /// * The environment variable `NO_PROXY` is checked, if it is not set, `no_proxy` is checked
     /// * If neither environment variable is set, `None` is returned
     /// * Entries are expected to be comma-separated (whitespace between entries is ignored)
-    /// * IP addresses (both IPv4 and IPv6) are allowed, as are optional subnet masks (by adding /size,
-    ///   for example "`192.168.1.0/24`").
+    /// * IP addresses (both IPv4 and IPv6) are allowed, as are optional subnet masks (by adding
+    ///   /size, for example "`192.168.1.0/24`").
     /// * An entry "`*`" matches all hostnames (this is the only wildcard allowed)
-    /// * Any other entry is considered a domain name (and may contain a leading dot, for example `google.com`
-    ///   and `.google.com` are equivalent) and would match both that domain AND all subdomains.
+    /// * Any other entry is considered a domain name (and may contain a leading dot, for example
+    ///   `google.com` and `.google.com` are equivalent) and would match both that domain AND all
+    ///   subdomains.
     ///
-    /// For example, if `"NO_PROXY=google.com, 192.168.1.0/24"` was set, all of the following would match
-    /// (and therefore would bypass the proxy):
+    /// For example, if `"NO_PROXY=google.com, 192.168.1.0/24"` was set, all of the following would
+    /// match (and therefore would bypass the proxy):
     /// * `http://google.com/`
     /// * `http://www.google.com/`
     /// * `http://192.168.1.42/`
@@ -419,7 +420,8 @@ impl NoProxy {
         let parts = no_proxy_list.split(',').map(str::trim);
         for part in parts {
             match part.parse::<IpNet>() {
-                // If we can parse an IP net or address, then use it, otherwise, assume it is a domain
+                // If we can parse an IP net or address, then use it, otherwise, assume it is a
+                // domain
                 Ok(ip) => ips.push(Ip::Network(ip)),
                 Err(_) => match part.parse::<IpAddr>() {
                     Ok(addr) => ips.push(Ip::Address(addr)),
@@ -490,8 +492,9 @@ impl DomainMatcher {
                 return true;
             } else if domain.ends_with(d) {
                 if d.starts_with('.') {
-                    // If the first character of d is a dot, that means the first character of domain
-                    // must also be a dot, so we are looking at a subdomain of d and that matches
+                    // If the first character of d is a dot, that means the first character of
+                    // domain must also be a dot, so we are looking at a
+                    // subdomain of d and that matches
                     return true;
                 } else if domain.as_bytes().get(domain_len - d.len() - 1) == Some(&b'.') {
                     // Given that d is a prefix of domain, if the prior character in domain is a dot
@@ -539,14 +542,18 @@ mod builder {
 
 #[cfg(all(target_os = "macos", feature = "system-proxy"))]
 mod mac {
-    use system_configuration::core_foundation::base::CFType;
-    use system_configuration::core_foundation::dictionary::CFDictionary;
-    use system_configuration::core_foundation::number::CFNumber;
-    use system_configuration::core_foundation::string::{CFString, CFStringRef};
-    use system_configuration::dynamic_store::SCDynamicStoreBuilder;
-    use system_configuration::sys::schema_definitions::{
-        kSCPropNetProxiesHTTPEnable, kSCPropNetProxiesHTTPPort, kSCPropNetProxiesHTTPProxy,
-        kSCPropNetProxiesHTTPSEnable, kSCPropNetProxiesHTTPSPort, kSCPropNetProxiesHTTPSProxy,
+    use system_configuration::{
+        core_foundation::{
+            base::CFType,
+            dictionary::CFDictionary,
+            number::CFNumber,
+            string::{CFString, CFStringRef},
+        },
+        dynamic_store::SCDynamicStoreBuilder,
+        sys::schema_definitions::{
+            kSCPropNetProxiesHTTPEnable, kSCPropNetProxiesHTTPPort, kSCPropNetProxiesHTTPProxy,
+            kSCPropNetProxiesHTTPSEnable, kSCPropNetProxiesHTTPSPort, kSCPropNetProxiesHTTPSProxy,
+        },
     };
 
     pub(super) fn with_system(builder: &mut super::Builder) {
@@ -715,7 +722,8 @@ mod tests {
         let should_match = [
             // make sure subdomains (with leading .) match
             "hello.foo.bar",
-            // make sure exact matches (without leading .) match (also makes sure spaces between entries work)
+            // make sure exact matches (without leading .) match (also makes sure spaces between
+            // entries work)
             "bar.baz",
             // make sure subdomains (without leading . in no_proxy) match
             "foo.bar.baz",
