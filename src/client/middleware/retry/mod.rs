@@ -7,6 +7,11 @@ use crate::{
     Body, client::middleware::timeout::TimeoutBody, core::body::Incoming, error::BoxError,
 };
 
+/// A retry policy for HTTP/2 requests that safely determines whether and how many times
+/// a request should be retried based on error type and a maximum retry count.
+///
+/// This policy helps avoid unsafe or infinite retries by tracking the number of attempts
+/// and only retrying errors that are considered safe to repeat (such as connection-level errors).
 #[derive(Clone)]
 pub struct Http2RetryPolicy(usize);
 
@@ -60,8 +65,8 @@ impl Policy<Req, Res, BoxError> for Http2RetryPolicy {
         result: &mut Result<Res, BoxError>,
     ) -> Option<Self::Future> {
         if let Err(err) = result {
-            if self.is_retryable_error(err.source()?) {
-                return Some(future::ready(()));
+            if !self.is_retryable_error(err.source()?) {
+                return None;
             }
 
             // Treat all errors as failures...
