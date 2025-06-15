@@ -4,7 +4,7 @@ use std::{
     task::{Context, Poll},
 };
 
-use http::{HeaderMap, Request, Uri, header::PROXY_AUTHORIZATION, uri::Scheme};
+use http::{HeaderMap, Request, Response, Uri, header::PROXY_AUTHORIZATION, uri::Scheme};
 use tower::Service;
 
 use super::Body;
@@ -107,7 +107,7 @@ impl ClientService {
 
 impl Service<Request<Body>> for ClientService {
     type Error = BoxError;
-    type Response = http::Response<Incoming>;
+    type Response = Response<Incoming>;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + Sync>>;
 
     #[inline(always)]
