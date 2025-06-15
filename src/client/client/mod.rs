@@ -11,7 +11,7 @@ use std::{
     time::Duration,
 };
 
-use future::{Pending, PendingInner, PendingRequest};
+use future::{Pending, PendingRequest};
 use http::{
     Uri,
     header::{HeaderMap, HeaderValue, PROXY_AUTHORIZATION, USER_AGENT},
@@ -578,7 +578,6 @@ impl ClientBuilder {
     ///
     /// This requires the optional `cookies` feature to be enabled.
     #[cfg(feature = "cookies")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "cookies")))]
     pub fn cookie_store(mut self, enable: bool) -> ClientBuilder {
         if enable {
             self.cookie_provider(Arc::new(cookie::Jar::default()))
@@ -599,10 +598,6 @@ impl ClientBuilder {
     ///
     /// This requires the optional `cookies` feature to be enabled.
     #[cfg(feature = "cookies")]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(any(feature = "cookies", feature = "cookies-abstract")))
-    )]
     pub fn cookie_provider<C: cookie::CookieStore + 'static>(
         mut self,
         cookie_store: Arc<C>,
@@ -628,7 +623,6 @@ impl ClientBuilder {
     ///
     /// This requires the optional `gzip` feature to be enabled
     #[cfg(feature = "gzip")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "gzip")))]
     pub fn gzip(mut self, enable: bool) -> ClientBuilder {
         self.config.accepts.gzip = enable;
         self
@@ -651,7 +645,6 @@ impl ClientBuilder {
     ///
     /// This requires the optional `brotli` feature to be enabled
     #[cfg(feature = "brotli")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "brotli")))]
     pub fn brotli(mut self, enable: bool) -> ClientBuilder {
         self.config.accepts.brotli = enable;
         self
@@ -674,7 +667,6 @@ impl ClientBuilder {
     ///
     /// This requires the optional `zstd` feature to be enabled
     #[cfg(feature = "zstd")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "zstd")))]
     pub fn zstd(mut self, enable: bool) -> ClientBuilder {
         self.config.accepts.zstd = enable;
         self
@@ -697,7 +689,6 @@ impl ClientBuilder {
     ///
     /// This requires the optional `deflate` feature to be enabled
     #[cfg(feature = "deflate")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "deflate")))]
     pub fn deflate(mut self, enable: bool) -> ClientBuilder {
         self.config.accepts.deflate = enable;
         self
@@ -1515,9 +1506,7 @@ impl Client {
             Oneshot::new(self.inner.service.clone(), req)
         };
 
-        Pending {
-            inner: PendingInner::Request(Box::pin(PendingRequest { url, in_flight })),
-        }
+        Pending::new(PendingRequest { url, in_flight })
     }
 
     fn apply_proxy_headers(&self, dst: &Uri, headers: &mut HeaderMap) {

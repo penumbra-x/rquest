@@ -30,7 +30,7 @@ pin_project! {
     }
 }
 
-pub(super) enum PendingInner {
+enum PendingInner {
     Request(Pin<Box<PendingRequest>>),
     Error(Option<Error>),
 }
@@ -44,6 +44,14 @@ pin_project! {
 }
 
 impl Pending {
+    #[inline(always)]
+    pub(super) fn new(request: PendingRequest) -> Pending {
+        Pending {
+            inner: PendingInner::Request(Box::pin(request)),
+        }
+    }
+
+    #[inline(always)]
     pub(crate) fn new_err(err: Error) -> Pending {
         Pending {
             inner: PendingInner::Error(Some(err)),
