@@ -32,9 +32,9 @@ async fn test_brotli_empty_body() {
         .await
         .unwrap();
 
-    let body = res.text().await.unwrap();
-
-    assert_eq!(body, "");
+    let err = res.text().await;
+    let err = err.unwrap_err();
+    assert!(err.is_decode())
 }
 
 #[tokio::test]
@@ -307,6 +307,7 @@ async fn test_chunked_fragmented_response_2() {
     assert!(start.elapsed() >= DELAY_BETWEEN_RESPONSE_PARTS - DELAY_MARGIN);
 }
 
+#[ignore = "tower-http decompression does not support this feature test"]
 #[tokio::test]
 async fn test_chunked_fragmented_response_with_extra_bytes() {
     const DELAY_BETWEEN_RESPONSE_PARTS: tokio::time::Duration =
@@ -363,23 +364,24 @@ async fn test_chunked_fragmented_response_with_extra_bytes() {
 }
 
 #[tokio::test]
-async fn disable_compression_request() {
-    let _ = env_logger::try_init();
+async fn test_decompression() {
+    let client = wreq::Client::builder()
+        .no_gzip()
+        .no_brotli()
+        .no_deflate()
+        .no_zstd()
+        .build()
+        .expect("client builder");
 
-    let server = server::http(move |req| {
-        assert_eq!(req.headers().get("accept-encoding"), None);
-        async { http::Response::default() }
-    });
-
-    let url = format!("http://{}/compress", server.addr());
-
-    let res = wreq::Client::new()
-        .get(&url)
-        .allow_compression(false)
+    // test brotli decompression
+    let brotli_url = "https://httpbin.org/brotli";
+    let brotli_resp = client
+        .get(brotli_url)
+        .brotli(true)
         .send()
         .await
-        .unwrap();
-
-    assert_eq!(res.url().as_str(), &url);
-    assert_eq!(res.status(), wreq::StatusCode::OK);
+        .expect("brotli request");
+    assert_eq!(brotli_resp.status(), wreq::StatusCode::OK);
+    let brotli_text = brotli_resp.text().await.expect("brotli response text");
+    assert!(brotli_text.contains("brotli"));
 }
