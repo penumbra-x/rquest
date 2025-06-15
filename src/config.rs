@@ -41,7 +41,7 @@ impl RequestConfigValue for RequestRedirectPolicy {
     feature = "deflate",
 ))]
 #[derive(Clone, Copy)]
-pub(crate) struct RequestAcceptsEncoding;
+pub(crate) struct RequestAcceptEncoding;
 
 #[cfg(any(
     feature = "gzip",
@@ -49,6 +49,12 @@ pub(crate) struct RequestAcceptsEncoding;
     feature = "brotli",
     feature = "deflate",
 ))]
-impl RequestConfigValue for RequestAcceptsEncoding {
-    type Value = crate::client::decoder::Accepts;
+impl RequestConfigValue for RequestAcceptEncoding {
+    type Value = crate::client::decoder::AcceptEncoding;
+}
+
+#[derive(Clone, Copy)]
+pub(crate) struct RequestSkipDefaultHeaders;
+impl RequestConfigValue for RequestSkipDefaultHeaders {
+    type Value = bool;
 }

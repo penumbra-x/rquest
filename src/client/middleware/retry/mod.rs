@@ -1,6 +1,5 @@
 use futures_util::future;
 use http::{Request, Response};
-use http2::Reason;
 use tower::retry::Policy;
 #[cfg(any(
     feature = "gzip",
@@ -10,9 +9,8 @@ use tower::retry::Policy;
 ))]
 use tower_http::decompression::DecompressionBody;
 
-use crate::{
-    Body, client::middleware::timeout::TimeoutBody, core::body::Incoming, error::BoxError,
-};
+use super::timeout::TimeoutBody;
+use crate::{Body, core::body::Incoming, error::BoxError};
 
 /// A retry policy for HTTP/2 requests that safely determines whether and how many times
 /// a request should be retried based on error type and a maximum retry count.
@@ -42,7 +40,10 @@ impl Http2RetryPolicy {
         if let Some(cause) = err.source() {
             if let Some(err) = cause.downcast_ref::<http2::Error>() {
                 // They sent us a graceful shutdown, try with a new connection!
-                if err.is_go_away() && err.is_remote() && err.reason() == Some(Reason::NO_ERROR) {
+                if err.is_go_away()
+                    && err.is_remote()
+                    && err.reason() == Some(http2::Reason::NO_ERROR)
+                {
                     return true;
                 }
 
