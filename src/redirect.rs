@@ -239,7 +239,7 @@ pub(crate) enum ActionKind {
     Error(BoxError),
 }
 
-pub(crate) fn remove_sensitive_headers(headers: &mut HeaderMap, next: &Url, previous: &[Url]) {
+fn remove_sensitive_headers(headers: &mut HeaderMap, next: &Url, previous: &[Url]) {
     if let Some(previous) = previous.last() {
         let cross_host = next.host_str() != previous.host_str()
             || next.port_or_known_default() != previous.port_or_known_default();
@@ -265,14 +265,14 @@ impl fmt::Display for TooManyRedirects {
 impl StdError for TooManyRedirects {}
 
 #[derive(Clone)]
-pub(crate) struct TowerRedirectPolicy {
+pub(crate) struct RedirectPolicy {
     policy: RequestConfig<RequestRedirectPolicy>,
     referer: bool,
     urls: Vec<Url>,
     https_only: bool,
 }
 
-impl TowerRedirectPolicy {
+impl RedirectPolicy {
     pub(crate) const fn new(policy: Policy) -> Self {
         Self {
             policy: RequestConfig::new(Some(policy)),
@@ -305,7 +305,7 @@ fn make_referer(next: &Url, previous: &Url) -> Option<HeaderValue> {
     referer.as_str().parse().ok()
 }
 
-impl TowerPolicy<Body, BoxError> for TowerRedirectPolicy {
+impl TowerPolicy<Body, BoxError> for RedirectPolicy {
     fn redirect(&mut self, attempt: &TowerAttempt<'_>) -> Result<TowerAction, BoxError> {
         #[inline(always)]
         fn parse_url(input: &str) -> Result<Url, BoxError> {

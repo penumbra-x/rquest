@@ -63,7 +63,7 @@ use crate::{
     http2::Http2Config,
     into_url::try_uri,
     proxy::Matcher as ProxyMatcher,
-    redirect::{self, TowerRedirectPolicy},
+    redirect::{self, RedirectPolicy},
     tls::{AlpnProtos, CertStore, CertificateInput, Identity, KeyLogPolicy, TlsConfig, TlsVersion},
 };
 
@@ -406,7 +406,7 @@ impl ClientBuilder {
                 .layer(CookieManagerLayer::new(config.cookie_store))
                 .service(service);
 
-            let redirect_policy = TowerRedirectPolicy::new(config.redirect_policy)
+            let redirect_policy = RedirectPolicy::new(config.redirect_policy)
                 .with_referer(config.referer)
                 .with_https_only(config.https_only);
 
