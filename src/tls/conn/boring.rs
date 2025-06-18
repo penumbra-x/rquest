@@ -25,7 +25,7 @@ use tower_service::Service;
 use super::{
     HandshakeSettings, MaybeHttpsStream,
     cache::{SessionCache, SessionKey},
-    ext::{ConnectConfigurationExt, SslConnectorBuilderExt, SslRefExt},
+    ext::{ConnectConfigurationExt, SslConnectorBuilderExt},
     key_index,
 };
 use crate::{
@@ -57,9 +57,6 @@ impl HttpsConnector<HttpConnector> {
         connector: TlsConnector,
         dst: &mut Dst,
     ) -> HttpsConnector<HttpConnector> {
-        // Get the ALPN protocols from the destination
-        let alpn_protos = dst.alpn_protos();
-
         // Set the local address and interface
         match dst.addresses() {
             (Some(a), Some(b)) => http.set_local_addresses(a, b),
@@ -83,8 +80,18 @@ impl HttpsConnector<HttpConnector> {
         ))]
         http.set_interface(dst.interface());
 
+        // Get the ALPN protocols from the destination
+        let alpn_protos = dst.alpn_protos();
         let mut connector = HttpsConnector::with_connector(http, connector);
-        connector.set_ssl_callback(move |ssl, _| ssl.alpn_protos(alpn_protos));
+        connector.set_ssl_callback(move |ssl, _| {
+            let alpn = match alpn_protos {
+                Some(alpn) => alpn.0,
+                None => return Ok(()),
+            };
+
+            ssl.set_alpn_protos(alpn)
+        });
+
         connector
     }
 }
@@ -161,21 +168,21 @@ struct Inner {
 
 impl TlsConnectorBuilder {
     /// Sets the TLS keylog policy.
-    #[inline]
+    #[inline(always)]
     pub fn keylog(mut self, policy: Option<KeyLogPolicy>) -> Self {
         self.keylog_policy = policy;
         self
     }
 
     /// Sets the identity to be used for client certificate authentication.
-    #[inline]
+    #[inline(always)]
     pub fn identity(mut self, identity: Option<Identity>) -> Self {
         self.identity = identity;
         self
     }
 
     /// Sets the certificate store used for TLS verification.
-    #[inline]
+    #[inline(always)]
     pub fn cert_store<T>(mut self, cert_store: T) -> Self
     where
         T: Into<Option<CertStore>>,
@@ -185,21 +192,21 @@ impl TlsConnectorBuilder {
     }
 
     /// Sets the certificate verification flag.
-    #[inline]
+    #[inline(always)]
     pub fn cert_verification(mut self, enabled: bool) -> Self {
         self.cert_verification = enabled;
         self
     }
 
     /// Sets the Server Name Indication (SNI) flag.
-    #[inline]
+    #[inline(always)]
     pub fn tls_sni(mut self, enabled: bool) -> Self {
         self.tls_sni = enabled;
         self
     }
 
     /// Sets the hostname verification flag.
-    #[inline]
+    #[inline(always)]
     pub fn verify_hostname(mut self, enabled: bool) -> Self {
         self.verify_hostname = enabled;
         self
@@ -211,76 +218,109 @@ impl TlsConnectorBuilder {
             .cert_store(self.cert_store)?
             .cert_verification(self.cert_verification)?
             .identity(self.identity)?
-            .alpn_protos(config.alpn_protos)?
-            .min_tls_version(config.min_tls_version)?
-            .max_tls_version(config.max_tls_version)?;
+            .cert_compression_algorithm(config.cert_compression_algorithm)?;
 
-        if config.enable_ocsp_stapling {
-            connector.enable_ocsp_stapling();
-        }
+        // Set minimum TLS version
+        set_option_inner_try!(config, min_tls_version, connector, set_min_proto_version);
 
-        if config.enable_signed_cert_timestamps {
-            connector.enable_signed_cert_timestamps();
-        }
+        // Set maximum TLS version
+        set_option_inner_try!(config, max_tls_version, connector, set_max_proto_version);
 
-        if !config.session_ticket {
-            connector.set_options(SslOptions::NO_TICKET);
-        }
+        // Set OCSP stapling
+        set_bool!(
+            config,
+            enable_ocsp_stapling,
+            connector,
+            enable_ocsp_stapling
+        );
 
-        if !config.psk_dhe_ke {
-            connector.set_options(SslOptions::NO_PSK_DHE_KE);
-        }
+        // Set Signed Certificate Timestamps (SCT)
+        set_bool!(
+            config,
+            enable_signed_cert_timestamps,
+            connector,
+            enable_signed_cert_timestamps
+        );
 
-        if !config.renegotiation {
-            connector.set_options(SslOptions::NO_RENEGOTIATION);
-        }
+        // Set TLS Session ticket options
+        set_bool!(
+            config,
+            !session_ticket,
+            connector,
+            set_options,
+            SslOptions::NO_TICKET
+        );
 
-        if let Some(grease_enabled) = config.grease_enabled {
-            connector.set_grease_enabled(grease_enabled);
-        }
+        // Set TLS PSK DHE key exchange options
+        set_bool!(
+            config,
+            !psk_dhe_ke,
+            connector,
+            set_options,
+            SslOptions::NO_PSK_DHE_KE
+        );
 
-        if let Some(permute_extensions) = config.permute_extensions {
-            connector.set_permute_extensions(permute_extensions);
-        }
+        // Set TLS No Renegotiation options
+        set_bool!(
+            config,
+            !renegotiation,
+            connector,
+            set_options,
+            SslOptions::NO_RENEGOTIATION
+        );
 
-        if let Some(curves_list) = config.curves_list.as_deref() {
-            connector.set_curves_list(curves_list)?;
-        }
+        // Set TLS grease options
+        set_option!(config, grease_enabled, connector, set_grease_enabled);
 
-        if let Some(sigalgs_list) = config.sigalgs_list.as_deref() {
-            connector.set_sigalgs_list(sigalgs_list)?;
-        }
+        // Set TLS ALPN protocols
+        set_inner_try!(config, alpn_protos, connector, set_alpn_protos);
 
-        if let Some(delegated_credentials) = config.delegated_credentials.as_deref() {
-            connector.set_delegated_credentials(delegated_credentials)?;
-        }
+        // Set TLS permute extensions options
+        set_option!(
+            config,
+            permute_extensions,
+            connector,
+            set_permute_extensions
+        );
 
-        if let Some(cipher_list) = config.cipher_list.as_deref() {
-            connector.set_cipher_list(cipher_list)?;
-        }
+        // Set TLS curves list
+        set_option_try_try!(config, curves_list, connector, set_curves_list);
 
-        if let Some(cert_compression_algorithm) = config.cert_compression_algorithm {
-            for algorithm in cert_compression_algorithm.iter() {
-                connector = connector.add_cert_compression_algorithm(*algorithm)?;
-            }
-        }
+        // Set TLS signature algorithms list
+        set_option_try_try!(config, sigalgs_list, connector, set_sigalgs_list);
 
-        if let Some(record_size_limit) = config.record_size_limit {
-            connector.set_record_size_limit(record_size_limit);
-        }
+        // Set TLS cipher list
+        set_option_try_try!(config, cipher_list, connector, set_cipher_list);
 
-        if let Some(limit) = config.key_shares_limit {
-            connector.set_key_shares_limit(limit);
-        }
+        // Set TLS delegated credentials
+        set_option_try_try!(
+            config,
+            delegated_credentials,
+            connector,
+            set_delegated_credentials
+        );
 
-        if let Some(permutation) = config.extension_permutation {
-            connector.set_extension_permutation(&permutation)?;
-        }
+        // Set TLS record size limit
+        set_option!(config, record_size_limit, connector, set_record_size_limit);
 
-        if let Some(aes_hw_override) = config.aes_hw_override {
-            connector.set_aes_hw_override(aes_hw_override);
-        }
+        // Set TLS key shares limit
+        set_option!(config, key_shares_limit, connector, set_key_shares_limit);
 
+        // Set TLS extension permutation
+        set_option_try_try!(
+            config,
+            extension_permutation,
+            connector,
+            set_extension_permutation
+        );
+
+        // Set TLS aes hardware override
+        set_option!(config, aes_hw_override, connector, set_aes_hw_override);
+
+        // Set TLS prefer chacha20 (Encryption order between AES-256-GCM/AES-128-GCM)
+        set_option!(config, prefer_chacha20, connector, set_prefer_chacha20);
+
+        // Set TLS keylog policy if provided
         if let Some(policy) = self.keylog_policy {
             let handle = policy.open_handle().map_err(crate::Error::builder)?;
             connector.set_keylog_callback(move |_, line| {
@@ -408,7 +448,7 @@ impl Inner {
                     }
 
                     if self.skip_session_ticket {
-                        conf.skip_session_ticket()?;
+                        conf.set_options(SslOptions::NO_TICKET)?;
                     }
                 }
             }

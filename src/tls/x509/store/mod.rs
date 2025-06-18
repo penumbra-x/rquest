@@ -1,9 +1,11 @@
 mod parser;
 
-use std::{fmt::Debug, path::Path};
+use std::{fmt::Debug, path::Path, sync::Arc};
 
 use boring2::x509::store::{X509Store, X509StoreBuilder};
-use parser::{filter_map_certs, parse_certs_from_iter, parse_certs_from_stack, process_certs};
+use parser::{
+    filter_map_certs, parse_certs_with_iter, parse_certs_with_stack, process_certs_with_builder,
+};
 
 use super::{Certificate, CertificateInput};
 use crate::Error;
@@ -63,7 +65,7 @@ impl CertStoreBuilder {
     {
         if let Ok(ref mut builder) = self.builder {
             let result = Certificate::stack_from_pem(certs.as_ref())
-                .and_then(|certs| process_certs(certs.into_iter(), builder));
+                .and_then(|certs| process_certs_with_builder(certs.into_iter(), builder));
 
             if let Err(err) = result {
                 self.builder = Err(err);
@@ -109,7 +111,7 @@ impl CertStoreBuilder {
     /// containing all the added certificates.
     pub fn build(self) -> crate::Result<CertStore> {
         let builder = self.builder?;
-        Ok(CertStore(builder.build()))
+        Ok(CertStore(Arc::new(builder.build())))
     }
 
     fn parse_cert<'c, C, P>(mut self, cert: C, parser: P) -> Self
@@ -141,7 +143,7 @@ impl CertStoreBuilder {
     {
         if let Ok(ref mut builder) = self.builder {
             let certs = filter_map_certs(certs, parser);
-            if let Err(err) = process_certs(certs, builder) {
+            if let Err(err) = process_certs_with_builder(certs, builder) {
                 self.builder = Err(err);
             }
         }
@@ -151,7 +153,7 @@ impl CertStoreBuilder {
 
 /// A collection of certificates Store.
 #[derive(Clone)]
-pub struct CertStore(X509Store);
+pub struct CertStore(Arc<X509Store>);
 
 impl Default for CertStore {
     fn default() -> Self {
@@ -210,7 +212,7 @@ impl CertStore {
         C: IntoIterator,
         C::Item: Into<CertificateInput<'c>>,
     {
-        parse_certs_from_iter(certs, Certificate::from_der)
+        parse_certs_with_iter(certs, Certificate::from_der)
     }
 
     /// Creates a new `CertStore` from a collection of PEM-encoded certificates.
@@ -220,7 +222,7 @@ impl CertStore {
         C: IntoIterator,
         C::Item: Into<CertificateInput<'c>>,
     {
-        parse_certs_from_iter(certs, Certificate::from_pem)
+        parse_certs_with_iter(certs, Certificate::from_pem)
     }
 
     /// Creates a new `CertStore` from a PEM-encoded certificate stack.
@@ -229,7 +231,7 @@ impl CertStore {
     where
         C: AsRef<[u8]>,
     {
-        parse_certs_from_stack(certs, Certificate::stack_from_pem)
+        parse_certs_with_stack(certs, Certificate::stack_from_pem)
     }
 
     /// Creates a new `CertStore` from a PEM-encoded certificate file.
@@ -248,7 +250,8 @@ impl CertStore {
 }
 
 impl CertStore {
+    #[inline(always)]
     pub(crate) fn add_to_tls(self, tls: &mut boring2::ssl::SslConnectorBuilder) {
-        tls.set_cert_store(self.0);
+        tls.set_cert_store_ref(&self.0);
     }
 }
