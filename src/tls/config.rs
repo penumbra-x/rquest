@@ -240,6 +240,10 @@ impl TlsConfigBuilder {
     }
 
     /// Sets the preference for ChaCha20 cipher.
+    ///
+    /// Controls the priority of TLS 1.3 cipher suites. When set to `true`, the client prefers:
+    /// AES_128_GCM, CHACHA20_POLY1305, then AES_256_GCM. Useful in environments with specific
+    /// encryption requirements.
     pub fn prefer_chacha20<T>(mut self, enabled: T) -> Self
     where
         T: Into<Option<bool>>,
