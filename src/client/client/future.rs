@@ -24,7 +24,7 @@ type ResponseFuture = Oneshot<
 >;
 
 pin_project! {
-#[project = PendingProj]
+    #[project = PendingProj]
     pub enum Pending {
         Request {
             url: Url,
