@@ -13,17 +13,14 @@ use std::{
 use antidote::Mutex;
 use boring2::{
     error::ErrorStack,
-    ssl::{
-        ConnectConfiguration, SslConnector, SslConnectorBuilder, SslMethod, SslOptions, SslRef,
-        SslSessionCacheMode,
-    },
+    ssl::{SslConnector, SslMethod, SslOptions, SslRef, SslSessionCacheMode},
 };
 use http::{Uri, uri::Scheme};
 use tokio_boring2::SslStream;
 use tower_service::Service;
 
 use super::{
-    HandshakeSettings, MaybeHttpsStream,
+    HandshakeConfig, MaybeHttpsStream,
     cache::{SessionCache, SessionKey},
     ext::{ConnectConfigurationExt, SslConnectorBuilderExt},
     key_index,
@@ -39,8 +36,6 @@ use crate::{
     tls::{CertStore, Identity, KeyLogPolicy, TlsConfig},
 };
 
-type Callback =
-    Arc<dyn Fn(&mut ConnectConfiguration, &Uri) -> Result<(), ErrorStack> + Sync + Send>;
 type SslCallback = Arc<dyn Fn(&mut SslRef, &Uri) -> Result<(), ErrorStack> + Sync + Send>;
 
 /// A Connector using BoringSSL to support `http` and `https` schemes.
@@ -161,9 +156,8 @@ pub struct TlsConnector {
 struct Inner {
     ssl: SslConnector,
     cache: Option<Arc<Mutex<SessionCache>>>,
-    callback: Option<Callback>,
+    config: HandshakeConfig,
     ssl_callback: Option<SslCallback>,
-    skip_session_ticket: bool,
 }
 
 impl TlsConnectorBuilder {
@@ -284,16 +278,16 @@ impl TlsConnectorBuilder {
         );
 
         // Set TLS curves list
-        set_option_try_try!(config, curves_list, connector, set_curves_list);
+        set_option_ref_try!(config, curves_list, connector, set_curves_list);
 
         // Set TLS signature algorithms list
-        set_option_try_try!(config, sigalgs_list, connector, set_sigalgs_list);
+        set_option_ref_try!(config, sigalgs_list, connector, set_sigalgs_list);
 
         // Set TLS cipher list
-        set_option_try_try!(config, cipher_list, connector, set_cipher_list);
+        set_option_ref_try!(config, cipher_list, connector, set_cipher_list);
 
         // Set TLS delegated credentials
-        set_option_try_try!(
+        set_option_ref_try!(
             config,
             delegated_credentials,
             connector,
@@ -307,7 +301,7 @@ impl TlsConnectorBuilder {
         set_option!(config, key_shares_limit, connector, set_key_shares_limit);
 
         // Set TLS extension permutation
-        set_option_try_try!(
+        set_option_ref_try!(
             config,
             extension_permutation,
             connector,
@@ -329,8 +323,8 @@ impl TlsConnectorBuilder {
             });
         }
 
-        // Create the `HandshakeSettings` with the default session cache capacity.
-        let settings = HandshakeSettings::builder()
+        // Create the `HandshakeConfig` with the default session cache capacity.
+        let config = HandshakeConfig::builder()
             .session_cache_capacity(8)
             .session_cache(config.pre_shared_key)
             .skip_session_ticket(config.psk_skip_session_ticket)
@@ -342,9 +336,33 @@ impl TlsConnectorBuilder {
             .random_aes_hw_override(config.random_aes_hw_override)
             .build();
 
-        Ok(TlsConnector::with_connector_and_settings(
-            connector, settings,
-        ))
+        // If the session cache is disabled, we don't need to set up any callbacks.
+        let cache = config.session_cache.then(|| {
+            let cache = Arc::new(Mutex::new(SessionCache::with_capacity(
+                config.session_cache_capacity,
+            )));
+
+            connector.set_session_cache_mode(SslSessionCacheMode::CLIENT);
+            connector.set_new_session_callback({
+                let cache = cache.clone();
+                move |ssl, session| {
+                    if let Ok(Some(key)) = key_index().map(|idx| ssl.ex_data(idx)) {
+                        cache.lock().insert(key.clone(), session);
+                    }
+                }
+            });
+
+            cache
+        });
+
+        Ok(TlsConnector {
+            inner: Inner {
+                ssl: connector.build(),
+                cache,
+                config,
+                ssl_callback: None,
+            },
+        })
     }
 }
 
@@ -358,63 +376,6 @@ impl TlsConnector {
             cert_verification: true,
             tls_sni: true,
             verify_hostname: true,
-        }
-    }
-
-    /// Creates a new `TlsConnector` with settings
-    fn with_connector_and_settings(
-        mut ssl: SslConnectorBuilder,
-        settings: HandshakeSettings,
-    ) -> TlsConnector {
-        // If the session cache is disabled, we don't need to set up any callbacks.
-        let cache = if settings.session_cache {
-            let cache = Arc::new(Mutex::new(SessionCache::with_capacity(
-                settings.session_cache_capacity,
-            )));
-
-            ssl.set_session_cache_mode(SslSessionCacheMode::CLIENT);
-
-            ssl.set_new_session_callback({
-                let cache = cache.clone();
-                move |ssl, session| {
-                    if let Ok(Some(key)) = key_index().map(|idx| ssl.ex_data(idx)) {
-                        cache.lock().insert(key.clone(), session);
-                    }
-                }
-            });
-
-            Some(cache)
-        } else {
-            None
-        };
-
-        let callback = Arc::new(move |conf: &mut ConnectConfiguration, _: &Uri| {
-            // Use server name indication
-            conf.set_use_server_name_indication(settings.tls_sni);
-
-            // Verify hostname
-            conf.set_verify_hostname(settings.verify_hostname);
-
-            // Set ECH grease
-            conf.set_enable_ech_grease(settings.enable_ech_grease);
-
-            // Set AES hardware override
-            conf.set_random_aes_hw_override(settings.random_aes_hw_override);
-
-            // Set ALPS
-            conf.alps_protos(settings.alps_protos, settings.alps_use_new_codepoint)?;
-
-            Ok(())
-        });
-
-        TlsConnector {
-            inner: Inner {
-                ssl: ssl.build(),
-                cache,
-                callback: Some(callback),
-                ssl_callback: None,
-                skip_session_ticket: settings.skip_session_ticket,
-            },
         }
     }
 }
@@ -432,11 +393,22 @@ impl Inner {
     where
         A: Read + Write + Unpin + Send + Sync + Debug + 'static,
     {
-        let mut conf = self.ssl.configure()?;
+        let mut cfg = self.ssl.configure()?;
 
-        if let Some(ref callback) = self.callback {
-            callback(&mut conf, uri)?;
-        }
+        // Use server name indication
+        cfg.set_use_server_name_indication(self.config.tls_sni);
+
+        // Verify hostname
+        cfg.set_verify_hostname(self.config.verify_hostname);
+
+        // Set ECH grease
+        cfg.set_enable_ech_grease(self.config.enable_ech_grease);
+
+        // Set AES hardware override
+        cfg.set_random_aes_hw_override(self.config.random_aes_hw_override);
+
+        // Set ALPS protos
+        cfg.alps_protos(self.config.alps_protos, self.config.alps_use_new_codepoint)?;
 
         if let Some(authority) = uri.authority() {
             let key = SessionKey(authority.clone());
@@ -444,20 +416,20 @@ impl Inner {
             if let Some(ref cache) = self.cache {
                 if let Some(session) = cache.lock().get(&key) {
                     unsafe {
-                        conf.set_session(&session)?;
+                        cfg.set_session(&session)?;
                     }
 
-                    if self.skip_session_ticket {
-                        conf.set_options(SslOptions::NO_TICKET)?;
+                    if self.config.skip_session_ticket {
+                        cfg.set_options(SslOptions::NO_TICKET)?;
                     }
                 }
             }
 
             let idx = key_index()?;
-            conf.set_ex_data(idx, key);
+            cfg.set_ex_data(idx, key);
         }
 
-        let mut ssl = conf.into_ssl(host)?;
+        let mut ssl = cfg.into_ssl(host)?;
 
         if let Some(ref ssl_callback) = self.ssl_callback {
             ssl_callback(&mut ssl, uri)?;
