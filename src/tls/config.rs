@@ -1,8 +1,9 @@
 use std::borrow::Cow;
 
 use boring2::ssl::ExtensionType;
+use bytes::Bytes;
 
-use super::{AlpnProtos, AlpsProtos, TlsVersion};
+use super::{AlpnProtocol, AlpsProtocol, TlsVersion};
 use crate::tls::CertificateCompressionAlgorithm;
 
 /// Builder for `[`TlsConfig`]`.
@@ -17,8 +18,8 @@ pub struct TlsConfigBuilder {
 /// This struct defines various parameters to fine-tune the behavior of a TLS connection,
 #[derive(Debug, Clone)]
 pub struct TlsConfig {
-    pub(crate) alpn_protos: AlpnProtos,
-    pub(crate) alps_protos: Option<AlpsProtos>,
+    pub(crate) alpn_protos: Option<Bytes>,
+    pub(crate) alps_protos: Option<Bytes>,
     pub(crate) alps_use_new_codepoint: bool,
     pub(crate) session_ticket: bool,
     pub(crate) min_tls_version: Option<TlsVersion>,
@@ -53,17 +54,20 @@ impl TlsConfigBuilder {
     }
 
     /// Sets the ALPN protocols to use.
-    pub fn alpn_protos(mut self, protos: AlpnProtos) -> Self {
-        self.config.alpn_protos = protos;
+    pub fn alpn_protos<'a, I>(mut self, alpn: I) -> Self
+    where
+        I: IntoIterator<Item = &'a AlpnProtocol>,
+    {
+        self.config.alpn_protos = Some(AlpnProtocol::encode_sequence(alpn));
         self
     }
 
     /// Sets the ALPS protocols to use.
-    pub fn alps_protos<T>(mut self, protos: T) -> Self
+    pub fn alps_protos<'a, I>(mut self, alps: I) -> Self
     where
-        T: Into<Option<AlpsProtos>>,
+        I: IntoIterator<Item = &'a AlpsProtocol>,
     {
-        self.config.alps_protos = protos.into();
+        self.config.alps_protos = Some(AlpsProtocol::encode_sequence(alps));
         self
     }
 
@@ -266,7 +270,10 @@ impl TlsConfig {
 impl Default for TlsConfig {
     fn default() -> Self {
         TlsConfig {
-            alpn_protos: AlpnProtos::default(),
+            alpn_protos: Some(AlpnProtocol::encode_sequence(&[
+                AlpnProtocol::HTTP2,
+                AlpnProtocol::HTTP1,
+            ])),
             alps_protos: None,
             alps_use_new_codepoint: false,
             session_ticket: true,

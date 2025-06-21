@@ -33,7 +33,7 @@ use crate::{
         rt::{Read, TokioIo, Write},
     },
     error::BoxError,
-    tls::{CertStore, Identity, KeyLogPolicy, TlsConfig},
+    tls::{CertStore, Identity, KeyLogPolicy, TlsConfig, TlsVersion},
 };
 
 type SslCallback = Arc<dyn Fn(&mut SslRef, &Uri) -> Result<(), ErrorStack> + Sync + Send>;
@@ -79,12 +79,10 @@ impl HttpsConnector<HttpConnector> {
         let alpn_protos = dst.alpn_protos();
         let mut connector = HttpsConnector::with_connector(http, connector);
         connector.set_ssl_callback(move |ssl, _| {
-            let alpn = match alpn_protos {
-                Some(alpn) => alpn.0,
-                None => return Ok(()),
-            };
-
-            ssl.set_alpn_protos(alpn)
+            if let Some(alpn) = alpn_protos {
+                ssl.set_alpn_protos(&alpn.encode())?;
+            }
+            Ok(())
         });
 
         connector
@@ -139,6 +137,8 @@ where
 #[derive(Clone)]
 pub struct TlsConnectorBuilder {
     keylog_policy: Option<KeyLogPolicy>,
+    max_version: Option<TlsVersion>,
+    min_version: Option<TlsVersion>,
     tls_sni: bool,
     verify_hostname: bool,
     identity: Option<Identity>,
@@ -192,6 +192,26 @@ impl TlsConnectorBuilder {
         self
     }
 
+    /// Sets the minimum TLS version to use.
+    #[inline(always)]
+    pub fn min_version<T>(mut self, version: T) -> Self
+    where
+        T: Into<Option<TlsVersion>>,
+    {
+        self.min_version = version.into();
+        self
+    }
+
+    /// Sets the maximum TLS version to use.
+    #[inline(always)]
+    pub fn max_version<T>(mut self, version: T) -> Self
+    where
+        T: Into<Option<TlsVersion>>,
+    {
+        self.max_version = version.into();
+        self
+    }
+
     /// Sets the Server Name Indication (SNI) flag.
     #[inline(always)]
     pub fn tls_sni(mut self, enabled: bool) -> Self {
@@ -207,7 +227,11 @@ impl TlsConnectorBuilder {
     }
 
     /// Build the `TlsConnector` with the provided configuration.
-    pub fn build(self, config: TlsConfig) -> crate::Result<TlsConnector> {
+    pub fn build(self, mut config: TlsConfig) -> crate::Result<TlsConnector> {
+        // Replace the default configuration with the provided one
+        config.max_tls_version = config.max_tls_version.or(self.max_version);
+        config.min_tls_version = config.min_tls_version.or(self.min_version);
+
         let mut connector = SslConnector::no_default_verify_builder(SslMethod::tls_client())?
             .cert_store(self.cert_store)?
             .cert_verification(self.cert_verification)?
@@ -266,9 +290,6 @@ impl TlsConnectorBuilder {
         // Set TLS grease options
         set_option!(config, grease_enabled, connector, set_grease_enabled);
 
-        // Set TLS ALPN protocols
-        set_inner_try!(config, alpn_protos, connector, set_alpn_protos);
-
         // Set TLS permute extensions options
         set_option!(
             config,
@@ -276,6 +297,9 @@ impl TlsConnectorBuilder {
             connector,
             set_permute_extensions
         );
+
+        // Set TLS ALPN protocols
+        set_option_ref_try!(config, alpn_protos, connector, set_alpn_protos);
 
         // Set TLS curves list
         set_option_ref_try!(config, curves_list, connector, set_curves_list);
@@ -318,7 +342,6 @@ impl TlsConnectorBuilder {
         if let Some(policy) = self.keylog_policy {
             let handle = policy.open_handle().map_err(crate::Error::builder)?;
             connector.set_keylog_callback(move |_, line| {
-                let line = format!("{}\n", line);
                 handle.write_log_line(line);
             });
         }
@@ -374,6 +397,8 @@ impl TlsConnector {
             identity: None,
             cert_store: None,
             cert_verification: true,
+            min_version: None,
+            max_version: None,
             tls_sni: true,
             verify_hostname: true,
         }
@@ -408,7 +433,10 @@ impl Inner {
         cfg.set_random_aes_hw_override(self.config.random_aes_hw_override);
 
         // Set ALPS protos
-        cfg.alps_protos(self.config.alps_protos, self.config.alps_use_new_codepoint)?;
+        cfg.alps_protos(
+            self.config.alps_protos.clone(),
+            self.config.alps_use_new_codepoint,
+        )?;
 
         if let Some(authority) = uri.authority() {
             let key = SessionKey(authority.clone());

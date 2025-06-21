@@ -4,12 +4,15 @@
 //!
 //! - Various parts of TLS can also be configured or even disabled on the `ClientBuilder`.
 
+#[macro_use]
+mod macros;
 mod config;
 mod conn;
 mod keylog;
 mod x509;
 
 pub use boring2::ssl::ExtensionType;
+use bytes::{Bytes, BytesMut};
 
 pub(crate) use self::conn::{HttpsConnector, MaybeHttpsStream, TlsConnector, TlsConnectorBuilder};
 pub use self::{
@@ -22,64 +25,111 @@ pub use self::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TlsVersion(boring2::ssl::SslVersion);
 
-// These could perhaps be From/TryFrom implementations, but those would be
-// part of the public API so let's be careful
 impl TlsVersion {
     /// Version 1.0 of the TLS protocol.
     pub const TLS_1_0: TlsVersion = TlsVersion(boring2::ssl::SslVersion::TLS1);
+
     /// Version 1.1 of the TLS protocol.
     pub const TLS_1_1: TlsVersion = TlsVersion(boring2::ssl::SslVersion::TLS1_1);
+
     /// Version 1.2 of the TLS protocol.
     pub const TLS_1_2: TlsVersion = TlsVersion(boring2::ssl::SslVersion::TLS1_2);
+
     /// Version 1.3 of the TLS protocol.
     pub const TLS_1_3: TlsVersion = TlsVersion(boring2::ssl::SslVersion::TLS1_3);
 }
 
 /// A TLS ALPN protocol.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub struct AlpnProtos(&'static [u8]);
+pub struct AlpnProtocol(&'static [u8]);
 
-/// A `AlpnProtos` is used to set the HTTP version preference.
-impl AlpnProtos {
+impl AlpnProtocol {
     /// Prefer HTTP/1.1
-    pub const HTTP1: AlpnProtos = AlpnProtos(b"\x08http/1.1");
+    pub const HTTP1: AlpnProtocol = {
+        const ENC_HTTP1: [u8; 9] = encode_alpns!(*b"http/1.1");
+        AlpnProtocol(&ENC_HTTP1)
+    };
+
     /// Prefer HTTP/2
-    pub const HTTP2: AlpnProtos = AlpnProtos(b"\x02h2");
-    /// Prefer HTTP/1 and HTTP/2
-    pub const ALL: AlpnProtos = AlpnProtos(b"\x02h2\x08http/1.1");
+    pub const HTTP2: AlpnProtocol = {
+        const ENC_HTTP2: [u8; 3] = encode_alpns!(*b"h2");
+        AlpnProtocol(&ENC_HTTP2)
+    };
+
+    /// Prefer HTTP/3
+    pub const HTTP3: AlpnProtocol = {
+        const ENC_HTTP3: [u8; 3] = encode_alpns!(*b"h3");
+        AlpnProtocol(&ENC_HTTP3)
+    };
+
+    #[inline(always)]
+    pub(crate) fn encode(self) -> Bytes {
+        Bytes::from_static(self.0)
+    }
+
+    #[inline(always)]
+    pub(crate) fn encode_sequence<'a, I>(items: I) -> Bytes
+    where
+        I: IntoIterator<Item = &'a AlpnProtocol>,
+    {
+        encode_sequence(items)
+    }
 }
 
-impl Default for AlpnProtos {
-    fn default() -> Self {
-        Self::ALL
+impl AsRef<[u8]> for AlpnProtocol {
+    #[inline(always)]
+    fn as_ref(&self) -> &[u8] {
+        self.0
     }
 }
 
 /// Application-layer protocol settings for HTTP/1.1 and HTTP/2.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AlpsProtos(&'static [u8]);
+pub struct AlpsProtocol(&'static [u8]);
 
-impl AlpsProtos {
+impl AlpsProtocol {
     /// Application Settings protocol for HTTP/1.1
-    pub const HTTP1: AlpsProtos = AlpsProtos(b"http/1.1");
+    pub const HTTP1: AlpsProtocol = AlpsProtocol(b"http/1.1");
+
     /// Application Settings protocol for HTTP/2
-    pub const HTTP2: AlpsProtos = AlpsProtos(b"h2");
+    pub const HTTP2: AlpsProtocol = AlpsProtocol(b"h2");
+
     /// Application Settings protocol for HTTP/3
-    pub const HTTP3: AlpsProtos = AlpsProtos(b"h3");
+    pub const HTTP3: AlpsProtocol = AlpsProtocol(b"h3");
+
+    #[inline(always)]
+    pub(crate) fn encode_sequence<'a, I>(alps: I) -> Bytes
+    where
+        I: IntoIterator<Item = &'a AlpsProtocol>,
+    {
+        encode_sequence(alps)
+    }
+}
+
+impl AsRef<[u8]> for AlpsProtocol {
+    #[inline(always)]
+    fn as_ref(&self) -> &[u8] {
+        self.0
+    }
 }
 
 /// IANA assigned identifier of compression algorithm.
 /// See https://www.rfc-editor.org/rfc/rfc8879.html#name-compression-algorithms
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct CertificateCompressionAlgorithm(());
+pub struct CertificateCompressionAlgorithm(boring2::ssl::CertificateCompressionAlgorithm);
 
 impl CertificateCompressionAlgorithm {
     /// Zlib compression algorithm.
-    pub const ZLIB: CertificateCompressionAlgorithm = CertificateCompressionAlgorithm(());
+    pub const ZLIB: CertificateCompressionAlgorithm =
+        CertificateCompressionAlgorithm(boring2::ssl::CertificateCompressionAlgorithm::ZLIB);
+
     /// Brotli compression algorithm.
-    pub const BROTLI: CertificateCompressionAlgorithm = CertificateCompressionAlgorithm(());
+    pub const BROTLI: CertificateCompressionAlgorithm =
+        CertificateCompressionAlgorithm(boring2::ssl::CertificateCompressionAlgorithm::BROTLI);
+
     /// Zstd compression algorithm.
-    pub const ZSTD: CertificateCompressionAlgorithm = CertificateCompressionAlgorithm(());
+    pub const ZSTD: CertificateCompressionAlgorithm =
+        CertificateCompressionAlgorithm(boring2::ssl::CertificateCompressionAlgorithm::ZSTD);
 }
 
 /// Hyper extension carrying extra TLS layer information.
@@ -93,5 +143,56 @@ impl TlsInfo {
     /// Get the DER encoded leaf certificate of the peer.
     pub fn peer_certificate(&self) -> Option<&[u8]> {
         self.peer_certificate.as_ref().map(|der| &der[..])
+    }
+}
+
+fn encode_sequence<'a, T, I>(items: I) -> Bytes
+where
+    T: AsRef<[u8]> + 'a,
+    I: IntoIterator<Item = &'a T>,
+{
+    let mut buf = BytesMut::new();
+    for item in items {
+        buf.extend_from_slice(item.as_ref());
+    }
+    buf.freeze()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn alpn_protocol_encode() {
+        let alpn = AlpnProtocol::encode_sequence(&[AlpnProtocol::HTTP1, AlpnProtocol::HTTP2]);
+        assert_eq!(alpn, Bytes::from_static(b"\x08http/1.1\x02h2"));
+
+        let alpn = AlpnProtocol::encode_sequence(&[AlpnProtocol::HTTP3]);
+        assert_eq!(alpn, Bytes::from_static(b"\x02h3"));
+
+        let alpn = AlpnProtocol::encode_sequence(&[AlpnProtocol::HTTP1, AlpnProtocol::HTTP3]);
+        assert_eq!(alpn, Bytes::from_static(b"\x08http/1.1\x02h3"));
+
+        let alpn = AlpnProtocol::encode_sequence(&[AlpnProtocol::HTTP2, AlpnProtocol::HTTP3]);
+        assert_eq!(alpn, Bytes::from_static(b"\x02h2\x02h3"));
+
+        let alpn = AlpnProtocol::encode_sequence(&[
+            AlpnProtocol::HTTP1,
+            AlpnProtocol::HTTP2,
+            AlpnProtocol::HTTP3,
+        ]);
+        assert_eq!(alpn, Bytes::from_static(b"\x08http/1.1\x02h2\x02h3"));
+    }
+
+    #[test]
+    fn alpn_protocol_encode_single() {
+        let alpn = AlpnProtocol::HTTP1.encode();
+        assert_eq!(alpn, b"\x08http/1.1".as_ref());
+
+        let alpn = AlpnProtocol::HTTP2.encode();
+        assert_eq!(alpn, b"\x02h2".as_ref());
+
+        let alpn = AlpnProtocol::HTTP3.encode();
+        assert_eq!(alpn, b"\x02h3".as_ref());
     }
 }

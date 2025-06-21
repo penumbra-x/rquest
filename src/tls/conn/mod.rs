@@ -1,7 +1,5 @@
 //! SSL support via BoringSSL.
 
-#[macro_use]
-mod macros;
 mod boring;
 mod cache;
 mod cert_compressor;
@@ -16,17 +14,15 @@ use std::{
 };
 
 use boring2::{error::ErrorStack, ex_data::Index, ssl::Ssl};
+use bytes::Bytes;
 use cache::SessionKey;
 use tokio::io;
 use tokio_boring2::SslStream;
 
 pub use self::boring::{HttpsConnector, TlsConnector, TlsConnectorBuilder};
-use crate::{
-    core::{
-        client::connect::{Connected, Connection},
-        rt::{Read, ReadBufCursor, TokioIo, Write},
-    },
-    tls::AlpsProtos,
+use crate::core::{
+    client::connect::{Connected, Connection},
+    rt::{Read, ReadBufCursor, TokioIo, Write},
 };
 
 fn key_index() -> Result<Index<Ssl, SessionKey>, ErrorStack> {
@@ -49,7 +45,7 @@ pub struct HandshakeConfig {
     enable_ech_grease: bool,
     verify_hostname: bool,
     tls_sni: bool,
-    alps_protos: Option<AlpsProtos>,
+    alps_protos: Option<Bytes>,
     alps_use_new_codepoint: bool,
     random_aes_hw_override: bool,
 }
@@ -92,7 +88,7 @@ impl HandshakeConfigBuilder {
     }
 
     /// Sets ALPS protocol.
-    pub fn alps_protos(mut self, protos: Option<AlpsProtos>) -> Self {
+    pub fn alps_protos(mut self, protos: Option<Bytes>) -> Self {
         self.settings.alps_protos = protos;
         self
     }

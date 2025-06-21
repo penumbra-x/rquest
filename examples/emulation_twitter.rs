@@ -2,7 +2,7 @@ use http::{HeaderMap, HeaderValue, header};
 use wreq::{
     Client, EmulationProvider, OriginalHeaders,
     http2::{Http2Config, PseudoId, PseudoOrder},
-    tls::{AlpnProtos, TlsConfig, TlsVersion},
+    tls::{AlpnProtocol, TlsConfig, TlsVersion},
 };
 
 macro_rules! join {
@@ -19,6 +19,7 @@ async fn main() -> wreq::Result<()> {
 
     // TLS config
     let tls = TlsConfig::builder()
+        .enable_ocsp_stapling(true)
         .curves_list(join!(":", "X25519", "P-256", "P-384"))
         .cipher_list(join!(
             ":",
@@ -44,8 +45,7 @@ async fn main() -> wreq::Result<()> {
             "rsa_pkcs1_sha512",
             "rsa_pkcs1_sha1"
         ))
-        .alpn_protos(AlpnProtos::ALL)
-        .enable_ocsp_stapling(true)
+        .alpn_protos(&[AlpnProtocol::HTTP2, AlpnProtocol::HTTP1])
         .min_tls_version(TlsVersion::TLS_1_2)
         .max_tls_version(TlsVersion::TLS_1_3)
         .build();
@@ -78,6 +78,10 @@ async fn main() -> wreq::Result<()> {
         );
         headers.insert(header::ACCEPT, HeaderValue::from_static("application/json"));
         headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+        headers.insert(
+            header::COOKIE,
+            HeaderValue::from_static("ct0=YOUR_CT0_VALUE;"),
+        );
         headers
     };
 
@@ -109,7 +113,7 @@ async fn main() -> wreq::Result<()> {
         .build()?;
 
     // Use the API you're already familiar with
-    let resp = client.get("https://tls.peet.ws/api/all").send().await?;
+    let resp = client.post("https://tls.peet.ws/api/all").send().await?;
     println!("{}", resp.text().await?);
 
     Ok(())

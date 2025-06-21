@@ -648,10 +648,11 @@ async fn close_connection_after_idle_timeout() {
 }
 
 #[tokio::test]
-async fn default_http_version() {
+async fn http1_only() {
     let server = server::http(move |_| async move { http::Response::default() });
 
     let resp = wreq::Client::builder()
+        .http1_only()
         .build()
         .unwrap()
         .get(format!("http://{}", server.addr()))
@@ -660,11 +661,6 @@ async fn default_http_version() {
         .unwrap();
 
     assert_eq!(resp.version(), wreq::Version::HTTP_11);
-}
-
-#[tokio::test]
-async fn http1_version() {
-    let server = server::http(move |_| async move { http::Response::default() });
 
     let resp = wreq::Client::builder()
         .build()
@@ -679,8 +675,19 @@ async fn http1_version() {
 }
 
 #[tokio::test]
-async fn http2_version() {
+async fn http2_only() {
     let server = server::http(move |_| async move { http::Response::default() });
+
+    let resp = wreq::Client::builder()
+        .http2_only()
+        .build()
+        .unwrap()
+        .get(format!("http://{}", server.addr()))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(resp.version(), wreq::Version::HTTP_2);
 
     let resp = wreq::Client::builder()
         .build()
