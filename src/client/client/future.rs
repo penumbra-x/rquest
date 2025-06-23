@@ -15,13 +15,17 @@ use crate::{
         body,
         middleware::{self},
     },
+    core::body::Incoming,
     error::BoxError,
+    into_url::IntoUrlSealed,
 };
 
 type ResponseFuture = Oneshot<
     BoxCloneSyncService<HttpRequest<Body>, HttpResponse<ResponseBody>, BoxError>,
     HttpRequest<Body>,
 >;
+
+type CoreResponseFuture = crate::core::client::ResponseFuture;
 
 pin_project! {
     #[project = PendingProj]
@@ -37,14 +41,29 @@ pin_project! {
     }
 }
 
+pin_project! {
+    #[project = CorePendingProj]
+    pub enum CorePending {
+        Request {
+            #[pin]
+            fut: CoreResponseFuture,
+        },
+        Error {
+            error: Option<Error>,
+        },
+    }
+}
+
+// ======== Pending impl ========
+
 impl Pending {
     #[inline(always)]
-    pub(crate) fn new(url: Url, in_flight: ResponseFuture) -> Pending {
+    pub(crate) fn new(url: Url, in_flight: ResponseFuture) -> Self {
         Pending::Request { url, in_flight }
     }
 
     #[inline(always)]
-    pub(crate) fn new_err(err: Error) -> Pending {
+    pub(crate) fn new_err(err: Error) -> Self {
         Pending::Error { error: Some(err) }
     }
 }
@@ -55,28 +74,31 @@ impl Future for Pending {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         match self.project() {
             PendingProj::Request { url, in_flight } => {
-                let res = {
+                let mut res = {
                     let r = in_flight.get_mut();
                     match Pin::new(r).poll(cx) {
                         Poll::Ready(Ok(res)) => res.map(body::boxed),
-                        Poll::Ready(Err(e)) => {
-                            let mut e = match e.downcast::<Error>() {
-                                Ok(e) => *e,
+                        Poll::Ready(Err(err)) => {
+                            let mut err = match err.downcast::<Error>() {
+                                Ok(err) => *err,
                                 Err(e) => Error::request(e),
                             };
 
-                            if e.url().is_none() {
-                                e = e.with_url(url.clone());
+                            if err.url().is_none() {
+                                err = err.with_url(url.clone());
                             }
 
-                            return Poll::Ready(Err(e));
+                            return Poll::Ready(Err(err));
                         }
                         Poll::Pending => return Poll::Pending,
                     }
                 };
 
-                if let Some(uri) = res.extensions().get::<middleware::redirect::RequestUri>() {
-                    *url = Url::parse(&uri.0.to_string()).map_err(Error::decode)?;
+                if let Some(uri) = res
+                    .extensions_mut()
+                    .remove::<middleware::redirect::RequestUri>()
+                {
+                    *url = IntoUrlSealed::into_url(uri.0.to_string())?;
                 }
 
                 Poll::Ready(Ok(Response::new(res, url.clone())))
@@ -84,6 +106,43 @@ impl Future for Pending {
             PendingProj::Error { error } => Poll::Ready(Err(error
                 .take()
                 .expect("Error already taken in PendingInner::Error"))),
+        }
+    }
+}
+
+// ======== CorePending impl ========
+
+impl CorePending {
+    #[inline(always)]
+    pub(super) fn new(fut: CoreResponseFuture) -> Self {
+        CorePending::Request { fut }
+    }
+
+    #[inline(always)]
+    pub(super) fn new_err(err: Error) -> Self {
+        CorePending::Error { error: Some(err) }
+    }
+}
+
+impl Future for CorePending {
+    type Output = Result<HttpResponse<Incoming>, BoxError>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        match self.project() {
+            CorePendingProj::Request { fut } => {
+                let r = fut.get_mut();
+                match Pin::new(r).poll(cx) {
+                    Poll::Ready(Ok(res)) => Poll::Ready(Ok(res)),
+                    Poll::Ready(Err(err)) => Poll::Ready(Err(err.into())),
+                    Poll::Pending => Poll::Pending,
+                }
+            }
+            CorePendingProj::Error { error } => Poll::Ready(Err(error
+                .take()
+                .unwrap_or_else(|| {
+                    Error::builder("Pending future encountered an error without a specific error")
+                })
+                .into())),
         }
     }
 }

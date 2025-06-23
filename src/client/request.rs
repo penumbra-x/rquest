@@ -6,7 +6,7 @@ use std::{
     time::Duration,
 };
 
-use http::{Extensions, Request as HttpRequest, Version, request::Parts};
+use http::{Extensions, Request as HttpRequest, Uri, Version, request::Parts};
 use serde::Serialize;
 
 #[cfg(feature = "multipart")]
@@ -245,16 +245,6 @@ impl Request {
         *req.extensions_mut() = self.extensions().clone();
         req.body = body;
         Some(req)
-    }
-
-    pub(super) fn pieces(self) -> (Method, Url, HeaderMap, Option<Body>, Extensions) {
-        (
-            self.method,
-            self.url,
-            self.headers,
-            self.body,
-            self.extensions,
-        )
     }
 }
 
@@ -919,29 +909,44 @@ impl TryFrom<Request> for HttpRequest<Body> {
     type Error = crate::Error;
 
     fn try_from(req: Request) -> crate::Result<Self> {
+        req.try_into().map(|(_, http_req)| http_req)
+    }
+}
+
+impl TryFrom<Request> for (Url, HttpRequest<Body>) {
+    type Error = crate::Error;
+
+    fn try_from(req: Request) -> crate::Result<Self> {
         let version = req.version().cloned();
 
         let Request {
             method,
             url,
             headers,
+            extensions,
             body,
             ..
         } = req;
 
-        let mut builder = HttpRequest::builder();
+        match Uri::try_from(url.as_str()) {
+            Ok(uri) => {
+                let mut builder = HttpRequest::builder();
 
-        if let Some(version) = version {
-            builder = builder.version(version);
+                if let Some(version) = version {
+                    builder = builder.version(version);
+                }
+
+                let mut req = builder
+                    .method(method)
+                    .uri(uri)
+                    .body(body.unwrap_or_else(Body::empty))
+                    .map_err(Error::builder)?;
+
+                *req.headers_mut() = headers;
+                *req.extensions_mut() = extensions;
+                Ok((url, req))
+            }
+            Err(err) => Err(Error::builder(err).with_url(url)),
         }
-
-        let mut req = builder
-            .method(method)
-            .uri(url.as_str())
-            .body(body.unwrap_or_else(Body::empty))
-            .map_err(Error::builder)?;
-
-        *req.headers_mut() = headers;
-        Ok(req)
     }
 }

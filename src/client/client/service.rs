@@ -1,15 +1,13 @@
 use std::{
-    pin::Pin,
     sync::Arc,
     task::{Context, Poll},
 };
 
-use http::{HeaderMap, Request, Response, Uri, header::PROXY_AUTHORIZATION, uri::Scheme};
+use http::{HeaderMap, Request, Response, header::PROXY_AUTHORIZATION, uri::Scheme};
 use tower::Service;
 
-use super::Body;
+use super::{Body, future::CorePending};
 use crate::{
-    OriginalHeaders,
     config::RequestSkipDefaultHeaders,
     connect::Connector,
     core::{
@@ -18,57 +16,39 @@ use crate::{
         ext::{RequestConfig, RequestOriginalHeaders},
     },
     error::{BoxError, Error},
+    into_url::IntoUrlSealed,
     proxy::Matcher as ProxyMatcher,
 };
 
 #[derive(Clone)]
 pub struct ClientService {
-    client: Client<Connector, Body>,
-    inner: Arc<ClientConfig>,
+    pub(super) client: Client<Connector, Body>,
+    pub(super) config: Arc<ClientConfig>,
 }
 
-struct ClientConfig {
-    default_headers: HeaderMap,
-    skip_default_headers: RequestConfig<RequestSkipDefaultHeaders>,
-    original_headers: RequestConfig<RequestOriginalHeaders>,
-    proxies: Arc<Vec<ProxyMatcher>>,
-    proxies_maybe_http_auth: bool,
-    proxies_maybe_http_custom_headers: bool,
+pub(super) struct ClientConfig {
+    pub(super) default_headers: HeaderMap,
+    pub(super) skip_default_headers: RequestConfig<RequestSkipDefaultHeaders>,
+    pub(super) original_headers: RequestConfig<RequestOriginalHeaders>,
+    pub(super) https_only: bool,
+    pub(super) proxies: Arc<Vec<ProxyMatcher>>,
+    pub(super) proxies_maybe_http_auth: bool,
+    pub(super) proxies_maybe_http_custom_headers: bool,
 }
 
 impl ClientService {
-    pub fn new(
-        client: Client<Connector, Body>,
-        default_headers: HeaderMap,
-        original_headers: Option<OriginalHeaders>,
-        proxies: Arc<Vec<ProxyMatcher>>,
-        proxies_maybe_http_auth: bool,
-        proxies_maybe_http_custom_headers: bool,
-    ) -> Self {
-        Self {
-            client,
-            inner: Arc::new(ClientConfig {
-                default_headers,
-                skip_default_headers: RequestConfig::default(),
-                original_headers: RequestConfig::new(original_headers),
-                proxies,
-                proxies_maybe_http_auth,
-                proxies_maybe_http_custom_headers,
-            }),
-        }
-    }
-
-    fn apply_proxy_headers(&self, dst: Uri, headers: &mut HeaderMap) {
+    #[inline]
+    fn apply_proxy_headers(&self, req: &mut Request<Body>) {
         // Skip if the destination is not plain HTTP.
         // For HTTPS, the proxy headers should be part of the CONNECT tunnel instead.
-        if dst.scheme() != Some(&Scheme::HTTP) {
+        if req.uri().scheme() != Some(&Scheme::HTTP) {
             return;
         }
 
         // Determine whether we need to apply proxy auth and/or custom headers.
-        let need_auth =
-            self.inner.proxies_maybe_http_auth && !headers.contains_key(PROXY_AUTHORIZATION);
-        let need_custom_headers = self.inner.proxies_maybe_http_custom_headers;
+        let need_auth = self.config.proxies_maybe_http_auth
+            && !req.headers_mut().contains_key(PROXY_AUTHORIZATION);
+        let need_custom_headers = self.config.proxies_maybe_http_custom_headers;
 
         // If no headers need to be applied, return early.
         if !need_auth && !need_custom_headers {
@@ -78,20 +58,20 @@ impl ClientService {
         let mut inserted_auth = false;
         let mut inserted_custom = false;
 
-        for proxy in self.inner.proxies.iter() {
+        for proxy in self.config.proxies.iter() {
             // Insert basic auth header from the first applicable proxy.
             if need_auth && !inserted_auth {
-                if let Some(auth_header) = proxy.http_non_tunnel_basic_auth(&dst) {
-                    headers.insert(PROXY_AUTHORIZATION, auth_header);
+                if let Some(auth_header) = proxy.http_non_tunnel_basic_auth(req.uri()) {
+                    req.headers_mut().insert(PROXY_AUTHORIZATION, auth_header);
                     inserted_auth = true;
                 }
             }
 
             // Insert custom headers from the first applicable proxy.
             if need_custom_headers && !inserted_custom {
-                if let Some(custom_headers) = proxy.http_non_tunnel_custom_headers(&dst) {
+                if let Some(custom_headers) = proxy.http_non_tunnel_custom_headers(req.uri()) {
                     for (key, value) in custom_headers.iter() {
-                        headers.insert(key.clone(), value.clone());
+                        req.headers_mut().insert(key.clone(), value.clone());
                     }
                     inserted_custom = true;
                 }
@@ -108,20 +88,31 @@ impl ClientService {
 impl Service<Request<Body>> for ClientService {
     type Error = BoxError;
     type Response = Response<Incoming>;
-    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + Sync>>;
+    type Future = CorePending;
 
     #[inline(always)]
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.client
-            .poll_ready(cx)
-            .map_err(Error::request)
-            .map_err(From::from)
+        self.client.poll_ready(cx).map_err(From::from)
     }
 
     fn call(&mut self, mut req: Request<Body>) -> Self::Future {
+        let scheme = req.uri().scheme();
+
+        // Check for invalid schemes
+        if (scheme != Some(&Scheme::HTTP) && scheme != Some(&Scheme::HTTPS))
+            || (self.config.https_only && scheme != Some(&Scheme::HTTPS))
+        {
+            let err = match IntoUrlSealed::into_url(req.uri().to_string()) {
+                Ok(url) => Error::url_bad_scheme(url),
+                Err(err) => Error::builder(err),
+            };
+
+            return CorePending::new_err(err);
+        }
+
         // Only skip setting default headers if skip_default_headers is explicitly Some(true).
         let skip = self
-            .inner
+            .config
             .skip_default_headers
             .fetch(req.extensions())
             .copied()
@@ -130,30 +121,23 @@ impl Service<Request<Body>> for ClientService {
         if !skip {
             let headers = req.headers_mut();
             // Insert default headers if they are not already present in the request.
-            for name in self.inner.default_headers.keys() {
+            for name in self.config.default_headers.keys() {
                 if !headers.contains_key(name) {
-                    for value in self.inner.default_headers.get_all(name) {
+                    for value in self.config.default_headers.get_all(name) {
                         headers.append(name, value.clone());
                     }
                 }
             }
         }
 
-        let clone = self.client.clone();
-        let mut inner = std::mem::replace(&mut self.client, clone);
+        // Apply original headers if they are set in the request extensions.
+        self.config
+            .original_headers
+            .replace_to(req.extensions_mut());
 
         // Apply proxy headers if the request is routed through a proxy.
-        self.apply_proxy_headers(req.uri().clone(), req.headers_mut());
+        self.apply_proxy_headers(&mut req);
 
-        // Apply original headers if they are set in the request extensions.
-        self.inner.original_headers.replace_to(req.extensions_mut());
-
-        Box::pin(async move {
-            inner
-                .call(req)
-                .await
-                .map_err(Error::request)
-                .map_err(From::from)
-        })
+        CorePending::new(self.client.call(req))
     }
 }

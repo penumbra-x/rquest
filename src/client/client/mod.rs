@@ -16,7 +16,7 @@ use http::{
     Request as HttpRequest, Response as HttpResponse,
     header::{HeaderMap, HeaderValue, USER_AGENT},
 };
-use service::ClientService;
+use service::{ClientConfig, ClientService};
 use tower::{
     Layer, Service, ServiceBuilder,
     retry::RetryLayer,
@@ -58,13 +58,13 @@ use crate::{
     core::{
         body::Incoming,
         client::{Builder, Client as HyperClient},
+        ext::RequestConfig,
         rt::{TokioExecutor, tokio::TokioTimer},
     },
     dns::{DnsResolverWithOverrides, DynResolver, Resolve, gai::GaiResolver},
     error::{self, BoxError, Error},
     http1::Http1Config,
     http2::Http2Config,
-    into_url::try_uri,
     proxy::Matcher as ProxyMatcher,
     redirect::{self, RedirectPolicy},
     tls::{
@@ -113,13 +113,7 @@ type BoxedClientServiceLayer = BoxCloneSyncServiceLayer<
 /// [`Rc`]: std::rc::Rc
 #[derive(Clone)]
 pub struct Client {
-    inner: Arc<ClientRef>,
-}
-
-/// A reference to the `Client` that is used internally.
-struct ClientRef {
-    service: BoxedClientService,
-    https_only: bool,
+    inner: Arc<BoxedClientService>,
 }
 
 /// A `ClientBuilder` can be used to create a `Client` with custom configuration.
@@ -394,14 +388,18 @@ impl ClientBuilder {
         };
 
         let service = {
-            let service = ClientService::new(
-                config.builder.build(connector),
-                config.headers,
-                config.original_headers,
-                proxies,
-                proxies_maybe_http_auth,
-                proxies_maybe_http_custom_headers,
-            );
+            let service = ClientService {
+                client: config.builder.build(connector),
+                config: Arc::new(ClientConfig {
+                    default_headers: config.headers,
+                    original_headers: RequestConfig::new(config.original_headers),
+                    skip_default_headers: RequestConfig::default(),
+                    https_only: config.https_only,
+                    proxies,
+                    proxies_maybe_http_auth,
+                    proxies_maybe_http_custom_headers,
+                }),
+            };
 
             #[cfg(any(
                 feature = "gzip",
@@ -473,10 +471,7 @@ impl ClientBuilder {
         };
 
         Ok(Client {
-            inner: Arc::new(ClientRef {
-                service,
-                https_only: config.https_only,
-            }),
+            inner: Arc::new(service),
         })
     }
 
@@ -1464,44 +1459,15 @@ impl Client {
     /// This method fails if there was an error while sending request,
     /// redirect loop was detected or redirect limit was exhausted.
     pub fn execute(&self, request: Request) -> Pending {
-        let (method, url, headers, body, extensions) = request.pieces();
-
-        // get the scheme of the URL
-        let scheme = url.scheme();
-
-        // check if the scheme is supported
-        if scheme != "http" && scheme != "https" {
-            return Pending::new_err(Error::url_bad_scheme(url));
+        match request.try_into() {
+            Ok((url, req)) => {
+                // Prepare the in-flight request by ensuring we use the exact same Service instance
+                // for both poll_ready and call.
+                let in_flight = Oneshot::new(self.inner.as_ref().clone(), req);
+                Pending::new(url, in_flight)
+            }
+            Err(err) => Pending::new_err(err),
         }
-
-        // check if we're in https_only mode and check the scheme of the current URL
-        if self.inner.https_only && scheme != "https" {
-            return Pending::new_err(Error::url_bad_scheme(url));
-        }
-
-        // parse Uri from the Url
-        let uri = match try_uri(&url) {
-            Some(uri) => uri,
-            None => return Pending::new_err(Error::url_bad_uri(url)),
-        };
-
-        // Prepare the in-flight request by ensuring we use the exact same Service instance
-        // for both poll_ready and call.
-        let in_flight = {
-            let mut req = HttpRequest::builder()
-                .uri(uri)
-                .method(method.clone())
-                .body(body.unwrap_or_else(Body::empty))
-                .expect("valid request parts");
-
-            // Finalize headers and extensions
-            *req.headers_mut() = headers;
-            *req.extensions_mut() = extensions;
-
-            Oneshot::new(self.inner.service.clone(), req)
-        };
-
-        Pending::new(url, in_flight)
     }
 }
 
