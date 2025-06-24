@@ -1,12 +1,11 @@
+/// backport: https://github.com/cloudflare/boring/blob/master/hyper-boring/src/cache.rs
 use std::{
     borrow::Borrow,
     collections::hash_map::{Entry, HashMap},
     hash::{Hash, Hasher},
 };
 
-/// backport: https://github.com/cloudflare/boring/blob/master/hyper-boring/src/cache.rs
-use boring2::ssl::SslVersion;
-use boring2::ssl::{SslSession, SslSessionRef};
+use boring2::ssl::{SslSession, SslSessionRef, SslVersion};
 use http::uri::Authority;
 use linked_hash_set::LinkedHashSet;
 
