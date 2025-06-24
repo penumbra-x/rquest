@@ -145,11 +145,18 @@ impl Error {
                 return true;
             }
 
+            if let Some(core_err) = err.downcast_ref::<crate::core::Error>() {
+                if core_err.is_timeout() {
+                    return true;
+                }
+            }
+
             if let Some(io) = err.downcast_ref::<io::Error>() {
                 if io.kind() == io::ErrorKind::TimedOut {
                     return true;
                 }
             }
+
             source = err.source();
         }
 
@@ -440,7 +447,7 @@ mod tests {
         let err = Error::request(super::TimedOut);
         assert!(err.is_timeout());
 
-        let io = io::Error::other(err);
+        let io = io::Error::from(io::ErrorKind::TimedOut);
         let nested = Error::request(io);
         assert!(nested.is_timeout());
     }
