@@ -16,6 +16,7 @@
 pub use fallback::MutexGuard;
 #[cfg(not(feature = "parking_lot"))]
 pub use fallback::{Mutex, RwLock};
+
 #[cfg(all(feature = "parking_lot", test))]
 pub use parking_lot::MutexGuard;
 #[cfg(feature = "parking_lot")]
@@ -73,12 +74,6 @@ mod fallback {
         #[inline]
         fn deref_mut(&mut self) -> &mut T {
             self.0.deref_mut()
-        }
-    }
-
-    impl<T: Default> Default for Mutex<T> {
-        fn default() -> Self {
-            Mutex(Default::default())
         }
     }
 
