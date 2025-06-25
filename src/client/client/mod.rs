@@ -1,7 +1,8 @@
 #[macro_use]
 mod macros;
-pub(super) mod future;
+mod future;
 mod service;
+mod types;
 
 use std::{
     collections::HashMap,
@@ -13,29 +14,20 @@ use std::{
     time::Duration,
 };
 
-use future::Pending;
+pub use future::Pending;
 use http::{
     Request as HttpRequest, Response as HttpResponse,
     header::{HeaderMap, HeaderValue, USER_AGENT},
 };
 use service::{ClientConfig, ClientService};
 use tower::{
-    Layer, Service, ServiceBuilder,
+    Layer, Service, ServiceBuilder, ServiceExt,
     retry::RetryLayer,
-    util::{BoxCloneSyncService, BoxCloneSyncServiceLayer, Oneshot},
+    util::{BoxCloneSyncService, BoxCloneSyncServiceLayer},
 };
+use types::{BoxedClientService, BoxedClientServiceLayer, GenericClientService, ResponseBody};
 #[cfg(feature = "cookies")]
 use {super::middleware::cookie::CookieManagerLayer, crate::cookie};
-#[cfg(any(
-    feature = "gzip",
-    feature = "zstd",
-    feature = "brotli",
-    feature = "deflate",
-))]
-use {
-    super::{decoder::AcceptEncoding, middleware::decoder::DecompressionLayer},
-    tower_http::decompression::DecompressionBody,
-};
 
 #[cfg(feature = "websocket")]
 use super::websocket::WebSocketRequestBuilder;
@@ -44,11 +36,18 @@ use super::{
     middleware::{
         redirect::FollowRedirectLayer,
         retry::Http2RetryPolicy,
-        timeout::{ResponseBodyTimeoutLayer, TimeoutBody, TimeoutLayer},
+        timeout::{ResponseBodyTimeoutLayer, TimeoutLayer},
     },
     request::{Request, RequestBuilder},
     response::Response,
 };
+#[cfg(any(
+    feature = "gzip",
+    feature = "zstd",
+    feature = "brotli",
+    feature = "deflate",
+))]
+use super::{decoder::AcceptEncoding, middleware::decoder::DecompressionLayer};
 #[cfg(feature = "hickory-dns")]
 use crate::dns::hickory::{HickoryDnsResolver, LookupIpStrategy};
 use crate::{
@@ -58,7 +57,6 @@ use crate::{
         sealed::{Conn, Unnameable},
     },
     core::{
-        body::Incoming,
         client::{Builder, Client as HyperClient},
         ext::RequestConfig,
         rt::{TokioExecutor, tokio::TokioTimer},
@@ -73,32 +71,6 @@ use crate::{
         AlpnProtocol, CertStore, CertificateInput, Identity, KeyLogPolicy, TlsConfig, TlsVersion,
     },
 };
-
-#[cfg(not(any(
-    feature = "gzip",
-    feature = "zstd",
-    feature = "brotli",
-    feature = "deflate",
-)))]
-type ResponseBody = TimeoutBody<Incoming>;
-
-#[cfg(any(
-    feature = "gzip",
-    feature = "zstd",
-    feature = "brotli",
-    feature = "deflate",
-))]
-type ResponseBody = TimeoutBody<DecompressionBody<Incoming>>;
-
-type BoxedClientService =
-    BoxCloneSyncService<HttpRequest<Body>, HttpResponse<ResponseBody>, BoxError>;
-
-type BoxedClientServiceLayer = BoxCloneSyncServiceLayer<
-    BoxedClientService,
-    HttpRequest<Body>,
-    HttpResponse<ResponseBody>,
-    BoxError,
->;
 
 /// An `Client` to make Requests with.
 ///
@@ -115,7 +87,14 @@ type BoxedClientServiceLayer = BoxCloneSyncServiceLayer<
 /// [`Rc`]: std::rc::Rc
 #[derive(Clone)]
 pub struct Client {
-    inner: Arc<BoxedClientService>,
+    inner: Arc<ClientRef>,
+}
+
+#[allow(clippy::large_enum_variant)]
+#[derive(Clone)]
+enum ClientRef {
+    Boxed(BoxedClientService),
+    Generic(GenericClientService),
 }
 
 /// A `ClientBuilder` can be used to create a `Client` with custom configuration.
@@ -425,12 +404,12 @@ impl ClientBuilder {
                 .layer(CookieManagerLayer::new(config.cookie_store))
                 .service(service);
 
-            let redirect_policy = RedirectPolicy::new(config.redirect_policy)
+            let policy = RedirectPolicy::new(config.redirect_policy)
                 .with_referer(config.referer)
                 .with_https_only(config.https_only);
 
             let service = ServiceBuilder::new()
-                .layer(FollowRedirectLayer::with_policy(redirect_policy))
+                .layer(FollowRedirectLayer::with_policy(policy))
                 .service(service);
 
             let service = ServiceBuilder::new()
@@ -456,7 +435,7 @@ impl ClientBuilder {
                         .map_err(error::map_timeout_to_request_error)
                         .service(service);
 
-                    BoxCloneSyncService::new(service)
+                    ClientRef::Boxed(BoxCloneSyncService::new(service))
                 }
                 None => {
                     let service = ServiceBuilder::new()
@@ -464,10 +443,10 @@ impl ClientBuilder {
                         .service(service);
 
                     let service = ServiceBuilder::new()
-                        .map_err(error::map_timeout_to_request_error)
+                        .map_err(error::map_timeout_to_request_error as _)
                         .service(service);
 
-                    BoxCloneSyncService::new(service)
+                    ClientRef::Generic(service)
                 }
             }
         };
@@ -1463,12 +1442,20 @@ impl Client {
     pub fn execute(&self, request: Request) -> Pending {
         match request.try_into() {
             Ok((url, req)) => {
-                // Prepare the in-flight request by ensuring we use the exact same Service instance
+                // Prepare the future request by ensuring we use the exact same Service instance
                 // for both poll_ready and call.
-                let in_flight = Oneshot::new(self.inner.as_ref().clone(), req);
-                Pending::new(url, in_flight)
+                match <ClientRef as Clone>::clone(&self.inner) {
+                    ClientRef::Boxed(service) => Pending::BoxedRequest {
+                        url: Some(url),
+                        fut: service.oneshot(req),
+                    },
+                    ClientRef::Generic(service) => Pending::GenericRequest {
+                        url: Some(url),
+                        fut: Box::pin(service.oneshot(req)),
+                    },
+                }
             }
-            Err(err) => Pending::new_err(err),
+            Err(err) => Pending::Error { error: Some(err) },
         }
     }
 }

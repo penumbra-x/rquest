@@ -13,7 +13,7 @@ use serde::Serialize;
 use super::multipart;
 use super::{
     body::Body,
-    client::{Client, future::Pending},
+    client::{Client, Pending},
     response::Response,
 };
 #[cfg(any(
@@ -793,7 +793,7 @@ impl RequestBuilder {
     pub fn send(self) -> impl Future<Output = crate::Result<Response>> {
         match self.request {
             Ok(req) => self.client.execute(req),
-            Err(err) => Pending::new_err(err),
+            Err(err) => Pending::Error { error: Some(err) },
         }
     }
 
