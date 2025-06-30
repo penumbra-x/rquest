@@ -6,9 +6,8 @@ mod ext;
 mod service;
 
 use std::{
-    fmt,
-    fmt::Debug,
-    io::IoSlice,
+    fmt::{self, Debug},
+    io,
     pin::Pin,
     sync::{Arc, LazyLock},
     task::{Context, Poll},
@@ -22,7 +21,7 @@ use boring2::{
 use bytes::Bytes;
 use cache::{SessionCache, SessionKey};
 use http::Uri;
-use tokio::io;
+use tokio::io::{AsyncRead, AsyncWrite};
 use tokio_boring2::SslStream;
 use tower_service::Service;
 
@@ -219,18 +218,7 @@ where
 // ===== impl Inner =====
 
 impl Inner {
-    /// Connects to the given URI using the given connection.
-    ///
-    /// This function is used to connect to the given URI using the given connection.
-    pub async fn connect<A>(
-        &self,
-        uri: &Uri,
-        host: &str,
-        conn: A,
-    ) -> Result<SslStream<TokioIo<A>>, BoxError>
-    where
-        A: Read + Write + Unpin + Send + Sync + Debug + 'static,
-    {
+    fn setup_ssl(&self, uri: &Uri, host: &str) -> Result<Ssl, ErrorStack> {
         let mut cfg = self.ssl.configure()?;
 
         // Use server name indication
@@ -275,12 +263,7 @@ impl Inner {
             cfg.set_ex_data(idx, key);
         }
 
-        let ssl = cfg.into_ssl(host)?;
-
-        tokio_boring2::SslStreamBuilder::new(ssl, TokioIo::new(conn))
-            .connect()
-            .await
-            .map_err(Into::into)
+        cfg.into_ssl(host)
     }
 }
 
@@ -532,7 +515,7 @@ pub enum MaybeHttpsStream<T> {
     /// A raw HTTP stream.
     Http(T),
     /// An SSL-wrapped HTTP stream.
-    Https(TokioIo<SslStream<TokioIo<T>>>),
+    Https(SslStream<T>),
 }
 
 // ===== impl MaybeHttpsStream =====
@@ -554,9 +537,9 @@ where
         match self {
             MaybeHttpsStream::Http(s) => s.connected(),
             MaybeHttpsStream::Https(s) => {
-                let mut connected = s.inner().get_ref().connected();
+                let mut connected = s.get_ref().connected();
 
-                if s.inner().ssl().selected_alpn_protocol() == Some(b"h2") {
+                if s.ssl().selected_alpn_protocol() == Some(b"h2") {
                     connected = connected.negotiated_h2();
                 }
 
@@ -566,66 +549,52 @@ where
     }
 }
 
-impl<T: Read + Write + Unpin> Read for MaybeHttpsStream<T> {
-    #[inline]
+impl<T> Read for MaybeHttpsStream<T>
+where
+    T: AsyncRead + AsyncWrite + Unpin,
+{
     fn poll_read(
-        self: Pin<&mut Self>,
-        cx: &mut Context,
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
         buf: ReadBufCursor<'_>,
-    ) -> Poll<Result<(), io::Error>> {
-        match Pin::get_mut(self) {
-            MaybeHttpsStream::Http(s) => Pin::new(s).poll_read(cx, buf),
-            MaybeHttpsStream::Https(s) => Pin::new(s).poll_read(cx, buf),
+    ) -> Poll<Result<(), std::io::Error>> {
+        match &mut *self {
+            MaybeHttpsStream::Http(inner) => Pin::new(&mut TokioIo::new(inner)).poll_read(cx, buf),
+            MaybeHttpsStream::Https(inner) => Pin::new(&mut TokioIo::new(inner)).poll_read(cx, buf),
         }
     }
 }
 
-impl<T: Write + Read + Unpin> Write for MaybeHttpsStream<T> {
-    #[inline]
+impl<T> Write for MaybeHttpsStream<T>
+where
+    T: AsyncRead + AsyncWrite + Unpin,
+{
     fn poll_write(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
+        mut self: Pin<&mut Self>,
+        ctx: &mut Context<'_>,
         buf: &[u8],
-    ) -> Poll<Result<usize, io::Error>> {
-        match Pin::get_mut(self) {
-            MaybeHttpsStream::Http(s) => Pin::new(s).poll_write(cx, buf),
-            MaybeHttpsStream::Https(s) => Pin::new(s).poll_write(cx, buf),
+    ) -> Poll<io::Result<usize>> {
+        match &mut *self {
+            MaybeHttpsStream::Http(inner) => {
+                Pin::new(&mut TokioIo::new(inner)).poll_write(ctx, buf)
+            }
+            MaybeHttpsStream::Https(inner) => {
+                Pin::new(&mut TokioIo::new(inner)).poll_write(ctx, buf)
+            }
         }
     }
 
-    #[inline]
-    fn poll_write_vectored(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        bufs: &[IoSlice<'_>],
-    ) -> Poll<Result<usize, io::Error>> {
-        match Pin::get_mut(self) {
-            MaybeHttpsStream::Http(s) => Pin::new(s).poll_write_vectored(cx, bufs),
-            MaybeHttpsStream::Https(s) => Pin::new(s).poll_write_vectored(cx, bufs),
+    fn poll_flush(mut self: Pin<&mut Self>, ctx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        match &mut *self {
+            MaybeHttpsStream::Http(inner) => Pin::new(&mut TokioIo::new(inner)).poll_flush(ctx),
+            MaybeHttpsStream::Https(inner) => Pin::new(&mut TokioIo::new(inner)).poll_flush(ctx),
         }
     }
 
-    #[inline]
-    fn is_write_vectored(&self) -> bool {
-        match self {
-            MaybeHttpsStream::Http(s) => s.is_write_vectored(),
-            MaybeHttpsStream::Https(s) => s.is_write_vectored(),
-        }
-    }
-
-    #[inline]
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), io::Error>> {
-        match Pin::get_mut(self) {
-            MaybeHttpsStream::Http(s) => Pin::new(s).poll_flush(cx),
-            MaybeHttpsStream::Https(s) => Pin::new(s).poll_flush(cx),
-        }
-    }
-
-    #[inline]
-    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), io::Error>> {
-        match Pin::get_mut(self) {
-            MaybeHttpsStream::Http(s) => Pin::new(s).poll_shutdown(cx),
-            MaybeHttpsStream::Https(s) => Pin::new(s).poll_shutdown(cx),
+    fn poll_shutdown(mut self: Pin<&mut Self>, ctx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        match &mut *self {
+            MaybeHttpsStream::Http(inner) => Pin::new(&mut TokioIo::new(inner)).poll_shutdown(ctx),
+            MaybeHttpsStream::Https(inner) => Pin::new(&mut TokioIo::new(inner)).poll_shutdown(ctx),
         }
     }
 }

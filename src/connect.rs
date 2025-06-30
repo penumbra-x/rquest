@@ -9,8 +9,7 @@ use std::{
 
 use http::uri::Scheme;
 use pin_project_lite::pin_project;
-use sealed::{Conn, Unnameable};
-use tls_conn::BoringTlsConn;
+use tls_conn::TlsConn;
 use tokio::net::TcpStream;
 use tokio_boring2::SslStream;
 use tower::{
@@ -20,6 +19,7 @@ use tower::{
 };
 use tower_service::Service;
 
+pub(crate) use self::conn::{Conn, Unnameable};
 use crate::{
     core::{
         client::{
@@ -36,6 +36,10 @@ use crate::{
         TlsConnector, TlsConnectorBuilder, TlsInfo, TlsVersion,
     },
 };
+
+type BoxConn = Box<dyn AsyncConnWithInfo>;
+
+type Connecting = Pin<Box<dyn Future<Output = Result<Conn, BoxError>> + Send>>;
 
 pub(crate) type HttpConnector = connect::HttpConnector<DynResolver>;
 
@@ -363,11 +367,9 @@ pub(crate) struct ConnectorService {
 }
 
 impl ConnectorService {
-    async fn connect_with_maybe_proxy(
-        self,
-        mut req: ConnRequest,
-        is_proxy: bool,
-    ) -> Result<Conn, BoxError> {
+    async fn connect(self, mut req: ConnRequest, is_proxy: bool) -> Result<Conn, BoxError> {
+        trace!("connect with maybe proxy: {:?}", is_proxy);
+
         let uri = req.uri().clone();
         let mut http = self.http.clone();
 
@@ -378,21 +380,20 @@ impl ConnectorService {
             http.set_nodelay(true);
         }
 
-        trace!("connect with maybe proxy");
         let mut connector = self.create_https_connector(http, &mut req)?;
-        let inner = match connector.call(uri).await? {
-            MaybeHttpsStream::Https(stream) => {
-                if !self.tcp_nodelay {
-                    stream
-                        .inner()
-                        .get_ref()
-                        .inner()
-                        .inner()
-                        .set_nodelay(false)?;
-                }
-                self.verbose.wrap(BoringTlsConn { inner: stream })
+        let io = connector.call(uri).await?;
+
+        // If the connection is HTTPS, wrap the TLS stream in a TlsConn for unified handling.
+        // For plain HTTP, use the stream directly without additional wrapping.
+        let inner = if let MaybeHttpsStream::Https(stream) = io {
+            if !self.tcp_nodelay {
+                stream.get_ref().set_nodelay(false)?;
             }
-            other => self.verbose.wrap(other),
+            self.verbose.wrap(TlsConn {
+                inner: TokioIo::new(stream),
+            })
+        } else {
+            self.verbose.wrap(io)
         };
 
         Ok(Conn {
@@ -407,24 +408,23 @@ impl ConnectorService {
         mut req: ConnRequest,
         proxy: Intercepted,
     ) -> Result<Conn, BoxError> {
-        let uri = req.uri().clone();
-        debug!("proxy({:?}) intercepts '{:?}'", proxy, uri);
-
         #[cfg(feature = "socks")]
         if let Some("socks4" | "socks4a" | "socks5" | "socks5h") = proxy.uri().scheme_str() {
+            trace!("connecting via SOCKS proxy: {:?}", proxy.uri());
             return self.connect_socks(req, proxy).await;
         }
 
+        let uri = req.uri().clone();
         let proxy_uri = proxy.uri().clone();
-        let auth = proxy.basic_auth().cloned();
 
+        // Handle HTTPS proxy tunneling connection
         if uri.scheme() == Some(&Scheme::HTTPS) {
-            trace!("tunneling HTTPS over proxy");
+            trace!("tunneling HTTPS over HTTP proxy: {:?}", proxy_uri);
             let mut connector = self.create_https_connector(self.http.clone(), &mut req)?;
 
             let mut tunnel = Tunnel::new(proxy_uri, connector.clone());
-            if let Some(auth) = auth {
-                tunnel = tunnel.with_auth(auth);
+            if let Some(auth) = proxy.basic_auth() {
+                tunnel = tunnel.with_auth(auth.clone());
             }
 
             if let Some(headers) = proxy.custom_headers() {
@@ -434,10 +434,12 @@ impl ConnectorService {
             // We don't wrap this again in an HttpsConnector since that uses Maybe,
             // and we know this is definitely HTTPS.
             let tunneled = tunnel.call(uri.clone()).await?;
+            let tunneled = TokioIo::new(tunneled);
+            let tunneled = TokioIo::new(tunneled);
             let io = connector.call((uri, tunneled)).await?;
 
             return Ok(Conn {
-                inner: self.verbose.wrap(BoringTlsConn {
+                inner: self.verbose.wrap(TlsConn {
                     inner: TokioIo::new(io),
                 }),
                 is_proxy: false,
@@ -445,9 +447,10 @@ impl ConnectorService {
             });
         }
 
+        // Update the connect URI to the proxy URI
         *req.uri_mut() = proxy_uri;
 
-        self.connect_with_maybe_proxy(req, true).await
+        self.connect(req, true).await
     }
 
     #[cfg(feature = "socks")]
@@ -474,7 +477,7 @@ impl ConnectorService {
             let io = connector.call((uri, conn)).await?;
 
             return Ok(Conn {
-                inner: self.verbose.wrap(BoringTlsConn {
+                inner: self.verbose.wrap(TlsConn {
                     inner: TokioIo::new(io),
                 }),
                 is_proxy: false,
@@ -557,10 +560,7 @@ impl Service<ConnRequest> for ConnectorService {
             ));
         }
 
-        Box::pin(with_timeout(
-            self.clone().connect_with_maybe_proxy(req, false),
-            self.timeout,
-        ))
+        Box::pin(with_timeout(self.clone().connect(req, false), self.timeout))
     }
 }
 
@@ -580,7 +580,7 @@ impl<T: TlsInfoFactory> TlsInfoFactory for TokioIo<T> {
     }
 }
 
-impl TlsInfoFactory for SslStream<TokioIo<TokioIo<TcpStream>>> {
+impl TlsInfoFactory for SslStream<TcpStream> {
     fn tls_info(&self) -> Option<TlsInfo> {
         self.ssl()
             .peer_certificate()
@@ -591,18 +591,23 @@ impl TlsInfoFactory for SslStream<TokioIo<TokioIo<TcpStream>>> {
     }
 }
 
-impl TlsInfoFactory for SslStream<TokioIo<MaybeHttpsStream<TokioIo<TcpStream>>>> {
+impl TlsInfoFactory for MaybeHttpsStream<TcpStream> {
     fn tls_info(&self) -> Option<TlsInfo> {
-        self.get_ref().inner().tls_info()
+        match self {
+            MaybeHttpsStream::Https(tls) => tls.tls_info(),
+            MaybeHttpsStream::Http(_) => None,
+        }
     }
 }
 
-impl TlsInfoFactory for MaybeHttpsStream<TokioIo<TcpStream>> {
+impl TlsInfoFactory for SslStream<TokioIo<MaybeHttpsStream<TcpStream>>> {
     fn tls_info(&self) -> Option<TlsInfo> {
-        match self {
-            MaybeHttpsStream::Https(tls) => tls.inner().tls_info(),
-            MaybeHttpsStream::Http(_) => None,
-        }
+        self.ssl()
+            .peer_certificate()
+            .and_then(|c| c.to_der().ok())
+            .map(|c| TlsInfo {
+                peer_certificate: Some(c),
+            })
     }
 }
 
@@ -617,9 +622,7 @@ trait AsyncConnWithInfo: AsyncConn + TlsInfoFactory {}
 
 impl<T: AsyncConn + TlsInfoFactory> AsyncConnWithInfo for T {}
 
-type BoxConn = Box<dyn AsyncConnWithInfo>;
-
-pub(crate) mod sealed {
+mod conn {
     use super::*;
 
     #[derive(Debug)]
@@ -634,7 +637,6 @@ pub(crate) mod sealed {
             #[pin]
             pub(super) inner: BoxConn,
             pub(super) is_proxy: bool,
-            // Only needed for __tls, but #[cfg()] on fields breaks pin_project!
             pub(super) tls_info: bool,
         }
     }
@@ -701,8 +703,6 @@ pub(crate) mod sealed {
     }
 }
 
-pub(crate) type Connecting = Pin<Box<dyn Future<Output = Result<Conn, BoxError>> + Send>>;
-
 mod tls_conn {
     use std::{
         io::{self, IoSlice},
@@ -727,13 +727,13 @@ mod tls_conn {
     };
 
     pin_project! {
-        pub(super) struct BoringTlsConn<T> {
+        pub(super) struct TlsConn<T> {
             #[pin]
             pub(super) inner: TokioIo<SslStream<T>>,
         }
     }
 
-    impl Connection for BoringTlsConn<TokioIo<TokioIo<TcpStream>>> {
+    impl Connection for TlsConn<TcpStream> {
         fn connected(&self) -> Connected {
             let connected = self.inner.inner().get_ref().connected();
             if self.inner.inner().ssl().selected_alpn_protocol() == Some(b"h2") {
@@ -744,7 +744,7 @@ mod tls_conn {
         }
     }
 
-    impl Connection for BoringTlsConn<TokioIo<MaybeHttpsStream<TokioIo<TcpStream>>>> {
+    impl Connection for TlsConn<TokioIo<MaybeHttpsStream<TcpStream>>> {
         fn connected(&self) -> Connected {
             let connected = self.inner.inner().get_ref().connected();
             if self.inner.inner().ssl().selected_alpn_protocol() == Some(b"h2") {
@@ -755,7 +755,7 @@ mod tls_conn {
         }
     }
 
-    impl<T: AsyncRead + AsyncWrite + Unpin> Read for BoringTlsConn<T> {
+    impl<T: AsyncRead + AsyncWrite + Unpin> Read for TlsConn<T> {
         fn poll_read(
             self: Pin<&mut Self>,
             cx: &mut Context,
@@ -766,7 +766,7 @@ mod tls_conn {
         }
     }
 
-    impl<T: AsyncRead + AsyncWrite + Unpin> Write for BoringTlsConn<T> {
+    impl<T: AsyncRead + AsyncWrite + Unpin> Write for TlsConn<T> {
         fn poll_write(
             self: Pin<&mut Self>,
             cx: &mut Context,
@@ -806,7 +806,7 @@ mod tls_conn {
         }
     }
 
-    impl<T> TlsInfoFactory for BoringTlsConn<T>
+    impl<T> TlsInfoFactory for TlsConn<T>
     where
         TokioIo<SslStream<T>>: TlsInfoFactory,
     {
