@@ -1,4 +1,3 @@
-#![allow(unused)]
 //! Connectors used by the `Client`.
 //!
 //! This module contains:
@@ -68,6 +67,12 @@
 //! [`Read`]: crate::core::rt::Read
 //! [`Write`]: crate::core::rt::Write
 //! [`Connection`]: Connection
+
+pub mod dns;
+mod http;
+mod options;
+pub mod proxy;
+
 use std::{
     fmt::{self, Formatter},
     sync::{
@@ -78,18 +83,11 @@ use std::{
 
 use ::http::Extensions;
 
-pub use self::http::{HttpConnector, HttpInfo};
-use crate::core::error::BoxError;
-
-pub mod dns;
-mod http;
-pub mod proxy;
-
-pub(crate) mod capture;
-#[allow(unused)]
-pub use capture::{CaptureConnection, capture_connection};
-
-pub use self::sealed::Connect;
+pub use self::{
+    http::{HttpConnector, HttpInfo},
+    options::TcpConnectOptions,
+    sealed::Connect,
+};
 
 /// Describes a type returned by a connector.
 pub trait Connection {
@@ -311,14 +309,13 @@ where
 }
 
 pub(super) mod sealed {
-    use std::{error::Error as StdError, future::Future};
+    use std::future::Future;
 
-    use ::http::Uri;
     use tower::util::Oneshot;
 
     use super::Connection;
     use crate::core::{
-        client::Dst,
+        client::ConnRequest,
         error::BoxError,
         rt::{Read, Write},
     };
@@ -339,7 +336,7 @@ pub(super) mod sealed {
         #[doc(hidden)]
         type _Svc: ConnectSvc;
         #[doc(hidden)]
-        fn connect(self, dst: Dst) -> <Self::_Svc as ConnectSvc>::Future;
+        fn connect(self, dst: ConnRequest) -> <Self::_Svc as ConnectSvc>::Future;
     }
 
     pub trait ConnectSvc {
@@ -347,42 +344,42 @@ pub(super) mod sealed {
         type Error: Into<BoxError>;
         type Future: Future<Output = Result<Self::Connection, Self::Error>> + Unpin + Send + 'static;
 
-        fn connect(self, dst: Dst) -> Self::Future;
+        fn connect(self, dst: ConnRequest) -> Self::Future;
     }
 
     impl<S, T> Connect for S
     where
-        S: tower_service::Service<Dst, Response = T> + Send + 'static,
+        S: tower_service::Service<ConnRequest, Response = T> + Send + 'static,
         S::Error: Into<BoxError>,
         S::Future: Unpin + Send,
         T: Read + Write + Connection + Unpin + Send + 'static,
     {
         type _Svc = S;
 
-        fn connect(self, dst: Dst) -> Oneshot<S, Dst> {
+        fn connect(self, dst: ConnRequest) -> Oneshot<S, ConnRequest> {
             Oneshot::new(self, dst)
         }
     }
 
     impl<S, T> ConnectSvc for S
     where
-        S: tower_service::Service<Dst, Response = T> + Send + 'static,
+        S: tower_service::Service<ConnRequest, Response = T> + Send + 'static,
         S::Error: Into<BoxError>,
         S::Future: Unpin + Send,
         T: Read + Write + Connection + Unpin + Send + 'static,
     {
         type Connection = T;
         type Error = S::Error;
-        type Future = Oneshot<S, Dst>;
+        type Future = Oneshot<S, ConnRequest>;
 
-        fn connect(self, dst: Dst) -> Self::Future {
+        fn connect(self, dst: ConnRequest) -> Self::Future {
             Oneshot::new(self, dst)
         }
     }
 
     impl<S, T> Sealed for S
     where
-        S: tower_service::Service<Dst, Response = T> + Send,
+        S: tower_service::Service<ConnRequest, Response = T> + Send,
         S::Error: Into<BoxError>,
         S::Future: Unpin + Send,
         T: Read + Write + Connection + Unpin + Send + 'static,

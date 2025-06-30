@@ -7,49 +7,124 @@ pub mod conn;
 pub(super) mod dispatch;
 
 pub mod connect;
-mod dst;
-#[doc(hidden)]
 // Publicly available, but just for legacy purposes. A better pool will be
 // designed.
 mod pool;
 pub mod proxy;
 
 use std::{
-    borrow::Cow,
     error::Error as StdError,
     fmt,
     future::Future,
-    net::{Ipv4Addr, Ipv6Addr},
     num::NonZeroU32,
     pin::Pin,
     task::{self, Poll},
     time::Duration,
 };
 
-use common::{Exec, Lazy, lazy as hyper_lazy, timer};
-use connect::{Alpn, Connect, Connected, Connection, capture::CaptureConnectionExtension};
-pub use dst::Dst;
 use futures_util::future::{self, Either, FutureExt, TryFutureExt};
-use http::{HeaderValue, Method, Request, Response, Uri, Version, header::HOST, uri::Scheme};
+use http::{
+    HeaderValue, Method, Request, Response, Uri, Version,
+    header::HOST,
+    uri::{Authority, PathAndQuery, Scheme},
+};
 use http_body::Body;
 use pool::Ver;
 use sync_wrapper::SyncWrapper;
 
 use crate::{
     core::{
+        body::Incoming,
         client::{
-            config::{http1::Http1Config, http2::Http2Config},
+            config::{TransportConfig, http1::Http1Config, http2::Http2Config},
             conn::TrySendError as ConnTrySendError,
+            connect::{Alpn, Connect, Connected, Connection, TcpConnectOptions},
         },
-        common,
+        common::{Exec, Lazy, lazy as hyper_lazy, timer},
         error::BoxError,
-        rt::Timer,
+        ext::{
+            RequestConfig, RequestHttpVersionPref, RequestProxyMatcher, RequestTcpConnectOptions,
+            RequestTransportConfig,
+        },
+        rt::{Executor, Timer},
     },
     proxy::Matcher as ProxyMacher,
-    tls::AlpnProtocol,
+    tls::{AlpnProtocol, TlsConfig},
 };
 
 type BoxSendFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
+
+/// Represents a client connection request, including all parameters needed to establish a network
+/// connection.
+///
+/// `ConnRequest` encapsulates the URI, HTTP version, proxy matcher, TCP options, and TLS
+/// configuration for a single outgoing connection. This struct is used internally to manage and
+/// customize how each connection is established, including protocol negotiation and proxy handling.
+#[derive(Debug, Clone)]
+pub struct ConnRequest {
+    uri: Uri,
+    version: Option<Version>,
+    proxy_matcher: Option<ProxyMacher>,
+    tcp_opts: Option<TcpConnectOptions>,
+    tls_config: Option<TlsConfig>,
+}
+
+impl ConnRequest {
+    /// Returns a reference to the target URI for this connection request.
+    #[inline]
+    pub(crate) fn uri(&self) -> &Uri {
+        &self.uri
+    }
+
+    /// Returns a mutable reference to the target URI for this connection request.
+    #[inline]
+    pub(crate) fn uri_mut(&mut self) -> &mut Uri {
+        &mut self.uri
+    }
+
+    /// Takes and returns the proxy matcher, if any, consuming it from the request.
+    #[inline]
+    pub(crate) fn take_proxy_matcher(&mut self) -> Option<ProxyMacher> {
+        self.proxy_matcher.take()
+    }
+
+    /// Takes and returns a tuple of TCP options, TLS config, and negotiated ALPN protocol.
+    ///
+    /// This method consumes the TCP and TLS options from the request, and determines the ALPN
+    /// protocol based on the HTTP version (HTTP/1.x or HTTP/2).
+    #[inline]
+    pub(crate) fn take_config_bundle(
+        &mut self,
+    ) -> (
+        Option<TcpConnectOptions>,
+        Option<TlsConfig>,
+        Option<AlpnProtocol>,
+    ) {
+        let alpn = match self.version {
+            Some(Version::HTTP_11 | Version::HTTP_10 | Version::HTTP_09) => {
+                Some(AlpnProtocol::HTTP1)
+            }
+            Some(Version::HTTP_2) => Some(AlpnProtocol::HTTP2),
+            _ => None,
+        };
+
+        (self.tcp_opts.take(), self.tls_config.take(), alpn)
+    }
+
+    /// Returns a `PoolKey` representing the unique identity of this connection for pooling
+    /// purposes.
+    ///
+    /// The key includes the URI, HTTP version, proxy matcher, and TCP options.
+    #[inline]
+    fn pool_key(&self) -> PoolKey {
+        PoolKey {
+            uri: self.uri.clone(),
+            version: self.version,
+            proxy_matcher: self.proxy_matcher.clone(),
+            tcp_connect_options: self.tcp_opts.clone(),
+        }
+    }
+}
 
 /// A Client to make outgoing HTTP requests.
 ///
@@ -59,23 +134,9 @@ pub struct Client<C, B> {
     config: Config,
     connector: C,
     exec: Exec,
-    h1_builder: crate::core::client::conn::http1::Builder,
-    h2_builder: crate::core::client::conn::http2::Builder<Exec>,
+    h1_builder: conn::http1::Builder,
+    h2_builder: conn::http2::Builder<Exec>,
     pool: pool::Pool<PoolClient<B>, PoolKey>,
-}
-
-impl<C, B> std::ops::Deref for Client<C, B> {
-    type Target = C;
-
-    fn deref(&self) -> &Self::Target {
-        &self.connector
-    }
-}
-
-impl<C, B> std::ops::DerefMut for Client<C, B> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.connector
-    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -132,15 +193,13 @@ macro_rules! e {
     };
 }
 
-// We might change this... :shrug:
-type PoolKey = (
-    Uri,
-    Option<AlpnProtocol>,
-    Option<Ipv4Addr>,
-    Option<Ipv6Addr>,
-    Option<Cow<'static, str>>,
-    Option<ProxyMacher>,
-);
+#[derive(Clone, Hash, Debug, Eq, PartialEq)]
+struct PoolKey {
+    uri: Uri,
+    version: Option<Version>,
+    proxy_matcher: Option<ProxyMacher>,
+    tcp_connect_options: Option<TcpConnectOptions>,
+}
 
 #[allow(clippy::large_enum_variant)]
 enum TrySendError<B> {
@@ -152,9 +211,8 @@ enum TrySendError<B> {
     Nope(Error),
 }
 
-type ResponseWrapper = SyncWrapper<
-    Pin<Box<dyn Future<Output = Result<Response<crate::core::body::Incoming>, Error>> + Send>>,
->;
+type ResponseWrapper =
+    SyncWrapper<Pin<Box<dyn Future<Output = Result<Response<Incoming>, Error>> + Send>>>;
 
 /// A `Future` that will resolve to an HTTP Response.
 ///
@@ -191,7 +249,7 @@ impl Client<(), ()> {
     /// ```
     pub fn builder<E>(executor: E) -> Builder
     where
-        E: crate::core::rt::Executor<BoxSendFuture> + Send + Sync + Clone + 'static,
+        E: Executor<BoxSendFuture> + Send + Sync + Clone + 'static,
     {
         Builder::new(executor)
     }
@@ -236,37 +294,60 @@ where
     /// ```
     pub fn request(&self, mut req: Request<B>) -> ResponseFuture {
         let is_http_connect = req.method() == Method::CONNECT;
+        // Validate HTTP version early
         match req.version() {
-            Version::HTTP_10 => {
-                if is_http_connect {
-                    warn!("CONNECT is not allowed for HTTP/1.0");
-                    return ResponseFuture::new(future::err(e!(UserUnsupportedRequestMethod)));
-                }
+            Version::HTTP_10 if is_http_connect => {
+                warn!("CONNECT is not allowed for HTTP/1.0");
+                return ResponseFuture::new(future::err(e!(UserUnsupportedRequestMethod)));
             }
-            Version::HTTP_11 | Version::HTTP_2 => (),
+            Version::HTTP_10 | Version::HTTP_11 | Version::HTTP_2 => {}
             // completely unsupported HTTP version (like HTTP/0.9)!
-            other => return ResponseFuture::error_version(other),
+            unsupported => return ResponseFuture::error_version(unsupported),
         };
 
-        let dst = match Dst::new(&mut req, is_http_connect) {
-            Ok(dst) => dst,
-            Err(err) => {
-                return ResponseFuture::new(future::err(err));
+        // Extract and normalize URI
+        let uri = match normalize_uri(&mut req, is_http_connect) {
+            Ok(uri) => uri,
+            Err(err) => return ResponseFuture::new(future::err(err)),
+        };
+
+        // Extract config extensions
+        let (transport_config, version, proxy_matcher, tcp_connect_options) =
+            extract_request_configs(req.extensions_mut());
+
+        let mut tls_config = None;
+        let mut this = self.clone();
+
+        if let Some(mut cfg) = transport_config {
+            if let Some(config) = cfg.http1_config.take() {
+                this.h1_builder.config(config);
             }
+            if let Some(config) = cfg.http2_config.take() {
+                this.h2_builder.config(config);
+            }
+            tls_config = cfg.tls_config.take();
+        }
+
+        let conn_req = ConnRequest {
+            uri,
+            version,
+            proxy_matcher,
+            tcp_opts: tcp_connect_options,
+            tls_config,
         };
 
-        ResponseFuture::new(self.clone().send_request(req, dst))
+        ResponseFuture::new(this.send_request(req, conn_req))
     }
 
     async fn send_request(
         self,
         mut req: Request<B>,
-        dst: Dst,
-    ) -> Result<Response<crate::core::body::Incoming>, Error> {
+        conn_req: ConnRequest,
+    ) -> Result<Response<Incoming>, Error> {
         let uri = req.uri().clone();
 
         loop {
-            req = match self.try_send_request(req, dst.clone()).await {
+            req = match self.try_send_request(req, conn_req.clone()).await {
                 Ok(resp) => return Ok(resp),
                 Err(TrySendError::Nope(err)) => return Err(err),
                 Err(TrySendError::Retryable {
@@ -294,18 +375,14 @@ where
     async fn try_send_request(
         &self,
         mut req: Request<B>,
-        dst: Dst,
-    ) -> Result<Response<crate::core::body::Incoming>, TrySendError<B>> {
+        conn_req: ConnRequest,
+    ) -> Result<Response<Incoming>, TrySendError<B>> {
         let mut pooled = self
-            .connection_for(dst)
+            .connection_for(conn_req)
             .await
             // `connection_for` already retries checkout errors, so if
             // it returns an error, there's not much else to retry
             .map_err(TrySendError::Nope)?;
-
-        if let Some(conn) = req.extensions_mut().get_mut::<CaptureConnectionExtension>() {
-            conn.set(&pooled.conn_info)
-        }
 
         if pooled.is_http1() {
             if req.version() == Version::HTTP_2 {
@@ -387,10 +464,10 @@ where
 
     async fn connection_for(
         &self,
-        dst: Dst,
+        conn_req: ConnRequest,
     ) -> Result<pool::Pooled<PoolClient<B>, PoolKey>, Error> {
         loop {
-            match self.one_connection_for(dst.clone()).await {
+            match self.one_connection_for(conn_req.clone()).await {
                 Ok(pooled) => return Ok(pooled),
                 Err(ClientConnectError::Normal(err)) => return Err(err),
                 Err(ClientConnectError::CheckoutIsClosed(reason)) => {
@@ -410,12 +487,12 @@ where
 
     async fn one_connection_for(
         &self,
-        dst: Dst,
+        conn_req: ConnRequest,
     ) -> Result<pool::Pooled<PoolClient<B>, PoolKey>, ClientConnectError> {
         // Return a single connection if pooling is not enabled
         if !self.pool.is_enabled() {
             return self
-                .connect_to(dst)
+                .connect_to(conn_req)
                 .await
                 .map_err(ClientConnectError::Normal);
         }
@@ -430,8 +507,8 @@ where
         // - If a new connection is started, but the Checkout wins after (an idle connection became
         //   available first), the started connection future is spawned into the runtime to
         //   complete, and then be inserted into the pool as an idle connection.
-        let checkout = self.pool.checkout(dst.pool_key().clone());
-        let connect = self.connect_to(dst);
+        let checkout = self.pool.checkout(conn_req.pool_key().clone());
+        let connect = self.connect_to(conn_req);
         let is_ver_h2 = self.config.ver == Ver::Http2;
 
         // The order of the `select` is depended on below...
@@ -498,7 +575,7 @@ where
 
     fn connect_to(
         &self,
-        dst: Dst,
+        conn_req: ConnRequest,
     ) -> impl Lazy<Output = Result<pool::Pooled<PoolClient<B>, PoolKey>, Error>> + Send + Unpin + 'static
     {
         let executor = self.exec.clone();
@@ -506,10 +583,9 @@ where
 
         let h1_builder = self.h1_builder.clone();
         let h2_builder = self.h2_builder.clone();
-        let ver = if dst.only_http2() {
-            Ver::Http2
-        } else {
-            self.config.ver
+        let ver = match conn_req.version {
+            Some(Version::HTTP_2) => Ver::Http2,
+            _ => self.config.ver,
         };
         let is_ver_h2 = ver == Ver::Http2;
         let connector = self.connector.clone();
@@ -519,7 +595,7 @@ where
             // If the pool_key is for HTTP/2, and there is already a
             // connection being established, then this can't take a
             // second lock. The "connect_to" future is Canceled.
-            let connecting = match pool.connecting(dst.pool_key(), ver) {
+            let connecting = match pool.connecting(conn_req.pool_key(), ver) {
                 Some(lock) => lock,
                 None => {
                     let canceled = e!(Canceled);
@@ -530,7 +606,7 @@ where
             };
             Either::Left(
                 connector
-                    .connect(dst)
+                    .connect(conn_req)
                     .map_err(|src| e!(Connect, src))
                     .and_then(move |io| {
                         let connected = io.connected();
@@ -677,24 +753,6 @@ where
             )
         })
     }
-
-    #[allow(dead_code)]
-    #[inline]
-    pub(crate) fn connector_mut(&mut self) -> &mut C {
-        &mut self.connector
-    }
-
-    #[allow(dead_code)]
-    #[inline]
-    pub(crate) fn set_http1_config(&mut self, config: Http1Config) {
-        self.h1_builder.set_config(config);
-    }
-
-    #[allow(dead_code)]
-    #[inline]
-    pub(crate) fn set_http2_config(&mut self, config: Http2Config) {
-        self.h2_builder.config(config);
-    }
 }
 
 impl<C, B> tower_service::Service<Request<B>> for Client<C, B>
@@ -704,7 +762,7 @@ where
     B::Data: Send,
     B::Error: Into<BoxError>,
 {
-    type Response = Response<crate::core::body::Incoming>;
+    type Response = Response<Incoming>;
     type Error = Error;
     type Future = ResponseFuture;
 
@@ -724,7 +782,7 @@ where
     B::Data: Send,
     B::Error: Into<BoxError>,
 {
-    type Response = Response<crate::core::body::Incoming>;
+    type Response = Response<Incoming>;
     type Error = Error;
     type Future = ResponseFuture;
 
@@ -762,7 +820,7 @@ impl<C, B> fmt::Debug for Client<C, B> {
 impl ResponseFuture {
     fn new<F>(value: F) -> Self
     where
-        F: Future<Output = Result<Response<crate::core::body::Incoming>, Error>> + Send + 'static,
+        F: Future<Output = Result<Response<Incoming>, Error>> + Send + 'static,
     {
         Self {
             inner: SyncWrapper::new(Box::pin(value)),
@@ -782,7 +840,7 @@ impl fmt::Debug for ResponseFuture {
 }
 
 impl Future for ResponseFuture {
-    type Output = Result<Response<crate::core::body::Incoming>, Error>;
+    type Output = Result<Response<Incoming>, Error>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
         self.inner.get_mut().as_mut().poll(cx)
@@ -799,9 +857,9 @@ struct PoolClient<B> {
 }
 
 enum PoolTx<B> {
-    Http1(crate::core::client::conn::http1::SendRequest<B>),
+    Http1(conn::http1::SendRequest<B>),
 
-    Http2(crate::core::client::conn::http2::SendRequest<B>),
+    Http2(conn::http2::SendRequest<B>),
 }
 
 impl<B> PoolClient<B> {
@@ -845,7 +903,7 @@ impl<B: Body + 'static> PoolClient<B> {
     fn try_send_request(
         &mut self,
         req: Request<B>,
-    ) -> impl Future<Output = Result<Response<crate::core::body::Incoming>, ConnTrySendError<Request<B>>>>
+    ) -> impl Future<Output = Result<Response<Incoming>, ConnTrySendError<Request<B>>>>
     where
         B: Send,
     {
@@ -944,6 +1002,50 @@ fn authority_form(uri: &mut Uri) {
     };
 }
 
+fn extract_request_configs(
+    extensions: &mut http::Extensions,
+) -> (
+    Option<TransportConfig>,
+    Option<Version>,
+    Option<ProxyMacher>,
+    Option<TcpConnectOptions>,
+) {
+    let transport_config = RequestConfig::<RequestTransportConfig>::remove(extensions);
+    let version = RequestConfig::<RequestHttpVersionPref>::remove(extensions);
+    let proxy = RequestConfig::<RequestProxyMatcher>::remove(extensions);
+    let tcp = RequestConfig::<RequestTcpConnectOptions>::remove(extensions);
+    (transport_config, version, proxy, tcp)
+}
+
+fn normalize_uri<B>(req: &mut Request<B>, is_http_connect: bool) -> Result<Uri, Error> {
+    let uri = req.uri().clone();
+
+    let build_base_uri = |scheme: Scheme, authority: Authority| {
+        Uri::builder()
+            .scheme(scheme)
+            .authority(authority)
+            .path_and_query(PathAndQuery::from_static("/"))
+            .build()
+            .expect("valid base URI")
+    };
+
+    match (uri.scheme(), uri.authority()) {
+        (Some(scheme), Some(auth)) => Ok(build_base_uri(scheme.clone(), auth.clone())),
+        (None, Some(auth)) if is_http_connect => {
+            let scheme = match auth.port_u16() {
+                Some(443) => Scheme::HTTPS,
+                _ => Scheme::HTTP,
+            };
+            set_scheme(req.uri_mut(), scheme.clone());
+            Ok(build_base_uri(scheme, auth.clone()))
+        }
+        _ => {
+            debug!("Client requires absolute-form URIs, received: {:?}", uri);
+            Err(e!(UserAbsoluteUriRequired))
+        }
+    }
+}
+
 fn set_scheme(uri: &mut Uri, scheme: Scheme) {
     debug_assert!(
         uri.scheme().is_none(),
@@ -998,8 +1100,8 @@ pub struct Builder {
     client_config: Config,
     exec: Exec,
 
-    h1_builder: crate::core::client::conn::http1::Builder,
-    h2_builder: crate::core::client::conn::http2::Builder<Exec>,
+    h1_builder: conn::http1::Builder,
+    h2_builder: conn::http2::Builder<Exec>,
     pool_config: pool::Config,
     pool_timer: Option<timer::Timer>,
 }
@@ -1019,8 +1121,8 @@ impl Builder {
             },
             exec: exec.clone(),
 
-            h1_builder: crate::core::client::conn::http1::Builder::new(),
-            h2_builder: crate::core::client::conn::http2::Builder::new(exec),
+            h1_builder: conn::http1::Builder::new(),
+            h2_builder: conn::http2::Builder::new(exec),
             pool_config: pool::Config {
                 idle_timeout: Some(Duration::from_secs(90)),
                 max_idle_per_host: usize::MAX,
@@ -1114,7 +1216,7 @@ impl Builder {
 
     /// Provide a configuration for HTTP/1.
     pub fn http1_config(&mut self, config: Http1Config) -> &mut Self {
-        self.h1_builder.set_config(config);
+        self.h1_builder.config(config);
         self
     }
 

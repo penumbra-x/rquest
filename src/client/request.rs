@@ -16,27 +16,17 @@ use super::{
     client::{Client, Pending},
     response::Response,
 };
-#[cfg(any(
-    target_os = "android",
-    target_os = "fuchsia",
-    target_os = "illumos",
-    target_os = "ios",
-    target_os = "linux",
-    target_os = "macos",
-    target_os = "solaris",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-))]
-use crate::core::ext::RequestInterface;
 use crate::{
-    Error, Method, OriginalHeaders, Proxy, Url,
+    EmulationProviderFactory, Error, Method, OriginalHeaders, Proxy, Url,
     config::{
         RequestReadTimeout, RequestRedirectPolicy, RequestSkipDefaultHeaders, RequestTotalTimeout,
     },
-    core::ext::{
-        RequestConfig, RequestHttpVersionPref, RequestIpv4Addr, RequestIpv6Addr,
-        RequestOriginalHeaders, RequestProxyMatcher,
+    core::{
+        client::{config::TransportConfig, connect::TcpConnectOptions},
+        ext::{
+            RequestConfig, RequestHttpVersionPref, RequestOriginalHeaders, RequestProxyMatcher,
+            RequestTcpConnectOptions, RequestTransportConfig,
+        },
     },
     header::{CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue},
     proxy::Matcher as ProxyMatcher,
@@ -165,34 +155,10 @@ impl Request {
         RequestConfig::<RequestReadTimeout>::get_mut(&mut self.extensions)
     }
 
-    /// Get a mutable reference to the local ipv4 address.
+    /// Get a mutable reference to the tcp connect options.
     #[inline(always)]
-    pub fn local_ipv4_address_mut(&mut self) -> &mut Option<Ipv4Addr> {
-        RequestConfig::<RequestIpv4Addr>::get_mut(&mut self.extensions)
-    }
-
-    /// Get a mutable reference to the local ipv6 address.
-    #[inline(always)]
-    pub fn local_ipv6_address_mut(&mut self) -> &mut Option<Ipv6Addr> {
-        RequestConfig::<RequestIpv6Addr>::get_mut(&mut self.extensions)
-    }
-
-    /// Get a mutable reference to the interface.
-    #[cfg(any(
-        target_os = "android",
-        target_os = "fuchsia",
-        target_os = "illumos",
-        target_os = "ios",
-        target_os = "linux",
-        target_os = "macos",
-        target_os = "solaris",
-        target_os = "tvos",
-        target_os = "visionos",
-        target_os = "watchos",
-    ))]
-    #[inline(always)]
-    pub fn interface_mut(&mut self) -> &mut Option<std::borrow::Cow<'static, str>> {
-        RequestConfig::<RequestInterface>::get_mut(&mut self.extensions)
+    pub(crate) fn tcp_connect_options_mut(&mut self) -> &mut Option<TcpConnectOptions> {
+        RequestConfig::<RequestTcpConnectOptions>::get_mut(&mut self.extensions)
     }
 
     /// Get a mutable reference to the proxy matcher.
@@ -217,6 +183,11 @@ impl Request {
     #[inline(always)]
     pub(crate) fn default_headers_mut(&mut self) -> &mut Option<bool> {
         RequestConfig::<RequestSkipDefaultHeaders>::get_mut(&mut self.extensions)
+    }
+
+    #[inline(always)]
+    pub(crate) fn transport_config_mut(&mut self) -> &mut Option<TransportConfig> {
+        RequestConfig::<RequestTransportConfig>::get_mut(&mut self.extensions)
     }
 
     /// Get the extensions.
@@ -559,51 +530,41 @@ impl RequestBuilder {
     /// Sets if this request will announce that it accepts gzip encoding.
     #[cfg(feature = "gzip")]
     pub fn gzip(mut self, gzip: bool) -> RequestBuilder {
-        self.set_accept_encoding(|a| a.gzip(gzip));
+        if let Ok(ref mut req) = self.request {
+            let accept_encoding = req.accpet_encoding_mut().get_or_insert_default();
+            accept_encoding.gzip(gzip);
+        }
         self
     }
 
     /// Sets if this request will announce that it accepts brotli encoding.
     #[cfg(feature = "brotli")]
     pub fn brotli(mut self, brotli: bool) -> RequestBuilder {
-        self.set_accept_encoding(|a| a.brotli(brotli));
+        if let Ok(ref mut req) = self.request {
+            let accept_encoding = req.accpet_encoding_mut().get_or_insert_default();
+            accept_encoding.brotli(brotli);
+        }
         self
     }
 
     /// Sets if this request will announce that it accepts deflate encoding.
     #[cfg(feature = "deflate")]
     pub fn deflate(mut self, deflate: bool) -> RequestBuilder {
-        self.set_accept_encoding(|a| a.deflate(deflate));
+        if let Ok(ref mut req) = self.request {
+            let accept_encoding = req.accpet_encoding_mut().get_or_insert_default();
+            accept_encoding.deflate(deflate);
+        }
         self
     }
 
     /// Sets if this request will announce that it accepts zstd encoding.
     #[cfg(feature = "zstd")]
     pub fn zstd(mut self, zstd: bool) -> RequestBuilder {
-        self.set_accept_encoding(|a| a.zstd(zstd));
-        self
-    }
-
-    #[cfg(any(
-        feature = "gzip",
-        feature = "zstd",
-        feature = "brotli",
-        feature = "deflate",
-    ))]
-    fn set_accept_encoding<F>(&mut self, setter: F)
-    where
-        F: FnOnce(&mut AcceptEncoding),
-    {
         if let Ok(ref mut req) = self.request {
-            let accept_encoding = req.accpet_encoding_mut();
-            if let Some(accept_encoding) = accept_encoding {
-                setter(accept_encoding);
-            } else {
-                let mut default = AcceptEncoding::default();
-                setter(&mut default);
-                *accept_encoding = Some(default);
-            }
+            let accept_encoding = req.accpet_encoding_mut().get_or_insert_default();
+            accept_encoding.zstd(zstd);
         }
+        self
     }
 
     /// Set the proxy for this request.
@@ -638,12 +599,8 @@ impl RequestBuilder {
         V: Into<Option<IpAddr>>,
     {
         if let Ok(ref mut req) = self.request {
-            if let Some(addr) = local_address.into() {
-                match addr {
-                    IpAddr::V4(ipv4) => *req.local_ipv4_address_mut() = Some(ipv4),
-                    IpAddr::V6(ipv6) => *req.local_ipv6_address_mut() = Some(ipv6),
-                }
-            }
+            let tcp_connect_options = req.tcp_connect_options_mut().get_or_insert_default();
+            tcp_connect_options.set_local_address(local_address.into());
         }
         self
     }
@@ -655,8 +612,8 @@ impl RequestBuilder {
         V6: Into<Option<Ipv6Addr>>,
     {
         if let Ok(ref mut req) = self.request {
-            *req.local_ipv4_address_mut() = ipv4.into();
-            *req.local_ipv6_address_mut() = ipv6.into();
+            let tcp_connect_options = req.tcp_connect_options_mut().get_or_insert_default();
+            tcp_connect_options.set_local_addresses(ipv4.into(), ipv6.into());
         }
         self
     }
@@ -679,8 +636,39 @@ impl RequestBuilder {
         I: Into<std::borrow::Cow<'static, str>>,
     {
         if let Ok(ref mut req) = self.request {
-            *req.interface_mut() = Some(interface.into());
+            let tcp_connect_options = req.tcp_connect_options_mut().get_or_insert_default();
+            tcp_connect_options.set_interface(interface.into());
         }
+        self
+    }
+
+    /// Configures the request builder to emulation the specified HTTP context.
+    ///
+    /// This method sets the necessary headers, HTTP/1 and HTTP/2 configurations, and TLS config
+    /// to use the specified HTTP context. It allows the client to mimic the behavior of different
+    /// versions or setups, which can be useful for testing or ensuring compatibility with various
+    /// environments.
+    pub fn emulation<P>(mut self, factory: P) -> RequestBuilder
+    where
+        P: EmulationProviderFactory,
+    {
+        if let Ok(ref mut req) = self.request {
+            let transport_config = req.transport_config_mut().get_or_insert_default();
+            let emulation = factory.emulation();
+
+            transport_config.set_http1_config(emulation.http1_config);
+            transport_config.set_http2_config(emulation.http2_config);
+            transport_config.set_tls_config(emulation.tls_config);
+
+            if let Some(default_headers) = emulation.default_headers {
+                self = self.headers(default_headers);
+            }
+
+            if let Some(original_headers) = emulation.original_headers {
+                self = self.original_headers(original_headers);
+            }
+        }
+
         self
     }
 

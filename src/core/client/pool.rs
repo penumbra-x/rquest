@@ -51,6 +51,7 @@ impl<T> Key for T where T: Eq + Hash + Clone + Debug + Unpin + Send + 'static {}
 
 /// A marker to identify what version a pooled connection is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[repr(u8)]
 pub enum Ver {
     Auto,
     Http2,
@@ -174,13 +175,13 @@ impl<T: Poolable, K: Key> Pool<T, K> {
 
     /// Ensure that there is only ever 1 connecting task for HTTP/2
     /// connections. This does nothing for HTTP/1.
-    pub fn connecting(&self, key: &K, ver: Ver) -> Option<Connecting<T, K>> {
+    pub fn connecting(&self, key: K, ver: Ver) -> Option<Connecting<T, K>> {
         if ver == Ver::Http2 {
             if let Some(ref enabled) = self.inner {
                 let mut inner = enabled.lock();
                 return if inner.connecting.insert(key.clone()) {
                     let connecting = Connecting {
-                        key: key.clone(),
+                        key,
                         pool: WeakOpt::downgrade(enabled),
                     };
                     Some(connecting)
@@ -193,7 +194,7 @@ impl<T: Poolable, K: Key> Pool<T, K> {
 
         // else
         Some(Connecting {
-            key: key.clone(),
+            key,
             // in HTTP/1's case, there is never a lock, so we don't
             // need to do anything in Drop.
             pool: WeakOpt::none(),
@@ -722,7 +723,7 @@ impl<T: Poolable, K: Key> Connecting<T, K> {
             "Connecting::alpn_h2 but already Http2"
         );
 
-        pool.connecting(&self.key, Ver::Http2)
+        pool.connecting(self.key.clone(), Ver::Http2)
     }
 }
 
