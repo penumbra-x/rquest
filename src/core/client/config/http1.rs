@@ -21,7 +21,6 @@ pub struct Http1Config {
     pub(crate) h09_responses: bool,
     pub(crate) h1_parser_config: ParserConfig,
     pub(crate) h1_writev: Option<bool>,
-    pub(crate) h1_title_case_headers: bool,
     pub(crate) h1_preserve_header_case: bool,
     pub(crate) h1_max_headers: Option<usize>,
     pub(crate) h1_read_buf_exact_size: Option<usize>,
@@ -49,15 +48,6 @@ impl Http1ConfigBuilder {
     /// mode to use
     pub fn writev(mut self, writev: Option<bool>) -> Self {
         self.config.h1_writev = writev;
-        self
-    }
-
-    /// Set whether HTTP/1 connections will write header names as title case at
-    /// the socket level.
-    ///
-    /// Default is false.
-    pub fn title_case_headers(mut self, title_case_headers: bool) -> Self {
-        self.config.h1_title_case_headers = title_case_headers;
         self
     }
 

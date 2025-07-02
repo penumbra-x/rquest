@@ -12,7 +12,7 @@ use http_body::Body;
 use super::{Http1Transaction, Wants};
 use crate::core::{
     body::{DecodedLength, Incoming as IncomingBody},
-    client::dispatch::TrySendError,
+    client::dispatch::{self, TrySendError},
     common::task,
     error::BoxError,
     proto::{BodyLength, Conn, Dispatched, MessageHead, RequestHead},
@@ -49,15 +49,14 @@ pub(crate) trait Dispatch {
 
 pin_project_lite::pin_project! {
     pub(crate) struct Client<B> {
-        callback: Option<crate::core::client::dispatch::Callback<Request<B>, http::Response<IncomingBody>>>,
+        callback: Option<dispatch::Callback<Request<B>, http::Response<IncomingBody>>>,
         #[pin]
         rx: ClientRx<B>,
         rx_closed: bool,
     }
 }
 
-type ClientRx<B> =
-    crate::core::client::dispatch::Receiver<Request<B>, http::Response<IncomingBody>>;
+type ClientRx<B> = dispatch::Receiver<Request<B>, http::Response<IncomingBody>>;
 
 impl<D, Bs, I, T> Dispatcher<D, Bs, I, T>
 where
@@ -602,7 +601,7 @@ mod tests {
 
             // Block at 0 for now, but we will release this response before
             // the request is ready to write later...
-            let (mut tx, rx) = crate::core::client::dispatch::channel();
+            let (mut tx, rx) = dispatch::channel();
             let conn = Conn::<_, bytes::Bytes, ClientTransaction>::new(Compat::new(io));
             let mut dispatcher = Dispatcher::new(Client::new(rx), conn);
 
@@ -639,7 +638,7 @@ mod tests {
             .wait(std::time::Duration::from_secs(2))
             .build_with_handle();
 
-        let (mut tx, rx) = crate::core::client::dispatch::channel();
+        let (mut tx, rx) = dispatch::channel();
         let mut conn = Conn::<_, bytes::Bytes, ClientTransaction>::new(Compat::new(io));
         conn.set_write_strategy_queue();
 
@@ -670,7 +669,7 @@ mod tests {
             .wait(Duration::from_secs(5))
             .build();
 
-        let (mut tx, rx) = crate::core::client::dispatch::channel();
+        let (mut tx, rx) = dispatch::channel();
         let conn = Conn::<_, bytes::Bytes, ClientTransaction>::new(Compat::new(io));
         let mut dispatcher = tokio_test::task::spawn(Dispatcher::new(Client::new(rx), conn));
 

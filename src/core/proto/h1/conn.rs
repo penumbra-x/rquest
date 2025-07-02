@@ -55,7 +55,6 @@ where
                 h1_parser_config: ParserConfig::default(),
                 h1_max_headers: None,
                 preserve_header_case: false,
-                title_case_headers: false,
                 h09_responses: false,
                 notify_read: false,
                 reading: Reading::Init,
@@ -88,10 +87,6 @@ where
 
     pub(crate) fn set_h1_parser_config(&mut self, parser_config: ParserConfig) {
         self.state.h1_parser_config = parser_config;
-    }
-
-    pub(crate) fn set_title_case_headers(&mut self) {
-        self.state.title_case_headers = true;
     }
 
     pub(crate) fn set_preserve_header_case(&mut self) {
@@ -524,7 +519,6 @@ where
                 head: &mut head,
                 body,
                 req_method: &mut self.state.method,
-                title_case_headers: self.state.title_case_headers,
             },
             buf,
         ) {
@@ -626,9 +620,7 @@ where
 
         match self.state.writing {
             Writing::Body(ref encoder) => {
-                if let Some(enc_buf) =
-                    encoder.encode_trailers(trailers, self.state.title_case_headers)
-                {
+                if let Some(enc_buf) = encoder.encode_trailers(trailers) {
                     self.io.buffer(enc_buf);
 
                     self.state.writing = if encoder.is_last() || encoder.is_close_delimited() {
@@ -806,7 +798,6 @@ struct State {
     h1_parser_config: ParserConfig,
     h1_max_headers: Option<usize>,
     preserve_header_case: bool,
-    title_case_headers: bool,
     h09_responses: bool,
     /// Set to true when the Dispatcher should poll read operations
     /// again. See the `maybe_notify` method for more.

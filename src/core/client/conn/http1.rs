@@ -265,9 +265,6 @@ impl Builder {
                     conn.set_write_strategy_flatten();
                 }
             }
-            if opts.h1_title_case_headers {
-                conn.set_title_case_headers();
-            }
             if opts.h1_preserve_header_case {
                 conn.set_preserve_header_case();
             }

@@ -79,7 +79,6 @@ pub(crate) struct Encode<'a, T> {
     head: &'a mut MessageHead<T>,
     body: Option<BodyLength>,
     req_method: &'a mut Option<Method>,
-    title_case_headers: bool,
 }
 
 /// Extra flags that a request "wants", like expect-continue or upgrades.

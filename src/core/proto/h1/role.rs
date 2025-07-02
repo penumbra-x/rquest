@@ -296,14 +296,7 @@ impl Http1Transaction for Client {
         if let Some(orig_headers) =
             RequestConfig::<RequestOriginalHeaders>::get(&msg.head.extensions)
         {
-            write_headers_original_case(
-                &mut msg.head.headers,
-                orig_headers,
-                dst,
-                msg.title_case_headers,
-            );
-        } else if msg.title_case_headers {
-            write_headers_title_case(&msg.head.headers, dst);
+            write_headers_original_case(&mut msg.head.headers, orig_headers, dst);
         } else {
             write_headers(&msg.head.headers, dst);
         }
@@ -640,30 +633,6 @@ fn record_header_indices(
     Ok(())
 }
 
-// Write header names as title case. The header name is assumed to be ASCII.
-fn title_case(dst: &mut Vec<u8>, name: &[u8]) {
-    dst.reserve(name.len());
-
-    // Ensure first character is uppercased
-    let mut prev = b'-';
-    for &(mut c) in name {
-        if prev == b'-' {
-            c.make_ascii_uppercase();
-        }
-        dst.push(c);
-        prev = c;
-    }
-}
-
-pub(crate) fn write_headers_title_case(headers: &HeaderMap, dst: &mut Vec<u8>) {
-    for (name, value) in headers {
-        title_case(dst, name.as_str().as_bytes());
-        extend(dst, b": ");
-        extend(dst, value.as_bytes());
-        extend(dst, b"\r\n");
-    }
-}
-
 pub(crate) fn write_headers(headers: &HeaderMap, dst: &mut Vec<u8>) {
     for (name, value) in headers {
         extend(dst, name.as_str().as_bytes());
@@ -673,12 +642,10 @@ pub(crate) fn write_headers(headers: &HeaderMap, dst: &mut Vec<u8>) {
     }
 }
 
-#[cold]
 fn write_headers_original_case(
     headers: &mut HeaderMap,
     orig_case: &OriginalHeaders,
     dst: &mut Vec<u8>,
-    title_case_headers: bool,
 ) {
     crate::core::proto::headers::sort_headers(headers, orig_case);
 
@@ -693,8 +660,6 @@ fn write_headers_original_case(
         for value in headers.get_all(name) {
             if let Some(orig_name) = names.next() {
                 extend(dst, orig_name.as_ref());
-            } else if title_case_headers {
-                title_case(dst, name.as_str().as_bytes());
             } else {
                 extend(dst, name.as_str().as_bytes());
             }

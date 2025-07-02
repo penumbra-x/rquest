@@ -12,10 +12,7 @@ use http::{
     },
 };
 
-use super::{
-    io::WriteBuf,
-    role::{write_headers, write_headers_title_case},
-};
+use super::{io::WriteBuf, role::write_headers};
 
 type StaticBuf = &'static [u8];
 
@@ -134,11 +131,7 @@ impl Encoder {
         EncodedBuf { kind }
     }
 
-    pub(crate) fn encode_trailers<B>(
-        &self,
-        trailers: HeaderMap,
-        title_case_headers: bool,
-    ) -> Option<EncodedBuf<B>> {
+    pub(crate) fn encode_trailers<B>(&self, trailers: HeaderMap) -> Option<EncodedBuf<B>> {
         trace!("encoding trailers");
         match &self.kind {
             Kind::Chunked(Some(allowed_trailer_fields)) => {
@@ -165,11 +158,7 @@ impl Encoder {
                 }
 
                 let mut buf = Vec::new();
-                if title_case_headers {
-                    write_headers_title_case(&allowed_trailers, &mut buf);
-                } else {
-                    write_headers(&allowed_trailers, &mut buf);
-                }
+                write_headers(&allowed_trailers, &mut buf);
 
                 if buf.is_empty() {
                     return None;
@@ -490,7 +479,7 @@ mod tests {
             ),
         ]);
 
-        let buf1 = encoder.encode_trailers::<&[u8]>(headers, false).unwrap();
+        let buf1 = encoder.encode_trailers::<&[u8]>(headers).unwrap();
 
         let mut dst = Vec::new();
         dst.put(buf1);
@@ -517,7 +506,7 @@ mod tests {
             ),
         ]);
 
-        let buf1 = encoder.encode_trailers::<&[u8]>(headers, false).unwrap();
+        let buf1 = encoder.encode_trailers::<&[u8]>(headers).unwrap();
 
         let mut dst = Vec::new();
         dst.put(buf1);
@@ -536,16 +525,12 @@ mod tests {
             HeaderValue::from_static("header data"),
         )]);
 
-        assert!(
-            encoder
-                .encode_trailers::<&[u8]>(headers.clone(), false)
-                .is_none()
-        );
+        assert!(encoder.encode_trailers::<&[u8]>(headers.clone()).is_none());
 
         let trailers = vec![];
         let encoder = encoder.into_chunked_with_trailing_fields(trailers);
 
-        assert!(encoder.encode_trailers::<&[u8]>(headers, false).is_none());
+        assert!(encoder.encode_trailers::<&[u8]>(headers).is_none());
     }
 
     #[test]
@@ -572,23 +557,6 @@ mod tests {
         headers.insert(TRANSFER_ENCODING, HeaderValue::from_static("header data"));
         headers.insert(TE, HeaderValue::from_static("header data"));
 
-        assert!(encoder.encode_trailers::<&[u8]>(headers, true).is_none());
-    }
-
-    #[test]
-    fn chunked_with_title_case_headers() {
-        let encoder = Encoder::chunked();
-        let trailers = vec![HeaderValue::from_static("chunky-trailer")];
-        let encoder = encoder.into_chunked_with_trailing_fields(trailers);
-
-        let headers = HeaderMap::from_iter(vec![(
-            HeaderName::from_static("chunky-trailer"),
-            HeaderValue::from_static("header data"),
-        )]);
-        let buf1 = encoder.encode_trailers::<&[u8]>(headers, true).unwrap();
-
-        let mut dst = Vec::new();
-        dst.put(buf1);
-        assert_eq!(dst, b"0\r\nChunky-Trailer: header data\r\n\r\n");
+        assert!(encoder.encode_trailers::<&[u8]>(headers).is_none());
     }
 }
