@@ -47,7 +47,7 @@ pub(crate) struct RequestAcceptEncoding;
     feature = "deflate",
 ))]
 impl RequestConfigValue for RequestAcceptEncoding {
-    type Value = crate::client::decoder::AcceptEncoding;
+    type Value = crate::client::middleware::decoder::AcceptEncoding;
 }
 
 #[derive(Clone, Copy)]
