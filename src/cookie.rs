@@ -6,6 +6,7 @@ use bytes::BufMut;
 pub use cookie_crate::{Cookie as RawCookie, Expiration, SameSite, time::Duration};
 
 use crate::{
+    error::Error,
     header::{HeaderValue, SET_COOKIE},
     sync::RwLock,
 };
@@ -37,11 +38,11 @@ pub struct Jar(RwLock<cookie_store::CookieStore>);
 
 // ===== impl Cookie =====
 impl<'a> Cookie<'a> {
-    fn parse(value: &'a HeaderValue) -> Result<Cookie<'a>, CookieParseError> {
+    fn parse(value: &'a HeaderValue) -> crate::Result<Cookie<'a>> {
         std::str::from_utf8(value.as_bytes())
             .map_err(cookie_crate::ParseError::from)
             .and_then(cookie_crate::Cookie::parse)
-            .map_err(CookieParseError)
+            .map_err(Error::decode)
             .map(Cookie)
     }
 
@@ -220,26 +221,9 @@ impl<'c> CookieBuilder<'c> {
 
 pub(crate) fn extract_response_cookies(
     headers: &http::HeaderMap,
-) -> impl Iterator<Item = Result<Cookie<'_>, CookieParseError>> {
+) -> impl Iterator<Item = crate::Result<Cookie<'_>>> {
     headers.get_all(SET_COOKIE).iter().map(Cookie::parse)
 }
-
-/// Error representing a parse failure of a 'Set-Cookie' header.
-pub(crate) struct CookieParseError(cookie_crate::ParseError);
-
-impl fmt::Debug for CookieParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl fmt::Display for CookieParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl std::error::Error for CookieParseError {}
 
 // ===== impl Jar =====
 impl Jar {
