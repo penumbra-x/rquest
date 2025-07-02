@@ -372,7 +372,7 @@ impl Response {
         let status = self.status();
         let reason = self.extensions().get::<ReasonPhrase>().cloned();
         if status.is_client_error() || status.is_server_error() {
-            Err(crate::Error::status_code(*self.url, status, reason))
+            Err(Error::status_code(*self.url, status, reason))
         } else {
             Ok(self)
         }
@@ -400,7 +400,7 @@ impl Response {
         let status = self.status();
         let reason = self.extensions().get::<ReasonPhrase>().cloned();
         if status.is_client_error() || status.is_server_error() {
-            Err(crate::Error::status_code(*self.url.clone(), status, reason))
+            Err(Error::status_code(*self.url.clone(), status, reason))
         } else {
             Ok(self)
         }
