@@ -16,8 +16,6 @@ use crate::{
     redirect::RedirectPolicy,
 };
 
-// =================== Intermediate Types ===================== //
-
 #[cfg(not(feature = "cookies"))]
 type MaybeCookieLayer<T> = T;
 
@@ -55,8 +53,6 @@ pub type ResponseBody = TimeoutBody<tower_http::decompression::DecompressionBody
     feature = "deflate"
 )))]
 pub type ResponseBody = TimeoutBody<Incoming>;
-
-// =================== Final Type Aliases ===================== //
 
 type RedirectLayer = FollowRedirect<
     MaybeCookieLayer<ResponseBodyTimeout<MaybeDecompression<ClientService>>>,

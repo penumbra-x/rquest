@@ -47,7 +47,6 @@ pub struct Decompression<S> {
 }
 
 impl<S> Decompression<S> {
-    /// Sets decompression options based on the provided `AcceptEncoding`.
     fn accept(
         mut decoder: TowerDecompression<S>,
         accept: &AcceptEncoding,
@@ -92,9 +91,9 @@ where
     }
 
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
-        if let Some(accpet) = RequestConfig::<RequestAcceptEncoding>::get(req.extensions()) {
+        if let Some(accept) = RequestConfig::<RequestAcceptEncoding>::get(req.extensions()) {
             let mut decoder = self.decoder.clone();
-            decoder = Decompression::accept(decoder, accpet);
+            decoder = Decompression::accept(decoder, accept);
             std::mem::swap(&mut self.decoder, &mut decoder);
         }
 

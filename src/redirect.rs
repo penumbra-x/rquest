@@ -357,7 +357,7 @@ impl TowerPolicy<Body, BoxError> for RedirectPolicy {
         };
     }
 
-    // This is must implemented to make 307 and 308 redirects work
+    // This is must have implemented to make 307 and 308 redirects work
     #[inline(always)]
     fn clone_body(&self, body: &Body) -> Option<Body> {
         body.try_clone()
