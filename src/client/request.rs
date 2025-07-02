@@ -9,18 +9,25 @@ use std::{
 use http::{Extensions, Request as HttpRequest, Uri, Version, request::Parts};
 use serde::Serialize;
 
+#[cfg(any(
+    feature = "gzip",
+    feature = "zstd",
+    feature = "brotli",
+    feature = "deflate",
+))]
+use super::middleware::{config::RequestAcceptEncoding, decoder::AcceptEncoding};
 #[cfg(feature = "multipart")]
 use super::multipart;
 use super::{
     body::Body,
     client::{Client, Pending},
+    middleware::config::{
+        RequestReadTimeout, RequestRedirectPolicy, RequestSkipDefaultHeaders, RequestTotalTimeout,
+    },
     response::Response,
 };
 use crate::{
     EmulationProviderFactory, Error, Method, OriginalHeaders, Proxy, Url,
-    config::{
-        RequestReadTimeout, RequestRedirectPolicy, RequestSkipDefaultHeaders, RequestTotalTimeout,
-    },
     core::{
         client::{config::TransportConfig, connect::TcpConnectOptions},
         ext::{
@@ -32,13 +39,6 @@ use crate::{
     proxy::Matcher as ProxyMatcher,
     redirect,
 };
-#[cfg(any(
-    feature = "gzip",
-    feature = "zstd",
-    feature = "brotli",
-    feature = "deflate",
-))]
-use crate::{client::middleware::decoder::AcceptEncoding, config::RequestAcceptEncoding};
 
 /// A request which can be executed with `Client::execute()`.
 pub struct Request {
