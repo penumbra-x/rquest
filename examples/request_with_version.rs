@@ -1,5 +1,4 @@
 use http::Version;
-use wreq::redirect::Policy;
 
 #[tokio::main]
 async fn main() -> wreq::Result<()> {
@@ -9,7 +8,6 @@ async fn main() -> wreq::Result<()> {
 
     let resp = wreq::Client::new()
         .get("https://tls.peet.ws/api/all")
-        .redirect(Policy::default())
         .version(Version::HTTP_11)
         .send()
         .await?;

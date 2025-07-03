@@ -1,12 +1,14 @@
 #[cfg(any(
     target_os = "android",
     target_os = "fuchsia",
-    target_os = "linux",
+    target_os = "illumos",
     target_os = "ios",
-    target_os = "visionos",
+    target_os = "linux",
     target_os = "macos",
+    target_os = "solaris",
     target_os = "tvos",
-    target_os = "watchos"
+    target_os = "visionos",
+    target_os = "watchos",
 ))]
 #[tokio::main]
 async fn main() -> wreq::Result<()> {
@@ -30,11 +32,13 @@ async fn main() -> wreq::Result<()> {
 #[cfg(not(any(
     target_os = "android",
     target_os = "fuchsia",
-    target_os = "linux",
+    target_os = "illumos",
     target_os = "ios",
-    target_os = "visionos",
+    target_os = "linux",
     target_os = "macos",
+    target_os = "solaris",
     target_os = "tvos",
-    target_os = "watchos"
+    target_os = "visionos",
+    target_os = "watchos",
 )))]
 fn main() {}
