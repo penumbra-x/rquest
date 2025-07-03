@@ -264,7 +264,6 @@
 //!   `getaddrinfo`.
 //! - **webpki-roots** *(enabled by default)*: Use the webpki-roots crate for root certificates.
 //! - **system-proxy** *(enabled by default)*: Enable system proxy support.
-//! - **parking_lot**: Use `parking_lot` for synchronization primitives.
 //! - **tracing**: Enable tracing logging support.
 //!
 //! [client]: ./struct.Client.html
