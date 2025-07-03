@@ -12,17 +12,17 @@
 //! - Otherwise, it wraps [`std::sync::Mutex`] and [`std::sync::RwLock`], using `.unwrap_or_else(|e|
 //!   e.into_inner())` to silently recover from poisoning.
 
-#[cfg(all(not(feature = "parking_lot"), test))]
-pub use fallback::MutexGuard;
-#[cfg(not(feature = "parking_lot"))]
-pub use fallback::{Mutex, RwLock};
 #[cfg(all(feature = "parking_lot", test))]
 pub use parking_lot::MutexGuard;
 #[cfg(feature = "parking_lot")]
 pub use parking_lot::{Mutex, RwLock};
+#[cfg(all(not(feature = "parking_lot"), test))]
+pub use std_sync::MutexGuard;
+#[cfg(not(feature = "parking_lot"))]
+pub use std_sync::{Mutex, RwLock};
 
 #[cfg(not(feature = "parking_lot"))]
-mod fallback {
+mod std_sync {
     use std::{
         fmt,
         ops::{Deref, DerefMut},
@@ -51,7 +51,7 @@ mod fallback {
     impl<T: ?Sized> Mutex<T> {
         /// Like `std::sync::Mutex::lock`.
         #[inline]
-        pub fn lock<'a>(&'a self) -> MutexGuard<'a, T> {
+        pub fn lock(&self) -> MutexGuard<'_, T> {
             MutexGuard(self.0.lock().unwrap_or_else(|e| e.into_inner()))
         }
     }
@@ -60,7 +60,7 @@ mod fallback {
     #[must_use]
     pub struct MutexGuard<'a, T: ?Sized + 'a>(sync::MutexGuard<'a, T>);
 
-    impl<'a, T: ?Sized> Deref for MutexGuard<'a, T> {
+    impl<T: ?Sized> Deref for MutexGuard<'_, T> {
         type Target = T;
 
         #[inline]
@@ -69,7 +69,7 @@ mod fallback {
         }
     }
 
-    impl<'a, T: ?Sized> DerefMut for MutexGuard<'a, T> {
+    impl<T: ?Sized> DerefMut for MutexGuard<'_, T> {
         #[inline]
         fn deref_mut(&mut self) -> &mut T {
             self.0.deref_mut()
@@ -98,13 +98,13 @@ mod fallback {
     impl<T: ?Sized> RwLock<T> {
         /// Like `std::sync::RwLock::read`.
         #[inline]
-        pub fn read<'a>(&'a self) -> RwLockReadGuard<'a, T> {
+        pub fn read(&self) -> RwLockReadGuard<'_, T> {
             RwLockReadGuard(self.0.read().unwrap_or_else(|e| e.into_inner()))
         }
 
         /// Like `std::sync::RwLock::write`.
         #[inline]
-        pub fn write<'a>(&'a self) -> RwLockWriteGuard<'a, T> {
+        pub fn write(&self) -> RwLockWriteGuard<'_, T> {
             RwLockWriteGuard(self.0.write().unwrap_or_else(|e| e.into_inner()))
         }
     }
@@ -113,7 +113,7 @@ mod fallback {
     #[must_use]
     pub struct RwLockReadGuard<'a, T: ?Sized + 'a>(sync::RwLockReadGuard<'a, T>);
 
-    impl<'a, T: ?Sized> Deref for RwLockReadGuard<'a, T> {
+    impl<T: ?Sized> Deref for RwLockReadGuard<'_, T> {
         type Target = T;
 
         #[inline]
@@ -126,7 +126,7 @@ mod fallback {
     #[must_use]
     pub struct RwLockWriteGuard<'a, T: ?Sized + 'a>(sync::RwLockWriteGuard<'a, T>);
 
-    impl<'a, T: ?Sized> Deref for RwLockWriteGuard<'a, T> {
+    impl<T: ?Sized> Deref for RwLockWriteGuard<'_, T> {
         type Target = T;
 
         #[inline]
@@ -135,7 +135,7 @@ mod fallback {
         }
     }
 
-    impl<'a, T: ?Sized> DerefMut for RwLockWriteGuard<'a, T> {
+    impl<T: ?Sized> DerefMut for RwLockWriteGuard<'_, T> {
         #[inline]
         fn deref_mut(&mut self) -> &mut T {
             self.0.deref_mut()
