@@ -95,4 +95,4 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 ## Accolades
 
-The project is based on a fork of [reqwest](https://github.com/seanmonstar/reqwest).
+A hard fork of [reqwest](https://github.com/seanmonstar/reqwest).
