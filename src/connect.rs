@@ -32,8 +32,8 @@ use crate::{
     error::{BoxError, TimedOut, map_timeout_to_connector_error},
     proxy::{Intercepted, Matcher as ProxyMatcher},
     tls::{
-        CertStore, HttpsConnector, Identity, KeyLogPolicy, MaybeHttpsStream, TlsConfig,
-        TlsConnector, TlsConnectorBuilder, TlsInfo, TlsVersion,
+        CertStore, EstablishedConn, HttpsConnector, Identity, KeyLogPolicy, MaybeHttpsStream,
+        TlsConfig, TlsConnector, TlsConnectorBuilder, TlsInfo, TlsVersion,
     },
 };
 
@@ -305,7 +305,6 @@ impl Connector {
             #[cfg(feature = "socks")]
             resolver: resolver.clone(),
             http: {
-                // Create a new HttpConnector with the provided resolver
                 let mut http = HttpConnector::new_with_resolver(resolver);
                 http.enforce_http(false);
                 http
@@ -314,8 +313,6 @@ impl Connector {
             verbose: verbose::OFF,
             timeout: None,
             tcp_nodelay: false,
-
-            // TLS connector and its configuration
             tls_info: false,
             tls_builder: TlsConnector::builder(),
         }
@@ -367,7 +364,25 @@ pub(crate) struct ConnectorService {
 }
 
 impl ConnectorService {
-    async fn connect(self, mut req: ConnRequest, is_proxy: bool) -> Result<Conn, BoxError> {
+    /// Constructs an HTTPS connector by wrapping an `HttpConnector`
+    /// with the appropriate TLS configuration.
+    fn build_tls_connector(
+        &self,
+        mut http: HttpConnector,
+        req: &mut ConnRequest,
+    ) -> Result<HttpsConnector<HttpConnector>, BoxError> {
+        let ex_data = req.ex_data();
+        http.set_tcp_connect_options(ex_data.tcp_connect_options().cloned());
+        let tls = match ex_data.tls_config() {
+            Some(cfg) => self.tls_builder.build(cfg.clone())?,
+            None => self.tls.clone(),
+        };
+        Ok(HttpsConnector::with_connector(http, tls))
+    }
+
+    /// Establishes a direct connection to the target URI without using a proxy.
+    /// May perform a plain TCP or a TLS handshake depending on the URI scheme.
+    async fn connect_direct(self, mut req: ConnRequest, is_proxy: bool) -> Result<Conn, BoxError> {
         trace!("connect with maybe proxy: {:?}", is_proxy);
 
         let uri = req.uri().clone();
@@ -380,8 +395,8 @@ impl ConnectorService {
             http.set_nodelay(true);
         }
 
-        let mut connector = self.create_https_connector(http, &mut req)?;
-        let io = connector.call(uri).await?;
+        let mut connector = self.build_tls_connector(http, &mut req)?;
+        let io = connector.call(req).await?;
 
         // If the connection is HTTPS, wrap the TLS stream in a TlsConn for unified handling.
         // For plain HTTP, use the stream directly without additional wrapping.
@@ -403,7 +418,9 @@ impl ConnectorService {
         })
     }
 
-    async fn connect_via_proxy(
+    /// Establishes a connection through a specified proxy.
+    /// Supports both SOCKS and HTTP tunneling proxies.
+    async fn connect_with_proxy(
         self,
         mut req: ConnRequest,
         proxy: Intercepted,
@@ -437,8 +454,9 @@ impl ConnectorService {
 
                 return if uri.scheme() == Some(&Scheme::HTTPS) {
                     trace!("socks HTTPS over proxy");
-                    let mut connector = self.create_https_connector(self.http.clone(), &mut req)?;
-                    let io = connector.call((uri, conn)).await?;
+                    let mut connector = self.build_tls_connector(self.http.clone(), &mut req)?;
+                    let established_conn = EstablishedConn::new(req, conn);
+                    let io = connector.call(established_conn).await?;
 
                     Ok(Conn {
                         inner: self.verbose.wrap(TlsConn {
@@ -460,7 +478,7 @@ impl ConnectorService {
         // Handle HTTPS proxy tunneling connection
         if uri.scheme() == Some(&Scheme::HTTPS) {
             trace!("tunneling HTTPS over HTTP proxy: {:?}", proxy_uri);
-            let mut connector = self.create_https_connector(self.http.clone(), &mut req)?;
+            let mut connector = self.build_tls_connector(self.http.clone(), &mut req)?;
 
             let mut tunnel = proxy::Tunnel::new(proxy_uri, connector.clone());
             if let Some(auth) = proxy.basic_auth() {
@@ -473,10 +491,11 @@ impl ConnectorService {
 
             // We don't wrap this again in an HttpsConnector since that uses Maybe,
             // and we know this is definitely HTTPS.
-            let tunneled = tunnel.call(uri.clone()).await?;
+            let tunneled = tunnel.call(uri).await?;
             let tunneled = TokioIo::new(tunneled);
             let tunneled = TokioIo::new(tunneled);
-            let io = connector.call((uri, tunneled)).await?;
+            let established_conn = EstablishedConn::new(req, tunneled);
+            let io = connector.call(established_conn).await?;
 
             return Ok(Conn {
                 inner: self.verbose.wrap(TlsConn {
@@ -487,44 +506,42 @@ impl ConnectorService {
             });
         }
 
-        // Update the connect URI to the proxy URI
         *req.uri_mut() = proxy_uri;
-
-        self.connect(req, true).await
+        self.connect_direct(req, true).await
     }
 
-    fn create_https_connector(
-        &self,
-        http: HttpConnector,
-        conn_req: &mut ConnRequest,
-    ) -> Result<HttpsConnector<HttpConnector>, BoxError> {
-        let (tcp_opts, tls_cfg, alpn_protocol) = conn_req.take_config_bundle();
+    /// Automatically selects between a direct or proxied connection
+    /// based on the request and configured proxy matchers.
+    /// Applies a timeout if configured.
+    async fn connect_auto(self, req: ConnRequest) -> Result<Conn, BoxError> {
+        debug!("starting new connection: {:?}", req.uri());
 
-        let tls = tls_cfg
-            .map(|cfg| self.tls_builder.build(cfg))
-            .transpose()?
-            .unwrap_or_else(|| self.tls.clone());
+        let intercepted = req
+            .ex_data()
+            .proxy_matcher()
+            .and_then(|scheme| scheme.intercept(req.uri()))
+            .or_else(|| {
+                self.proxies
+                    .iter()
+                    .find_map(|prox| prox.intercept(req.uri()))
+            });
 
-        let mut connector = HttpsConnector::with_connector(http, tls);
-        connector.set_alpn_protocol(alpn_protocol);
-        connector.set_tcp_connect_options(tcp_opts);
+        let timeout = self.timeout;
+        let fut = async {
+            if let Some(intercepted) = intercepted {
+                self.connect_with_proxy(req, intercepted).await
+            } else {
+                self.connect_direct(req, false).await
+            }
+        };
 
-        Ok(connector)
-    }
-}
-
-async fn with_timeout<T, F>(f: F, timeout: Option<Duration>) -> Result<T, BoxError>
-where
-    F: Future<Output = Result<T, BoxError>>,
-{
-    if let Some(to) = timeout {
-        match tokio::time::timeout(to, f).await {
-            Err(_elapsed) => Err(Box::new(TimedOut) as BoxError),
-            Ok(Ok(try_res)) => Ok(try_res),
-            Ok(Err(e)) => Err(e),
+        if let Some(to) = timeout {
+            tokio::time::timeout(to, fut)
+                .await
+                .map_err(|_| BoxError::from(TimedOut))?
+        } else {
+            fut.await
         }
-    } else {
-        f.await
     }
 }
 
@@ -538,26 +555,9 @@ impl Service<ConnRequest> for ConnectorService {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, mut req: ConnRequest) -> Self::Future {
-        debug!("starting new connection: {:?}", req.uri());
-
-        let intercepted = req
-            .take_proxy_matcher()
-            .and_then(|scheme| scheme.intercept(req.uri()))
-            .or_else(|| {
-                self.proxies
-                    .iter()
-                    .find_map(|prox| prox.intercept(req.uri()))
-            });
-
-        if let Some(intercepted) = intercepted {
-            return Box::pin(with_timeout(
-                self.clone().connect_via_proxy(req, intercepted),
-                self.timeout,
-            ));
-        }
-
-        Box::pin(with_timeout(self.clone().connect(req, false), self.timeout))
+    #[inline(always)]
+    fn call(&mut self, req: ConnRequest) -> Self::Future {
+        Box::pin(self.clone().connect_auto(req))
     }
 }
 
@@ -627,7 +627,7 @@ mod conn {
 
     pin_project! {
         /// Note: the `is_proxy` member means *is plain text HTTP proxy*.
-        /// This tells hyper whether the URI should be written in
+        /// This tells core whether the URI should be written in
         /// * origin-form (`GET /just/a/path HTTP/1.1`), when `is_proxy == false`, or
         /// * absolute-form (`GET http://foo.bar/and/a/path HTTP/1.1`), otherwise.
         pub struct Conn {
