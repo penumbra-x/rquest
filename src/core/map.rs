@@ -14,6 +14,9 @@ pub const RANDOM_STATE: RandomState = RandomState::with_seeds(
     0x94e5_8d83_a26c_3f28,
 );
 
+/// A type alias for a hash set using `ahash` with a pre-seeded `RandomState`.
+pub type HashSet<T> = std::collections::HashSet<T, RandomState>;
+
 /// A type alias for a hash map using `ahash` with a pre-seeded `RandomState`.
 pub type HashMap<K, V> = std::collections::HashMap<K, V, RandomState>;
 
