@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 //! Tokio IO integration for core.
 use std::{
     future::Future,
@@ -9,7 +8,7 @@ use std::{
 
 use pin_project_lite::pin_project;
 
-use crate::core::rt::{Executor, Sleep, Timer};
+use crate::core::rt::{Executor, Read, ReadBuf, ReadBufCursor, Sleep, Timer, Write};
 
 /// Future executor that utilises `tokio` threads.
 #[non_exhaustive]
@@ -65,37 +64,32 @@ impl TokioExecutor {
 
 impl<T> TokioIo<T> {
     /// Wrap a type implementing Tokio's or core's IO traits.
+    #[inline]
     pub fn new(inner: T) -> Self {
         Self { inner }
     }
 
     /// Borrow the inner type.
-    #[inline(always)]
+    #[inline]
     pub fn inner(&self) -> &T {
         &self.inner
     }
 
-    /// Mut borrow the inner type.
-    #[inline(always)]
-    pub fn inner_mut(&mut self) -> &mut T {
-        &mut self.inner
-    }
-
     /// Consume this wrapper and get the inner type.
-    #[inline(always)]
+    #[inline]
     pub fn into_inner(self) -> T {
         self.inner
     }
 }
 
-impl<T> crate::core::rt::Read for TokioIo<T>
+impl<T> Read for TokioIo<T>
 where
     T: tokio::io::AsyncRead,
 {
     fn poll_read(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
-        mut buf: crate::core::rt::ReadBufCursor<'_>,
+        mut buf: ReadBufCursor<'_>,
     ) -> Poll<Result<(), std::io::Error>> {
         let n = unsafe {
             let mut tbuf = tokio::io::ReadBuf::uninit(buf.as_mut());
@@ -112,11 +106,11 @@ where
     }
 }
 
-impl<T> crate::core::rt::Write for TokioIo<T>
+impl<T> Write for TokioIo<T>
 where
     T: tokio::io::AsyncWrite,
 {
-    #[inline(always)]
+    #[inline]
     fn poll_write(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
@@ -125,10 +119,12 @@ where
         tokio::io::AsyncWrite::poll_write(self.project().inner, cx, buf)
     }
 
+    #[inline]
     fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), std::io::Error>> {
         tokio::io::AsyncWrite::poll_flush(self.project().inner, cx)
     }
 
+    #[inline]
     fn poll_shutdown(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
@@ -136,11 +132,12 @@ where
         tokio::io::AsyncWrite::poll_shutdown(self.project().inner, cx)
     }
 
+    #[inline]
     fn is_write_vectored(&self) -> bool {
         tokio::io::AsyncWrite::is_write_vectored(&self.inner)
     }
 
-    #[inline(always)]
+    #[inline]
     fn poll_write_vectored(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
@@ -152,7 +149,7 @@ where
 
 impl<T> tokio::io::AsyncRead for TokioIo<T>
 where
-    T: crate::core::rt::Read,
+    T: Read,
 {
     fn poll_read(
         self: Pin<&mut Self>,
@@ -162,9 +159,9 @@ where
         //let init = tbuf.initialized().len();
         let filled = tbuf.filled().len();
         let sub_filled = unsafe {
-            let mut buf = crate::core::rt::ReadBuf::uninit(tbuf.unfilled_mut());
+            let mut buf = ReadBuf::uninit(tbuf.unfilled_mut());
 
-            match crate::core::rt::Read::poll_read(self.project().inner, cx, buf.unfilled()) {
+            match Read::poll_read(self.project().inner, cx, buf.unfilled()) {
                 Poll::Ready(Ok(())) => buf.filled().len(),
                 other => return other,
             }
@@ -184,39 +181,42 @@ where
 
 impl<T> tokio::io::AsyncWrite for TokioIo<T>
 where
-    T: crate::core::rt::Write,
+    T: Write,
 {
-    #[inline(always)]
+    #[inline]
     fn poll_write(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &[u8],
     ) -> Poll<Result<usize, std::io::Error>> {
-        crate::core::rt::Write::poll_write(self.project().inner, cx, buf)
+        Write::poll_write(self.project().inner, cx, buf)
     }
 
+    #[inline]
     fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), std::io::Error>> {
-        crate::core::rt::Write::poll_flush(self.project().inner, cx)
+        Write::poll_flush(self.project().inner, cx)
     }
 
+    #[inline]
     fn poll_shutdown(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
     ) -> Poll<Result<(), std::io::Error>> {
-        crate::core::rt::Write::poll_shutdown(self.project().inner, cx)
+        Write::poll_shutdown(self.project().inner, cx)
     }
 
+    #[inline]
     fn is_write_vectored(&self) -> bool {
-        crate::core::rt::Write::is_write_vectored(&self.inner)
+        Write::is_write_vectored(&self.inner)
     }
 
-    #[inline(always)]
+    #[inline]
     fn poll_write_vectored(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         bufs: &[std::io::IoSlice<'_>],
     ) -> Poll<Result<usize, std::io::Error>> {
-        crate::core::rt::Write::poll_write_vectored(self.project().inner, cx, bufs)
+        Write::poll_write_vectored(self.project().inner, cx, bufs)
     }
 }
 
