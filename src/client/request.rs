@@ -72,61 +72,61 @@ impl Request {
     }
 
     /// Get the method.
-    #[inline(always)]
+    #[inline]
     pub fn method(&self) -> &Method {
         &self.method
     }
 
     /// Get a mutable reference to the method.
-    #[inline(always)]
+    #[inline]
     pub fn method_mut(&mut self) -> &mut Method {
         &mut self.method
     }
 
     /// Get the url.
-    #[inline(always)]
+    #[inline]
     pub fn url(&self) -> &Url {
         &self.url
     }
 
     /// Get a mutable reference to the url.
-    #[inline(always)]
+    #[inline]
     pub fn url_mut(&mut self) -> &mut Url {
         &mut self.url
     }
 
     /// Get the headers.
-    #[inline(always)]
+    #[inline]
     pub fn headers(&self) -> &HeaderMap {
         &self.headers
     }
 
     /// Get a mutable reference to the headers.
-    #[inline(always)]
+    #[inline]
     pub fn headers_mut(&mut self) -> &mut HeaderMap {
         &mut self.headers
     }
 
     /// Get a mutable reference to the original headers.
-    #[inline(always)]
+    #[inline]
     pub fn original_headers_mut(&mut self) -> &mut Option<OriginalHeaders> {
         RequestConfig::<RequestOriginalHeaders>::get_mut(&mut self.extensions)
     }
 
     /// Get a mutable reference to the redirect policy.
-    #[inline(always)]
+    #[inline]
     pub fn redirect_mut(&mut self) -> &mut Option<redirect::Policy> {
         RequestConfig::<RequestRedirectPolicy>::get_mut(&mut self.extensions)
     }
 
     /// Get the body.
-    #[inline(always)]
+    #[inline]
     pub fn body(&self) -> Option<&Body> {
         self.body.as_ref()
     }
 
     /// Get a mutable reference to the body.
-    #[inline(always)]
+    #[inline]
     pub fn body_mut(&mut self) -> &mut Option<Body> {
         &mut self.body
     }
@@ -138,31 +138,31 @@ impl Request {
     }
 
     /// Get a mutable reference to the http version.
-    #[inline(always)]
+    #[inline]
     pub fn version_mut(&mut self) -> &mut Option<Version> {
         RequestConfig::<RequestEnforcedHttpVersion>::get_mut(&mut self.extensions)
     }
 
     /// Get a mutable reference to the timeout.
-    #[inline(always)]
+    #[inline]
     pub fn timeout_mut(&mut self) -> &mut Option<Duration> {
         RequestConfig::<RequestTotalTimeout>::get_mut(&mut self.extensions)
     }
 
     /// Get a mutable reference to the read timeout.
-    #[inline(always)]
+    #[inline]
     pub fn read_timeout_mut(&mut self) -> &mut Option<Duration> {
         RequestConfig::<RequestReadTimeout>::get_mut(&mut self.extensions)
     }
 
     /// Get a mutable reference to the tcp connect options.
-    #[inline(always)]
+    #[inline]
     pub(crate) fn tcp_connect_options_mut(&mut self) -> &mut Option<TcpConnectOptions> {
         RequestConfig::<RequestTcpConnectOptions>::get_mut(&mut self.extensions)
     }
 
     /// Get a mutable reference to the proxy matcher.
-    #[inline(always)]
+    #[inline]
     pub(crate) fn proxy_matcher_mut(&mut self) -> &mut Option<ProxyMatcher> {
         RequestConfig::<RequestProxyMatcher>::get_mut(&mut self.extensions)
     }
@@ -174,30 +174,30 @@ impl Request {
         feature = "brotli",
         feature = "deflate",
     ))]
-    #[inline(always)]
+    #[inline]
     pub(crate) fn accpet_encoding_mut(&mut self) -> &mut Option<AcceptEncoding> {
         RequestConfig::<RequestAcceptEncoding>::get_mut(&mut self.extensions)
     }
 
     /// Skip client default headers.
-    #[inline(always)]
+    #[inline]
     pub(crate) fn default_headers_mut(&mut self) -> &mut Option<bool> {
         RequestConfig::<RequestSkipDefaultHeaders>::get_mut(&mut self.extensions)
     }
 
-    #[inline(always)]
+    #[inline]
     pub(crate) fn transport_config_mut(&mut self) -> &mut Option<TransportConfig> {
         RequestConfig::<RequestTransportConfig>::get_mut(&mut self.extensions)
     }
 
     /// Get the extensions.
-    #[inline(always)]
+    #[inline]
     pub(crate) fn extensions(&self) -> &Extensions {
         &self.extensions
     }
 
     /// Get a mutable reference to the extensions.
-    #[inline(always)]
+    #[inline]
     pub(crate) fn extensions_mut(&mut self) -> &mut Extensions {
         &mut self.extensions
     }
@@ -325,7 +325,7 @@ impl RequestBuilder {
     /// Add a set of Headers to the existing ones on this Request.
     ///
     /// The headers will be merged in to any already set.
-    pub fn headers(mut self, headers: crate::header::HeaderMap) -> RequestBuilder {
+    pub fn headers(mut self, headers: HeaderMap) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
             crate::util::replace_headers(req.headers_mut(), headers);
         }
@@ -349,6 +349,7 @@ impl RequestBuilder {
     }
 
     /// Enable HTTP authentication.
+    #[inline]
     pub fn auth<V>(self, value: V) -> RequestBuilder
     where
         HeaderValue: TryFrom<V>,

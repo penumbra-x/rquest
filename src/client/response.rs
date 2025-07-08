@@ -72,6 +72,7 @@ impl Response {
     /// - The response does not include a body (e.g. it responds to a `HEAD` request).
     /// - The response is gzipped and automatically decoded (thus changing the actual decoded
     ///   length).
+    #[inline]
     pub fn content_length(&self) -> Option<u64> {
         http_body::Body::size_hint(self.res.body()).exact()
     }
@@ -84,6 +85,7 @@ impl Response {
     ///
     /// This requires the optional `cookies` feature to be enabled.
     #[cfg(feature = "cookies")]
+    #[inline]
     pub fn cookies(&self) -> impl Iterator<Item = cookie::Cookie> {
         cookie::extract_response_cookies(self.res.headers()).filter_map(Result::ok)
     }
@@ -103,11 +105,13 @@ impl Response {
     }
 
     /// Returns a reference to the associated extensions.
+    #[inline]
     pub fn extensions(&self) -> &http::Extensions {
         self.res.extensions()
     }
 
     /// Returns a mutable reference to the associated extensions.
+    #[inline]
     pub fn extensions_mut(&mut self) -> &mut http::Extensions {
         self.res.extensions_mut()
     }
@@ -143,6 +147,7 @@ impl Response {
     /// # Ok(())
     /// # }
     /// ```
+    #[inline]
     pub async fn text(self) -> crate::Result<String> {
         #[cfg(feature = "charset")]
         {
