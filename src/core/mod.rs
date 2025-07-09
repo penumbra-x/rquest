@@ -10,6 +10,5 @@ pub mod ext;
 
 pub mod collections;
 mod proto;
-pub mod proxy;
 pub mod rt;
 pub mod upgrade;

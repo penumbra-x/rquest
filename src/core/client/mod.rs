@@ -5,6 +5,7 @@
 pub mod config;
 pub mod conn;
 pub(super) mod dispatch;
+pub mod proxy;
 
 pub mod connect;
 // Publicly available, but just for legacy purposes. A better pool will be

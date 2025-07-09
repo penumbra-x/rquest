@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::{fmt, future::Future, pin::Pin, sync::Arc};
 
 use crate::core::rt::Executor;
