@@ -8,8 +8,7 @@ mod common;
 mod error;
 pub mod ext;
 
-pub mod header;
-pub mod map;
+pub mod collections;
 mod proto;
 pub mod proxy;
 pub mod rt;

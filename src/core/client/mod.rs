@@ -17,12 +17,12 @@ use std::{
     future::Future,
     num::NonZeroU32,
     pin::Pin,
+    sync::Arc,
     task::{self, Poll},
     time::Duration,
 };
 
 use futures_util::future::{self, Either, FutureExt, TryFutureExt};
-use hashmemo::HashMemo;
 use http::{
     HeaderValue, Method, Request, Response, Uri, Version,
     header::HOST,
@@ -40,13 +40,13 @@ use crate::{
             conn::TrySendError as ConnTrySendError,
             connect::{Alpn, Connect, Connected, Connection, TcpConnectOptions},
         },
+        collections::{RANDOM_STATE, memo::HashMemo},
         common::{Exec, Lazy, lazy, timer},
         error::BoxError,
         ext::{
             RequestConfig, RequestEnforcedHttpVersion, RequestProxyMatcher,
             RequestTcpConnectOptions, RequestTransportConfig,
         },
-        map::RANDOM_STATE,
         rt::{Executor, Timer},
     },
     proxy::Matcher as ProxyMacher,
@@ -111,7 +111,7 @@ impl ConnExtra {
 /// This type implements `Hash`, `Eq`, and `Clone` to support use
 /// in maps, caches, or deduplicated pools.
 #[derive(Clone, Hash, Debug, Eq, PartialEq)]
-pub(crate) struct ConnKey(Box<HashMemo<ConnExtra, ahash::RandomState>>);
+pub(crate) struct ConnKey(Arc<HashMemo<ConnExtra>>);
 
 /// Describes all the parameters needed to initiate a client connection.
 ///
@@ -124,7 +124,7 @@ pub(crate) struct ConnKey(Box<HashMemo<ConnExtra, ahash::RandomState>>);
 #[derive(Debug, Clone)]
 pub struct ConnRequest {
     uri: Uri,
-    extra: Box<HashMemo<ConnExtra, ahash::RandomState>>,
+    extra: Arc<HashMemo<ConnExtra>>,
 }
 
 impl ConnRequest {
@@ -358,7 +358,7 @@ where
         }
 
         let conn_req = ConnRequest {
-            extra: Box::new(HashMemo::with_hasher(
+            extra: Arc::new(HashMemo::with_hasher(
                 ConnExtra {
                     scheme: uri.scheme().cloned(),
                     authority: uri.authority().cloned(),
