@@ -13,7 +13,6 @@ use super::{Http1Transaction, Wants};
 use crate::core::{
     body::{DecodedLength, Incoming as IncomingBody},
     client::dispatch::{self, TrySendError},
-    common::task,
     error::BoxError,
     proto::{BodyLength, Conn, Dispatched, MessageHead, RequestHead},
     rt::{Read, Write},
@@ -155,7 +154,9 @@ where
 
         trace!("poll_loop yielding (self = {:p})", self);
 
-        task::yield_now(cx).map(|never| match never {})
+        // Now we yield to allow other tasks to run.
+        cx.waker().wake_by_ref();
+        Poll::Pending
     }
 
     fn poll_read(&mut self, cx: &mut Context<'_>) -> Poll<crate::core::Result<()>> {
