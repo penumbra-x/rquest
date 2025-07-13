@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use wreq::{
     Client,
-    tls::{AlpsProtocol, TlsInfo, TlsOptions, TlsVersion},
+    tls::{AlpsProtocol, CertStore, TlsInfo, TlsOptions, TlsVersion},
 };
 
 macro_rules! join {
@@ -186,7 +186,7 @@ async fn test_aes_hw_override() -> wreq::Result<()> {
 }
 
 #[tokio::test]
-async fn test_ssl_pinning() {
+async fn test_tls_self_signed_cert() {
     let client = wreq::Client::builder()
         .cert_verification(false)
         .connect_timeout(Duration::from_secs(360))
@@ -206,8 +206,13 @@ async fn test_ssl_pinning() {
         .and_then(|info| info.peer_certificate())
         .unwrap();
 
+    let self_signed_cert_store = CertStore::builder()
+        .add_der_cert(peer_cert_der)
+        .build()
+        .unwrap();
+
     let client = wreq::Client::builder()
-        .ssl_pinning([peer_cert_der])
+        .cert_store(self_signed_cert_store)
         .build()
         .unwrap();
 
