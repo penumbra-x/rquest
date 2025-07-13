@@ -15,24 +15,24 @@ use serde::Serialize;
     feature = "brotli",
     feature = "deflate",
 ))]
-use super::middleware::{config::RequestAcceptEncoding, decoder::AcceptEncoding};
+use super::layer::{config::RequestAcceptEncoding, decoder::AcceptEncoding};
 #[cfg(feature = "multipart")]
 use super::multipart;
 use super::{
     body::Body,
-    client::{Client, Pending},
-    middleware::config::{
+    http::{Client, Pending},
+    layer::config::{
         RequestReadTimeout, RequestRedirectPolicy, RequestSkipDefaultHeaders, RequestTotalTimeout,
     },
     response::Response,
 };
 use crate::{
-    EmulationProviderFactory, Error, Method, OriginalHeaders, Proxy, Url,
+    EmulationFactory, Error, Method, OriginalHeaders, Proxy, Url,
     core::{
-        client::{config::TransportConfig, connect::TcpConnectOptions},
+        client::{connect::TcpConnectOptions, options::TransportOptions},
         ext::{
             RequestConfig, RequestEnforcedHttpVersion, RequestOriginalHeaders, RequestProxyMatcher,
-            RequestTcpConnectOptions, RequestTransportConfig,
+            RequestTcpConnectOptions, RequestTransportOptions,
         },
     },
     header::{CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue},
@@ -185,9 +185,10 @@ impl Request {
         RequestConfig::<RequestSkipDefaultHeaders>::get_mut(&mut self.extensions)
     }
 
+    // Get a mutable reference to the transport options.
     #[inline]
-    pub(crate) fn transport_config_mut(&mut self) -> &mut Option<TransportConfig> {
-        RequestConfig::<RequestTransportConfig>::get_mut(&mut self.extensions)
+    pub(crate) fn transport_options_mut(&mut self) -> &mut Option<TransportOptions> {
+        RequestConfig::<RequestTransportOptions>::get_mut(&mut self.extensions)
     }
 
     /// Get the extensions.
@@ -645,27 +646,31 @@ impl RequestBuilder {
 
     /// Configures the request builder to emulation the specified HTTP context.
     ///
-    /// This method sets the necessary headers, HTTP/1 and HTTP/2 configurations, and TLS config
-    /// to use the specified HTTP context. It allows the client to mimic the behavior of different
-    /// versions or setups, which can be useful for testing or ensuring compatibility with various
-    /// environments.
+    /// This method sets the necessary headers, HTTP/1 and HTTP/2 options configurations, and  TLS
+    /// options config to use the specified HTTP context. It allows the client to mimic the
+    /// behavior of different versions or setups, which can be useful for testing or ensuring
+    /// compatibility with various environments.
     pub fn emulation<P>(mut self, factory: P) -> RequestBuilder
     where
-        P: EmulationProviderFactory,
+        P: EmulationFactory,
     {
         if let Ok(ref mut req) = self.request {
-            let transport_config = req.transport_config_mut().get_or_insert_default();
             let emulation = factory.emulation();
+            let (transport_opts, default_headers, original_headers) = emulation.into_parts();
 
-            transport_config.set_http1_config(emulation.http1_config);
-            transport_config.set_http2_config(emulation.http2_config);
-            transport_config.set_tls_config(emulation.tls_config);
-
-            if let Some(default_headers) = emulation.default_headers {
+            if let Some((tls_opts, http1_opts, http2_opts)) =
+                transport_opts.map(TransportOptions::into_parts)
+            {
+                req.transport_options_mut()
+                    .get_or_insert_default()
+                    .http1_options(http1_opts)
+                    .http2_options(http2_opts)
+                    .tls_options(tls_opts);
+            }
+            if let Some(default_headers) = default_headers {
                 self = self.headers(default_headers);
             }
-
-            if let Some(original_headers) = emulation.original_headers {
+            if let Some(original_headers) = original_headers {
                 self = self.original_headers(original_headers);
             }
         }

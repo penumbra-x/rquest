@@ -1,12 +1,12 @@
 use http::{HeaderMap, HeaderValue, header};
 use wreq::{
-    Client, EmulationProvider, OriginalHeaders,
-    http1::Http1Config,
+    Client, Emulation, OriginalHeaders,
+    http1::Http1Options,
     http2::{
-        Http2Config, Priorities, Priority, PseudoId, PseudoOrder, SettingId, SettingsOrder,
+        Http2Options, Priorities, Priority, PseudoId, PseudoOrder, SettingId, SettingsOrder,
         StreamDependency, StreamId,
     },
-    tls::{AlpnProtocol, CertificateCompressionAlgorithm, ExtensionType, TlsConfig, TlsVersion},
+    tls::{AlpnProtocol, CertificateCompressionAlgorithm, ExtensionType, TlsOptions, TlsVersion},
 };
 
 macro_rules! join {
@@ -21,8 +21,8 @@ async fn main() -> wreq::Result<()> {
         .with_max_level(tracing::Level::TRACE)
         .init();
 
-    // TLS config
-    let tls = TlsConfig::builder()
+    //  TLS options config
+    let tls = TlsOptions::builder()
         .curves_list(join!(
             ":",
             "X25519",
@@ -78,7 +78,7 @@ async fn main() -> wreq::Result<()> {
             CertificateCompressionAlgorithm::BROTLI,
             CertificateCompressionAlgorithm::ZSTD,
         ])
-        .alpn_protos(&[AlpnProtocol::HTTP2, AlpnProtocol::HTTP1])
+        .alpn_protocols(&[AlpnProtocol::HTTP2, AlpnProtocol::HTTP1])
         .record_size_limit(0x4001)
         .pre_shared_key(true)
         .enable_ech_grease(true)
@@ -107,13 +107,13 @@ async fn main() -> wreq::Result<()> {
         ])
         .build();
 
-    // HTTP/1 config
-    let http1 = Http1Config::builder()
+    //  HTTP/1 options config
+    let http1 = Http1Options::builder()
         .allow_obsolete_multiline_headers_in_responses(true)
         .max_headers(100)
         .build();
 
-    // HTTP/2 config
+    // HTTP/2 options config
     let http2 = {
         // HTTP/2 headers frame pseudo-header order
         let headers_pseudo_order = PseudoOrder::builder()
@@ -169,7 +169,7 @@ async fn main() -> wreq::Result<()> {
             ])
             .build();
 
-        Http2Config::builder()
+        Http2Options::builder()
             .initial_stream_id(15)
             .header_table_size(65536)
             .initial_stream_window_size(131072)
@@ -198,7 +198,6 @@ async fn main() -> wreq::Result<()> {
         headers
     };
 
-    // Original headers
     // The headers keep the original case and order
     let original_headers = {
         let mut original_headers = OriginalHeaders::new();
@@ -210,13 +209,12 @@ async fn main() -> wreq::Result<()> {
         original_headers
     };
 
-    // Create emulation provider with all configurations
     // This provider encapsulates TLS, HTTP/1, HTTP/2, default headers, and original headers
-    let emulation = EmulationProvider::builder()
-        .tls_config(tls)
-        .http1_config(http1)
-        .http2_config(http2)
-        .default_headers(headers)
+    let emulation = Emulation::builder()
+        .tls_options(tls)
+        .http1_options(http1)
+        .http2_options(http2)
+        .headers(headers)
         .original_headers(original_headers)
         .build();
 

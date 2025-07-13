@@ -1,14 +1,12 @@
-//! TLS configuration
+//!  TLS options configuration
 //!
 //! By default, a `Client` will make use of BoringSSL for TLS.
 //!
 //! - Various parts of TLS can also be configured or even disabled on the `ClientBuilder`.
 
-#[macro_use]
-mod macros;
-mod config;
 mod conn;
 mod keylog;
+mod options;
 mod types;
 mod x509;
 
@@ -16,8 +14,8 @@ pub(crate) use self::conn::{
     EstablishedConn, HttpsConnector, MaybeHttpsStream, TlsConnector, TlsConnectorBuilder,
 };
 pub use self::{
-    config::TlsConfig,
     keylog::KeyLogPolicy,
+    options::TlsOptions,
     types::{
         AlpnProtocol, AlpsProtocol, CertificateCompressionAlgorithm, ExtensionType, TlsVersion,
     },

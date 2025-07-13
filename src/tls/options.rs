@@ -6,20 +6,22 @@ use super::{
     AlpnProtocol, AlpsProtocol, CertificateCompressionAlgorithm, ExtensionType, TlsVersion,
 };
 
-/// Builder for `[`TlsConfig`]`.
+/// Builder for `[`TlsOptions`]`.
 #[must_use]
 #[derive(Debug, Clone)]
-pub struct TlsConfigBuilder {
-    config: TlsConfig,
+pub struct TlsOptionsBuilder {
+    config: TlsOptions,
 }
 
-/// Configuration settings for TLS connections.
+/// TLS connection configuration options.
 ///
-/// This struct defines various parameters to fine-tune the behavior of a TLS connection,
+/// This struct provides fine-grained control over TLS connection behavior,
+/// allowing customization of protocol versions, cipher suites, extensions,
+/// and various security features.
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct TlsConfig {
-    pub(crate) alpn_protos: Option<Bytes>,
-    pub(crate) alps_protos: Option<Bytes>,
+pub struct TlsOptions {
+    pub(crate) alpn_protocols: Option<Bytes>,
+    pub(crate) alps_protocols: Option<Bytes>,
     pub(crate) alps_use_new_codepoint: bool,
     pub(crate) session_ticket: bool,
     pub(crate) min_tls_version: Option<TlsVersion>,
@@ -47,27 +49,27 @@ pub struct TlsConfig {
     pub(crate) random_aes_hw_override: bool,
 }
 
-impl TlsConfigBuilder {
-    /// Builds the `TlsConfig` from the builder.
-    pub fn build(self) -> TlsConfig {
+impl TlsOptionsBuilder {
+    /// Builds the `TlsOptions` from the builder.
+    pub fn build(self) -> TlsOptions {
         self.config
     }
 
     /// Sets the ALPN protocols to use.
-    pub fn alpn_protos<'a, I>(mut self, alpn: I) -> Self
+    pub fn alpn_protocols<'a, I>(mut self, alpn: I) -> Self
     where
         I: IntoIterator<Item = &'a AlpnProtocol>,
     {
-        self.config.alpn_protos = Some(AlpnProtocol::encode_sequence(alpn));
+        self.config.alpn_protocols = Some(AlpnProtocol::encode_sequence(alpn));
         self
     }
 
     /// Sets the ALPS protocols to use.
-    pub fn alps_protos<'a, I>(mut self, alps: I) -> Self
+    pub fn alps_protocols<'a, I>(mut self, alps: I) -> Self
     where
         I: IntoIterator<Item = &'a AlpsProtocol>,
     {
-        self.config.alps_protos = Some(AlpsProtocol::encode_sequence(alps));
+        self.config.alps_protocols = Some(AlpsProtocol::encode_sequence(alps));
         self
     }
 
@@ -258,23 +260,23 @@ impl TlsConfigBuilder {
     }
 }
 
-impl TlsConfig {
-    /// Creates a new `TlsConfigBuilder` instance.
-    pub fn builder() -> TlsConfigBuilder {
-        TlsConfigBuilder {
-            config: TlsConfig::default(),
+impl TlsOptions {
+    /// Creates a new `TlsOptionsBuilder` instance.
+    pub fn builder() -> TlsOptionsBuilder {
+        TlsOptionsBuilder {
+            config: TlsOptions::default(),
         }
     }
 }
 
-impl Default for TlsConfig {
+impl Default for TlsOptions {
     fn default() -> Self {
-        TlsConfig {
-            alpn_protos: Some(AlpnProtocol::encode_sequence(&[
+        TlsOptions {
+            alpn_protocols: Some(AlpnProtocol::encode_sequence(&[
                 AlpnProtocol::HTTP2,
                 AlpnProtocol::HTTP1,
             ])),
-            alps_protos: None,
+            alps_protocols: None,
             alps_use_new_codepoint: false,
             session_ticket: true,
             min_tls_version: None,
@@ -300,5 +302,19 @@ impl Default for TlsConfig {
             prefer_chacha20: None,
             random_aes_hw_override: false,
         }
+    }
+}
+
+impl<'a> From<TlsOptions> for Cow<'a, TlsOptions> {
+    #[inline]
+    fn from(opts: TlsOptions) -> Self {
+        Cow::Owned(opts)
+    }
+}
+
+impl<'a> From<&'a TlsOptions> for Cow<'a, TlsOptions> {
+    #[inline]
+    fn from(opts: &'a TlsOptions) -> Self {
+        Cow::Borrowed(opts)
     }
 }
