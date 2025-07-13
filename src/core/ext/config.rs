@@ -104,7 +104,7 @@ where
     /// Internally fetches `RequestConfig<T>` and returns a reference to its inner value, if set.
     #[inline]
     pub(crate) fn get(ext: &Extensions) -> Option<&T::Value> {
-        ext.get::<RequestConfig<T>>().and_then(|v| v.0.as_ref())
+        ext.get::<RequestConfig<T>>()?.0.as_ref()
     }
 
     /// Returns a mutable reference to the inner value in `Extensions`, inserting a default if
@@ -114,8 +114,9 @@ where
     /// `Option<T::Value>`.
     #[inline]
     pub(crate) fn get_mut(ext: &mut Extensions) -> &mut Option<T::Value> {
-        let cfg = ext.get_or_insert_default::<RequestConfig<T>>();
-        &mut cfg.0
+        &mut ext
+            .get_or_insert_with::<RequestConfig<T>, _>(Default::default)
+            .0
     }
 
     /// Removes and returns the stored value from the given `Extensions`, if present.
@@ -123,7 +124,7 @@ where
     /// This consumes the `RequestConfig<T>` entry and extracts its inner value.
     #[inline]
     pub(crate) fn remove(ext: &mut Extensions) -> Option<T::Value> {
-        ext.remove::<RequestConfig<T>>().and_then(|v| v.0)
+        ext.remove::<RequestConfig<T>>()?.0
     }
 }
 

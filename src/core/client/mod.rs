@@ -1,6 +1,6 @@
 //! HTTP Client
 //!
-//! crate::core: provides HTTP over a single connection. See the [`conn`] module.
+//! Provides HTTP over a single connection. See the [`conn`] module.
 
 pub mod conn;
 pub(super) mod dispatch;
@@ -332,13 +332,12 @@ where
         };
 
         // Extract config extensions
-        let (transport_options, version, proxy_matcher, tcp_options) =
+        let (tcp_options, transport_options, version, proxy_matcher) =
             extract_request_configs(req.extensions_mut());
 
         let mut tls_options = None;
         let mut this = self.clone();
 
-        // Parse to specific ALPN protocol
         let alpn_protocol = match version {
             Some(Version::HTTP_11 | Version::HTTP_10 | Version::HTTP_09) => {
                 Some(AlpnProtocol::HTTP1)
@@ -347,7 +346,6 @@ where
             _ => None,
         };
 
-        // Apply transport options configuration
         if let Some(opts) = transport_options {
             let (tls, http1, http2) = opts.into_parts();
             tls_options = tls;
@@ -1038,16 +1036,23 @@ fn authority_form(uri: &mut Uri) {
 fn extract_request_configs(
     extensions: &mut http::Extensions,
 ) -> (
+    Option<TcpConnectOptions>,
     Option<TransportOptions>,
     Option<Version>,
     Option<ProxyMacher>,
-    Option<TcpConnectOptions>,
 ) {
-    let transport_config = RequestConfig::<RequestTransportOptions>::remove(extensions);
-    let version = RequestConfig::<RequestEnforcedHttpVersion>::remove(extensions);
-    let proxy = RequestConfig::<RequestProxyMatcher>::remove(extensions);
-    let tcp = RequestConfig::<RequestTcpConnectOptions>::remove(extensions);
-    (transport_config, version, proxy, tcp)
+    macro_rules! take {
+        ($type:ty) => {
+            RequestConfig::<$type>::remove(extensions)
+        };
+    }
+
+    (
+        take!(RequestTcpConnectOptions),
+        take!(RequestTransportOptions),
+        take!(RequestEnforcedHttpVersion),
+        take!(RequestProxyMatcher),
+    )
 }
 
 fn normalize_uri<B>(req: &mut Request<B>, is_http_connect: bool) -> Result<Uri, Error> {
