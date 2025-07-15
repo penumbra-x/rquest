@@ -20,17 +20,6 @@ targets = ["x86_64-unknown-linux-gnu"]
 [features]
 default = ["webpki-roots", "charset", "system-proxy"]
 
-full = [
-    "json",
-    "stream",
-    "cookies",
-    "socks",
-    "gzip",
-    "brotli",
-    "zstd",
-    "deflate",
-]
-
 websocket = ["dep:tokio-tungstenite"]
 
 charset = ["dep:encoding_rs", "dep:mime"]
@@ -71,7 +60,6 @@ serde_urlencoded = "0.7.1"
 tower = { version = "0.5.2", default-features = false, features = ["timeout", "util", "retry"] }
 sync_wrapper = { version = "1.0", features = ["futures"] }
 
-# core
 bytes = "1.2"
 http = "1"
 http-body = "1"
@@ -90,7 +78,6 @@ ipnet = "2.11.0"
 schnellru = { version = "0.2.4", default-features = false }
 ahash = { version = "0.8.11", default-features = false }
 
-## boring-tls
 boring2 = { version = "5.0.0-alpha.4", features = ["pq-experimental"] }
 tokio-boring2 = { version = "5.0.0-alpha.4", features = ["pq-experimental"] }
 brotli = "8.0.1"
@@ -109,7 +96,7 @@ mime_guess = { version = "2.0", default-features = false, optional = true }
 encoding_rs = { version = "0.8", optional = true }
 mime = { version = "0.3.17", optional = true }
 
-# root certs
+## root certs
 webpki-root-certs = { version = "1.0.0", optional = true }
 
 ## cookies
@@ -236,12 +223,12 @@ path = "examples/http1_recv_case_sensitive_headers.rs"
 [[example]]
 name = "emulation_firefox"
 path = "examples/emulation_firefox.rs"
-required-features = ["full", "tracing"]
+required-features = ["gzip", "brotli", "zstd", "deflate", "tracing"]
 
 [[example]]
 name = "emulation_twitter"
 path = "examples/emulation_twitter.rs"
-required-features = ["full", "tracing"]
+required-features = ["gzip", "brotli", "zstd", "deflate", "tracing"]
 
 [[example]]
 name = "cert_store"
@@ -251,37 +238,37 @@ required-features = ["webpki-roots", "tracing"]
 [[example]]
 name = "request_with_redirect"
 path = "examples/request_with_redirect.rs"
-required-features = ["full", "tracing"]
+required-features = ["tracing"]
 
 [[example]]
 name = "request_with_version"
 path = "examples/request_with_version.rs"
-required-features = ["full", "tracing"]
+required-features = ["tracing"]
 
 [[example]]
 name = "request_with_proxy"
 path = "examples/request_with_proxy.rs"
-required-features = ["full", "tracing"]
+required-features = ["socks", "tracing"]
 
 [[example]]
 name = "request_with_emulation"
 path = "examples/request_with_emulation.rs"
-required-features = ["full", "tracing"]
+required-features = ["gzip", "brotli", "zstd", "deflate", "tracing"]
 
 [[example]]
 name = "connect_via_lower_priority_tokio_runtime"
 path = "examples/connect_via_lower_priority_tokio_runtime.rs"
-required-features = ["full", "tracing"]
+required-features = ["tracing"]
 
 [[example]]
 name = "request_with_local_address"
 path = "examples/request_with_local_address.rs"
-required-features = ["full", "tracing"]
+required-features = ["tracing"]
 
 [[example]]
 name = "request_with_interface"
 path = "examples/request_with_interface.rs"
-required-features = ["full", "tracing"]
+required-features = ["tracing"]
 
 [[example]]
 name = "http1_websocket"
