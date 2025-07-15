@@ -70,28 +70,28 @@ impl WebSocketRequestBuilder {
         self
     }
 
+    /// Forces the WebSocket connection to use HTTP/2 protocol.
+    ///
+    /// This method configures the WebSocket connection to use HTTP/2's Extended
+    /// CONNECT Protocol (RFC 8441) for the handshake instead of the traditional
+    /// HTTP/1.1 upgrade mechanism.
+    ///
+    /// # Behavior
+    ///
+    /// - Uses `CONNECT` method with `:protocol: websocket` pseudo-header
+    /// - Requires server support for HTTP/2 WebSocket connections
+    /// - Will fail if server doesn't support HTTP/2 WebSocket upgrade
+    #[inline]
+    pub fn force_http2(mut self) -> Self {
+        self.inner = self.inner.version(Version::HTTP_2);
+        self
+    }
+
     /// Sets the websocket subprotocols to request.
     ///
     /// This method allows you to specify the subprotocols that the websocket client
     /// should request during the handshake. Subprotocols are used to define the type
     /// of communication expected over the websocket connection.
-    ///
-    /// # Arguments
-    ///
-    /// * `protocols` - A list of subprotocols, which can be converted into a `Cow<'static,
-    ///   [String]>`.
-    ///
-    /// # Returns
-    ///
-    /// * `Self` - The modified instance with the updated subprotocols.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let request = WebSocketRequestBuilder::new(builder)
-    ///     .protocols(["protocol1", "protocol2"])
-    ///     .build();
-    /// ```
     #[inline]
     pub fn protocols<P>(mut self, protocols: P) -> Self
     where
@@ -223,23 +223,6 @@ impl WebSocketRequestBuilder {
     #[inline]
     pub fn query<T: Serialize + ?Sized>(mut self, query: &T) -> Self {
         self.inner = self.inner.query(query);
-        self
-    }
-
-    /// Forces the WebSocket connection to use HTTP/2 protocol.
-    ///
-    /// This method configures the WebSocket connection to use HTTP/2's Extended
-    /// CONNECT Protocol (RFC 8441) for the handshake instead of the traditional
-    /// HTTP/1.1 upgrade mechanism.
-    ///
-    /// # Behavior
-    ///
-    /// - Uses `CONNECT` method with `:protocol: websocket` pseudo-header
-    /// - Requires server support for HTTP/2 WebSocket connections
-    /// - Will fail if server doesn't support HTTP/2 WebSocket upgrade
-    #[inline]
-    pub fn force_http2(mut self) -> Self {
-        self.inner = self.inner.version(Version::HTTP_2);
         self
     }
 
