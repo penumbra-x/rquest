@@ -18,7 +18,7 @@ pub struct TimeoutOptions {
 }
 
 impl TimeoutOptions {
-    /// Sets the total timeout for the options.
+    /// Sets the read timeout for the options.
     #[inline]
     pub fn read_timeout(&mut self, read_timeout: Duration) -> &mut Self {
         self.read_timeout = Some(read_timeout);
