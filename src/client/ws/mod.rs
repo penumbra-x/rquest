@@ -326,8 +326,7 @@ impl WebSocketRequestBuilder {
             .map_err(|_| Error::url_bad_scheme(url.clone()))?;
 
         // Get the version of the request
-        // If the version is not set, use the default version
-        let version = request.version().cloned().unwrap_or(Version::HTTP_11);
+        let version = request.version().unwrap_or(Version::HTTP_11);
 
         // Set the headers for the websocket handshake
         let headers = request.headers_mut();

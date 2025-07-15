@@ -29,11 +29,8 @@ use super::{
 use crate::{
     EmulationFactory, Error, Method, OriginalHeaders, Proxy, Url,
     core::{
-        client::options::TransportOptions,
-        ext::{
-            RequestConfig, RequestConfigValue, RequestEnforcedHttpVersion, RequestOriginalHeaders,
-            RequestProxyMatcher, RequestTcpConnectOptions, RequestTransportOptions,
-        },
+        client::options::{PerRequestOptions, TransportOptions},
+        ext::{RequestConfig, RequestConfigValue, RequestOriginalHeaders, RequestScopedOptions},
     },
     header::{CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue},
     redirect,
@@ -120,32 +117,44 @@ impl Request {
 
     /// Get the http version.
     #[inline]
-    pub fn version(&self) -> Option<&Version> {
-        RequestConfig::<RequestEnforcedHttpVersion>::get(&self.extensions)
+    pub fn version(&self) -> Option<Version> {
+        self.config::<RequestScopedOptions>()
+            .and_then(PerRequestOptions::enforced_version)
     }
 
     /// Get a mutable reference to the http version.
     #[inline]
     pub fn version_mut(&mut self) -> &mut Option<Version> {
-        self.config_mut::<RequestEnforcedHttpVersion>()
+        self.config_mut_or_default::<RequestScopedOptions>()
+            .enforced_version_mut()
+    }
+
+    /// Get a  reference to the request config value.
+    #[inline]
+    pub(crate) fn config<T>(&self) -> Option<&T::Value>
+    where
+        T: RequestConfigValue,
+    {
+        RequestConfig::<T>::get(&self.extensions)
     }
 
     /// Get a mutable reference to the request config value.
     #[inline]
-    pub(crate) fn config_mut<T: RequestConfigValue>(&mut self) -> &mut Option<T::Value> {
+    pub(crate) fn config_mut<T>(&mut self) -> &mut Option<T::Value>
+    where
+        T: RequestConfigValue,
+    {
         RequestConfig::<T>::get_mut(&mut self.extensions)
     }
 
-    /// Get the extensions.
+    /// Get a default mutable reference to the request config value.
     #[inline]
-    pub(crate) fn extensions(&self) -> &Extensions {
-        &self.extensions
-    }
-
-    /// Get a mutable reference to the extensions.
-    #[inline]
-    pub(crate) fn extensions_mut(&mut self) -> &mut Extensions {
-        &mut self.extensions
+    pub(crate) fn config_mut_or_default<T>(&mut self) -> &mut T::Value
+    where
+        T: RequestConfigValue,
+        T::Value: Default,
+    {
+        RequestConfig::<T>::get_mut(&mut self.extensions).get_or_insert_default()
     }
 
     /// Attempt to clone the request.
@@ -158,8 +167,8 @@ impl Request {
         };
         let mut req = Request::new(self.method().clone(), self.url().clone());
         *req.headers_mut() = self.headers().clone();
-        *req.version_mut() = self.version().cloned();
-        *req.extensions_mut() = self.extensions().clone();
+        *req.version_mut() = self.version();
+        req.extensions = self.extensions.clone();
         req.body = body;
         Some(req)
     }
@@ -478,8 +487,7 @@ impl RequestBuilder {
     #[cfg(feature = "gzip")]
     pub fn gzip(mut self, gzip: bool) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
-            req.config_mut::<RequestAcceptEncoding>()
-                .get_or_insert_default()
+            req.config_mut_or_default::<RequestAcceptEncoding>()
                 .gzip(gzip);
         }
         self
@@ -489,8 +497,7 @@ impl RequestBuilder {
     #[cfg(feature = "brotli")]
     pub fn brotli(mut self, brotli: bool) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
-            req.config_mut::<RequestAcceptEncoding>()
-                .get_or_insert_default()
+            req.config_mut_or_default::<RequestAcceptEncoding>()
                 .brotli(brotli);
         }
         self
@@ -500,8 +507,7 @@ impl RequestBuilder {
     #[cfg(feature = "deflate")]
     pub fn deflate(mut self, deflate: bool) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
-            req.config_mut::<RequestAcceptEncoding>()
-                .get_or_insert_default()
+            req.config_mut_or_default::<RequestAcceptEncoding>()
                 .deflate(deflate);
         }
         self
@@ -511,8 +517,7 @@ impl RequestBuilder {
     #[cfg(feature = "zstd")]
     pub fn zstd(mut self, zstd: bool) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
-            req.config_mut::<RequestAcceptEncoding>()
-                .get_or_insert_default()
+            req.config_mut_or_default::<RequestAcceptEncoding>()
                 .zstd(zstd);
         }
         self
@@ -539,7 +544,8 @@ impl RequestBuilder {
     /// ```
     pub fn proxy(mut self, proxy: Proxy) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
-            *req.config_mut::<RequestProxyMatcher>() = Some(proxy.into_matcher());
+            *req.config_mut_or_default::<RequestScopedOptions>()
+                .proxy_matcher_mut() = Some(proxy.into_matcher());
         }
         self
     }
@@ -550,7 +556,8 @@ impl RequestBuilder {
         V: Into<Option<IpAddr>>,
     {
         if let Ok(ref mut req) = self.request {
-            req.config_mut::<RequestTcpConnectOptions>()
+            req.config_mut_or_default::<RequestScopedOptions>()
+                .tcp_connect_opts_mut()
                 .get_or_insert_default()
                 .set_local_address(local_address.into());
         }
@@ -564,7 +571,8 @@ impl RequestBuilder {
         V6: Into<Option<Ipv6Addr>>,
     {
         if let Ok(ref mut req) = self.request {
-            req.config_mut::<RequestTcpConnectOptions>()
+            req.config_mut_or_default::<RequestScopedOptions>()
+                .tcp_connect_opts_mut()
                 .get_or_insert_default()
                 .set_local_addresses(ipv4.into(), ipv6.into());
         }
@@ -589,7 +597,8 @@ impl RequestBuilder {
         I: Into<std::borrow::Cow<'static, str>>,
     {
         if let Ok(ref mut req) = self.request {
-            req.config_mut::<RequestTcpConnectOptions>()
+            req.config_mut_or_default::<RequestScopedOptions>()
+                .tcp_connect_opts_mut()
                 .get_or_insert_default()
                 .set_interface(interface.into());
         }
@@ -613,7 +622,8 @@ impl RequestBuilder {
             if let Some((tls_opts, http1_opts, http2_opts)) =
                 transport_opts.map(TransportOptions::into_parts)
             {
-                req.config_mut::<RequestTransportOptions>()
+                req.config_mut_or_default::<RequestScopedOptions>()
+                    .transport_opts_mut()
                     .get_or_insert_default()
                     .http1_options(http1_opts)
                     .http2_options(http2_opts)
@@ -863,8 +873,6 @@ impl TryFrom<Request> for (Url, HttpRequest<Body>) {
     type Error = crate::Error;
 
     fn try_from(req: Request) -> crate::Result<Self> {
-        let version = req.version().cloned();
-
         let Request {
             method,
             url,
@@ -876,13 +884,7 @@ impl TryFrom<Request> for (Url, HttpRequest<Body>) {
 
         match Uri::try_from(url.as_str()) {
             Ok(uri) => {
-                let mut builder = HttpRequest::builder();
-
-                if let Some(version) = version {
-                    builder = builder.version(version);
-                }
-
-                let mut req = builder
+                let mut req = HttpRequest::builder()
                     .method(method)
                     .uri(uri)
                     .body(body.unwrap_or_else(Body::empty))
