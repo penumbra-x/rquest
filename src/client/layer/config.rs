@@ -7,7 +7,7 @@ use crate::{core::ext::RequestConfigValue, redirect::Policy};
 //
 // To add a new config:
 //
-// 1. create a new struct for the config key like `RequestTimeout`.
+// 1. create a new struct for the config key like `RequestTimeoutOptions`.
 // 2. implement `RequestConfigValue` for the struct, the `Value` is the config value's type.
 //
 // ================================
