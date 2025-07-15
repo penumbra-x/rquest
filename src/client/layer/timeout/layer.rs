@@ -9,8 +9,8 @@ use tower::{Layer, Service};
 use super::future::{ResponseBodyTimeoutFuture, ResponseFuture};
 use crate::{
     client::layer::{
-        config::{RequestReadTimeout, RequestTotalTimeout},
-        timeout::TimeoutBody,
+        config::RequestTimeoutOptions,
+        timeout::{TimeoutBody, TimeoutOptions},
     },
     core::ext::RequestConfig,
     error::BoxError,
@@ -20,16 +20,17 @@ use crate::{
 // This layer allows you to set a total timeout and a read timeout for requests.
 #[derive(Clone)]
 pub struct TimeoutLayer {
-    total_timeout: RequestConfig<RequestTotalTimeout>,
-    read_timeout: RequestConfig<RequestReadTimeout>,
+    timeout: RequestConfig<RequestTimeoutOptions>,
 }
 
 impl TimeoutLayer {
     /// Create a timeout from a duration
-    pub const fn new(total_timeout: Option<Duration>, read_timeout: Option<Duration>) -> Self {
+    pub const fn new(total: Option<Duration>, read: Option<Duration>) -> Self {
         TimeoutLayer {
-            total_timeout: RequestConfig::new(total_timeout),
-            read_timeout: RequestConfig::new(read_timeout),
+            timeout: RequestConfig::new(Some(TimeoutOptions {
+                total_timeout: total,
+                read_timeout: read,
+            })),
         }
     }
 }
@@ -40,8 +41,7 @@ impl<S> Layer<S> for TimeoutLayer {
     fn layer(&self, service: S) -> Self::Service {
         Timeout {
             inner: service,
-            total_timeout: self.total_timeout,
-            read_timeout: self.read_timeout,
+            timeout: self.timeout.clone(),
         }
     }
 }
@@ -51,8 +51,7 @@ impl<S> Layer<S> for TimeoutLayer {
 #[derive(Clone)]
 pub struct Timeout<T> {
     inner: T,
-    total_timeout: RequestConfig<RequestTotalTimeout>,
-    read_timeout: RequestConfig<RequestReadTimeout>,
+    timeout: RequestConfig<RequestTimeoutOptions>,
 }
 
 impl<ReqBody, ResBody, S> Service<Request<ReqBody>> for Timeout<S>
@@ -69,17 +68,9 @@ where
     }
 
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
-        let total_timeout = self
-            .total_timeout
-            .fetch(req.extensions())
-            .copied()
-            .map(tokio::time::sleep);
-
-        let read_timeout = self
-            .read_timeout
-            .fetch(req.extensions())
-            .copied()
-            .map(tokio::time::sleep);
+        let (total_timeout, read_timeout) = resolve_timeout_config(&self.timeout, req.extensions());
+        let total_timeout = total_timeout.map(tokio::time::sleep);
+        let read_timeout = read_timeout.map(tokio::time::sleep);
 
         let uri = req.uri().clone();
         let response = self.inner.call(req);
@@ -96,16 +87,17 @@ where
 // This layer allows you to set a total timeout and a read timeout for the response body.
 #[derive(Clone)]
 pub struct ResponseBodyTimeoutLayer {
-    total_timeout: RequestConfig<RequestTotalTimeout>,
-    read_timeout: RequestConfig<RequestReadTimeout>,
+    timeout: RequestConfig<RequestTimeoutOptions>,
 }
 
 impl ResponseBodyTimeoutLayer {
     /// Creates a new [`ResponseBodyTimeoutLayer`].
-    pub const fn new(total_timeout: Option<Duration>, read_timeout: Option<Duration>) -> Self {
+    pub const fn new(total: Option<Duration>, read: Option<Duration>) -> Self {
         Self {
-            total_timeout: RequestConfig::new(total_timeout),
-            read_timeout: RequestConfig::new(read_timeout),
+            timeout: RequestConfig::new(Some(TimeoutOptions {
+                total_timeout: total,
+                read_timeout: read,
+            })),
         }
     }
 }
@@ -116,8 +108,7 @@ impl<S> Layer<S> for ResponseBodyTimeoutLayer {
     fn layer(&self, inner: S) -> Self::Service {
         ResponseBodyTimeout {
             inner,
-            total_timeout: self.total_timeout,
-            read_timeout: self.read_timeout,
+            timeout: self.timeout.clone(),
         }
     }
 }
@@ -127,8 +118,7 @@ impl<S> Layer<S> for ResponseBodyTimeoutLayer {
 #[derive(Clone)]
 pub struct ResponseBodyTimeout<S> {
     inner: S,
-    total_timeout: RequestConfig<RequestTotalTimeout>,
-    read_timeout: RequestConfig<RequestReadTimeout>,
+    timeout: RequestConfig<RequestTimeoutOptions>,
 }
 
 impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for ResponseBodyTimeout<S>
@@ -145,12 +135,29 @@ where
     }
 
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
-        let total_timeout = self.total_timeout.fetch(req.extensions()).copied();
-        let read_timeout = self.read_timeout.fetch(req.extensions()).copied();
+        let (total_timeout, read_timeout) = resolve_timeout_config(&self.timeout, req.extensions());
         ResponseBodyTimeoutFuture {
             inner: self.inner.call(req),
             total_timeout,
             read_timeout,
         }
+    }
+}
+
+#[inline]
+fn resolve_timeout_config(
+    layer_opts: &RequestConfig<RequestTimeoutOptions>,
+    extensions: &http::Extensions,
+) -> (Option<Duration>, Option<Duration>) {
+    let request_opts = layer_opts.fetch(extensions);
+
+    match (layer_opts.as_ref(), request_opts) {
+        (Some(layer_opts), Some(request_opts)) => (
+            request_opts.total_timeout.or(layer_opts.total_timeout),
+            request_opts.read_timeout.or(layer_opts.read_timeout),
+        ),
+        (Some(layer_opts), None) => (layer_opts.total_timeout, layer_opts.read_timeout),
+        (None, Some(request_opts)) => (request_opts.total_timeout, request_opts.read_timeout),
+        (None, None) => (None, None),
     }
 }
