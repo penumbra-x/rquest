@@ -90,20 +90,20 @@ impl ConnectorBuilder {
     /// If a domain resolves to multiple IP addresses, the timeout will be
     /// evenly divided across them.
     #[inline]
-    pub(crate) fn connect_timeout(mut self, timeout: Option<Duration>) -> ConnectorBuilder {
+    pub(crate) fn timeout(mut self, timeout: Option<Duration>) -> ConnectorBuilder {
         self.timeout = timeout;
         self
     }
 
     /// Set connecting verbose mode.
-    #[inline(always)]
+    #[inline]
     pub(crate) fn verbose(mut self, enabled: bool) -> ConnectorBuilder {
         self.verbose.0 = enabled;
         self
     }
 
     /// Sets the TLS info flag.
-    #[inline(always)]
+    #[inline]
     pub(crate) fn tls_info(mut self, enabled: bool) -> ConnectorBuilder {
         self.tls_info = enabled;
         self
