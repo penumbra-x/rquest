@@ -2,15 +2,13 @@
 //!
 //! Provides HTTP over a single connection. See the [`conn`] module.
 
+mod pool;
+
 pub mod conn;
+pub mod connect;
 pub(super) mod dispatch;
 pub mod options;
 pub mod proxy;
-
-pub mod connect;
-// Publicly available, but just for legacy purposes. A better pool will be
-// designed.
-mod pool;
 
 use std::{
     error::Error as StdError,
@@ -151,11 +149,11 @@ impl ConnRequest {
     }
 }
 
-/// A Client to make outgoing HTTP requests.
+/// A HttpClient to make outgoing HTTP requests.
 ///
-/// `Client` is cheap to clone and cloning is the recommended way to share a `Client`. The
+/// `HttpClient` is cheap to clone and cloning is the recommended way to share a `HttpClient`. The
 /// underlying connection pool will be reused.
-pub struct Client<C, B> {
+pub struct HttpClient<C, B> {
     config: Config,
     connector: C,
     exec: Exec,
@@ -171,7 +169,6 @@ struct Config {
     ver: Ver,
 }
 
-/// Client errors
 pub struct Error {
     kind: ErrorKind,
     source: Option<BoxError>,
@@ -232,38 +229,15 @@ type ResponseWrapper =
     SyncWrapper<Pin<Box<dyn Future<Output = Result<Response<Incoming>, Error>> + Send>>>;
 
 /// A `Future` that will resolve to an HTTP Response.
-///
-/// This is returned by `Client::request` (and `Client::get`).
 #[must_use = "futures do nothing unless polled"]
 pub struct ResponseFuture {
     inner: ResponseWrapper,
 }
 
-// ===== impl Client =====
+// ===== impl HttpClient =====
 
-impl Client<(), ()> {
-    /// Create a builder to configure a new `Client`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// #
-    /// # fn run () {
-    /// use crate::{
-    ///     core::rt::TokioExecutor,
-    ///     util::client::Client,
-    /// };
-    /// use std::time::Duration;
-    ///
-    /// let client = Client::builder(TokioExecutor::new())
-    ///     .pool_idle_timeout(Duration::from_secs(30))
-    ///     .http2_only(true)
-    ///     .build_http();
-    /// # let infer: Client<_, http_body_util::Full<bytes::Bytes>> = client;
-    /// # drop(infer);
-    /// # }
-    /// # fn main() {}
-    /// ```
+impl HttpClient<(), ()> {
+    /// Create a builder to configure a new `HttpClient`.
     pub fn builder<E>(executor: E) -> Builder
     where
         E: Executor<BoxSendFuture> + Send + Sync + Clone + 'static,
@@ -272,7 +246,7 @@ impl Client<(), ()> {
     }
 }
 
-impl<C, B> Client<C, B>
+impl<C, B> HttpClient<C, B>
 where
     C: tower::Service<ConnRequest> + Clone + Send + Sync + 'static,
     C::Response: Read + Write + Connection + Unpin + Send + 'static,
@@ -282,36 +256,7 @@ where
     B::Data: Send,
     B::Error: Into<BoxError>,
 {
-    /// Send a constructed `Request` using this `Client`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// #
-    /// # fn run () {
-    /// use crate::{
-    ///     core::{
-    ///         Method,
-    ///         Request,
-    ///         rt::TokioExecutor,
-    ///     },
-    ///     util::client::Client,
-    /// };
-    /// use bytes::Bytes;
-    /// use http_body_util::Full;
-    ///
-    /// let client: Client<_, Full<Bytes>> = Client::builder(TokioExecutor::new()).build_http();
-    ///
-    /// let req: Request<Full<Bytes>> = Request::builder()
-    ///     .method(Method::POST)
-    ///     .uri("http://httpbin.org/post")
-    ///     .body(Full::from("Hallo!"))
-    ///     .expect("request builder");
-    ///
-    /// let future = client.request(req);
-    /// # }
-    /// # fn main() {}
-    /// ```
+    /// Send a constructed `Request` using this `HttpClient`.
     pub fn request(&self, mut req: Request<B>) -> ResponseFuture {
         let is_http_connect = req.method() == Method::CONNECT;
         // Validate HTTP version early
@@ -785,7 +730,7 @@ where
     }
 }
 
-impl<C, B> tower::Service<Request<B>> for Client<C, B>
+impl<C, B> tower::Service<Request<B>> for HttpClient<C, B>
 where
     C: tower::Service<ConnRequest> + Clone + Send + Sync + 'static,
     C::Response: Read + Write + Connection + Unpin + Send + 'static,
@@ -808,7 +753,7 @@ where
     }
 }
 
-impl<C, B> tower::Service<Request<B>> for &'_ Client<C, B>
+impl<C, B> tower::Service<Request<B>> for &'_ HttpClient<C, B>
 where
     C: tower::Service<ConnRequest> + Clone + Send + Sync + 'static,
     C::Response: Read + Write + Connection + Unpin + Send + 'static,
@@ -831,9 +776,9 @@ where
     }
 }
 
-impl<C: Clone, B> Clone for Client<C, B> {
-    fn clone(&self) -> Client<C, B> {
-        Client {
+impl<C: Clone, B> Clone for HttpClient<C, B> {
+    fn clone(&self) -> HttpClient<C, B> {
+        HttpClient {
             config: self.config,
             exec: self.exec.clone(),
 
@@ -845,9 +790,9 @@ impl<C: Clone, B> Clone for Client<C, B> {
     }
 }
 
-impl<C, B> fmt::Debug for Client<C, B> {
+impl<C, B> fmt::Debug for HttpClient<C, B> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Client").finish()
+        f.debug_struct("HttpClient").finish()
     }
 }
 
@@ -883,8 +828,7 @@ impl Future for ResponseFuture {
     }
 }
 
-// ===== impl PoolClient =====
-
+/// A pooled HTTP connection that can send requests
 struct PoolClient<B> {
     conn_info: Connected,
     tx: PoolTx<B>,
@@ -892,9 +836,10 @@ struct PoolClient<B> {
 
 enum PoolTx<B> {
     Http1(conn::http1::SendRequest<B>),
-
     Http2(conn::http2::SendRequest<B>),
 }
+
+// ===== impl PoolClient =====
 
 impl<B> PoolClient<B> {
     fn poll_ready(&mut self, cx: &mut task::Context<'_>) -> Poll<Result<(), Error>> {
@@ -1088,28 +1033,7 @@ fn is_schema_secure(uri: &Uri) -> bool {
         .unwrap_or_default()
 }
 
-/// A builder to configure a new [`Client`].
-///
-/// # Example
-///
-/// ```
-/// #
-/// # fn run () {
-/// use crate::{
-///     core::rt::TokioExecutor,
-///     util::client::Client,
-/// };
-/// use std::time::Duration;
-///
-/// let client = Client::builder(TokioExecutor::new())
-///     .pool_idle_timeout(Duration::from_secs(30))
-///     .http2_only(true)
-///     .build_http();
-/// # let infer: Client<_, http_body_util::Full<bytes::Bytes>> = client;
-/// # drop(infer);
-/// # }
-/// # fn main() {}
-/// ```
+/// A builder to configure a new [`HttpClient`].
 #[derive(Clone)]
 pub struct Builder {
     client_config: Config,
@@ -1152,30 +1076,6 @@ impl Builder {
     /// Pass `None` to disable timeout.
     ///
     /// Default is 90 seconds.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// #
-    /// # fn run () {
-    /// use crate::{
-    ///     core::rt::{
-    ///         TokioExecutor,
-    ///         TokioTimer,
-    ///     },
-    ///     util::client::Client,
-    /// };
-    /// use std::time::Duration;
-    ///
-    /// let client = Client::builder(TokioExecutor::new())
-    ///     .pool_idle_timeout(Duration::from_secs(30))
-    ///     .pool_timer(TokioTimer::new())
-    ///     .build_http();
-    ///
-    /// # let infer: Client<_, http_body_util::Full<bytes::Bytes>> = client;
-    /// # }
-    /// # fn main() {}
-    /// ```
     pub fn pool_idle_timeout<D>(&mut self, val: D) -> &mut Self
     where
         D: Into<Option<Duration>>,
@@ -1204,7 +1104,7 @@ impl Builder {
     ///
     /// The destination must either allow HTTP2 Prior Knowledge, or the
     /// `Connect` should be configured to do use ALPN to upgrade to `h2`
-    /// as part of the connection process. This will not make the `Client`
+    /// as part of the connection process. This will not make the `HttpClient`
     /// utilize ALPN by itself.
     ///
     /// Note that setting this to true prevents HTTP/1 from being allowed.
@@ -1279,8 +1179,8 @@ impl Builder {
         self
     }
 
-    /// Combine the configuration of this builder with a connector to create a `Client`.
-    pub fn build<C, B>(&self, connector: C) -> Client<C, B>
+    /// Combine the configuration of this builder with a connector to create a `HttpClient`.
+    pub fn build<C, B>(&self, connector: C) -> HttpClient<C, B>
     where
         C: tower::Service<ConnRequest> + Clone + Send + Sync + 'static,
         C::Response: Read + Write + Connection + Unpin + Send + 'static,
@@ -1291,7 +1191,7 @@ impl Builder {
     {
         let exec = self.exec.clone();
         let timer = self.pool_timer.clone();
-        Client {
+        HttpClient {
             config: self.client_config,
             exec: exec.clone(),
 
