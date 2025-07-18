@@ -276,18 +276,41 @@
 
 #[macro_use]
 mod trace;
+mod client;
+mod connect;
+mod core;
+mod error;
+mod into_url;
+mod proxy;
+mod response;
+mod sync;
+mod util;
+
+#[cfg(feature = "cookies")]
+pub mod cookie;
+pub mod dns;
+pub mod redirect;
+pub mod tls;
 
 pub use http::{Method, StatusCode, Version, header};
 pub use url::Url;
 
-mod error;
-mod into_url;
-mod response;
-mod sync;
-
+#[cfg(feature = "multipart")]
+pub use self::client::multipart;
+#[cfg(feature = "websocket")]
+pub use self::client::ws;
 pub use self::{
+    client::{
+        Body, Client, ClientBuilder, Emulation, EmulationFactory, Request, RequestBuilder,
+        Response, Upgraded,
+    },
+    core::{
+        client::options::{http1, http2},
+        ext::OriginalHeaders,
+    },
     error::{Error, Result},
     into_url::IntoUrl,
+    proxy::{NoProxy, Proxy},
     response::ResponseBuilderExt,
 };
 
@@ -314,33 +337,3 @@ fn _assert_impls() {
     assert_send::<Error>();
     assert_sync::<Error>();
 }
-
-#[cfg(feature = "multipart")]
-pub use self::client::multipart;
-#[cfg(feature = "websocket")]
-pub use self::client::ws;
-pub use self::{
-    client::{
-        Body, Client, ClientBuilder, Emulation, EmulationFactory, Request, RequestBuilder,
-        Response, Upgraded,
-    },
-    core::{
-        client::options::{http1, http2},
-        ext::OriginalHeaders,
-    },
-    proxy::{NoProxy, Proxy},
-};
-
-mod client;
-mod connect;
-#[cfg(feature = "cookies")]
-pub mod cookie;
-
-mod core;
-pub mod dns;
-mod proxy;
-
-pub mod redirect;
-
-pub mod tls;
-mod util;
