@@ -6,15 +6,13 @@ async fn main() -> wreq::Result<()> {
         .with_max_level(tracing::Level::TRACE)
         .init();
 
+    // Use the API you're already familiar with
     let resp = wreq::Client::new()
         .get("http://google.com/")
         .redirect(Policy::default())
         .send()
-        .await?
-        .text()
         .await?;
-
-    println!("{resp}");
+    println!("{}", resp.text().await?);
 
     Ok(())
 }

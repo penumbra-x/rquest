@@ -8,13 +8,13 @@ async fn main() -> wreq::Result<()> {
         .with_max_level(tracing::Level::TRACE)
         .init();
 
+    // Use the API you're already familiar with
     let resp = wreq::Client::new()
         .get("http://www.baidu.com")
         .redirect(Policy::default())
         .local_address(IpAddr::from([192, 168, 1, 226]))
         .send()
         .await?;
-
     println!("{}", resp.text().await?);
 
     Ok(())

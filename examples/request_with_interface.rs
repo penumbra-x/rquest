@@ -16,15 +16,13 @@ async fn main() -> wreq::Result<()> {
         .with_max_level(tracing::Level::TRACE)
         .init();
 
-    let text = wreq::Client::new()
+    // Use the API you're already familiar with
+    let resp = wreq::Client::new()
         .get("https://api.ip.sb/ip")
         .interface("utun4")
         .send()
-        .await?
-        .text()
         .await?;
-
-    println!("{text}");
+    println!("{}", resp.text().await?);
 
     Ok(())
 }

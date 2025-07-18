@@ -6,8 +6,9 @@ async fn main() -> wreq::Result<()> {
         .with_max_level(tracing::Level::TRACE)
         .init();
 
+    // Use the API you're already familiar with
     let resp = wreq::Client::new()
-        .get("https://tls.peet.ws/api/all")
+        .get("https://www.google.com")
         .version(Version::HTTP_11)
         .send()
         .await?;
