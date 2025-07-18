@@ -62,9 +62,9 @@ where
 /// are subject to change at any time.
 #[derive(Clone, Debug)]
 pub struct Builder<Ex> {
-    pub(super) exec: Ex,
-    pub(super) timer: Time,
-    config: Http2Options,
+    exec: Ex,
+    timer: Time,
+    opts: Http2Options,
 }
 
 // ===== impl SendRequest
@@ -194,7 +194,7 @@ where
         Builder {
             exec,
             timer: Time::Empty,
-            config: Default::default(),
+            opts: Default::default(),
         }
     }
 
@@ -206,10 +206,10 @@ where
         self.timer = Time::Timer(Arc::new(timer));
     }
 
-    /// Provide a configuration for HTTP/2.
-    pub fn config(&mut self, opts: Option<Http2Options>) {
-        if let Some(config) = opts {
-            self.config = config;
+    /// Provide a options configuration for the HTTP/2 connection.
+    pub fn options(&mut self, opts: Option<Http2Options>) {
+        if let Some(opts) = opts {
+            self.opts = opts;
         }
     }
 
@@ -229,7 +229,7 @@ where
         B::Error: Into<BoxError>,
         Ex: Http2ClientConnExec<B, T> + Unpin,
     {
-        let opts = self.clone();
+        let builder = self.clone();
 
         async move {
             trace!("client handshake HTTP/2");
@@ -238,9 +238,10 @@ where
             let h2 = proto::h2::client::handshake(
                 io,
                 rx,
-                &opts.config.h2_builder,
-                opts.exec,
-                opts.timer,
+                builder.opts.builder,
+                builder.opts.ping_config,
+                builder.exec,
+                builder.timer,
             )
             .await?;
             Ok((
