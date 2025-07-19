@@ -12,7 +12,7 @@ use std::{
     time::Duration,
 };
 
-use aliases::{BoxedClientService, BoxedClientServiceLayer, GenericClientService, ResponseBody};
+use aliases::{BoxedClientLayer, BoxedClientService, GenericClientService, ResponseBody};
 pub use future::Pending;
 use http::{
     Request as HttpRequest, Response as HttpResponse,
@@ -34,7 +34,7 @@ use {super::layer::cookie::CookieManagerLayer, crate::cookie};
     feature = "deflate",
 ))]
 use super::layer::decoder::{AcceptEncoding, DecompressionLayer};
-#[cfg(feature = "websocket")]
+#[cfg(feature = "ws")]
 use super::ws::WebSocketRequestBuilder;
 use super::{
     Body, EmulationFactory,
@@ -61,7 +61,7 @@ use crate::{
     dns::{DnsResolverWithOverrides, DynResolver, Resolve, gai::GaiResolver},
     error::{self, BoxError, Error},
     proxy::Matcher as ProxyMatcher,
-    redirect::{self, RedirectPolicy},
+    redirect::{self, FollowRedirectPolicy, Policy as RedirectPolicy},
     tls::{AlpnProtocol, CertStore, Identity, KeyLogPolicy, TlsConnectorBuilder, TlsVersion},
 };
 
@@ -130,7 +130,7 @@ struct Config {
     tcp_user_timeout: Option<Duration>,
     proxies: Vec<ProxyMatcher>,
     auto_sys_proxy: bool,
-    redirect_policy: redirect::Policy,
+    redirect_policy: RedirectPolicy,
     referer: bool,
     timeout: Option<Duration>,
     read_timeout: Option<Duration>,
@@ -143,15 +143,15 @@ struct Config {
     http_version_pref: HttpVersionPref,
     https_only: bool,
     http2_max_retry: usize,
-    request_layers: Option<Vec<BoxedClientServiceLayer>>,
+    layers: Option<Vec<BoxedClientLayer>>,
     connector_layers: Option<Vec<BoxedConnectorLayer>>,
-    tls_keylog_policy: Option<KeyLogPolicy>,
+    keylog_policy: Option<KeyLogPolicy>,
     tls_info: bool,
     tls_sni: bool,
-    tls_verify_hostname: bool,
-    tls_identity: Option<Identity>,
-    tls_cert_store: CertStore,
-    tls_cert_verification: bool,
+    verify_hostname: bool,
+    identity: Option<Identity>,
+    cert_store: CertStore,
+    cert_verification: bool,
     min_tls_version: Option<TlsVersion>,
     max_tls_version: Option<TlsVersion>,
     transport_options: TransportOptions,
@@ -197,7 +197,7 @@ impl ClientBuilder {
                 tcp_user_timeout: None,
                 proxies: Vec::new(),
                 auto_sys_proxy: true,
-                redirect_policy: redirect::Policy::none(),
+                redirect_policy: RedirectPolicy::none(),
                 referer: true,
                 timeout: None,
                 read_timeout: None,
@@ -210,15 +210,15 @@ impl ClientBuilder {
                 http_version_pref: HttpVersionPref::All,
                 https_only: false,
                 http2_max_retry: 2,
-                request_layers: None,
+                layers: None,
                 connector_layers: None,
-                tls_keylog_policy: None,
+                keylog_policy: None,
                 tls_info: false,
                 tls_sni: true,
-                tls_verify_hostname: true,
-                tls_identity: None,
-                tls_cert_store: CertStore::default(),
-                tls_cert_verification: true,
+                verify_hostname: true,
+                identity: None,
+                cert_store: CertStore::default(),
+                cert_verification: true,
                 min_tls_version: None,
                 max_tls_version: None,
                 // Transport options for HTTP/1/2 and TLS.
@@ -252,6 +252,7 @@ impl ClientBuilder {
 
         let (tls_opts, http1_opts, http2_opts) = config.transport_options.into_parts();
 
+        // Create the TLS connector with the provided options.
         let connector = {
             let resolver = {
                 let mut resolver: Arc<dyn Resolve> = match config.dns_resolver {
@@ -272,6 +273,7 @@ impl ClientBuilder {
                 DynResolver::new(resolver)
             };
 
+            // Apply http connector options
             let http = |http: &mut HttpConnector| {
                 http.set_keepalive(config.tcp_keepalive);
                 http.set_keepalive_interval(config.tcp_keepalive_interval);
@@ -284,10 +286,10 @@ impl ClientBuilder {
                 http.set_tcp_user_timeout(config.tcp_user_timeout);
             };
 
+            // Apply tls connector options
             let tls = |tls: TlsConnectorBuilder| {
                 let alpn_protocol = match config.http_version_pref {
                     HttpVersionPref::Http1 => Some(AlpnProtocol::HTTP1),
-
                     HttpVersionPref::Http2 => Some(AlpnProtocol::HTTP2),
                     _ => None,
                 };
@@ -295,11 +297,11 @@ impl ClientBuilder {
                     .max_version(config.max_tls_version)
                     .min_version(config.min_tls_version)
                     .tls_sni(config.tls_sni)
-                    .verify_hostname(config.tls_verify_hostname)
-                    .cert_verification(config.tls_cert_verification)
-                    .cert_store(config.tls_cert_store)
-                    .identity(config.tls_identity)
-                    .keylog(config.tls_keylog_policy)
+                    .verify_hostname(config.verify_hostname)
+                    .cert_verification(config.cert_verification)
+                    .cert_store(config.cert_store)
+                    .identity(config.identity)
+                    .keylog(config.keylog_policy)
             };
 
             Connector::builder(proxies.clone(), resolver)
@@ -311,6 +313,7 @@ impl ClientBuilder {
                 .build(tls_opts.unwrap_or_default(), config.connector_layers)?
         };
 
+        // Create client with the configured connector
         let client = {
             let http2_only = matches!(config.http_version_pref, HttpVersionPref::Http2);
             let mut builder = HttpClient::builder(TokioExecutor::new());
@@ -326,7 +329,8 @@ impl ClientBuilder {
             builder.build(connector)
         };
 
-        let service = {
+        // Create the client with the configured service layers
+        let client = {
             let service = ClientService {
                 client,
                 config: Arc::new(ClientConfig {
@@ -362,13 +366,15 @@ impl ClientBuilder {
                 .layer(CookieManagerLayer::new(config.cookie_store))
                 .service(service);
 
-            let policy = RedirectPolicy::new(config.redirect_policy)
-                .with_referer(config.referer)
-                .with_https_only(config.https_only);
+            let service = {
+                let policy = FollowRedirectPolicy::new(config.redirect_policy)
+                    .with_referer(config.referer)
+                    .with_https_only(config.https_only);
 
-            let service = ServiceBuilder::new()
-                .layer(FollowRedirectLayer::with_policy(policy))
-                .service(service);
+                ServiceBuilder::new()
+                    .layer(FollowRedirectLayer::with_policy(policy))
+                    .service(service)
+            };
 
             let service = ServiceBuilder::new()
                 .layer(RetryLayer::new(Http2RetryPolicy::new(
@@ -376,7 +382,7 @@ impl ClientBuilder {
                 )))
                 .service(service);
 
-            match config.request_layers {
+            match config.layers {
                 Some(layers) => {
                     let service = layers.into_iter().fold(
                         BoxCloneSyncService::new(service),
@@ -410,7 +416,7 @@ impl ClientBuilder {
         };
 
         Ok(Client {
-            inner: Arc::new(service),
+            inner: Arc::new(client),
         })
     }
 
@@ -1061,7 +1067,7 @@ impl ClientBuilder {
     /// Sets the identity to be used for client certificate authentication.
     #[inline]
     pub fn identity(mut self, identity: Identity) -> ClientBuilder {
-        self.config.tls_identity = Some(identity);
+        self.config.identity = Some(identity);
         self
     }
 
@@ -1071,7 +1077,7 @@ impl ClientBuilder {
     /// for TLS connections. By default, the system's verify certificate store is used.
     #[inline]
     pub fn cert_store(mut self, store: CertStore) -> ClientBuilder {
-        self.config.tls_cert_store = store;
+        self.config.cert_store = store;
         self
     }
 
@@ -1088,7 +1094,7 @@ impl ClientBuilder {
     /// as a last resort.
     #[inline]
     pub fn cert_verification(mut self, cert_verification: bool) -> ClientBuilder {
-        self.config.tls_cert_verification = cert_verification;
+        self.config.cert_verification = cert_verification;
         self
     }
 
@@ -1102,7 +1108,7 @@ impl ClientBuilder {
     /// introduces a significant vulnerability to man-in-the-middle attacks.
     #[inline]
     pub fn verify_hostname(mut self, verify_hostname: bool) -> ClientBuilder {
-        self.config.tls_verify_hostname = verify_hostname;
+        self.config.verify_hostname = verify_hostname;
         self
     }
 
@@ -1118,7 +1124,7 @@ impl ClientBuilder {
     /// Configures TLS key logging policy for the client.
     #[inline]
     pub fn keylog(mut self, policy: KeyLogPolicy) -> ClientBuilder {
-        self.config.tls_keylog_policy = Some(policy);
+        self.config.keylog_policy = Some(policy);
         self
     }
 
@@ -1237,10 +1243,7 @@ impl ClientBuilder {
         <L::Service as Service<HttpRequest<Body>>>::Future: Send + 'static,
     {
         let layer = BoxCloneSyncServiceLayer::new(layer);
-        self.config
-            .request_layers
-            .get_or_insert_default()
-            .push(layer);
+        self.config.layers.get_or_insert_default().push(layer);
         self
     }
 
@@ -1453,7 +1456,7 @@ impl Client {
     /// this after you set up your request, and just before you send the
     /// request.
     #[inline]
-    #[cfg(feature = "websocket")]
+    #[cfg(feature = "ws")]
     pub fn websocket<U: IntoUrl>(&self, url: U) -> WebSocketRequestBuilder {
         WebSocketRequestBuilder::new(self.request(Method::GET, url))
     }
