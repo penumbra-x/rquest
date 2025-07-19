@@ -4,9 +4,10 @@
 
 mod pool;
 
+pub(super) mod dispatch;
+
 pub mod conn;
 pub mod connect;
-pub(super) mod dispatch;
 pub mod future;
 pub mod options;
 pub mod proxy;

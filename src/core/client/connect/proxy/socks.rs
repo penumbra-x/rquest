@@ -24,7 +24,6 @@ pub enum SocksError<C> {
     Socks(tokio_socks::Error),
     Io(std::io::Error),
     Utf8(std::str::Utf8Error),
-
     DnsFailure,
     MissingHost,
 }
@@ -40,7 +39,6 @@ impl<C> std::fmt::Display for SocksError<C> {
             Self::Utf8(e) => f.write_fmt(format_args!(
                 "invalid UTF-8 during SOCKS authentication: {e}"
             )),
-
             Self::DnsFailure => f.write_str("could not resolve to acceptable address type"),
             Self::MissingHost => f.write_str("missing destination host"),
         }
