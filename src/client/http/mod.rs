@@ -1,4 +1,5 @@
 mod aliases;
+mod connect;
 mod future;
 mod service;
 
@@ -12,13 +13,16 @@ use std::{
     time::Duration,
 };
 
-use aliases::{BoxedClientLayer, BoxedClientService, GenericClientService, ResponseBody};
+use aliases::{
+    BoxedClientLayer, BoxedClientService, BoxedConnectorLayer, BoxedConnectorService,
+    GenericClientService, ResponseBody,
+};
 pub use future::Pending;
 use http::{
     Request as HttpRequest, Response as HttpResponse,
     header::{HeaderMap, HeaderValue, USER_AGENT},
 };
-use service::{ClientConfig, ClientService};
+use service::ClientService;
 use tower::{
     Layer, Service, ServiceBuilder, ServiceExt,
     retry::RetryLayer,
@@ -50,12 +54,15 @@ use super::{
 use crate::dns::hickory::{HickoryDnsResolver, LookupIpStrategy};
 use crate::{
     IntoUrl, Method, OriginalHeaders, Proxy,
-    connect::{
-        BoxedConnectorLayer, BoxedConnectorService, Conn, Connector, HttpConnector, Unnameable,
+    client::{
+        http::{
+            aliases::HttpConnector,
+            connect::{Conn, Connector, Unnameable},
+        },
+        layer::timeout::TimeoutOptions,
     },
     core::{
         client::{HttpClient, connect::TcpConnectOptions, options::TransportOptions},
-        ext::RequestConfig,
         rt::{TokioExecutor, tokio::TokioTimer},
     },
     dns::{DnsResolverWithOverrides, DynResolver, Resolve, gai::GaiResolver},
@@ -132,8 +139,7 @@ struct Config {
     auto_sys_proxy: bool,
     redirect_policy: RedirectPolicy,
     referer: bool,
-    timeout: Option<Duration>,
-    read_timeout: Option<Duration>,
+    timeout_options: TimeoutOptions,
     #[cfg(feature = "cookies")]
     cookie_store: Option<Arc<dyn cookie::CookieStore>>,
     #[cfg(feature = "hickory-dns")]
@@ -143,8 +149,8 @@ struct Config {
     http_version_pref: HttpVersionPref,
     https_only: bool,
     http2_max_retry: usize,
-    layers: Option<Vec<BoxedClientLayer>>,
-    connector_layers: Option<Vec<BoxedConnectorLayer>>,
+    layers: Vec<BoxedClientLayer>,
+    connector_layers: Vec<BoxedConnectorLayer>,
     keylog_policy: Option<KeyLogPolicy>,
     tls_info: bool,
     tls_sni: bool,
@@ -199,8 +205,7 @@ impl ClientBuilder {
                 auto_sys_proxy: true,
                 redirect_policy: RedirectPolicy::none(),
                 referer: true,
-                timeout: None,
-                read_timeout: None,
+                timeout_options: TimeoutOptions::default(),
                 #[cfg(feature = "hickory-dns")]
                 hickory_dns: cfg!(feature = "hickory-dns"),
                 #[cfg(feature = "cookies")]
@@ -210,8 +215,8 @@ impl ClientBuilder {
                 http_version_pref: HttpVersionPref::All,
                 https_only: false,
                 http2_max_retry: 2,
-                layers: None,
-                connector_layers: None,
+                layers: Vec::new(),
+                connector_layers: Vec::new(),
                 keylog_policy: None,
                 tls_info: false,
                 tls_sni: true,
@@ -245,10 +250,6 @@ impl ClientBuilder {
             proxies.push(ProxyMatcher::system());
         }
         let proxies = Arc::new(proxies);
-        let proxies_maybe_http_auth = proxies.iter().any(ProxyMatcher::maybe_has_http_auth);
-        let proxies_maybe_http_custom_headers = proxies
-            .iter()
-            .any(ProxyMatcher::maybe_has_http_custom_headers);
 
         let (tls_opts, http1_opts, http2_opts) = config.transport_options.into_parts();
 
@@ -275,6 +276,7 @@ impl ClientBuilder {
 
             // Apply http connector options
             let http = |http: &mut HttpConnector| {
+                http.enforce_http(false);
                 http.set_keepalive(config.tcp_keepalive);
                 http.set_keepalive_interval(config.tcp_keepalive_interval);
                 http.set_keepalive_retries(config.tcp_keepalive_retries);
@@ -308,8 +310,8 @@ impl ClientBuilder {
                 .timeout(config.connect_timeout)
                 .tls_info(config.tls_info)
                 .verbose(config.connection_verbose)
-                .with_http(http)
                 .with_tls(tls)
+                .with_http(http)
                 .build(tls_opts.unwrap_or_default(), config.connector_layers)?
         };
 
@@ -331,18 +333,13 @@ impl ClientBuilder {
 
         // Create the client with the configured service layers
         let client = {
-            let service = ClientService {
+            let service = ClientService::new(
                 client,
-                config: Arc::new(ClientConfig {
-                    default_headers: config.headers,
-                    original_headers: RequestConfig::new(config.original_headers),
-                    skip_default_headers: RequestConfig::default(),
-                    https_only: config.https_only,
-                    proxies,
-                    proxies_maybe_http_auth,
-                    proxies_maybe_http_custom_headers,
-                }),
-            };
+                config.headers,
+                config.original_headers,
+                config.https_only,
+                proxies,
+            );
 
             #[cfg(any(
                 feature = "gzip",
@@ -355,10 +352,7 @@ impl ClientBuilder {
                 .service(service);
 
             let service = ServiceBuilder::new()
-                .layer(ResponseBodyTimeoutLayer::new(
-                    config.timeout,
-                    config.read_timeout,
-                ))
+                .layer(ResponseBodyTimeoutLayer::new(config.timeout_options))
                 .service(service);
 
             #[cfg(feature = "cookies")]
@@ -382,36 +376,33 @@ impl ClientBuilder {
                 )))
                 .service(service);
 
-            match config.layers {
-                Some(layers) => {
-                    let service = layers.into_iter().fold(
-                        BoxCloneSyncService::new(service),
-                        |client_service, layer| {
-                            ServiceBuilder::new().layer(layer).service(client_service)
-                        },
-                    );
+            if config.layers.is_empty() {
+                let service = ServiceBuilder::new()
+                    .layer(TimeoutLayer::new(config.timeout_options))
+                    .service(service);
 
-                    let service = ServiceBuilder::new()
-                        .layer(TimeoutLayer::new(config.timeout, config.read_timeout))
-                        .service(service);
+                let service = ServiceBuilder::new()
+                    .map_err(error::map_timeout_to_request_error as _)
+                    .service(service);
 
-                    let service = ServiceBuilder::new()
-                        .map_err(error::map_timeout_to_request_error)
-                        .service(service);
+                ClientRef::Generic(service)
+            } else {
+                let service = config.layers.into_iter().fold(
+                    BoxCloneSyncService::new(service),
+                    |client_service, layer| {
+                        ServiceBuilder::new().layer(layer).service(client_service)
+                    },
+                );
 
-                    ClientRef::Boxed(BoxCloneSyncService::new(service))
-                }
-                None => {
-                    let service = ServiceBuilder::new()
-                        .layer(TimeoutLayer::new(config.timeout, config.read_timeout))
-                        .service(service);
+                let service = ServiceBuilder::new()
+                    .layer(TimeoutLayer::new(config.timeout_options))
+                    .service(service);
 
-                    let service = ServiceBuilder::new()
-                        .map_err(error::map_timeout_to_request_error as _)
-                        .service(service);
+                let service = ServiceBuilder::new()
+                    .map_err(error::map_timeout_to_request_error)
+                    .service(service);
 
-                    ClientRef::Generic(service)
-                }
+                ClientRef::Boxed(BoxCloneSyncService::new(service))
             }
         };
 
@@ -776,7 +767,7 @@ impl ClientBuilder {
     /// Default is no timeout.
     #[inline]
     pub fn timeout(mut self, timeout: Duration) -> ClientBuilder {
-        self.config.timeout = Some(timeout);
+        self.config.timeout_options.total_timeout(timeout);
         self
     }
 
@@ -785,7 +776,7 @@ impl ClientBuilder {
     /// Default is `None`.
     #[inline]
     pub fn read_timeout(mut self, timeout: Duration) -> ClientBuilder {
-        self.config.read_timeout = Some(timeout);
+        self.config.timeout_options.read_timeout(timeout);
         self
     }
 
@@ -1243,7 +1234,7 @@ impl ClientBuilder {
         <L::Service as Service<HttpRequest<Body>>>::Future: Send + 'static,
     {
         let layer = BoxCloneSyncServiceLayer::new(layer);
-        self.config.layers.get_or_insert_default().push(layer);
+        self.config.layers.push(layer);
         self
     }
 
@@ -1277,10 +1268,7 @@ impl ClientBuilder {
         <L::Service as Service<Unnameable>>::Future: Send + 'static,
     {
         let layer = BoxCloneSyncServiceLayer::new(layer);
-        self.config
-            .connector_layers
-            .get_or_insert_default()
-            .push(layer);
+        self.config.connector_layers.push(layer);
         self
     }
 

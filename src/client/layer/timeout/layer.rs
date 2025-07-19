@@ -24,13 +24,10 @@ pub struct TimeoutLayer {
 }
 
 impl TimeoutLayer {
-    /// Create a timeout from a duration
-    pub const fn new(total: Option<Duration>, read: Option<Duration>) -> Self {
+    /// Create a new [`TimeoutLayer`].
+    pub const fn new(options: TimeoutOptions) -> Self {
         TimeoutLayer {
-            timeout: RequestConfig::new(Some(TimeoutOptions {
-                total_timeout: total,
-                read_timeout: read,
-            })),
+            timeout: RequestConfig::new(Some(options)),
         }
     }
 }
@@ -41,7 +38,7 @@ impl<S> Layer<S> for TimeoutLayer {
     fn layer(&self, service: S) -> Self::Service {
         Timeout {
             inner: service,
-            timeout: self.timeout.clone(),
+            timeout: self.timeout,
         }
     }
 }
@@ -92,12 +89,9 @@ pub struct ResponseBodyTimeoutLayer {
 
 impl ResponseBodyTimeoutLayer {
     /// Creates a new [`ResponseBodyTimeoutLayer`].
-    pub const fn new(total: Option<Duration>, read: Option<Duration>) -> Self {
+    pub const fn new(options: TimeoutOptions) -> Self {
         Self {
-            timeout: RequestConfig::new(Some(TimeoutOptions {
-                total_timeout: total,
-                read_timeout: read,
-            })),
+            timeout: RequestConfig::new(Some(options)),
         }
     }
 }
@@ -108,7 +102,7 @@ impl<S> Layer<S> for ResponseBodyTimeoutLayer {
     fn layer(&self, inner: S) -> Self::Service {
         ResponseBodyTimeout {
             inner,
-            timeout: self.timeout.clone(),
+            timeout: self.timeout,
         }
     }
 }
