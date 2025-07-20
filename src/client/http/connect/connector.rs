@@ -55,6 +55,7 @@ pub struct ConnectorBuilder {
     #[cfg(feature = "socks")]
     resolver: DynResolver,
     http: HttpConnector,
+    tls_options: Option<TlsOptions>,
     tls_builder: TlsConnectorBuilder,
 }
 
@@ -123,12 +124,15 @@ impl ConnectorBuilder {
         self
     }
 
+    /// Sets the TLS options to use.
+    #[inline]
+    pub fn tls_options(mut self, opts: Option<TlsOptions>) -> ConnectorBuilder {
+        self.tls_options = opts;
+        self
+    }
+
     /// Builds the connector with the provided  TLS options configuration and optional layers.
-    pub fn build(
-        self,
-        opts: TlsOptions,
-        layers: Vec<BoxedConnectorLayer>,
-    ) -> crate::Result<Connector> {
+    pub fn build(self, layers: Vec<BoxedConnectorLayer>) -> crate::Result<Connector> {
         let mut service = ConnectorService {
             config: Config {
                 // The timeout is initially set to None and will be reassigned later
@@ -139,7 +143,9 @@ impl ConnectorBuilder {
             #[cfg(feature = "socks")]
             resolver: self.resolver.clone(),
             http: self.http,
-            tls: self.tls_builder.build(opts)?,
+            tls: self
+                .tls_builder
+                .build(self.tls_options.unwrap_or_default())?,
             tls_builder: Arc::new(self.tls_builder),
         };
 
@@ -208,6 +214,7 @@ impl Connector {
             #[cfg(feature = "socks")]
             resolver: resolver.clone(),
             http: HttpConnector::new_with_resolver(resolver),
+            tls_options: None,
             tls_builder: TlsConnector::builder(),
         }
     }

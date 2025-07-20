@@ -310,9 +310,10 @@ impl ClientBuilder {
                 .timeout(config.connect_timeout)
                 .tls_info(config.tls_info)
                 .verbose(config.connection_verbose)
+                .tls_options(tls_opts)
                 .with_tls(tls)
                 .with_http(http)
-                .build(tls_opts.unwrap_or_default(), config.connector_layers)?
+                .build(config.connector_layers)?
         };
 
         // Create client with the configured connector
