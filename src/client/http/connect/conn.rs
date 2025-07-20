@@ -39,7 +39,7 @@ pin_project! {
     /// This type enables unified handling of plain TCP and TLS-encrypted streams by providing
     /// implementations of `Connection`, `Read`, `Write`, and `TlsInfoFactory`.
     /// It is mainly used internally to abstract over different connection types.
-    pub(super) struct TlsConn<T> {
+    pub struct TlsConn<T> {
         #[pin]
         inner: TokioIo<SslStream<T>>,
     }
