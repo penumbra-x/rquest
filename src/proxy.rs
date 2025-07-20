@@ -126,7 +126,7 @@ pub trait IntoProxy {
 impl<S: IntoUrl> IntoProxy for S {
     fn into_proxy(self) -> crate::Result<Url> {
         match self.as_str().into_url() {
-            Ok(ok) => Ok(ok),
+            Ok(url) => Ok(url),
             Err(e) => {
                 let mut presumed_to_have_scheme = true;
                 let mut source = e.source();
@@ -601,5 +601,33 @@ mod tests {
             .unwrap()
             .into_matcher();
         assert!(m.maybe_has_http_auth(), "http forwards");
+    }
+
+    fn test_socks_proxy_default_port(url: &str, url2: &str, port: u16) {
+        let m = Proxy::all(url).unwrap().into_matcher();
+
+        let http = "http://hyper.rs";
+        let https = "https://hyper.rs";
+
+        assert_eq!(intercepted_uri(&m, http).port_u16(), Some(1080));
+        assert_eq!(intercepted_uri(&m, https).port_u16(), Some(1080));
+
+        // custom port
+        let m = Proxy::all(url2).unwrap().into_matcher();
+
+        assert_eq!(intercepted_uri(&m, http).port_u16(), Some(port));
+        assert_eq!(intercepted_uri(&m, https).port_u16(), Some(port));
+    }
+
+    #[test]
+    fn test_socks4_proxy_default_port() {
+        test_socks_proxy_default_port("socks4://example.com", "socks4://example.com:1234", 1234);
+        test_socks_proxy_default_port("socks4a://example.com", "socks4a://example.com:1234", 1234);
+    }
+
+    #[test]
+    fn test_socks5_proxy_default_port() {
+        test_socks_proxy_default_port("socks5://example.com", "socks5://example.com:1234", 1234);
+        test_socks_proxy_default_port("socks5h://example.com", "socks5h://example.com:1234", 1234);
     }
 }

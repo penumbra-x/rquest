@@ -15,7 +15,7 @@
 use std::{fmt, net::IpAddr};
 
 use bytes::Bytes;
-use http::header::HeaderValue;
+use http::{header::HeaderValue, uri::Authority};
 use ipnet::IpNet;
 use percent_encoding::percent_decode_str;
 
@@ -328,6 +328,7 @@ fn parse_env_uri(val: &str) -> Option<Intercept> {
     let uri = val.parse::<http::Uri>().ok()?;
     let mut builder = http::Uri::builder();
     let mut is_httpish = false;
+    let mut is_socks = false;
     let mut auth = Auth::Empty;
 
     builder = builder.scheme(match uri.scheme() {
@@ -335,7 +336,8 @@ fn parse_env_uri(val: &str) -> Option<Intercept> {
             if s == &http::uri::Scheme::HTTP || s == &http::uri::Scheme::HTTPS {
                 is_httpish = true;
                 s.clone()
-            } else if s.as_str() == "socks5" || s.as_str() == "socks5h" {
+            } else if matches!(s.as_str(), "socks4" | "socks4a" | "socks5" | "socks5h") {
+                is_socks = true;
                 s.clone()
             } else {
                 // can't use this proxy scheme
@@ -349,7 +351,13 @@ fn parse_env_uri(val: &str) -> Option<Intercept> {
         }
     });
 
+    // If the scheme is a SOCKS protocol and no port is specified, set the default port to 1080.
     let authority = uri.authority()?;
+    let authority = if is_socks && authority.port().is_none() {
+        format!("{authority}:1080").parse::<Authority>().ok()?
+    } else {
+        authority.clone()
+    };
 
     if let Some((userinfo, host_port)) = authority.as_str().split_once('@') {
         let (user, pass) = userinfo.split_once(':')?;
@@ -365,15 +373,15 @@ fn parse_env_uri(val: &str) -> Option<Intercept> {
         }
         builder = builder.authority(host_port);
     } else {
-        builder = builder.authority(authority.clone());
+        builder = builder.authority(authority);
     }
 
     // removing any path, but we MUST specify one or the builder errors
     builder = builder.path_and_query("/");
 
-    let dst = builder.build().ok()?;
+    let uri = builder.build().ok()?;
 
-    Some(Intercept { uri: dst, auth })
+    Some(Intercept { uri, auth })
 }
 
 fn encode_basic_auth(user: &str, pass: Option<&str>) -> HeaderValue {
@@ -837,5 +845,26 @@ mod tests {
         let m = builder.build();
 
         assert!(m.intercept(&"http://rick.roll".parse().unwrap()).is_none());
+    }
+
+    fn test_parse_socks(url: &str) {
+        let p = p! {
+            all = url,
+        };
+
+        let proxy = intercept(&p, "https://example.local");
+        assert_eq!(proxy.uri(), url);
+    }
+
+    #[test]
+    fn test_parse_socks4() {
+        test_parse_socks("socks4://localhost:8887");
+        test_parse_socks("socks4a://localhost:8887");
+    }
+
+    #[test]
+    fn test_parse_socks5() {
+        test_parse_socks("socks5://localhost:8887");
+        test_parse_socks("socks5h://localhost:8887");
     }
 }
