@@ -1,6 +1,7 @@
 mod support;
 use http_body_util::BodyExt;
 use support::server;
+use pretty_env_logger::env_logger;
 
 #[tokio::test]
 async fn text_part() {

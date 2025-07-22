@@ -5,6 +5,7 @@ use std::time::Duration;
 use futures_util::future::join_all;
 use support::{layer::DelayLayer, server};
 use tower::{layer::util::Identity, limit::ConcurrencyLimitLayer, timeout::TimeoutLayer};
+use pretty_env_logger::env_logger;
 
 #[tokio::test]
 async fn non_op_layer() {

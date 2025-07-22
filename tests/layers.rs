@@ -8,6 +8,7 @@ use support::{
     server,
 };
 use tower::{layer::util::Identity, limit::ConcurrencyLimitLayer, timeout::TimeoutLayer};
+use pretty_env_logger::env_logger;
 
 #[tokio::test]
 async fn non_op_layer() {

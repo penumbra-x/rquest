@@ -88,7 +88,7 @@ async fn test_redirect_307_and_308_tries_to_get_again() {
 
 #[tokio::test]
 async fn test_redirect_307_and_308_tries_to_post_again() {
-    let _ = env_logger::try_init();
+    let _ = pretty_env_logger::env_logger::try_init();
     let client = wreq::Client::new();
     let codes = [307u16, 308];
     for &code in &codes {
