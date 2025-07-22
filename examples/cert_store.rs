@@ -38,7 +38,7 @@ use wreq::{
 #[tokio::main]
 async fn main() -> wreq::Result<()> {
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
+        .with_max_level(tracing::Level::TRACE)
         .init();
 
     // Create a client with a custom certificate store using webpki-roots

@@ -1,8 +1,8 @@
 mod support;
 use std::time::Duration;
 
-use support::server;
 use pretty_env_logger::env_logger;
+use support::server;
 
 #[tokio::test]
 async fn client_timeout() {

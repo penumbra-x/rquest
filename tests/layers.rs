@@ -3,12 +3,12 @@ mod support;
 use std::time::Duration;
 
 use futures_util::future::join_all;
+use pretty_env_logger::env_logger;
 use support::{
     layer::{DelayLayer, PrintPollReadyLayer, SharedConcurrencyLimitLayer},
     server,
 };
 use tower::{layer::util::Identity, limit::ConcurrencyLimitLayer, timeout::TimeoutLayer};
-use pretty_env_logger::env_logger;
 
 #[tokio::test]
 async fn non_op_layer() {

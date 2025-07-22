@@ -10,10 +10,10 @@ use http::{
     },
 };
 use http_body_util::BodyExt;
+use pretty_env_logger::env_logger;
 use support::server;
 use tokio::io::AsyncWriteExt;
 use wreq::{Client, OriginalHeaders};
-use pretty_env_logger::env_logger;
 
 #[tokio::test]
 async fn auto_headers() {
