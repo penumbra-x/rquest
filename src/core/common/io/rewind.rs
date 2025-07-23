@@ -114,7 +114,6 @@ mod tests {
 
     use super::{super::Compat, Rewind};
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn partial_rewind() {
         let underlying = [104, 101, 108, 108, 111];
@@ -137,7 +136,6 @@ mod tests {
         assert_eq!(&buf, &underlying);
     }
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn full_rewind() {
         let underlying = [104, 101, 108, 108, 111];

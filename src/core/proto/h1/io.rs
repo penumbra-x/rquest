@@ -626,7 +626,6 @@ mod tests {
     use super::*;
     use crate::core::common::io::Compat;
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn parse_reads_until_blocked() {
         use crate::core::proto::h1::ClientTransaction;
@@ -806,7 +805,6 @@ mod tests {
     }
     */
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn write_buf_flatten() {
         let _ = pretty_env_logger::try_init();
@@ -862,7 +860,6 @@ mod tests {
         assert_eq!(write_buf.headers.pos, 0);
     }
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn write_buf_queue_disable_auto() {
         let _ = pretty_env_logger::try_init();

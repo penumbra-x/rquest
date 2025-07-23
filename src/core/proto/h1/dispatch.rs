@@ -629,7 +629,6 @@ mod tests {
         });
     }
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn client_flushing_is_not_ready_for_next_request() {
         let _ = pretty_env_logger::try_init();
@@ -661,7 +660,6 @@ mod tests {
         assert!(!tx.is_ready());
     }
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn body_empty_chunks_ignored() {
         let _ = pretty_env_logger::try_init();

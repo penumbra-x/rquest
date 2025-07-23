@@ -273,7 +273,6 @@ mod tests {
     use super::TunnelConnector;
     use crate::core::client::connect::HttpConnector;
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn test_tunnel_works() {
         let tcp = TcpListener::bind("127.0.0.1:0").await.expect("bind");

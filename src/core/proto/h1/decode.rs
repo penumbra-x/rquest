@@ -723,17 +723,6 @@ mod tests {
         }
     }
 
-    /*
-    use std::io;
-    use std::io::Write;
-    use super::Decoder;
-    use super::ChunkedState;
-    use futures::{Async, Poll};
-    use bytes::{BytesMut, Bytes};
-    use crate::core::mock::AsyncIo;
-    */
-
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn test_read_chunk_size() {
         use std::io::ErrorKind::{InvalidData, InvalidInput, UnexpectedEof};
@@ -845,7 +834,6 @@ mod tests {
         read_err("f0000000000000003\r\n", InvalidData).await;
     }
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn test_read_sized_early_eof() {
         let mut bytes = &b"foo bar"[..];
@@ -864,7 +852,6 @@ mod tests {
         assert_eq!(e.kind(), io::ErrorKind::UnexpectedEof);
     }
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn test_read_chunked_early_eof() {
         let mut bytes = &b"\
@@ -886,7 +873,6 @@ mod tests {
         assert_eq!(e.kind(), io::ErrorKind::UnexpectedEof);
     }
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn test_read_chunked_single_read() {
         let mut mock_buf = &b"10\r\n1234567890abcdef\r\n0\r\n"[..];
@@ -952,7 +938,6 @@ mod tests {
         assert_eq!(err.to_string(), "chunk extensions over limit");
     }
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn test_read_chunked_trailer_with_missing_lf() {
         let mut mock_buf = &b"10\r\n1234567890abcdef\r\n0\r\nbad\r\r\n"[..];
@@ -962,7 +947,6 @@ mod tests {
         assert_eq!(e.kind(), io::ErrorKind::InvalidInput);
     }
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn test_read_chunked_after_eof() {
         let mut mock_buf = &b"10\r\n1234567890abcdef\r\n0\r\n\r\n"[..];
@@ -1044,14 +1028,12 @@ mod tests {
         }
     }
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn test_read_length_async() {
         let content = "foobar";
         all_async_cases(content, content, Decoder::length(content.len() as u64)).await;
     }
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn test_read_chunked_async() {
         let content = "3\r\nfoo\r\n3\r\nbar\r\n0\r\n\r\n";
@@ -1059,7 +1041,6 @@ mod tests {
         all_async_cases(content, expected, Decoder::chunked(None, None)).await;
     }
 
-    #[cfg(not(miri))]
     #[tokio::test]
     async fn test_read_eof_async() {
         let content = "foobar";
