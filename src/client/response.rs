@@ -96,12 +96,20 @@ impl Response {
         &self.url
     }
 
+    /// Get the local address used to get this `Response`.
+    pub fn local_addr(&self) -> Option<SocketAddr> {
+        self.res
+            .extensions()
+            .get::<HttpInfo>()
+            .map(HttpInfo::local_addr)
+    }
+
     /// Get the remote address used to get this `Response`.
     pub fn remote_addr(&self) -> Option<SocketAddr> {
         self.res
             .extensions()
             .get::<HttpInfo>()
-            .map(|info| info.remote_addr())
+            .map(HttpInfo::remote_addr)
     }
 
     /// Returns a reference to the associated extensions.
