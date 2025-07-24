@@ -9,9 +9,7 @@ use http_body::Body as HttpBody;
 use http_body_util::combinators::BoxBody;
 use pin_project_lite::pin_project;
 #[cfg(feature = "stream")]
-use tokio::fs::File;
-#[cfg(feature = "stream")]
-use tokio_util::io::ReaderStream;
+use {tokio::fs::File, tokio_util::io::ReaderStream};
 
 use crate::error::{BoxError, Error};
 
@@ -28,6 +26,8 @@ enum Inner {
 /// Converts any `impl Body` into a `impl Stream` of just its DATA frames.
 #[cfg(any(feature = "stream", feature = "multipart"))]
 pub(crate) struct DataStream<B>(pub(crate) B);
+
+// ===== impl Body =====
 
 impl Body {
     /// Returns a reference to the internal data of the `Body`.
@@ -299,6 +299,7 @@ where
 }
 
 // ===== impl IntoBytesBody =====
+
 pin_project! {
     struct IntoBytesBody<B> {
         #[pin]
