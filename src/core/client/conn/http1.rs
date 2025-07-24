@@ -13,13 +13,13 @@ use http_body::Body;
 
 use crate::core::{
     Error,
-    body::Incoming as IncomingBody,
     client::{
+        body::Incoming as IncomingBody,
         dispatch::{self, TrySendError},
         options::http1::Http1Options,
+        proto,
     },
     error::BoxError,
-    proto,
     rt::{Read, Write},
 };
 
@@ -296,7 +296,7 @@ impl Builder {
 
 mod upgrades {
     use super::*;
-    use crate::core::upgrade::Upgraded;
+    use crate::core::client::upgrade::Upgraded;
 
     // A future binding a connection with a Service with Upgrade support.
     //

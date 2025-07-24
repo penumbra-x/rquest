@@ -30,14 +30,17 @@ use super::{
 };
 use crate::core::{
     Error,
-    body::Incoming as IncomingBody,
-    client::dispatch::{self, Callback, SendWhen, TrySendError},
+    client::{
+        body::{self, Incoming as IncomingBody},
+        bounds::Http2ClientConnExec,
+        dispatch::{self, Callback, SendWhen, TrySendError},
+        proto::{Dispatched, h2::UpgradedSendStream, headers},
+        upgrade::{self, Upgraded},
+    },
     common::{io::Compat, time::Time},
     error::BoxError,
     ext::{RequestConfig, RequestExtendedConnectProtocol, RequestOriginalHeaders},
-    proto::{Dispatched, h2::UpgradedSendStream, headers},
-    rt::{Read, Write, bounds::Http2ClientConnExec},
-    upgrade::Upgraded,
+    rt::{Read, Write},
 };
 
 type ClientRx<B> = dispatch::Receiver<Request<B>, Response<IncomingBody>>;
@@ -452,7 +455,7 @@ impl<B> Future for ResponseFutMap<B>
 where
     B: Body + 'static,
 {
-    type Output = Result<Response<crate::core::body::Incoming>, (Error, Option<Request<B>>)>;
+    type Output = Result<Response<body::Incoming>, (Error, Option<Request<B>>)>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut this = self.project();
@@ -481,7 +484,7 @@ where
                     let (parts, recv_stream) = res.into_parts();
                     let mut res = Response::from_parts(parts, IncomingBody::empty());
 
-                    let (pending, on_upgrade) = crate::core::upgrade::pending();
+                    let (pending, on_upgrade) = upgrade::pending();
                     let io = H2Upgraded {
                         ping,
                         send_stream: unsafe { UpgradedSendStream::new(send_stream) },
