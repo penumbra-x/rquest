@@ -15,7 +15,7 @@ use super::{
 use crate::{
     Body, Error,
     client::{body, layer::redirect::RequestUri},
-    core::client::{Incoming, ResponseFuture as RawResponseFuture},
+    core::client::{ResponseFuture as RawResponseFuture, body::Incoming},
     error::BoxError,
     into_url::IntoUrlSealed,
 };
