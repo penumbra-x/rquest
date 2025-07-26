@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
-use http::Uri;
+use http::{Uri, Version};
 
 use crate::{
-    core::client::connect::TcpConnectOptions,
+    core::client::{
+        connect::TcpConnectOptions,
+        options::{RequestOptions, TransportOptions},
+    },
     proxy::Matcher as ProxyMacher,
     tls::{AlpnProtocol, TlsOptions},
     util::hash::HashMemo,
@@ -23,42 +26,58 @@ pub(crate) type Identifier = Arc<HashMemo<ConnectMeta>>;
 #[must_use]
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub(crate) struct ConnectMeta {
-    /// The target URI for the connection.
-    pub(super) uri: Uri,
-    /// The negotiated ALPN protocol.
-    pub(super) alpn: Option<AlpnProtocol>,
-    /// The proxy matcher.
-    pub(super) proxy: Option<ProxyMacher>,
-    /// Optional TLS options.
-    pub(super) tls_options: Option<TlsOptions>,
-    /// Optional TCP connection options.
-    pub(super) tcp_options: Option<TcpConnectOptions>,
+    /// Target URI.
+    uri: Uri,
+    /// Request options.
+    options: Option<RequestOptions>,
 }
 
 // ===== impl ConnectMeta =====
 
 impl ConnectMeta {
-    /// Return the negotiated [`AlpnProtocol`].
+    /// Create a new [`ConnectMeta`] with the given URI and options.
     #[inline]
-    pub(crate) fn alpn(&self) -> Option<AlpnProtocol> {
-        self.alpn
+    pub(super) fn new(uri: Uri, options: Option<RequestOptions>) -> Self {
+        Self { uri, options }
+    }
+
+    /// Return the negotiated [`AlpnProtocol`].
+    pub(crate) fn alpn_protocol(&self) -> Option<AlpnProtocol> {
+        match self
+            .options
+            .as_ref()
+            .and_then(RequestOptions::enforced_version)
+        {
+            Some(Version::HTTP_11 | Version::HTTP_10 | Version::HTTP_09) => {
+                Some(AlpnProtocol::HTTP1)
+            }
+            Some(Version::HTTP_2) => Some(AlpnProtocol::HTTP2),
+            _ => None,
+        }
     }
 
     /// Return a reference to the [`ProxyMacher`].
     #[inline]
-    pub(crate) fn proxy(&self) -> Option<&ProxyMacher> {
-        self.proxy.as_ref()
+    pub(crate) fn proxy_matcher(&self) -> Option<&ProxyMacher> {
+        self.options
+            .as_ref()
+            .and_then(RequestOptions::proxy_matcher)
     }
 
     /// Return a reference to the [`TlsOptions`].
     #[inline]
     pub(crate) fn tls_options(&self) -> Option<&TlsOptions> {
-        self.tls_options.as_ref()
+        self.options
+            .as_ref()
+            .and_then(RequestOptions::transport_opts)
+            .and_then(TransportOptions::tls_options)
     }
 
     /// Return a reference to the [`TcpConnectOptions`].
     #[inline]
     pub(crate) fn tcp_options(&self) -> Option<&TcpConnectOptions> {
-        self.tcp_options.as_ref()
+        self.options
+            .as_ref()
+            .and_then(RequestOptions::tcp_connect_opts)
     }
 }
