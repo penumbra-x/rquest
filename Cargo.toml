@@ -93,7 +93,7 @@ schnellru = { version = "0.2.4", default-features = false }
 ahash = { version = "0.8.12", default-features = false }
 
 ## runtime
-tokio = { version = "1", default-features = false, features = [
+tokio = { version = "1.47.0", default-features = false, features = [
     "net",
     "time",
     "rt",
