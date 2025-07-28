@@ -317,7 +317,7 @@ impl ConnectorService {
                 )
                 .with_auth(proxy.raw_auth())
                 .with_version(version)
-                .with_local_dns(dns_resolve);
+                .with_dns_mode(dns_resolve);
 
                 let is_https = uri.scheme() == Some(&Scheme::HTTPS);
                 let conn = socks.call(uri).await?;

@@ -151,7 +151,7 @@ where
     }
 
     /// Sets whether to resolve DNS locally or let the proxy handle DNS resolution.
-    pub fn with_local_dns(self, dns_resolve: DnsResolve) -> Self {
+    pub fn with_dns_mode(self, dns_resolve: DnsResolve) -> Self {
         SocksConnector {
             dns_resolve,
             ..self
