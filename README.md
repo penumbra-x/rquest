@@ -4,7 +4,7 @@
 [![Crates.io License](https://img.shields.io/crates/l/wreq)](./LICENSE)
 ![Crates.io MSRV](https://img.shields.io/crates/msrv/wreq?logo=rust)
 [![crates.io](https://img.shields.io/crates/v/wreq.svg?logo=rust)](https://crates.io/crates/wreq)
-[![Documentation](https://docs.rs/reqwest/badge.svg)](https://docs.rs/wreq)
+[![Documentation](https://docs.rs/wreq/badge.svg)](https://docs.rs/wreq)
 
 > 🚀 Help me work seamlessly with open source sharing by [sponsoring me on GitHub](https://github.com/0x676e67/0x676e67/blob/main/SPONSOR.md)
 
