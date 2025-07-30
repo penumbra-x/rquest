@@ -1,5 +1,0 @@
-group_imports = "StdExternalCrate"
-imports_granularity = "Crate"
-reorder_imports = true
-wrap_comments = true
-comment_width = 100
