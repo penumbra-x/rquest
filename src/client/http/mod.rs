@@ -936,6 +936,8 @@ impl ClientBuilder {
     /// This option controls how long transmitted data may remain unacknowledged before
     /// the connection is force-closed.
     ///
+    /// If `None`, the option will not be set.
+    ///
     /// Default is 30 seconds.
     #[inline]
     #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
