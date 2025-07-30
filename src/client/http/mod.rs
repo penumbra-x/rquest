@@ -184,8 +184,6 @@ impl ClientBuilder {
                 pool_idle_timeout: Some(Duration::from_secs(90)),
                 pool_max_idle_per_host: usize::MAX,
                 pool_max_size: None,
-                // TODO: Re-enable default duration once core's HttpConnector is fixed
-                // to no longer error when an option fails.
                 tcp_keepalive: Some(Duration::from_secs(15)),
                 tcp_keepalive_interval: Some(Duration::from_secs(15)),
                 tcp_keepalive_retries: Some(3),
