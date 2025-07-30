@@ -1,7 +1,7 @@
-mod aliases;
 mod connect;
 mod future;
 mod service;
+mod types;
 
 use std::{
     collections::HashMap,
@@ -13,10 +13,6 @@ use std::{
     time::Duration,
 };
 
-use aliases::{
-    BoxedClientLayer, BoxedClientService, BoxedConnectorLayer, BoxedConnectorService,
-    GenericClientService, ResponseBody,
-};
 pub use future::Pending;
 use http::{
     Request as HttpRequest, Response as HttpResponse,
@@ -27,6 +23,10 @@ use tower::{
     Layer, Service, ServiceBuilder, ServiceExt,
     retry::RetryLayer,
     util::{BoxCloneSyncService, BoxCloneSyncServiceLayer},
+};
+use types::{
+    BoxedClientLayer, BoxedClientService, BoxedConnectorLayer, BoxedConnectorService, ClientRef,
+    HttpConnector, ResponseBody,
 };
 #[cfg(feature = "cookies")]
 use {super::layer::cookie::CookieManagerLayer, crate::cookie};
@@ -55,10 +55,7 @@ use crate::dns::hickory::{HickoryDnsResolver, LookupIpStrategy};
 use crate::{
     IntoUrl, Method, OriginalHeaders, Proxy,
     client::{
-        http::{
-            aliases::HttpConnector,
-            connect::{Conn, Connector, Unnameable},
-        },
+        http::connect::{Conn, Connector, Unnameable},
         layer::timeout::TimeoutOptions,
     },
     core::{
@@ -88,13 +85,6 @@ use crate::{
 #[derive(Clone)]
 pub struct Client {
     inner: Arc<ClientRef>,
-}
-
-#[allow(clippy::large_enum_variant)]
-#[derive(Clone)]
-enum ClientRef {
-    Boxed(BoxedClientService),
-    Generic(GenericClientService),
 }
 
 /// A `ClientBuilder` can be used to create a `Client` with custom configuration.
@@ -343,6 +333,8 @@ impl ClientBuilder {
 
         // Create the client with the configured service layers
         let client = {
+            // Start with the base client service, which handles headers, original headers,
+            // HTTPS-only, and proxies.
             let service = ClientService::new(
                 client,
                 config.headers,
@@ -357,19 +349,23 @@ impl ClientBuilder {
                 feature = "brotli",
                 feature = "deflate",
             ))]
+            // Add response decompression support (gzip, zstd, brotli, deflate) if enabled.
             let service = ServiceBuilder::new()
                 .layer(DecompressionLayer::new(config.accept_encoding))
                 .service(service);
 
+            // Add a timeout layer for the response body.
             let service = ServiceBuilder::new()
                 .layer(ResponseBodyTimeoutLayer::new(config.timeout_options))
                 .service(service);
 
             #[cfg(feature = "cookies")]
+            // Add cookie management support if enabled.
             let service = ServiceBuilder::new()
                 .layer(CookieManagerLayer::new(config.cookie_store))
                 .service(service);
 
+            // Add redirect following logic with the configured policy.
             let service = {
                 let policy = FollowRedirectPolicy::new(config.redirect_policy)
                     .with_referer(config.referer)
@@ -380,6 +376,7 @@ impl ClientBuilder {
                     .service(service)
             };
 
+            // Add HTTP/2 retry logic.
             let service = ServiceBuilder::new()
                 .layer(RetryLayer::new(Http2RetryPolicy::new(
                     config.http2_max_retry,
@@ -387,6 +384,7 @@ impl ClientBuilder {
                 .service(service);
 
             if config.layers.is_empty() {
+                // Add a request timeout layer and map timeout errors to request errors.
                 let service = ServiceBuilder::new()
                     .layer(TimeoutLayer::new(config.timeout_options))
                     .service(service);
@@ -395,8 +393,9 @@ impl ClientBuilder {
                     .map_err(error::map_timeout_to_request_error as _)
                     .service(service);
 
-                ClientRef::Generic(service)
+                ClientRef::Left(service)
             } else {
+                // If custom layers are configured, wrap the service with each layer in order.
                 let service = config.layers.into_iter().fold(
                     BoxCloneSyncService::new(service),
                     |client_service, layer| {
@@ -404,6 +403,7 @@ impl ClientBuilder {
                     },
                 );
 
+                // Add a request timeout layer and map timeout errors to request errors.
                 let service = ServiceBuilder::new()
                     .layer(TimeoutLayer::new(config.timeout_options))
                     .service(service);
@@ -412,7 +412,7 @@ impl ClientBuilder {
                     .map_err(error::map_timeout_to_request_error)
                     .service(service);
 
-                ClientRef::Boxed(BoxCloneSyncService::new(service))
+                ClientRef::Right(BoxCloneSyncService::new(service))
             }
         };
 
@@ -1521,16 +1521,8 @@ impl Client {
             Ok((url, req)) => {
                 // Prepare the future request by ensuring we use the exact same Service instance
                 // for both poll_ready and call.
-                match *self.inner {
-                    ClientRef::Boxed(ref service) => {
-                        let fut = service.clone().oneshot(req);
-                        Pending::boxed_request(url, fut)
-                    }
-                    ClientRef::Generic(ref service) => {
-                        let fut = service.clone().oneshot(req);
-                        Pending::generic_request(url, fut)
-                    }
-                }
+                let fut = self.inner.as_ref().clone().oneshot(req);
+                Pending::request(fut, url)
             }
             Err(err) => Pending::error(err),
         }
