@@ -29,7 +29,7 @@ use crate::{
             body::Incoming,
             conn::{self, TrySendError as ConnTrySendError},
             connect::{Alpn, Connected, Connection},
-            options::{TransportOptions, http1::Http1Options, http2::Http2Options},
+            options::{RequestOptions, http1::Http1Options, http2::Http2Options},
             pool,
         },
         common::{Exec, Lazy, lazy, timer},
@@ -157,18 +157,15 @@ where
         // builder. This allows each request to override HTTP/1 and HTTP/2 options as
         // needed.
         let options = RequestConfig::<RequestLevelOptions>::remove(req.extensions_mut());
-        if let Some(ref opts) = options {
-            if let Some(http1) = opts
-                .transport_opts()
-                .and_then(TransportOptions::http1_options)
-            {
-                this.h1_builder.options(Some(http1.clone()));
+
+        // Apply HTTP/1 and HTTP/2 options if provided
+        if let Some(opts) = options.as_ref().map(RequestOptions::transport_opts) {
+            if let Some(opts) = opts.http1_options() {
+                this.h1_builder.options(opts.clone());
             }
-            if let Some(http2) = opts
-                .transport_opts()
-                .and_then(TransportOptions::http2_options)
-            {
-                this.h2_builder.options(Some(http2.clone()));
+
+            if let Some(opts) = opts.http2_options() {
+                this.h2_builder.options(opts.clone());
             }
         }
 
@@ -834,6 +831,7 @@ impl Builder {
     /// Pass `None` to disable timeout.
     ///
     /// Default is 90 seconds.
+    #[inline]
     pub fn pool_idle_timeout<D>(&mut self, val: D) -> &mut Self
     where
         D: Into<Option<Duration>>,
@@ -845,6 +843,7 @@ impl Builder {
     /// Sets the maximum idle connection per host allowed in the pool.
     ///
     /// Default is `usize::MAX` (no limit).
+    #[inline]
     pub fn pool_max_idle_per_host(&mut self, max_idle: usize) -> &mut Self {
         self.pool_config.max_idle_per_host = max_idle;
         self
@@ -853,6 +852,7 @@ impl Builder {
     /// Sets the maximum number of connections in the pool.
     ///
     /// Default is `None` (no limit).
+    #[inline]
     pub fn pool_max_size(&mut self, max_size: impl Into<Option<NonZeroU32>>) -> &mut Self {
         self.pool_config.max_pool_size = max_size.into();
         self
@@ -868,6 +868,7 @@ impl Builder {
     /// Note that setting this to true prevents HTTP/1 from being allowed.
     ///
     /// Default is false.
+    #[inline]
     pub fn http2_only(&mut self, val: bool) -> &mut Self {
         self.client_config.ver = if val { Ver::Http2 } else { Ver::Auto };
         self
@@ -879,6 +880,7 @@ impl Builder {
     /// details.
     ///
     /// [`http2::client::Builder::timer`]: https://docs.rs/http2/latest/http2/client/struct.Builder.html#method.timer
+    #[inline]
     pub fn http2_timer<M>(&mut self, timer: M) -> &mut Self
     where
         M: Timer + Send + Sync + 'static,
@@ -888,18 +890,32 @@ impl Builder {
     }
 
     /// Provide a configuration for HTTP/1.
-    pub fn http1_options(&mut self, opts: Option<Http1Options>) -> &mut Self {
-        self.h1_builder.options(opts);
+    #[inline]
+    pub fn http1_options<O>(&mut self, opts: O) -> &mut Self
+    where
+        O: Into<Option<Http1Options>>,
+    {
+        if let Some(opts) = opts.into() {
+            self.h1_builder.options(opts);
+        }
+
         self
     }
 
     /// Provide a configuration for HTTP/2.
-    pub fn http2_options(&mut self, opts: Option<Http2Options>) -> &mut Self {
-        self.h2_builder.options(opts);
+    #[inline]
+    pub fn http2_options<O>(&mut self, opts: O) -> &mut Self
+    where
+        O: Into<Option<Http2Options>>,
+    {
+        if let Some(opts) = opts.into() {
+            self.h2_builder.options(opts);
+        }
         self
     }
 
     /// Provide a timer to be used for timeouts and intervals in connection pools.
+    #[inline]
     pub fn pool_timer<M>(&mut self, timer: M) -> &mut Self
     where
         M: Timer + Clone + Send + Sync + 'static,

@@ -204,6 +204,7 @@ where
     }
 
     /// Provide a timer to execute background HTTP2 tasks.
+    #[inline]
     pub fn timer<M>(&mut self, timer: M)
     where
         M: Timer + Send + Sync + 'static,
@@ -212,10 +213,9 @@ where
     }
 
     /// Provide a options configuration for the HTTP/2 connection.
-    pub fn options(&mut self, opts: Option<Http2Options>) {
-        if let Some(opts) = opts {
-            self.opts = opts;
-        }
+    #[inline]
+    pub fn options(&mut self, opts: Http2Options) {
+        self.opts = opts;
     }
 
     /// Constructs a connection with the configured options and IO.
