@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/0x676e67/wreq/actions/workflows/ci.yml/badge.svg)](https://github.com/0x676e67/wreq/actions/workflows/ci.yml)
 [![Crates.io License](https://img.shields.io/crates/l/wreq)](./LICENSE)
-![Crates.io MSRV](https://img.shields.io/crates/msrv/wreq?logo=rust)
 [![crates.io](https://img.shields.io/crates/v/wreq.svg?logo=rust)](https://crates.io/crates/wreq)
 [![Documentation](https://docs.rs/wreq/badge.svg)](https://docs.rs/wreq)
 
@@ -61,6 +60,10 @@ async fn main() -> wreq::Result<()> {
 
 Due to the complexity of TLS encryption and the widespread adoption of HTTP/2, browser fingerprints such as **JA3**, **JA4**, and **Akamai** cannot be reliably emulated using simple fingerprint strings. Instead of parsing and emulating these string-based fingerprints, `wreq` provides fine-grained control over TLS and HTTP/2 extensions and settings for precise browser behavior emulation.
 
+- **HTTP/3 over QUIC**
+
+HTTP/3 over QUIC is a work in progress. Due to the complexity of QUIC and the evolving ecosystem, full HTTP/3 emulation is not yet available in `wreq`. If you'd like to accelerate development, please consider sponsoring the project. Progress is tracked at [issue #840](https://github.com/0x676e67/wreq/issues/840).
+
 - **Device Emulation**
 
 Most browser device models share identical TLS and HTTP/2 configurations, differing only in the `User-Agent` string. Common browser device emulation templates are maintained in [`wreq-util`](https://github.com/0x676e67/wreq-util), a companion utility crate.
@@ -81,7 +84,7 @@ This GitHub Actions [workflow](.github/compilation-guide/build.yml) can be used 
 
 ## License
 
-Released under the [Apache-2.0](./LICENSE) License.
+Licensed under either of Apache License, Version 2.0 ([LICENSE](./LICENSE) or http://www.apache.org/licenses/LICENSE-2.0).
 
 ## Contribution
 
