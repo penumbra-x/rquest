@@ -29,7 +29,7 @@ pub use self::builder::IntoValue;
 use self::builder::IntoValue;
 
 /// A proxy matcher, usually built from environment variables.
-#[derive(Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Matcher {
     http: Option<Intercept>,
     https: Option<Intercept>,
@@ -126,25 +126,6 @@ impl Matcher {
         }
 
         None
-    }
-}
-
-impl fmt::Debug for Matcher {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut b = f.debug_struct("Matcher");
-
-        if let Some(ref http) = self.http {
-            b.field("http", http);
-        }
-
-        if let Some(ref https) = self.https {
-            b.field("https", https);
-        }
-
-        if !self.no.is_empty() {
-            b.field("no", &self.no);
-        }
-        b.finish()
     }
 }
 
@@ -456,10 +437,6 @@ impl NoProxy {
             Ok(ip) => self.ips.contains(ip),
             Err(_) => self.domains.contains(host),
         }
-    }
-
-    fn is_empty(&self) -> bool {
-        self.ips.0.is_empty() && self.domains.0.is_empty()
     }
 }
 

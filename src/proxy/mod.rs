@@ -68,7 +68,7 @@ pub struct NoProxy {
     inner: String,
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct Extra {
     auth: Option<HeaderValue>,
     misc: Option<HeaderMap>,
@@ -99,7 +99,7 @@ impl std::hash::Hash for Extra {
 
 // ===== Internal =====
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct Matcher {
     inner: Box<matcher::Matcher>,
     extra: Extra,
@@ -472,12 +472,6 @@ impl Matcher {
         }
 
         None
-    }
-}
-
-impl fmt::Debug for Matcher {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.inner.fmt(f)
     }
 }
 
