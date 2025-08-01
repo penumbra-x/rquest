@@ -1,7 +1,7 @@
 use http::{Request as HttpRequest, Response as HttpResponse};
 use tower::{
     retry::Retry,
-    util::{BoxCloneSyncService, BoxCloneSyncServiceLayer, Either, MapErr, Oneshot},
+    util::{BoxCloneSyncService, BoxCloneSyncServiceLayer, Either, MapErr},
 };
 
 use super::{
@@ -61,19 +61,26 @@ pub type ResponseBody = TimeoutBody<tower_http::decompression::DecompressionBody
 )))]
 pub type ResponseBody = TimeoutBody<Incoming>;
 
-/// Layer that adds redirect, cookie, timeout, and decompression support to a client service.
-pub type FollowRedirectLayer = FollowRedirect<
-    CookieLayer<ResponseBodyTimeout<Decompression<ClientService>>>,
-    FollowRedirectPolicy,
->;
-
 /// HTTP client service with retry, timeout, redirect, and error mapping for HTTP/2.
-pub type GenericClientService =
-    MapErr<Timeout<Retry<Http2RetryPolicy, FollowRedirectLayer>>, fn(BoxError) -> BoxError>;
+pub type GenericClientService = MapErr<
+    Timeout<
+        Retry<
+            Http2RetryPolicy,
+            FollowRedirect<
+                CookieLayer<ResponseBodyTimeout<Decompression<ClientService>>>,
+                FollowRedirectPolicy,
+            >,
+        >,
+    >,
+    fn(BoxError) -> BoxError,
+>;
 
 /// Boxed HTTP client service object-safe type for requests and responses.
 pub type BoxedClientService =
     BoxCloneSyncService<HttpRequest<Body>, HttpResponse<ResponseBody>, BoxError>;
+
+/// Represents either a generic or boxed client service for HTTP
+pub type ClientRef = Either<GenericClientService, BoxedClientService>;
 
 /// Boxed layer for building a boxed client service.
 pub type BoxedClientLayer = BoxCloneSyncServiceLayer<
@@ -92,9 +99,3 @@ pub type BoxedConnectorService = BoxCloneSyncService<Unnameable, Conn, BoxError>
 /// Boxed layer for building a boxed connector service.
 pub type BoxedConnectorLayer =
     BoxCloneSyncServiceLayer<BoxedConnectorService, Unnameable, Conn, BoxError>;
-
-/// Represents either a generic or boxed client service for HTTP
-pub type ClientRef = Either<GenericClientService, BoxedClientService>;
-
-/// Future for sending an HTTP request using a client service.
-pub type ResponseFuture = Oneshot<ClientRef, HttpRequest<Body>>;

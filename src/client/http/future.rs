@@ -3,15 +3,19 @@ use std::{
     task::{Context, Poll, ready},
 };
 
+use http::Request;
 use pin_project_lite::pin_project;
+use tower::util::Oneshot;
 use url::Url;
 
-use super::{Response, types::ResponseFuture};
+use super::{Body, Response, types::ClientRef};
 use crate::{
     Error,
     client::{body, layer::redirect::RequestUri},
     into_url::IntoUrlSealed,
 };
+
+type ResponseFuture = Oneshot<ClientRef, Request<Body>>;
 
 pin_project! {
     /// [`Pending`] is a future representing the state of an HTTP request, which may be either
