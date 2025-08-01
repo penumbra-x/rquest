@@ -482,7 +482,7 @@ impl fmt::Debug for Matcher {
 }
 
 impl Intercepted {
-    pub(crate) fn uri(&self) -> &http::Uri {
+    pub(crate) fn uri(&self) -> &Uri {
         self.inner.uri()
     }
 
@@ -523,7 +523,7 @@ enum Intercept {
 mod tests {
     use super::*;
 
-    fn url(s: &str) -> http::Uri {
+    fn uri(s: &str) -> Uri {
         s.parse().unwrap()
     }
 
@@ -540,7 +540,7 @@ mod tests {
         let other = "https://hyper.rs";
 
         assert_eq!(intercepted_uri(&p, http), target);
-        assert!(p.intercept(&url(other)).is_none());
+        assert!(p.intercept(&uri(other)).is_none());
     }
 
     #[test]
@@ -551,7 +551,7 @@ mod tests {
         let http = "http://hyper.rs";
         let other = "https://hyper.rs";
 
-        assert!(p.intercept(&url(http)).is_none());
+        assert!(p.intercept(&uri(http)).is_none());
         assert_eq!(intercepted_uri(&p, other), target);
     }
 
@@ -578,7 +578,7 @@ mod tests {
             .custom_http_auth(http::HeaderValue::from_static("testme"))
             .into_matcher();
 
-        let got = p.intercept(&url("http://anywhere.local")).unwrap();
+        let got = p.intercept(&uri("http://anywhere.local")).unwrap();
         let auth = got.basic_auth().unwrap();
         assert_eq!(auth, "testme");
     }

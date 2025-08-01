@@ -15,7 +15,11 @@
 use std::{fmt, net::IpAddr};
 
 use bytes::Bytes;
-use http::{header::HeaderValue, uri::Authority};
+use http::{
+    Uri,
+    header::HeaderValue,
+    uri::{Authority, Scheme},
+};
 use ipnet::IpNet;
 use percent_encoding::percent_decode_str;
 
@@ -37,7 +41,7 @@ pub struct Matcher {
 /// This is returned by a matcher if a proxy should be used.
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Intercept {
-    uri: http::Uri,
+    uri: Uri,
     auth: Auth,
 }
 
@@ -107,17 +111,17 @@ impl Matcher {
     ///
     /// If the proxy rules match the destination, a new `Uri` will be returned
     /// to connect to.
-    pub fn intercept(&self, dst: &http::Uri) -> Option<Intercept> {
+    pub fn intercept(&self, dst: &Uri) -> Option<Intercept> {
         // TODO(perf): don't need to check `no` if below doesn't match...
         if self.no.contains(dst.host()?) {
             return None;
         }
 
-        if dst.scheme() == Some(&http::uri::Scheme::HTTP) {
+        if dst.scheme() == Some(&Scheme::HTTP) {
             return self.http.clone();
         }
 
-        if dst.scheme() == Some(&http::uri::Scheme::HTTPS) {
+        if dst.scheme() == Some(&Scheme::HTTPS) {
             return self.https.clone();
         }
 
@@ -147,8 +151,8 @@ impl fmt::Debug for Matcher {
 // ===== impl Intercept =====
 
 impl Intercept {
-    /// Get the `http::Uri` for the target proxy.
-    pub fn uri(&self) -> &http::Uri {
+    /// Get the [`http::Uri`] for the target proxy.
+    pub fn uri(&self) -> &Uri {
         &self.uri
     }
 
@@ -325,8 +329,8 @@ fn get_first_env(names: &[&str]) -> String {
 }
 
 fn parse_env_uri(val: &str) -> Option<Intercept> {
-    let uri = val.parse::<http::Uri>().ok()?;
-    let mut builder = http::Uri::builder();
+    let uri = val.parse::<Uri>().ok()?;
+    let mut builder = Uri::builder();
     let mut is_httpish = false;
     let mut is_socks = false;
     let mut auth = Auth::Empty;
