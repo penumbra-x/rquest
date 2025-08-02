@@ -40,7 +40,7 @@ use crate::{
     sync::Mutex,
     tls::{
         AlpnProtocol, AlpsProtocol, CertStore, Identity, KeyLogPolicy, TlsOptions, TlsVersion,
-        conn::ext::{ConnectConfigurationExt, SslConnectorBuilderExt},
+        conn::ext::SslConnectorBuilderExt,
     },
 };
 
@@ -218,17 +218,23 @@ impl Inner {
         // Set ECH grease
         cfg.set_enable_ech_grease(self.config.enable_ech_grease);
 
-        // Set AES hardware override
-        cfg.set_random_aes_hw_override(self.config.random_aes_hw_override);
+        // Set random AES hardware override
+        if self.config.random_aes_hw_override {
+            let random = (crate::util::fast_random() & 1) == 0;
+            cfg.set_aes_hw_override(random);
+        }
 
         // Set ALPS protos
-        cfg.set_alps_protos(
-            self.config
-                .alps_protocols
-                .as_deref()
-                .map(AlpsProtocol::encode_sequence),
-            self.config.alps_use_new_codepoint,
-        )?;
+        if let Some(ref alps_values) = self.config.alps_protocols {
+            for alps in alps_values.iter() {
+                cfg.add_application_settings(alps.value())?;
+            }
+
+            // By default, the old endpoint is used.
+            if !alps_values.is_empty() && self.config.alps_use_new_codepoint {
+                cfg.set_alps_use_new_codepoint(true);
+            }
+        }
 
         // Set ALPN protocols
         if let Some(alpn) = req.metadata().alpn_protocol() {
@@ -245,7 +251,7 @@ impl Inner {
             // If the session cache is enabled, we try to retrieve the session
             // associated with the key. If it exists, we set it in the SSL configuration.
             if let Some(session) = cache.lock().get(&key) {
-                cfg.set_seesion2(&session)?;
+                unsafe { cfg.set_session(&session) }?;
 
                 if self.config.no_ticket {
                     cfg.set_options(SslOptions::NO_TICKET)?;
