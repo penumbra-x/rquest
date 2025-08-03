@@ -30,12 +30,12 @@ pub struct EmulationBuilder {
 /// request-level settings (headers, header case preservation) to provide
 /// a complete emulation profile for web browsers, mobile applications,
 /// API clients, and other HTTP implementations.
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 #[non_exhaustive]
 pub struct Emulation {
-    transport: TransportOptions,
     headers: HeaderMap,
     orig_headers: OrigHeaderMap,
+    transport: TransportOptions,
 }
 
 // ==== impl EmulationBuilder ====
