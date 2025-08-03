@@ -7,7 +7,7 @@
 
 > 🚀 Help me work seamlessly with open source sharing by [sponsoring me on GitHub](https://github.com/0x676e67/0x676e67/blob/main/SPONSOR.md)
 
-An ergonomic all-in-one HTTP client for browser emulation with TLS, JA3/JA4, and HTTP/2 fingerprints.
+An ergonomic and modular HTTP client for browser emulation with advanced TLS, JA3/JA4, and HTTP/2 fingerprinting capabilities.
 
 ## Features
 
@@ -29,8 +29,8 @@ This asynchronous example utilizes [Tokio](https://tokio.rs) with optional featu
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-wreq = "5"
-wreq-util = "2"
+wreq = "6.0.0-rc.1"
+wreq-util = "3.0.0-rc.1"
 ```
 
 And then the code:
