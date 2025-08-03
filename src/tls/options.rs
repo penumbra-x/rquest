@@ -99,12 +99,8 @@ pub struct TlsOptions {
 }
 
 impl TlsOptionsBuilder {
-    /// Builds the `TlsOptions` from the builder.
-    pub fn build(self) -> TlsOptions {
-        self.config
-    }
-
     /// Sets the ALPN protocols to use.
+    #[inline]
     pub fn alpn_protocols<I>(mut self, alpn: I) -> Self
     where
         I: IntoIterator<Item = AlpnProtocol>,
@@ -114,6 +110,7 @@ impl TlsOptionsBuilder {
     }
 
     /// Sets the ALPS protocols to use.
+    #[inline]
     pub fn alps_protocols<I>(mut self, alps: I) -> Self
     where
         I: IntoIterator<Item = AlpsProtocol>,
@@ -123,17 +120,20 @@ impl TlsOptionsBuilder {
     }
 
     /// Sets whether to use a new codepoint for ALPS.
+    #[inline]
     pub fn alps_use_new_codepoint(mut self, enabled: bool) -> Self {
         self.config.alps_use_new_codepoint = enabled;
         self
     }
     /// Sets the session ticket flag.
+    #[inline]
     pub fn session_ticket(mut self, enabled: bool) -> Self {
         self.config.session_ticket = enabled;
         self
     }
 
     /// Sets the minimum TLS version to use.
+    #[inline]
     pub fn min_tls_version<T>(mut self, version: T) -> Self
     where
         T: Into<Option<TlsVersion>>,
@@ -143,6 +143,7 @@ impl TlsOptionsBuilder {
     }
 
     /// Sets the maximum TLS version to use.
+    #[inline]
     pub fn max_tls_version<T>(mut self, version: T) -> Self
     where
         T: Into<Option<TlsVersion>>,
@@ -152,18 +153,21 @@ impl TlsOptionsBuilder {
     }
 
     /// Sets the pre-shared key flag.
+    #[inline]
     pub fn pre_shared_key(mut self, enabled: bool) -> Self {
         self.config.pre_shared_key = enabled;
         self
     }
 
     /// Sets the GREASE ECH extension flag.
+    #[inline]
     pub fn enable_ech_grease(mut self, enabled: bool) -> Self {
         self.config.enable_ech_grease = enabled;
         self
     }
 
     /// Sets whether to permute ClientHello extensions.
+    #[inline]
     pub fn permute_extensions<T>(mut self, permute: T) -> Self
     where
         T: Into<Option<bool>>,
@@ -173,6 +177,7 @@ impl TlsOptionsBuilder {
     }
 
     /// Sets the GREASE enabled flag.
+    #[inline]
     pub fn grease_enabled<T>(mut self, enabled: T) -> Self
     where
         T: Into<Option<bool>>,
@@ -182,30 +187,35 @@ impl TlsOptionsBuilder {
     }
 
     /// Sets the OCSP stapling flag.
+    #[inline]
     pub fn enable_ocsp_stapling(mut self, enabled: bool) -> Self {
         self.config.enable_ocsp_stapling = enabled;
         self
     }
 
     /// Sets the signed certificate timestamps flag.
+    #[inline]
     pub fn enable_signed_cert_timestamps(mut self, enabled: bool) -> Self {
         self.config.enable_signed_cert_timestamps = enabled;
         self
     }
 
     /// Sets the record size limit.
+    #[inline]
     pub fn record_size_limit<U: Into<Option<u16>>>(mut self, limit: U) -> Self {
         self.config.record_size_limit = limit.into();
         self
     }
 
     /// Sets the PSK skip session ticket flag.
+    #[inline]
     pub fn psk_skip_session_ticket(mut self, skip: bool) -> Self {
         self.config.psk_skip_session_ticket = skip;
         self
     }
 
     /// Sets the key shares length limit.
+    #[inline]
     pub fn key_shares_limit<T>(mut self, limit: T) -> Self
     where
         T: Into<Option<u8>>,
@@ -215,18 +225,21 @@ impl TlsOptionsBuilder {
     }
 
     /// Sets the PSK DHE key establishment flag.
+    #[inline]
     pub fn psk_dhe_ke(mut self, enabled: bool) -> Self {
         self.config.psk_dhe_ke = enabled;
         self
     }
 
     /// Sets the renegotiation flag.
+    #[inline]
     pub fn renegotiation(mut self, enabled: bool) -> Self {
         self.config.renegotiation = enabled;
         self
     }
 
     /// Sets the delegated credentials.
+    #[inline]
     pub fn delegated_credentials<T>(mut self, creds: T) -> Self
     where
         T: Into<Cow<'static, str>>,
@@ -236,6 +249,7 @@ impl TlsOptionsBuilder {
     }
 
     /// Sets the supported curves list.
+    #[inline]
     pub fn curves_list<T>(mut self, curves: T) -> Self
     where
         T: Into<Cow<'static, str>>,
@@ -245,6 +259,7 @@ impl TlsOptionsBuilder {
     }
 
     /// Sets the cipher list.
+    #[inline]
     pub fn cipher_list<T>(mut self, ciphers: T) -> Self
     where
         T: Into<Cow<'static, str>>,
@@ -254,6 +269,7 @@ impl TlsOptionsBuilder {
     }
 
     /// Sets the supported signature algorithms.
+    #[inline]
     pub fn sigalgs_list<T>(mut self, sigalgs: T) -> Self
     where
         T: Into<Cow<'static, str>>,
@@ -263,6 +279,7 @@ impl TlsOptionsBuilder {
     }
 
     /// Sets the certificate compression algorithms.
+    #[inline]
     pub fn certificate_compression_algorithms<T>(mut self, algs: T) -> Self
     where
         T: Into<Cow<'static, [CertificateCompressionAlgorithm]>>,
@@ -272,6 +289,7 @@ impl TlsOptionsBuilder {
     }
 
     /// Sets the extension permutation.
+    #[inline]
     pub fn extension_permutation<T>(mut self, permutation: T) -> Self
     where
         T: Into<Cow<'static, [ExtensionType]>>,
@@ -281,6 +299,7 @@ impl TlsOptionsBuilder {
     }
 
     /// Sets the AES hardware override flag.
+    #[inline]
     pub fn aes_hw_override<T>(mut self, enabled: T) -> Self
     where
         T: Into<Option<bool>>,
@@ -290,6 +309,7 @@ impl TlsOptionsBuilder {
     }
 
     /// Sets the random AES hardware override flag.
+    #[inline]
     pub fn random_aes_hw_override(mut self, enabled: bool) -> Self {
         self.config.random_aes_hw_override = enabled;
         self
@@ -300,12 +320,19 @@ impl TlsOptionsBuilder {
     /// Controls the priority of TLS 1.3 cipher suites. When set to `true`, the client prefers:
     /// AES_128_GCM, CHACHA20_POLY1305, then AES_256_GCM. Useful in environments with specific
     /// encryption requirements.
+    #[inline]
     pub fn prefer_chacha20<T>(mut self, enabled: T) -> Self
     where
         T: Into<Option<bool>>,
     {
         self.config.prefer_chacha20 = enabled.into();
         self
+    }
+
+    /// Builds the `TlsOptions` from the builder.
+    #[inline]
+    pub fn build(self) -> TlsOptions {
+        self.config
     }
 }
 
