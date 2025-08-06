@@ -7,7 +7,7 @@
 
 > 🚀 Help me work seamlessly with open source sharing by [sponsoring me on GitHub](https://github.com/0x676e67/0x676e67/blob/main/SPONSOR.md)
 
-An ergonomic and modular HTTP client for browser emulation with advanced TLS, JA3/JA4, and HTTP/2 fingerprinting capabilities.
+An ergonomic and modular Rust HTTP client for advanced and low-level emulation, with customizable TLS, JA3/JA4, and HTTP/2 fingerprinting capabilities.
 
 ## Features
 
