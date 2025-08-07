@@ -1,6 +1,6 @@
 [package]
 name = "wreq"
-version = "6.0.0-rc.2"
+version = "6.0.0-rc.4"
 description = "An ergonomic Rust HTTP Client with TLS fingerprint"
 keywords = ["http", "client", "websocket", "ja3", "ja4"]
 categories = ["web-programming::http-client"]
@@ -78,7 +78,7 @@ tower = { version = "0.5.2", default-features = false, features = [
 ] }
 bytes = "1.10.1"
 http = "1.3.1"
-http2 = { version = "0.5.5", features = ["unstable"] }
+http2 = { version = "0.5.6", features = ["unstable"] }
 httparse = "1.10.1"
 http-body = "1.0.1"
 http-body-util = "0.1.3"
