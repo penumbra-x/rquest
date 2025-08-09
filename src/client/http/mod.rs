@@ -65,9 +65,14 @@ use crate::{
     dns::{DnsResolverWithOverrides, DynResolver, GaiResolver, Resolve},
     error::{self, BoxError, Error},
     header::OrigHeaderMap,
+    http1::Http1Options,
+    http2::Http2Options,
     proxy::Matcher as ProxyMatcher,
     redirect::{self, FollowRedirectPolicy, Policy as RedirectPolicy},
-    tls::{AlpnProtocol, CertStore, Identity, KeyLogPolicy, TlsConnectorBuilder, TlsVersion},
+    tls::{
+        AlpnProtocol, CertStore, Identity, KeyLogPolicy, TlsConnectorBuilder, TlsOptions,
+        TlsVersion,
+    },
 };
 
 /// An [`Client`] to make Requests with.
@@ -843,6 +848,15 @@ impl ClientBuilder {
         self
     }
 
+    /// Restrict the Client to be used with HTTPS only requests.
+    ///
+    /// Defaults to false.
+    #[inline]
+    pub fn https_only(mut self, enabled: bool) -> ClientBuilder {
+        self.config.https_only = enabled;
+        self
+    }
+
     /// Only use HTTP/1.
     #[inline]
     pub fn http1_only(mut self) -> ClientBuilder {
@@ -857,12 +871,17 @@ impl ClientBuilder {
         self
     }
 
-    /// Restrict the Client to be used with HTTPS only requests.
-    ///
-    /// Defaults to false.
+    /// Sets the HTTP/1 options for the client.
     #[inline]
-    pub fn https_only(mut self, enabled: bool) -> ClientBuilder {
-        self.config.https_only = enabled;
+    pub fn http1_options(mut self, options: Http1Options) -> ClientBuilder {
+        *self.config.transport_options.http1_options_mut() = Some(options);
+        self
+    }
+
+    /// Sets the HTTP/2 options for the client.
+    #[inline]
+    pub fn http2_options(mut self, options: Http2Options) -> ClientBuilder {
+        *self.config.transport_options.http2_options_mut() = Some(options);
         self
     }
 
@@ -1192,6 +1211,13 @@ impl ClientBuilder {
     #[inline]
     pub fn tls_info(mut self, tls_info: bool) -> ClientBuilder {
         self.config.tls_info = tls_info;
+        self
+    }
+
+    /// Sets the TLS options for the client.
+    #[inline]
+    pub fn tls_options(mut self, options: TlsOptions) -> ClientBuilder {
+        *self.config.transport_options.tls_options_mut() = Some(options);
         self
     }
 
