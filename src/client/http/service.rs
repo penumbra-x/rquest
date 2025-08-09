@@ -61,7 +61,7 @@ impl ClientService {
             config: Arc::new(Config {
                 headers,
                 orig_headers: RequestConfig::new(org_headers),
-                default_headers: RequestConfig::default(),
+                default_headers: RequestConfig::new(Some(true)),
                 https_only,
                 proxies,
                 proxies_maybe_http_auth,
@@ -150,7 +150,7 @@ impl Service<Request<Body>> for ClientService {
             .default_headers
             .fetch(req.extensions())
             .copied()
-            .unwrap_or(true)
+            .unwrap_or_default()
         {
             let headers = req.headers_mut();
             for (name, value) in &self.config.headers {

@@ -872,9 +872,25 @@ async fn tunnel_includes_proxy_auth_with_multiple_proxies() {
 #[tokio::test]
 async fn skip_default_headers() {
     let server = server::http(move |req| async move {
-        assert_eq!(req.method(), "GET");
-        assert_eq!(req.headers().get("user-agent"), None);
-        assert_eq!(req.headers().get("accept"), None);
+        if req.uri() != "/skip" && req.uri() != "/no_skip" {
+            panic!("Unexpected request URI: {}", req.uri());
+        }
+
+        if req.uri() == "/skip" {
+            assert_eq!(req.method(), "GET");
+            assert_eq!(req.headers().get("user-agent"), None);
+            assert_eq!(req.headers().get("accept"), None);
+        }
+
+        if req.uri() == "/no_skip" {
+            assert_eq!(req.method(), "GET");
+            assert_eq!(
+                req.headers().get("user-agent"),
+                Some(&"test-agent".parse().unwrap())
+            );
+            assert_eq!(req.headers().get("accept"), Some(&"*/*".parse().unwrap()));
+        }
+
         http::Response::default()
     });
 
@@ -898,16 +914,6 @@ async fn skip_default_headers() {
         .unwrap();
     assert_eq!(res.url().as_str(), &url);
     assert_eq!(res.status(), wreq::StatusCode::OK);
-
-    let server = server::http(move |req| async move {
-        assert_eq!(req.method(), "GET");
-        assert_eq!(
-            req.headers().get("user-agent"),
-            Some(&"test-agent".parse().unwrap())
-        );
-        assert_eq!(req.headers().get("accept"), Some(&"*/*".parse().unwrap()));
-        http::Response::default()
-    });
 
     let url = format!("http://{}/no_skip", server.addr());
     let client = wreq::Client::builder()
