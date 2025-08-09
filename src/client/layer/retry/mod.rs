@@ -111,8 +111,8 @@ impl Policy<Req, Res, BoxError> for Http2RetryPolicy {
 
     fn clone_request(&mut self, req: &Req) -> Option<Req> {
         let mut new_req = Request::builder()
-            .method(req.method().clone())
-            .uri(req.uri().clone())
+            .method(req.method())
+            .uri(req.uri())
             .version(req.version())
             .body(req.body().try_clone()?)
             .ok()?;
