@@ -143,8 +143,7 @@ impl Service<Request<Body>> for ClientService {
             return Either::Right(future::err(BoxError::from(crate::Error::url_bad_scheme())));
         }
 
-        // insert default headers in the request headers
-        // without overwriting already appended headers.
+        // check if the request ignores the default headers.
         if self
             .config
             .default_headers
@@ -152,6 +151,8 @@ impl Service<Request<Body>> for ClientService {
             .copied()
             .unwrap_or_default()
         {
+            // insert default headers in the request headers
+            // without overwriting already appended headers.
             let headers = req.headers_mut();
             for (name, value) in &self.config.headers {
                 match headers.entry(name) {
@@ -167,7 +168,9 @@ impl Service<Request<Body>> for ClientService {
             }
         }
 
+        // store the original headers in request extensions
         self.config.orig_headers.store(req.extensions_mut());
+        // set proxy headers if needed
         self.ensure_proxy_headers(&mut req);
 
         Either::Left(self.client.call(req).map_err(From::from))
