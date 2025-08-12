@@ -24,7 +24,7 @@ An ergonomic and modular Rust HTTP client for advanced and low-level emulation, 
 
 ## Example
 
-This asynchronous example utilizes [Tokio](https://tokio.rs) with optional features enabled, requiring the following configuration in `Cargo.toml`:
+The following example uses the [Tokio](https://tokio.rs) runtime with optional features enabled by adding this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
