@@ -41,10 +41,6 @@ impl Identity {
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// # Optional
-    ///
-    /// This requires the `native-tls` Cargo feature enabled.
     pub fn from_pkcs12_der(buf: &[u8], pass: &str) -> crate::Result<Identity> {
         let pkcs12 = Pkcs12::from_der(buf).map_err(Error::tls)?;
         let parsed = pkcs12.parse(pass).map_err(Error::tls)?;
@@ -78,10 +74,6 @@ impl Identity {
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// # Optional
-    ///
-    /// This requires the `native-tls` Cargo feature enabled.
     pub fn from_pkcs8_pem(buf: &[u8], key: &[u8]) -> crate::Result<Identity> {
         if !key.starts_with(b"-----BEGIN PRIVATE KEY-----") {
             return Err(Error::builder("expected PKCS#8 PEM"));
