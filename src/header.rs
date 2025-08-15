@@ -163,18 +163,17 @@ impl OrigHeaderMap {
         }
 
         // Then insert any remaining headers that were not ordered
-        let mut current_header_name: Option<HeaderName> = None;
+        let mut prev_header_name: Option<HeaderName> = None;
         for (name, value) in headers.drain() {
-            match name {
-                Some(name) => {
-                    current_header_name = Some(name.clone());
+            match (name, &prev_header_name) {
+                (Some(name), _) => {
+                    prev_header_name = Some(name.clone());
                     sorted_headers.insert(name, value);
                 }
-                None => {
-                    if let Some(ref name) = current_header_name {
-                        sorted_headers.append(name, value);
-                    }
+                (None, Some(prev)) => {
+                    sorted_headers.append(prev, value);
                 }
+                _ => {}
             }
         }
 
