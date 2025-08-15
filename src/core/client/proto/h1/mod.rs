@@ -1,14 +1,20 @@
+mod conn;
+mod decode;
+pub(crate) mod dispatch;
+mod encode;
+mod io;
+mod role;
+
 use bytes::BytesMut;
 use http::{HeaderMap, Method};
 use httparse::ParserConfig;
 
-//TODO: move out of h1::io
-pub(crate) use self::io::MINIMUM_MAX_BUFFER_SIZE;
 pub(crate) use self::{
     conn::Conn,
     decode::Decoder,
     dispatch::Dispatcher,
     encode::{EncodedBuf, Encoder},
+    io::MINIMUM_MAX_BUFFER_SIZE,
 };
 use crate::core::{
     client::{
@@ -18,21 +24,18 @@ use crate::core::{
     error::{Error, Parse, Result},
 };
 
-mod conn;
-mod decode;
-pub(crate) mod dispatch;
-mod encode;
-mod io;
-mod role;
-
 pub(crate) type ClientTransaction = role::Client;
 
 pub(crate) trait Http1Transaction {
     type Incoming;
+
     type Outgoing: Default;
+
     #[cfg(feature = "tracing")]
     const LOG: &'static str;
+
     fn parse(bytes: &mut BytesMut, ctx: ParseContext<'_>) -> ParseResult<Self::Incoming>;
+
     fn encode(enc: Encode<'_, Self::Outgoing>, dst: &mut Vec<u8>) -> Result<Encoder>;
 
     fn on_error(err: &Error) -> Option<MessageHead<Self::Outgoing>>;

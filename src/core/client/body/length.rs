@@ -1,5 +1,7 @@
 use std::fmt;
 
+use crate::core::error::Parse;
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) struct DecodedLength(u64);
 
@@ -45,12 +47,12 @@ impl DecodedLength {
     }
 
     /// Checks the `u64` is within the maximum allowed for content-length.
-    pub(crate) fn checked_new(len: u64) -> Result<Self, crate::core::error::Parse> {
+    pub(crate) fn checked_new(len: u64) -> Result<Self, Parse> {
         if len <= MAX_LEN {
             Ok(DecodedLength(len))
         } else {
             warn!("content-length bigger than maximum: {} > {}", len, MAX_LEN);
-            Err(crate::core::error::Parse::TooLarge)
+            Err(Parse::TooLarge)
         }
     }
 

@@ -27,8 +27,9 @@ use crate::{
     header::{OrigHeaderMap, OrigHeaderName},
 };
 
+/// totally scientific
+const AVERAGE_HEADER_SIZE: usize = 30;
 pub(crate) const DEFAULT_MAX_HEADERS: usize = 100;
-const AVERAGE_HEADER_SIZE: usize = 30; // totally scientific
 
 macro_rules! header_name {
     ($bytes:expr) => {{
@@ -392,6 +393,7 @@ impl Client {
         trace!("neither Transfer-Encoding nor Content-Length");
         Ok(Some((DecodedLength::CLOSE_DELIMITED, false)))
     }
+
     fn set_length(head: &mut RequestHead, body: Option<BodyLength>) -> Encoder {
         let body = if let Some(body) = body {
             body
@@ -619,13 +621,13 @@ fn record_header_indices(
     bytes: &[u8],
     headers: &[httparse::Header<'_>],
     indices: &mut [MaybeUninit<HeaderIndices>],
-) -> Result<(), crate::core::error::Parse> {
+) -> Result<(), Parse> {
     let bytes_ptr = bytes.as_ptr() as usize;
 
     for (header, indices) in headers.iter().zip(indices.iter_mut()) {
         if header.name.len() >= (1 << 16) {
             debug!("header name larger than 64kb: {:?}", header.name);
-            return Err(crate::core::error::Parse::TooLarge);
+            return Err(Parse::TooLarge);
         }
         let name_start = header.name.as_ptr() as usize - bytes_ptr;
         let name_end = name_start + header.name.len();
@@ -643,7 +645,7 @@ fn record_header_indices(
 
 pub(crate) fn write_headers(headers: &HeaderMap, dst: &mut Vec<u8>) {
     for (name, value) in headers {
-        extend(dst, name.as_str().as_bytes());
+        extend(dst, name.as_ref());
         extend(dst, b": ");
         extend(dst, value.as_bytes());
         extend(dst, b"\r\n");
