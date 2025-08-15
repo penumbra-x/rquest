@@ -55,7 +55,7 @@ use crate::{
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Proxy {
     extra: Extra,
     intercept: Intercept,
@@ -182,7 +182,10 @@ impl Proxy {
     /// # fn main() {}
     /// ```
     pub fn http<U: IntoProxy>(proxy_scheme: U) -> crate::Result<Proxy> {
-        Ok(Proxy::new(Intercept::Http(proxy_scheme.into_proxy()?)))
+        proxy_scheme
+            .into_proxy()
+            .map(Intercept::Http)
+            .map(Proxy::new)
     }
 
     /// Proxy all HTTPS traffic to the passed URL.
@@ -200,7 +203,10 @@ impl Proxy {
     /// # fn main() {}
     /// ```
     pub fn https<U: IntoProxy>(proxy_scheme: U) -> crate::Result<Proxy> {
-        Ok(Proxy::new(Intercept::Https(proxy_scheme.into_proxy()?)))
+        proxy_scheme
+            .into_proxy()
+            .map(Intercept::Https)
+            .map(Proxy::new)
     }
 
     /// Proxy **all** traffic to the passed URL.
@@ -221,7 +227,10 @@ impl Proxy {
     /// # fn main() {}
     /// ```
     pub fn all<U: IntoProxy>(proxy_scheme: U) -> crate::Result<Proxy> {
-        Ok(Proxy::new(Intercept::All(proxy_scheme.into_proxy()?)))
+        proxy_scheme
+            .into_proxy()
+            .map(Intercept::All)
+            .map(Proxy::new)
     }
 
     fn new(intercept: Intercept) -> Proxy {
@@ -362,15 +371,6 @@ fn cache_maybe_has_http_auth(url: &Url, extra: &Option<HeaderValue>) -> bool {
 
 fn cache_maybe_has_http_custom_headers(url: &Url, extra: &Option<HeaderMap>) -> bool {
     url.scheme() == Scheme::HTTP.as_str() && extra.is_some()
-}
-
-impl fmt::Debug for Proxy {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_tuple("Proxy")
-            .field(&self.intercept)
-            .field(&self.no_proxy)
-            .finish()
-    }
 }
 
 impl NoProxy {
