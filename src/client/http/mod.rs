@@ -1,4 +1,4 @@
-mod connect;
+pub(crate) mod connect;
 mod future;
 mod service;
 mod types;
@@ -309,8 +309,8 @@ impl ClientBuilder {
             Connector::builder(proxies.clone(), resolver)
                 .timeout(config.connect_timeout)
                 .tls_info(config.tls_info)
-                .verbose(config.connection_verbose)
                 .tls_options(tls_options)
+                .verbose(config.connection_verbose)
                 .with_tls(tls)
                 .with_http(http)
                 .build(config.connector_layers)?
@@ -1256,7 +1256,7 @@ impl ClientBuilder {
 
     /// Override the DNS resolver implementation.
     ///
-    /// Pass any type implementing [`IntoResolve`].
+    /// Pass any type implementing `IntoResolve`.
     /// Overrides for specific names passed to `resolve` and `resolve_to_addrs` will
     /// still be applied on top of this resolver.
     #[inline]

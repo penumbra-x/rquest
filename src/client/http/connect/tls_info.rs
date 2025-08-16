@@ -1,4 +1,6 @@
 use tokio::net::TcpStream;
+#[cfg(unix)]
+use tokio::net::UnixStream;
 use tokio_boring2::SslStream;
 
 use crate::{
@@ -14,15 +16,17 @@ pub trait TlsInfoFactory {
     fn tls_info(&self) -> Option<TlsInfo>;
 }
 
-impl TlsInfoFactory for TcpStream {
-    fn tls_info(&self) -> Option<TlsInfo> {
-        None
-    }
-}
-
 impl<T: TlsInfoFactory> TlsInfoFactory for TokioIo<T> {
     fn tls_info(&self) -> Option<TlsInfo> {
         self.inner().tls_info()
+    }
+}
+
+// ===== impl TcpStream =====
+
+impl TlsInfoFactory for TcpStream {
+    fn tls_info(&self) -> Option<TlsInfo> {
+        None
     }
 }
 
@@ -44,6 +48,43 @@ impl TlsInfoFactory for MaybeHttpsStream<TcpStream> {
 }
 
 impl TlsInfoFactory for SslStream<TokioIo<MaybeHttpsStream<TcpStream>>> {
+    fn tls_info(&self) -> Option<TlsInfo> {
+        self.ssl().peer_certificate().map(|c| TlsInfo {
+            peer_certificate: c.to_der().ok(),
+        })
+    }
+}
+
+// ===== impl UnixStream =====
+
+#[cfg(unix)]
+impl TlsInfoFactory for UnixStream {
+    fn tls_info(&self) -> Option<TlsInfo> {
+        None
+    }
+}
+
+#[cfg(unix)]
+impl TlsInfoFactory for SslStream<UnixStream> {
+    fn tls_info(&self) -> Option<TlsInfo> {
+        self.ssl().peer_certificate().map(|c| TlsInfo {
+            peer_certificate: c.to_der().ok(),
+        })
+    }
+}
+
+#[cfg(unix)]
+impl TlsInfoFactory for MaybeHttpsStream<UnixStream> {
+    fn tls_info(&self) -> Option<TlsInfo> {
+        match self {
+            MaybeHttpsStream::Https(tls) => tls.tls_info(),
+            MaybeHttpsStream::Http(_) => None,
+        }
+    }
+}
+
+#[cfg(unix)]
+impl TlsInfoFactory for SslStream<TokioIo<MaybeHttpsStream<UnixStream>>> {
     fn tls_info(&self) -> Option<TlsInfo> {
         self.ssl().peer_certificate().map(|c| TlsInfo {
             peer_certificate: c.to_der().ok(),

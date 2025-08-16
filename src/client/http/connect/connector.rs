@@ -1,3 +1,5 @@
+#[cfg(unix)]
+use std::path::Path;
 use std::{
     future::Future,
     pin::Pin,
@@ -6,7 +8,7 @@ use std::{
     time::Duration,
 };
 
-use http::uri::Scheme;
+use http::{Uri, uri::Scheme};
 use tower::{
     Service, ServiceBuilder, ServiceExt,
     timeout::TimeoutLayer,
@@ -19,10 +21,15 @@ use super::{
     conn::{Conn, TlsConn},
     verbose::Verbose,
 };
+#[cfg(unix)]
+use crate::core::client::connect::UnixConnector;
 use crate::{
     core::{
-        client::{ConnectMeta, ConnectRequest, connect::proxy},
-        rt::TokioIo,
+        client::{
+            ConnectExtra, ConnectRequest,
+            connect::{Connection, proxy},
+        },
+        rt::{Read, TokioIo, Write},
     },
     dns::DynResolver,
     error::{BoxError, TimedOut, map_timeout_to_connector_error},
@@ -238,30 +245,44 @@ impl Service<ConnectRequest> for Connector {
 // ===== impl ConnectorService =====
 
 impl ConnectorService {
-    /// Constructs an HTTPS connector by wrapping an [`HttpConnector`].
-    /// Applies TCP options if present and builds the TLS connector with the correct options.
-    fn build_tls_connector(
-        &self,
-        mut http: HttpConnector,
-        meta: &ConnectMeta,
-    ) -> Result<HttpsConnector<HttpConnector>, BoxError> {
-        // Apply TCP options if provided in metadata
-        if let Some(opts) = meta.tcp_options() {
-            http.set_connect_options(opts.clone());
+    /// Automatically selects direct or proxy connection.
+    async fn connect_auto(self, req: ConnectRequest) -> Result<Conn, BoxError> {
+        debug!("starting new connection: {:?}", req.uri());
+
+        let timeout = self.config.timeout;
+
+        // Determine if a proxy should be used for this request.
+        let fut = async {
+            let intercepted = req
+                .extra()
+                .proxy_matcher()
+                .and_then(|prox| prox.intercept(req.uri()))
+                .or_else(|| {
+                    self.config
+                        .proxies
+                        .iter()
+                        .find_map(|prox| prox.intercept(req.uri()))
+                });
+
+            // If a proxy is matched, connect via proxy; otherwise, connect directly.
+            if let Some(intercepted) = intercepted {
+                self.connect_with_proxy(req, intercepted).await
+            } else {
+                self.connect_direct(req, false).await
+            }
+        };
+
+        // Apply timeout if configured.
+        if let Some(to) = timeout {
+            tokio::time::timeout(to, fut)
+                .await
+                .map_err(|_| BoxError::from(TimedOut))?
+        } else {
+            fut.await
         }
-
-        // Prefer TLS options from metadata, fallback to default
-        let tls = meta
-            .tls_options()
-            .map(|opts| self.tls_builder.build(opts))
-            .transpose()?
-            .unwrap_or_else(|| self.tls.clone());
-
-        Ok(HttpsConnector::with_connector(http, tls))
     }
 
     /// Establishes a direct connection to the target URI without using a proxy.
-    /// May perform a plain TCP or a TLS handshake depending on the URI scheme.
     async fn connect_direct(self, req: ConnectRequest, is_proxy: bool) -> Result<Conn, BoxError> {
         trace!("connect with maybe proxy: {:?}", is_proxy);
 
@@ -275,154 +296,241 @@ impl ConnectorService {
             http.set_nodelay(true);
         }
 
-        let mut connector = self.build_tls_connector(http, req.metadata())?;
-        let io = connector.call(req).await?;
+        let mut connector = self.build_tls_http_connector(http, req.extra())?;
 
         // If the connection is HTTPS, wrap the TLS stream in a TlsConn for unified handling.
         // For plain HTTP, use the stream directly without additional wrapping.
-        let inner = if let MaybeHttpsStream::Https(stream) = io {
-            if !self.config.tcp_nodelay {
-                stream.get_ref().set_nodelay(false)?;
-            }
-            self.config.verbose.wrap(TlsConn::new(stream))
-        } else {
-            self.config.verbose.wrap(io)
-        };
+        match connector.call(req).await? {
+            MaybeHttpsStream::Http(io) => Ok(Conn {
+                inner: self.config.verbose.wrap(MaybeHttpsStream::Http(io)),
+                tls_info: false,
+                is_proxy,
+            }),
+            MaybeHttpsStream::Https(stream) => {
+                if !self.config.tcp_nodelay {
+                    stream.get_ref().set_nodelay(false)?;
+                }
 
-        Ok(Conn::new(inner, is_proxy, self.config.tls_info))
+                Ok(Conn {
+                    inner: self.config.verbose.wrap(TlsConn::new(stream)),
+                    tls_info: self.config.tls_info,
+                    is_proxy,
+                })
+            }
+        }
     }
 
     /// Establishes a connection through a specified proxy.
-    /// Supports both SOCKS and HTTP tunneling proxies.
     async fn connect_with_proxy(
         self,
         mut req: ConnectRequest,
         proxy: Intercepted,
     ) -> Result<Conn, BoxError> {
         let uri = req.uri().clone();
-        let proxy_uri = proxy.uri().clone();
 
-        #[cfg(feature = "socks")]
-        {
-            use proxy::socks::{DnsResolve, SocksConnector, Version};
+        match proxy {
+            Intercepted::Proxy(proxy) => {
+                let proxy_uri = proxy.uri().clone();
 
-            if let Some((version, dns_resolve)) = match proxy.uri().scheme_str() {
-                Some("socks4") => Some((Version::V4, DnsResolve::Local)),
-                Some("socks4a") => Some((Version::V4, DnsResolve::Remote)),
-                Some("socks5") => Some((Version::V5, DnsResolve::Local)),
-                Some("socks5h") => Some((Version::V5, DnsResolve::Remote)),
-                _ => None,
-            } {
-                trace!("connecting via SOCKS proxy: {:?}", proxy_uri);
+                #[cfg(feature = "socks")]
+                use proxy::socks::{DnsResolve, SocksConnector, Version};
 
-                // Create a SOCKS connector with the specified version and DNS resolution strategy.
-                let mut socks = SocksConnector::new_with_resolver(
-                    proxy_uri,
-                    self.http.clone(),
-                    self.resolver.clone(),
-                )
-                .with_auth(proxy.raw_auth())
-                .with_version(version)
-                .with_dns_mode(dns_resolve);
+                #[cfg(feature = "socks")]
+                if let Some((version, dns_resolve)) = match proxy.uri().scheme_str() {
+                    Some("socks4") => Some((Version::V4, DnsResolve::Local)),
+                    Some("socks4a") => Some((Version::V4, DnsResolve::Remote)),
+                    Some("socks5") => Some((Version::V5, DnsResolve::Local)),
+                    Some("socks5h") => Some((Version::V5, DnsResolve::Remote)),
+                    _ => None,
+                } {
+                    trace!("connecting via SOCKS proxy: {:?}", proxy_uri);
 
-                let is_https = uri.scheme() == Some(&Scheme::HTTPS);
-                let conn = socks.call(uri).await?;
+                    // Build a SOCKS connector, configuring authentication, version, and DNS
+                    // resolution mode.
+                    let mut socks = {
+                        let mut socks = SocksConnector::new_with_resolver(
+                            proxy_uri,
+                            self.http.clone(),
+                            self.resolver.clone(),
+                        );
+                        socks.set_auth(proxy.raw_auth());
+                        socks.set_version(version);
+                        socks.set_dns_mode(dns_resolve);
+                        socks
+                    };
 
-                let conn = if is_https {
-                    trace!("socks HTTPS over proxy");
+                    // Establish a connection to the target through the SOCKS proxy.
+                    let is_https = uri.scheme() == Some(&Scheme::HTTPS);
+                    let conn = socks.call(uri).await?;
 
-                    // Create a TLS connector for the established connection.
+                    let conn = if is_https {
+                        // If the target is HTTPS, wrap the SOCKS stream with TLS.
+                        let mut connector =
+                            self.build_tls_http_connector(self.http.clone(), req.extra())?;
+                        let established_conn = EstablishedConn::new(req, conn);
+                        let io = connector.call(established_conn).await?;
+
+                        Conn {
+                            inner: self.config.verbose.wrap(TlsConn::new(io)),
+                            tls_info: self.config.tls_info,
+                            is_proxy: true,
+                        }
+                    } else {
+                        // For HTTP, return the SOCKS connection directly.
+                        Conn {
+                            inner: self.config.verbose.wrap(conn),
+                            tls_info: false,
+                            is_proxy: false,
+                        }
+                    };
+
+                    return Ok(conn);
+                }
+
+                // Handle HTTPS proxy tunneling connection
+                if uri.scheme() == Some(&Scheme::HTTPS) {
+                    trace!("tunneling HTTPS over HTTP proxy: {:?}", proxy_uri);
+
+                    // Create a tunnel connector that establishes a CONNECT tunnel through the HTTP
+                    // proxy, then upgrades the tunneled stream to TLS.
                     let mut connector =
-                        self.build_tls_connector(self.http.clone(), req.metadata())?;
-                    let established_conn = EstablishedConn::new(req, conn);
+                        self.build_tls_http_connector(self.http.clone(), req.extra())?;
+                    let mut tunnel =
+                        proxy::tunnel::TunnelConnector::new(proxy_uri, connector.clone());
+
+                    // If the proxy requires basic authentication, add it to the tunnel.
+                    if let Some(auth) = proxy.basic_auth() {
+                        tunnel = tunnel.with_auth(auth.clone());
+                    }
+
+                    // If the proxy has custom headers, add them to the tunnel.
+                    if let Some(headers) = proxy.custom_headers() {
+                        tunnel = tunnel.with_headers(headers.clone());
+                    }
+
+                    // The tunnel connector will first establish a CONNECT tunnel,
+                    // then perform the TLS handshake over the tunneled stream.
+                    let tunneled = tunnel.call(uri).await?;
+                    let tunneled = TokioIo::new(tunneled);
+                    let tunneled = TokioIo::new(tunneled);
+
+                    // Wrap the established tunneled stream with TLS.
+                    let established_conn = EstablishedConn::new(req, tunneled);
                     let io = connector.call(established_conn).await?;
+                    return Ok(Conn {
+                        inner: self.config.verbose.wrap(TlsConn::new(io)),
+                        tls_info: self.config.tls_info,
+                        is_proxy: false,
+                    });
+                }
 
-                    Conn::new(
-                        self.config.verbose.wrap(TlsConn::new(io)),
-                        false,
-                        self.config.tls_info,
-                    )
-                } else {
-                    Conn::new(self.config.verbose.wrap(conn), false, false)
-                };
+                *req.uri_mut() = proxy_uri;
+                self.connect_direct(req, true).await
+            }
+            #[cfg(unix)]
+            Intercepted::Unix(unix_socket) => {
+                trace!("connecting via Unix socket: {:?}", unix_socket);
 
-                return Ok(conn);
+                // Create a Unix connector with the specified socket path.
+                let mut connector = self.build_tls_unix_connector(unix_socket, req.extra())?;
+                let is_proxy = false;
+
+                // If the target URI is HTTPS, establish a CONNECT tunnel over the Unix socket,
+                // then upgrade the tunneled stream to TLS.
+                if uri.scheme() == Some(&Scheme::HTTPS) {
+                    // Use a dummy HTTP URI so the HTTPS connector works over the Unix socket.
+                    let proxy_uri = Uri::from_static("http://localhost");
+
+                    // Create a tunnel connector using the Unix socket and the HTTPS connector.
+                    let mut tunnel =
+                        proxy::tunnel::TunnelConnector::new(proxy_uri, connector.clone());
+
+                    // The tunnel connector will first establish a CONNECT tunnel,
+                    // then perform the TLS handshake over the tunneled stream.
+                    let tunneled = tunnel.call(uri).await?;
+                    let tunneled = TokioIo::new(tunneled);
+                    let tunneled = TokioIo::new(tunneled);
+
+                    // Wrap the established tunneled stream with TLS.
+                    let established_conn = EstablishedConn::new(req, tunneled);
+                    let io = connector.call(established_conn).await?;
+                    return Ok(Conn {
+                        inner: self.config.verbose.wrap(TlsConn::new(io)),
+                        tls_info: self.config.tls_info,
+                        is_proxy,
+                    });
+                }
+
+                // For plain HTTP, use the Unix connector directly.
+                let io = connector.call(req).await?;
+
+                // If the connection is HTTPS, wrap the TLS stream in a TlsConn for unified
+                // handling. For plain HTTP, use the stream directly without
+                // additional wrapping.
+                if let MaybeHttpsStream::Https(stream) = io {
+                    return Ok(Conn {
+                        inner: self.config.verbose.wrap(TlsConn::new(stream)),
+                        tls_info: self.config.tls_info,
+                        is_proxy,
+                    });
+                }
+
+                Ok(Conn {
+                    inner: self.config.verbose.wrap(io),
+                    tls_info: false,
+                    is_proxy,
+                })
             }
         }
-
-        // Handle HTTPS proxy tunneling connection
-        if uri.scheme() == Some(&Scheme::HTTPS) {
-            trace!("tunneling HTTPS over HTTP proxy: {:?}", proxy_uri);
-
-            // Create a tunnel connector with the proxy URI and the HTTP connector.
-            let mut connector = self.build_tls_connector(self.http.clone(), req.metadata())?;
-            let mut tunnel = proxy::tunnel::TunnelConnector::new(proxy_uri, connector.clone());
-
-            // If the proxy has basic authentication, add it to the tunnel.
-            if let Some(auth) = proxy.basic_auth() {
-                tunnel = tunnel.with_auth(auth.clone());
-            }
-
-            // If the proxy has custom headers, add them to the tunnel.
-            if let Some(headers) = proxy.custom_headers() {
-                tunnel = tunnel.with_headers(headers.clone());
-            }
-
-            // We don't wrap this again in an HttpsConnector since that uses Maybe,
-            // and we know this is definitely HTTPS.
-            let tunneled = tunnel.call(uri).await?;
-            let tunneled = TokioIo::new(tunneled);
-            let tunneled = TokioIo::new(tunneled);
-
-            // Create established connection with the tunneled stream.
-            let established_conn = EstablishedConn::new(req, tunneled);
-            let io = connector.call(established_conn).await?;
-
-            let conn = Conn::new(
-                self.config.verbose.wrap(TlsConn::new(io)),
-                false,
-                self.config.tls_info,
-            );
-            return Ok(conn);
-        }
-
-        *req.uri_mut() = proxy_uri;
-        self.connect_direct(req, true).await
     }
 
-    /// Automatically selects between a direct or proxied connection
-    /// based on the request and configured proxy matchers.
-    /// Applies a timeout if configured.
-    async fn connect_auto(self, req: ConnectRequest) -> Result<Conn, BoxError> {
-        debug!("starting new connection: {:?}", req.uri());
-
-        let intercepted = req
-            .metadata()
-            .proxy_matcher()
-            .and_then(|prox| prox.intercept(req.uri()))
-            .or_else(|| {
-                self.config
-                    .proxies
-                    .iter()
-                    .find_map(|prox| prox.intercept(req.uri()))
-            });
-
-        let timeout = self.config.timeout;
-        let fut = async {
-            if let Some(intercepted) = intercepted {
-                self.connect_with_proxy(req, intercepted).await
-            } else {
-                self.connect_direct(req, false).await
-            }
-        };
-
-        if let Some(to) = timeout {
-            tokio::time::timeout(to, fut)
-                .await
-                .map_err(|_| BoxError::from(TimedOut))?
-        } else {
-            fut.await
+    /// Builds an [`HttpsConnector<HttpConnector>`] from a basic [`HttpConnector`],
+    /// applying TCP and TLS configuration from the provided [`ConnectExtra`].
+    fn build_tls_http_connector(
+        &self,
+        mut http: HttpConnector,
+        extra: &ConnectExtra,
+    ) -> Result<HttpsConnector<HttpConnector>, BoxError> {
+        // Apply TCP options if provided in metadata
+        if let Some(opts) = extra.tcp_options() {
+            http.set_connect_options(opts.clone());
         }
+
+        self.build_tls_connector_generic(http, extra)
+    }
+
+    /// Builds an [`HttpsConnector<UnixConnector>`] for secure communication over a Unix domain
+    /// socket.
+    #[cfg(unix)]
+    fn build_tls_unix_connector(
+        &self,
+        unix_socket: Arc<Path>,
+        extra: &ConnectExtra,
+    ) -> Result<HttpsConnector<UnixConnector>, BoxError> {
+        // Create a Unix connector with the specified socket path
+        self.build_tls_connector_generic(UnixConnector(unix_socket), extra)
+    }
+
+    /// Creates an [`HttpsConnector`] from a given connector and TLS configuration.
+    fn build_tls_connector_generic<S, T>(
+        &self,
+        connector: S,
+        extra: &ConnectExtra,
+    ) -> Result<HttpsConnector<S>, BoxError>
+    where
+        S: Service<Uri, Response = T> + Send,
+        S::Error: Into<BoxError>,
+        S::Future: Unpin + Send + 'static,
+        T: Read + Write + Connection + Unpin + std::fmt::Debug + Sync + Send + 'static,
+    {
+        // Prefer TLS options from metadata, fallback to default
+        let tls = extra
+            .tls_options()
+            .map(|opts| self.tls_builder.build(opts))
+            .transpose()?
+            .unwrap_or_else(|| self.tls.clone());
+
+        Ok(HttpsConnector::with_connector(connector, tls))
     }
 }
 

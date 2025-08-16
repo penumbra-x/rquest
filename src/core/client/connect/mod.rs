@@ -1,7 +1,10 @@
 //! Connectors used by the `Client`.
 
-pub mod dns;
 mod http;
+#[cfg(unix)]
+mod uds;
+
+pub mod dns;
 pub mod proxy;
 
 use std::{
@@ -15,6 +18,8 @@ use std::{
 use ::http::Extensions;
 
 pub use self::http::{HttpConnector, HttpInfo, TcpConnectOptions};
+#[cfg(unix)]
+pub use self::uds::UnixConnector;
 
 /// Describes a type returned by a connector.
 pub trait Connection {
