@@ -181,25 +181,6 @@ fn _implied_bounds() {
 // ===== impl Proxy =====
 
 impl Proxy {
-    /// Proxy all traffic to the passed Unix Domain Socket path.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # extern crate wreq;
-    /// # fn run() -> Result<(), Box<dyn std::error::Error>> {
-    /// let client = wreq::Client::builder()
-    ///     .proxy(wreq::Proxy::unix("/var/run/docker.sock")?)
-    ///     .build()?;
-    /// # Ok(())
-    /// # }
-    /// # fn main() {}
-    /// ```
-    #[cfg(unix)]
-    pub fn unix<P: uds::IntoUnixSocket>(unix: P) -> crate::Result<Proxy> {
-        Ok(Proxy::new(Intercept::Unix(unix.unix_socket())))
-    }
-
     /// Proxy all HTTP traffic to the passed URL.
     ///
     /// # Example
@@ -264,6 +245,25 @@ impl Proxy {
             .into_proxy()
             .map(Intercept::All)
             .map(Proxy::new)
+    }
+
+    /// Proxy all traffic to the passed Unix Domain Socket path.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # extern crate wreq;
+    /// # fn run() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = wreq::Client::builder()
+    ///     .proxy(wreq::Proxy::unix("/var/run/docker.sock")?)
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// # fn main() {}
+    /// ```
+    #[cfg(unix)]
+    pub fn unix<P: uds::IntoUnixSocket>(unix: P) -> crate::Result<Proxy> {
+        Ok(Proxy::new(Intercept::Unix(unix.unix_socket())))
     }
 
     fn new(intercept: Intercept) -> Proxy {

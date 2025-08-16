@@ -25,9 +25,6 @@ use http::{
 use ipnet::IpNet;
 use percent_encoding::percent_decode_str;
 
-#[cfg(docsrs)]
-pub use self::builder::IntoValue;
-#[cfg(not(docsrs))]
 use self::builder::IntoValue;
 use super::{Extra, Intercepted};
 
