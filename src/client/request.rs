@@ -117,7 +117,7 @@ impl Request {
     /// Get the http version.
     #[inline]
     pub fn version(&self) -> Option<Version> {
-        RequestConfig::<RequestLevelOptions>::get(&self.extensions)
+        self.config::<RequestLevelOptions>()
             .and_then(RequestOptions::enforced_version)
     }
 
@@ -139,19 +139,33 @@ impl Request {
         let mut req = Request::new(self.method().clone(), self.url().clone());
         *req.headers_mut() = self.headers().clone();
         *req.version_mut() = self.version();
-        req.extensions = self.extensions.clone();
-        req.body = body;
+        *req.extensions_mut() = self.extensions().clone();
+        *req.body_mut() = body;
         Some(req)
     }
 
-    /// Get a mutable reference to the request extensions.
+    /// Get the extensions.
     #[inline]
-    #[cfg(feature = "ws")]
+    pub(crate) fn extensions(&self) -> &Extensions {
+        &self.extensions
+    }
+
+    /// Get a mutable reference to the extensions.
+    #[inline]
     pub(crate) fn extensions_mut(&mut self) -> &mut Extensions {
         &mut self.extensions
     }
 
-    /// Get a mutable reference to the request config value.
+    // Private
+
+    #[inline]
+    fn config<T>(&self) -> Option<&T::Value>
+    where
+        T: RequestConfigValue,
+    {
+        RequestConfig::<T>::get(&self.extensions)
+    }
+
     #[inline]
     fn config_mut<T>(&mut self) -> &mut T::Value
     where
