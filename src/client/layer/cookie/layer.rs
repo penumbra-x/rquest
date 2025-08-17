@@ -17,6 +17,7 @@ pub struct CookieServiceLayer {
 
 impl CookieServiceLayer {
     /// Create a new [`CookieServiceLayer`].
+    #[inline(always)]
     pub const fn new(cookie_store: Option<Arc<dyn CookieStore + 'static>>) -> Self {
         Self { cookie_store }
     }

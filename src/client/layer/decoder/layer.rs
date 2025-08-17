@@ -19,6 +19,7 @@ pub struct DecompressionLayer {
 
 impl DecompressionLayer {
     /// Creates a new `DecompressionLayer` with the specified `AcceptEncoding`.
+    #[inline(always)]
     pub const fn new(accept: AcceptEncoding) -> Self {
         Self { accept }
     }
@@ -27,6 +28,7 @@ impl DecompressionLayer {
 impl<S> Layer<S> for DecompressionLayer {
     type Service = Decompression<S>;
 
+    #[inline(always)]
     fn layer(&self, service: S) -> Self::Service {
         let decoder = decompression::Decompression::new(service);
         let decoder = Decompression::<S>::accept_in_place(decoder, &self.accept);

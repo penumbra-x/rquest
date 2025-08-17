@@ -25,6 +25,7 @@ pub struct TimeoutLayer {
 
 impl TimeoutLayer {
     /// Create a new [`TimeoutLayer`].
+    #[inline(always)]
     pub const fn new(options: TimeoutOptions) -> Self {
         TimeoutLayer {
             timeout: RequestConfig::new(Some(options)),
@@ -35,6 +36,7 @@ impl TimeoutLayer {
 impl<S> Layer<S> for TimeoutLayer {
     type Service = Timeout<S>;
 
+    #[inline(always)]
     fn layer(&self, service: S) -> Self::Service {
         Timeout {
             inner: service,
@@ -64,6 +66,7 @@ where
         self.inner.poll_ready(cx)
     }
 
+    #[inline(always)]
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
         let (total_timeout, read_timeout) = resolve_timeout_config(&self.timeout, req.extensions());
         ResponseFuture {
@@ -83,6 +86,7 @@ pub struct ResponseBodyTimeoutLayer {
 
 impl ResponseBodyTimeoutLayer {
     /// Creates a new [`ResponseBodyTimeoutLayer`].
+    #[inline(always)]
     pub const fn new(options: TimeoutOptions) -> Self {
         Self {
             timeout: RequestConfig::new(Some(options)),
@@ -93,6 +97,7 @@ impl ResponseBodyTimeoutLayer {
 impl<S> Layer<S> for ResponseBodyTimeoutLayer {
     type Service = ResponseBodyTimeout<S>;
 
+    #[inline(always)]
     fn layer(&self, inner: S) -> Self::Service {
         ResponseBodyTimeout {
             inner,
@@ -122,6 +127,7 @@ where
         self.inner.poll_ready(cx)
     }
 
+    #[inline(always)]
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
         let (total_timeout, read_timeout) = resolve_timeout_config(&self.timeout, req.extensions());
         ResponseBodyTimeoutFuture {

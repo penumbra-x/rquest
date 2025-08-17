@@ -23,6 +23,7 @@ pub struct FollowRedirectLayer<P> {
 
 impl<P> FollowRedirectLayer<P> {
     /// Create a new [`FollowRedirectLayer`] with the given redirection [`Policy`].
+    #[inline(always)]
     pub const fn with_policy(policy: P) -> Self {
         FollowRedirectLayer { policy }
     }
@@ -35,6 +36,7 @@ where
 {
     type Service = FollowRedirect<S, P>;
 
+    #[inline(always)]
     fn layer(&self, inner: S) -> Self::Service {
         FollowRedirect::with_policy(inner, self.policy.clone())
     }
@@ -52,6 +54,7 @@ where
     P: Clone,
 {
     /// Create a new [`FollowRedirect`] with the given redirection [`Policy`].
+    #[inline(always)]
     pub const fn with_policy(inner: S, policy: P) -> Self {
         FollowRedirect { inner, policy }
     }
@@ -138,22 +141,12 @@ where
         match self {
             BodyRepr::Some(_) | BodyRepr::Empty => {}
             BodyRepr::None => {
-                if let Some(body) = clone_body(policy, body) {
-                    *self = BodyRepr::Some(body);
+                if body.size_hint().exact() == Some(0) {
+                    *self = BodyRepr::Some(B::default());
+                } else if let Some(cloned) = policy.clone_body(body) {
+                    *self = BodyRepr::Some(cloned);
                 }
             }
         }
-    }
-}
-
-fn clone_body<P, B, E>(policy: &P, body: &B) -> Option<B>
-where
-    P: Policy<B, E>,
-    B: Body + Default,
-{
-    if body.size_hint().exact() == Some(0) {
-        Some(B::default())
-    } else {
-        policy.clone_body(body)
     }
 }
