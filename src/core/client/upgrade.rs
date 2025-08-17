@@ -23,7 +23,6 @@
 //! get the `Future` from the `Response`.
 
 use std::{
-    any::TypeId,
     error::Error as StdError,
     fmt,
     future::Future,
@@ -62,26 +61,6 @@ pub struct OnUpgrade {
     rx: Option<Arc<Mutex<oneshot::Receiver<Result<Upgraded>>>>>,
 }
 
-/// The deconstructed parts of an [`Upgraded`] type.
-///
-/// Includes the original IO type, and a read buffer of bytes that the
-/// HTTP state machine may have already read before completing an upgrade.
-#[derive(Debug)]
-#[non_exhaustive]
-pub struct Parts<T> {
-    /// The original IO object used before the upgrade.
-    pub io: T,
-    /// A buffer of bytes that have been read but not processed as HTTP.
-    ///
-    /// For instance, if the `Connection` is used for an HTTP upgrade request,
-    /// it is possible the server sent back the first bytes of the new protocol
-    /// along with the response upgrade.
-    ///
-    /// You will want to check for any existing bytes if you plan to continue
-    /// communicating on the IO object.
-    pub read_buf: Bytes,
-}
-
 /// Gets a pending HTTP upgrade from this message.
 ///
 /// This can be called on the following types:
@@ -117,25 +96,6 @@ impl Upgraded {
     {
         Upgraded {
             io: Rewind::new_buffered(Box::new(io), read_buf),
-        }
-    }
-
-    /// Tries to downcast the internal trait object to the type passed.
-    ///
-    /// On success, returns the downcasted parts. On error, returns the
-    /// `Upgraded` back.
-    pub fn downcast<T: Read + Write + Unpin + 'static>(
-        self,
-    ) -> std::result::Result<Parts<T>, Self> {
-        let (io, buf) = self.io.into_inner();
-        match io.__hyper_downcast() {
-            Ok(t) => Ok(Parts {
-                io: *t,
-                read_buf: buf,
-            }),
-            Err(io) => Err(Upgraded {
-                io: Rewind::new_buffered(io, buf),
-            }),
         }
     }
 }
@@ -256,32 +216,11 @@ impl StdError for UpgradeExpected {}
 
 // ===== impl Io =====
 
-pub(super) trait Io: Read + Write + Unpin + 'static {
-    fn __hyper_type_id(&self) -> TypeId {
-        TypeId::of::<Self>()
-    }
-}
+trait Io: Read + Write + Unpin + 'static {}
 
 impl<T: Read + Write + Unpin + 'static> Io for T {}
 
-impl dyn Io + Send {
-    fn __hyper_is<T: Io>(&self) -> bool {
-        let t = TypeId::of::<T>();
-        self.__hyper_type_id() == t
-    }
-
-    fn __hyper_downcast<T: Io>(self: Box<Self>) -> std::result::Result<Box<T>, Box<Self>> {
-        if self.__hyper_is::<T>() {
-            // Taken from `std::error::Error::downcast()`.
-            unsafe {
-                let raw: *mut dyn Io = Box::into_raw(self);
-                Ok(Box::from_raw(raw as *mut T))
-            }
-        } else {
-            Err(self)
-        }
-    }
-}
+impl dyn Io + Send {}
 
 mod sealed {
     use super::OnUpgrade;
@@ -319,54 +258,6 @@ mod sealed {
             self.extensions_mut()
                 .remove::<OnUpgrade>()
                 .unwrap_or_else(OnUpgrade::none)
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn upgraded_downcast() {
-        let upgraded = Upgraded::new(Mock, Bytes::new());
-
-        let upgraded = upgraded
-            .downcast::<crate::core::common::io::Compat<std::io::Cursor<Vec<u8>>>>()
-            .unwrap_err();
-
-        upgraded.downcast::<Mock>().unwrap();
-    }
-
-    // TODO: replace with tokio_test::io when it can test write_buf
-    struct Mock;
-
-    impl Read for Mock {
-        fn poll_read(
-            self: Pin<&mut Self>,
-            _cx: &mut Context<'_>,
-            _buf: ReadBufCursor<'_>,
-        ) -> Poll<io::Result<()>> {
-            unreachable!("Mock::poll_read")
-        }
-    }
-
-    impl Write for Mock {
-        fn poll_write(
-            self: Pin<&mut Self>,
-            _: &mut Context<'_>,
-            buf: &[u8],
-        ) -> Poll<io::Result<usize>> {
-            // panic!("poll_write shouldn't be called");
-            Poll::Ready(Ok(buf.len()))
-        }
-
-        fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-            unreachable!("Mock::poll_flush")
-        }
-
-        fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-            unreachable!("Mock::poll_shutdown")
         }
     }
 }

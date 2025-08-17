@@ -36,10 +36,6 @@ impl<T> Rewind<T> {
         debug_assert!(self.pre.is_none());
         self.pre = Some(bs);
     }
-
-    pub(crate) fn into_inner(self) -> (T, Bytes) {
-        (self.inner, self.pre.unwrap_or_default())
-    }
 }
 
 impl<T> Read for Rewind<T>
