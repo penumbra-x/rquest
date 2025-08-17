@@ -22,10 +22,8 @@ async fn cookie_response_accessor() {
             .unwrap()
     });
 
-    let client = wreq::Client::new();
-
     let url = format!("http://{}/", server.addr());
-    let res = client.get(&url).send().await.unwrap();
+    let res = wreq::get(&url).send().await.unwrap();
 
     let cookies = res.cookies().collect::<Vec<_>>();
 
