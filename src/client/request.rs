@@ -145,8 +145,8 @@ impl Request {
     }
 
     /// Get a mutable reference to the request extensions.
-    #[cfg(feature = "ws")]
     #[inline]
+    #[cfg(feature = "ws")]
     pub(crate) fn extensions_mut(&mut self) -> &mut Extensions {
         &mut self.extensions
     }
@@ -477,6 +477,7 @@ impl RequestBuilder {
 
     /// Sets if this request will announce that it accepts gzip encoding.
     #[cfg(feature = "gzip")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "gzip")))]
     pub fn gzip(mut self, gzip: bool) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
             req.config_mut::<RequestAcceptEncoding>().gzip(gzip);
@@ -486,6 +487,7 @@ impl RequestBuilder {
 
     /// Sets if this request will announce that it accepts brotli encoding.
     #[cfg(feature = "brotli")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "brotli")))]
     pub fn brotli(mut self, brotli: bool) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
             req.config_mut::<RequestAcceptEncoding>().brotli(brotli);
@@ -495,6 +497,7 @@ impl RequestBuilder {
 
     /// Sets if this request will announce that it accepts deflate encoding.
     #[cfg(feature = "deflate")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "deflate")))]
     pub fn deflate(mut self, deflate: bool) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
             req.config_mut::<RequestAcceptEncoding>().deflate(deflate);
@@ -504,6 +507,7 @@ impl RequestBuilder {
 
     /// Sets if this request will announce that it accepts zstd encoding.
     #[cfg(feature = "zstd")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "zstd")))]
     pub fn zstd(mut self, zstd: bool) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
             req.config_mut::<RequestAcceptEncoding>().zstd(zstd);
@@ -578,6 +582,21 @@ impl RequestBuilder {
         target_os = "visionos",
         target_os = "watchos",
     ))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(any(
+            target_os = "android",
+            target_os = "fuchsia",
+            target_os = "illumos",
+            target_os = "ios",
+            target_os = "linux",
+            target_os = "macos",
+            target_os = "solaris",
+            target_os = "tvos",
+            target_os = "visionos",
+            target_os = "watchos",
+        )))
+    )]
     pub fn interface<I>(mut self, interface: I) -> RequestBuilder
     where
         I: Into<std::borrow::Cow<'static, str>>,
