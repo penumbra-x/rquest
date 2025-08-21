@@ -1,3 +1,4 @@
+#![deny(unsafe_code)]
 #![deny(missing_docs)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(test, deny(warnings))]
@@ -290,11 +291,7 @@ pub use self::client::ws;
 pub use self::{
     client::{
         Body, Client, ClientBuilder, Emulation, EmulationBuilder, EmulationFactory, Request,
-        RequestBuilder, Response, Upgraded,
-    },
-    core::client::{
-        connect::dns,
-        options::{http1, http2},
+        RequestBuilder, Response, Upgraded, dns, http1, http2,
     },
     error::{Error, Result},
     into_url::IntoUrl,

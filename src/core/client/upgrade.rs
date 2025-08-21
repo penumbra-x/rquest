@@ -33,19 +33,19 @@ use std::{
 };
 
 use bytes::Bytes;
-use tokio::sync::oneshot;
-
-use crate::core::{
-    Error, Result,
-    common::io::Rewind,
-    rt::{Read, ReadBufCursor, Write},
+use tokio::{
+    io::{AsyncRead, AsyncWrite, ReadBuf},
+    sync::oneshot,
 };
+
+use super::common::rewind::Rewind;
+use crate::core::{Error, Result};
 
 /// An upgraded HTTP connection.
 ///
 /// This type holds a trait object internally of the original IO that
 /// was used to speak HTTP before the upgrade. It can be used directly
-/// as a [`Read`] or [`Write`] for convenience.
+/// as a [`AsyncRead`] or [`AsyncWrite`] for convenience.
 ///
 /// Alternatively, if the exact type is known, this can be deconstructed
 /// into its parts.
@@ -92,7 +92,7 @@ pub(super) fn pending() -> (Pending, OnUpgrade) {
 impl Upgraded {
     pub(super) fn new<T>(io: T, read_buf: Bytes) -> Self
     where
-        T: Read + Write + Unpin + Send + 'static,
+        T: AsyncRead + AsyncWrite + Unpin + Send + 'static,
     {
         Upgraded {
             io: Rewind::new_buffered(Box::new(io), read_buf),
@@ -100,17 +100,17 @@ impl Upgraded {
     }
 }
 
-impl Read for Upgraded {
+impl AsyncRead for Upgraded {
     fn poll_read(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
-        buf: ReadBufCursor<'_>,
+        buf: &mut ReadBuf<'_>,
     ) -> Poll<io::Result<()>> {
         Pin::new(&mut self.io).poll_read(cx, buf)
     }
 }
 
-impl Write for Upgraded {
+impl AsyncWrite for Upgraded {
     fn poll_write(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
@@ -216,9 +216,9 @@ impl StdError for UpgradeExpected {}
 
 // ===== impl Io =====
 
-trait Io: Read + Write + Unpin + 'static {}
+trait Io: AsyncRead + AsyncWrite + Unpin + 'static {}
 
-impl<T: Read + Write + Unpin + 'static> Io for T {}
+impl<T: AsyncRead + AsyncWrite + Unpin + 'static> Io for T {}
 
 impl dyn Io + Send {}
 

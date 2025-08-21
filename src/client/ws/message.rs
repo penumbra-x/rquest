@@ -4,8 +4,8 @@
 //! tungstenite message implementation, offering a more ergonomic API
 //! for working with WebSocket communications.
 
-use async_tungstenite::tungstenite as ts;
 use bytes::Bytes;
+use tokio_tungstenite::tungstenite as ts;
 
 use crate::Error;
 
@@ -29,6 +29,7 @@ impl Utf8Bytes {
     /// The bytes passed in must be valid UTF-8.
     #[inline]
     pub fn from_bytes_unchecked(bytes: Bytes) -> Self {
+        #[allow(unsafe_code)]
         Self(unsafe { ts::Utf8Bytes::from_bytes_unchecked(bytes) })
     }
 

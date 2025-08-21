@@ -1,77 +1,10 @@
 //! Provides a timer trait with timer-like functions
-//!
-//! Example using tokio timer:
-//! ```rust
-//! use std::{
-//!     future::Future,
-//!     pin::Pin,
-//!     task::{
-//!         Context,
-//!         Poll,
-//!     },
-//!     time::{
-//!         Duration,
-//!         Instant,
-//!     },
-//! };
-//!
-//! use crate::core::rt::{
-//!     Sleep,
-//!     Timer,
-//! };
-//! use pin_project_lite::pin_project;
-//!
-//! #[derive(Clone, Debug)]
-//! pub struct TokioTimer;
-//!
-//! impl Timer for TokioTimer {
-//!     fn sleep(&self, duration: Duration) -> Pin<Box<dyn Sleep>> {
-//!         Box::pin(TokioSleep {
-//!             inner: tokio::time::sleep(duration),
-//!         })
-//!     }
-//!
-//!     fn sleep_until(&self, deadline: Instant) -> Pin<Box<dyn Sleep>> {
-//!         Box::pin(TokioSleep {
-//!             inner: tokio::time::sleep_until(deadline.into()),
-//!         })
-//!     }
-//!
-//!     fn reset(&self, sleep: &mut Pin<Box<dyn Sleep>>, new_deadline: Instant) {
-//!         if let Some(sleep) = sleep.as_mut().downcast_mut_pin::<TokioSleep>() {
-//!             sleep.reset(new_deadline.into())
-//!         }
-//!     }
-//! }
-//!
-//! pin_project! {
-//!     pub(crate) struct TokioSleep {
-//!         #[pin]
-//!         pub(crate) inner: tokio::time::Sleep,
-//!     }
-//! }
-//!
-//! impl Future for TokioSleep {
-//!     type Output = ();
-//!
-//!     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-//!         self.project().inner.poll(cx)
-//!     }
-//! }
-//!
-//! impl Sleep for TokioSleep {}
-//!
-//! impl TokioSleep {
-//!     pub fn reset(self: Pin<&mut Self>, deadline: Instant) {
-//!         self.project().inner.as_mut().reset(deadline.into());
-//!     }
-//! }
-//! ```
 
 use std::{
     any::TypeId,
     future::Future,
     pin::Pin,
+    sync::Arc,
     time::{Duration, Instant},
 };
 
@@ -101,6 +34,26 @@ pub trait Sleep: Send + Sync + Future<Output = ()> {
     }
 }
 
+/// A handle to a shared timer instance.
+///
+/// `TimerHandle` provides a reference-counted, thread-safe handle to any type implementing the
+/// [`Timer`] trait. It allows cloning and sharing a timer implementation across multiple components
+/// or tasks.
+///
+/// This is typically used to abstract over different timer backends and to provide a unified
+/// interface for spawning sleep futures or scheduling timeouts.
+#[derive(Clone)]
+pub struct ArcTimer(Arc<dyn Timer + Send + Sync>);
+
+/// A user-provided timer to time background tasks.
+#[derive(Clone)]
+pub enum Time {
+    Timer(ArcTimer),
+    Empty,
+}
+
+// =====impl Sleep =====
+
 impl dyn Sleep {
     //! This is a re-implementation of downcast methods from std::any::Any
 
@@ -118,6 +71,7 @@ impl dyn Sleep {
         T: Sleep + 'static,
     {
         if self.is::<T>() {
+            #[allow(unsafe_code)]
             unsafe {
                 let inner = Pin::into_inner_unchecked(self);
                 Some(Pin::new_unchecked(
@@ -130,7 +84,49 @@ impl dyn Sleep {
     }
 }
 
+// =====impl ArcTimer =====
+
+impl ArcTimer {
+    pub(crate) fn new<T>(inner: T) -> Self
+    where
+        T: Timer + Send + Sync + 'static,
+    {
+        Self(Arc::new(inner))
+    }
+}
+
+impl Timer for ArcTimer {
+    fn sleep(&self, duration: Duration) -> Pin<Box<dyn Sleep>> {
+        self.0.sleep(duration)
+    }
+
+    fn sleep_until(&self, deadline: Instant) -> Pin<Box<dyn Sleep>> {
+        self.0.sleep_until(deadline)
+    }
+}
+
+// =====impl Time =====
+
+impl Time {
+    pub(crate) fn sleep(&self, duration: Duration) -> Pin<Box<dyn Sleep>> {
+        match *self {
+            Time::Empty => {
+                panic!("You must supply a timer.")
+            }
+            Time::Timer(ref t) => t.sleep(duration),
+        }
+    }
+
+    pub(crate) fn reset(&self, sleep: &mut Pin<Box<dyn Sleep>>, new_deadline: Instant) {
+        match *self {
+            Time::Empty => {
+                panic!("You must supply a timer.")
+            }
+            Time::Timer(ref t) => t.reset(sleep, new_deadline),
+        }
+    }
+}
+
 mod private {
-    #![allow(missing_debug_implementations)]
     pub struct Sealed {}
 }

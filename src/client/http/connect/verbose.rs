@@ -36,12 +36,11 @@ mod sealed {
         task::{Context, Poll},
     };
 
+    use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
+
     use super::super::TlsInfoFactory;
     use crate::{
-        core::{
-            client::connect::{Connected, Connection},
-            rt::{Read, ReadBufCursor, Write},
-        },
+        core::client::connect::{Connected, Connection},
         tls::TlsInfo,
         util::Escape,
     };
@@ -51,31 +50,28 @@ mod sealed {
         pub(super) inner: T,
     }
 
-    impl<T: Connection + Read + Write + Unpin> Connection for Wrapper<T> {
+    impl<T: Connection + AsyncRead + AsyncWrite + Unpin> Connection for Wrapper<T> {
         fn connected(&self) -> Connected {
             self.inner.connected()
         }
     }
 
-    impl<T: Read + Write + Unpin> Read for Wrapper<T> {
+    impl<T: AsyncRead + AsyncWrite + Unpin> AsyncRead for Wrapper<T> {
         fn poll_read(
             mut self: Pin<&mut Self>,
             cx: &mut Context,
-            mut buf: ReadBufCursor<'_>,
+            buf: &mut ReadBuf<'_>,
         ) -> Poll<std::io::Result<()>> {
             // TODO: This _does_ forget the `init` len, so it could result in
             // re-initializing twice. Needs upstream support, perhaps.
             // SAFETY: Passing to a ReadBuf will never de-initialize any bytes.
-            let mut vbuf = crate::core::rt::ReadBuf::uninit(unsafe { buf.as_mut() });
-            match Pin::new(&mut self.inner).poll_read(cx, vbuf.unfilled()) {
+            match Pin::new(&mut self.inner).poll_read(cx, buf) {
                 Poll::Ready(Ok(())) => {
-                    trace!("{:08x} read: {:?}", self.id, Escape::new(vbuf.filled()));
-                    let len = vbuf.filled().len();
+                    trace!("{:08x} read: {:?}", self.id, Escape::new(buf.filled()));
+                    let len = buf.filled().len();
                     // SAFETY: The two cursors were for the same buffer. What was
                     // filled in one is safe in the other.
-                    unsafe {
-                        buf.advance(len);
-                    }
+                    buf.advance(len);
                     Poll::Ready(Ok(()))
                 }
                 Poll::Ready(Err(e)) => Poll::Ready(Err(e)),
@@ -84,12 +80,12 @@ mod sealed {
         }
     }
 
-    impl<T: Read + Write + Unpin> Write for Wrapper<T> {
+    impl<T: AsyncRead + AsyncWrite + Unpin> AsyncWrite for Wrapper<T> {
         fn poll_write(
             mut self: Pin<&mut Self>,
             cx: &mut Context,
             buf: &[u8],
-        ) -> Poll<Result<usize, std::io::Error>> {
+        ) -> Poll<io::Result<usize>> {
             match Pin::new(&mut self.inner).poll_write(cx, buf) {
                 Poll::Ready(Ok(n)) => {
                     trace!("{:08x} write: {:?}", self.id, Escape::new(&buf[..n]));
@@ -104,7 +100,7 @@ mod sealed {
             mut self: Pin<&mut Self>,
             cx: &mut Context<'_>,
             bufs: &[IoSlice<'_>],
-        ) -> Poll<Result<usize, io::Error>> {
+        ) -> Poll<io::Result<usize>> {
             match Pin::new(&mut self.inner).poll_write_vectored(cx, bufs) {
                 Poll::Ready(Ok(nwritten)) => {
                     trace!(
@@ -123,17 +119,11 @@ mod sealed {
             self.inner.is_write_vectored()
         }
 
-        fn poll_flush(
-            mut self: Pin<&mut Self>,
-            cx: &mut Context,
-        ) -> Poll<Result<(), std::io::Error>> {
+        fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<io::Result<()>> {
             Pin::new(&mut self.inner).poll_flush(cx)
         }
 
-        fn poll_shutdown(
-            mut self: Pin<&mut Self>,
-            cx: &mut Context,
-        ) -> Poll<Result<(), std::io::Error>> {
+        fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<io::Result<()>> {
             Pin::new(&mut self.inner).poll_shutdown(cx)
         }
     }

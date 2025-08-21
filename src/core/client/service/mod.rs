@@ -16,6 +16,7 @@ use std::{
 use futures_util::future::{Either, FutureExt, TryFutureExt};
 use http::{HeaderValue, Method, Request, Response, Uri, Version, header::HOST};
 use http_body::Body;
+use tokio::io::{AsyncRead, AsyncWrite};
 use tower::util::Oneshot;
 
 use self::{
@@ -27,15 +28,15 @@ use crate::{
     core::{
         client::{
             body::Incoming,
+            common::{Exec, Lazy, lazy},
             conn::{self, TrySendError as ConnTrySendError},
             connect::{Alpn, Connected, Connection},
             options::{RequestOptions, http1::Http1Options, http2::Http2Options},
             pool,
         },
-        common::{Exec, Lazy, lazy, timer},
         error::BoxError,
         ext::{RequestConfig, RequestLevelOptions},
-        rt::{Executor, Read, Timer, Write},
+        rt::{ArcTimer, Executor, Timer},
     },
     hash::{HASHER, HashMemo},
     tls::AlpnProtocol,
@@ -130,7 +131,7 @@ impl HttpClient<(), ()> {
 impl<C, B> HttpClient<C, B>
 where
     C: tower::Service<ConnectRequest> + Clone + Send + Sync + 'static,
-    C::Response: Read + Write + Connection + Unpin + Send + 'static,
+    C::Response: AsyncRead + AsyncWrite + Connection + Unpin + Send + 'static,
     C::Error: Into<BoxError>,
     C::Future: Unpin + Send + 'static,
     B: Body + Send + 'static + Unpin,
@@ -603,7 +604,7 @@ where
 impl<C, B> tower::Service<Request<B>> for HttpClient<C, B>
 where
     C: tower::Service<ConnectRequest> + Clone + Send + Sync + 'static,
-    C::Response: Read + Write + Connection + Unpin + Send + 'static,
+    C::Response: AsyncRead + AsyncWrite + Connection + Unpin + Send + 'static,
     C::Error: Into<BoxError>,
     C::Future: Unpin + Send + 'static,
     B: Body + Send + 'static + Unpin,
@@ -626,7 +627,7 @@ where
 impl<C, B> tower::Service<Request<B>> for &'_ HttpClient<C, B>
 where
     C: tower::Service<ConnectRequest> + Clone + Send + Sync + 'static,
-    C::Response: Read + Write + Connection + Unpin + Send + 'static,
+    C::Response: AsyncRead + AsyncWrite + Connection + Unpin + Send + 'static,
     C::Error: Into<BoxError>,
     C::Future: Unpin + Send + 'static,
     B: Body + Send + 'static + Unpin,
@@ -800,7 +801,7 @@ pub struct Builder {
     h1_builder: conn::http1::Builder,
     h2_builder: conn::http2::Builder<Exec>,
     pool_config: pool::Config,
-    pool_timer: Option<timer::Timer>,
+    pool_timer: Option<ArcTimer>,
 }
 
 // ===== impl Builder =====
@@ -925,7 +926,7 @@ impl Builder {
     where
         M: Timer + Clone + Send + Sync + 'static,
     {
-        self.pool_timer = Some(timer::Timer::new(timer.clone()));
+        self.pool_timer = Some(ArcTimer::new(timer));
         self
     }
 
@@ -962,7 +963,7 @@ impl Builder {
     pub fn build<C, B>(self, connector: C) -> HttpClient<C, B>
     where
         C: tower::Service<ConnectRequest> + Clone + Send + Sync + 'static,
-        C::Response: Read + Write + Connection + Unpin + Send + 'static,
+        C::Response: AsyncRead + AsyncWrite + Connection + Unpin + Send + 'static,
         C::Error: Into<BoxError>,
         C::Future: Unpin + Send + 'static,
         B: Body + Send,

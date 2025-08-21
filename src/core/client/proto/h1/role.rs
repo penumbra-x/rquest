@@ -12,7 +12,7 @@ use smallvec::{SmallVec, smallvec, smallvec_inline};
 
 use crate::{
     core::{
-        Error,
+        self, Error,
         client::{
             body::DecodedLength,
             proto::{
@@ -43,7 +43,14 @@ macro_rules! header_name {
 }
 
 macro_rules! header_value {
-    ($bytes:expr) => {{ { unsafe { HeaderValue::from_maybe_shared_unchecked($bytes) } } }};
+    ($bytes:expr) => {{
+        {
+            #[allow(unsafe_code)]
+            unsafe {
+                HeaderValue::from_maybe_shared_unchecked($bytes)
+            }
+        }
+    }};
 }
 
 macro_rules! maybe_panic {
@@ -105,7 +112,7 @@ fn is_complete_fast(bytes: &[u8], prev_len: usize) -> bool {
 pub(super) fn encode_headers<T>(
     enc: Encode<'_, T::Outgoing>,
     dst: &mut Vec<u8>,
-) -> crate::core::Result<Encoder>
+) -> core::Result<Encoder>
 where
     T: Http1Transaction,
 {
@@ -187,6 +194,7 @@ impl Http1Transaction for Client {
             {
                 for header in &mut headers_indices[..headers_len] {
                     // SAFETY: array is valid up to `headers_len`
+                    #[allow(unsafe_code)]
                     let header = unsafe { header.assume_init_mut() };
                     Client::obs_fold_line(&mut slice, header);
                 }
@@ -207,6 +215,7 @@ impl Http1Transaction for Client {
             headers.reserve(headers_len);
             for header in &headers_indices[..headers_len] {
                 // SAFETY: array is valid up to `headers_len`
+                #[allow(unsafe_code)]
                 let header = unsafe { header.assume_init_ref() };
                 let name = header_name!(&slice[header.name.0..header.name.1]);
                 let value = header_value!(slice.slice(header.value.0..header.value.1));
@@ -270,7 +279,7 @@ impl Http1Transaction for Client {
         }
     }
 
-    fn encode(msg: Encode<'_, Self::Outgoing>, dst: &mut Vec<u8>) -> crate::core::Result<Encoder> {
+    fn encode(msg: Encode<'_, Self::Outgoing>, dst: &mut Vec<u8>) -> core::Result<Encoder> {
         trace!(
             "Client::encode method={:?}, body={:?}",
             msg.head.subject.0, msg.body

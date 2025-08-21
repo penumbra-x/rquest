@@ -3,7 +3,7 @@ pub(crate) mod ping;
 
 use std::{
     future::Future,
-    io::{Cursor, IoSlice},
+    io::{self, Cursor, IoSlice},
     pin::Pin,
     task::{Context, Poll, ready},
 };
@@ -16,14 +16,10 @@ use http::{
 use http_body::Body;
 use http2::{Reason, RecvStream, SendStream};
 use pin_project_lite::pin_project;
+use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
 pub(crate) use self::client::ClientTask;
-use crate::core::{
-    Error,
-    client::proto::h2::ping::Recorder,
-    error::BoxError,
-    rt::{Read, ReadBufCursor, Write},
-};
+use crate::core::{self, Error, client::proto::h2::ping::Recorder, error::BoxError};
 
 /// Default initial stream window size defined in HTTP2 spec.
 pub(crate) const SPEC_WINDOW_SIZE: u32 = 65_535;
@@ -110,7 +106,7 @@ where
     S: Body,
     S::Error: Into<BoxError>,
 {
-    type Output = crate::core::Result<()>;
+    type Output = core::Result<()>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut me = self.project();
@@ -192,7 +188,7 @@ trait SendStreamExt {
     fn on_user_err<E>(&mut self, err: E) -> Error
     where
         E: Into<BoxError>;
-    fn send_eos_frame(&mut self) -> crate::core::Result<()>;
+    fn send_eos_frame(&mut self) -> core::Result<()>;
 }
 
 impl<B: Buf> SendStreamExt for SendStream<SendBuf<B>> {
@@ -206,7 +202,7 @@ impl<B: Buf> SendStreamExt for SendStream<SendBuf<B>> {
         err
     }
 
-    fn send_eos_frame(&mut self) -> crate::core::Result<()> {
+    fn send_eos_frame(&mut self) -> core::Result<()> {
         trace!("send body eos");
         self.send_data(SendBuf::None, true)
             .map_err(Error::new_body_write)
@@ -267,15 +263,15 @@ where
     buf: Bytes,
 }
 
-impl<B> Read for H2Upgraded<B>
+impl<B> AsyncRead for H2Upgraded<B>
 where
     B: Buf,
 {
     fn poll_read(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
-        mut read_buf: ReadBufCursor<'_>,
-    ) -> Poll<Result<(), std::io::Error>> {
+        read_buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
         if self.buf.is_empty() {
             self.buf = loop {
                 match ready!(self.recv_stream.poll_data(cx)) {
@@ -291,7 +287,7 @@ where
                         return Poll::Ready(match e.reason() {
                             Some(Reason::NO_ERROR) | Some(Reason::CANCEL) => Ok(()),
                             Some(Reason::STREAM_CLOSED) => {
-                                Err(std::io::Error::new(std::io::ErrorKind::BrokenPipe, e))
+                                Err(io::Error::new(io::ErrorKind::BrokenPipe, e))
                             }
                             _ => Err(h2_to_io_error(e)),
                         });
@@ -307,7 +303,7 @@ where
     }
 }
 
-impl<B> Write for H2Upgraded<B>
+impl<B> AsyncWrite for H2Upgraded<B>
 where
     B: Buf,
 {
@@ -315,7 +311,7 @@ where
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &[u8],
-    ) -> Poll<Result<usize, std::io::Error>> {
+    ) -> Poll<io::Result<usize>> {
         if buf.is_empty() {
             return Poll::Ready(Ok(0));
         }
@@ -340,7 +336,7 @@ where
         Poll::Ready(Err(h2_to_io_error(
             match ready!(self.send_stream.poll_reset(cx)) {
                 Ok(Reason::NO_ERROR) | Ok(Reason::CANCEL) | Ok(Reason::STREAM_CLOSED) => {
-                    return Poll::Ready(Err(std::io::ErrorKind::BrokenPipe.into()));
+                    return Poll::Ready(Err(io::ErrorKind::BrokenPipe.into()));
                 }
                 Ok(reason) => reason.into(),
                 Err(e) => e,
@@ -348,14 +344,11 @@ where
         )))
     }
 
-    fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), std::io::Error>> {
+    fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         Poll::Ready(Ok(()))
     }
 
-    fn poll_shutdown(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-    ) -> Poll<Result<(), std::io::Error>> {
+    fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         if self
             .send_stream
             .send_data(SendBuf::Cursor(Cursor::new([].into())), true)
@@ -368,7 +361,7 @@ where
             match ready!(self.send_stream.poll_reset(cx)) {
                 Ok(Reason::NO_ERROR) => return Poll::Ready(Ok(())),
                 Ok(Reason::CANCEL) | Ok(Reason::STREAM_CLOSED) => {
-                    return Poll::Ready(Err(std::io::ErrorKind::BrokenPipe.into()));
+                    return Poll::Ready(Err(io::ErrorKind::BrokenPipe.into()));
                 }
                 Ok(reason) => reason.into(),
                 Err(e) => e,

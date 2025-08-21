@@ -85,8 +85,8 @@ impl Response {
     /// # Optional
     ///
     /// This requires the optional `cookies` feature to be enabled.
-    #[cfg(feature = "cookies")]
     #[inline]
+    #[cfg(feature = "cookies")]
     pub fn cookies(&self) -> impl Iterator<Item = cookie::Cookie<'_>> {
         self.res
             .headers()
@@ -429,7 +429,6 @@ impl Response {
     pub async fn upgrade(self) -> crate::Result<Upgraded> {
         crate::core::client::upgrade::on(self.res)
             .await
-            .map(Upgraded::from)
             .map_err(Error::upgrade)
     }
 }

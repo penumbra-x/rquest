@@ -1,4 +1,5 @@
 use std::{
+    io,
     path::Path,
     pin::Pin,
     sync::Arc,
@@ -9,17 +10,16 @@ use http::Uri;
 use tokio::net::UnixStream;
 
 use super::{Connected, Connection};
-use crate::core::rt::TokioIo;
 
-type ConnectResult = Result<TokioIo<UnixStream>, std::io::Error>;
+type ConnectResult = io::Result<UnixStream>;
 type BoxConnecting = Pin<Box<dyn Future<Output = ConnectResult> + Send>>;
 
 #[derive(Clone)]
 pub struct UnixConnector(pub(crate) Arc<Path>);
 
 impl tower::Service<Uri> for UnixConnector {
-    type Response = TokioIo<UnixStream>;
-    type Error = std::io::Error;
+    type Response = UnixStream;
+    type Error = io::Error;
     type Future = BoxConnecting;
 
     #[inline]
@@ -31,7 +31,7 @@ impl tower::Service<Uri> for UnixConnector {
         let fut = UnixStream::connect(self.0.clone());
         Box::pin(async move {
             let io = fut.await?;
-            Ok::<_, std::io::Error>(TokioIo::new(io))
+            Ok::<_, io::Error>(io)
         })
     }
 }

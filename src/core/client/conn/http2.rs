@@ -5,12 +5,12 @@ use std::{
     future::Future,
     marker::PhantomData,
     pin::Pin,
-    sync::Arc,
     task::{Context, Poll, ready},
 };
 
 use http::{Request, Response};
 use http_body::Body;
+use tokio::io::{AsyncRead, AsyncWrite};
 
 use crate::{
     core::{
@@ -21,9 +21,8 @@ use crate::{
             dispatch::{self, TrySendError},
             proto::{self, h2::ping},
         },
-        common::time::Time,
         error::{BoxError, Error},
-        rt::{Read, Timer, Write},
+        rt::{ArcTimer, Time, Timer},
     },
     http2::Http2Options,
 };
@@ -50,7 +49,7 @@ impl<B> Clone for SendRequest<B> {
 #[must_use = "futures do nothing unless polled"]
 pub struct Connection<T, B, E>
 where
-    T: Read + Write + Unpin,
+    T: AsyncRead + AsyncWrite + Unpin,
     B: Body + 'static,
     E: Http2ClientConnExec<B, T> + Unpin,
     B::Error: Into<BoxError>,
@@ -64,7 +63,7 @@ where
 ///
 /// **Note**: The default values of options are *not considered stable*. They
 /// are subject to change at any time.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Builder<Ex> {
     exec: Ex,
     timer: Time,
@@ -158,7 +157,7 @@ impl<B> fmt::Debug for SendRequest<B> {
 
 impl<T, B, E> fmt::Debug for Connection<T, B, E>
 where
-    T: Read + Write + fmt::Debug + 'static + Unpin,
+    T: AsyncRead + AsyncWrite + fmt::Debug + 'static + Unpin,
     B: Body + 'static,
     E: Http2ClientConnExec<B, T> + Unpin,
     B::Error: Into<BoxError>,
@@ -170,7 +169,7 @@ where
 
 impl<T, B, E> Future for Connection<T, B, E>
 where
-    T: Read + Write + Unpin + 'static,
+    T: AsyncRead + AsyncWrite + Unpin + 'static,
     B: Body + 'static + Unpin,
     B::Data: Send,
     E: Unpin,
@@ -209,7 +208,7 @@ where
     where
         M: Timer + Send + Sync + 'static,
     {
-        self.timer = Time::Timer(Arc::new(timer));
+        self.timer = Time::Timer(ArcTimer::new(timer));
     }
 
     /// Provide a options configuration for the HTTP/2 connection.
@@ -225,7 +224,7 @@ where
     /// do nothing.
     pub async fn handshake<T, B>(self, io: T) -> Result<(SendRequest<B>, Connection<T, B, Ex>)>
     where
-        T: Read + Write + Unpin,
+        T: AsyncRead + AsyncWrite + Unpin,
         B: Body + 'static,
         B::Data: Send,
         B::Error: Into<BoxError>,

@@ -12,7 +12,10 @@ use http::HeaderMap;
 use http_body::{Body, Frame, SizeHint};
 
 use super::DecodedLength;
-use crate::core::{Error, client::proto::h2::ping, common::watch};
+use crate::core::{
+    self, Error,
+    client::{common::watch, proto::h2::ping},
+};
 
 type BodySender = mpsc::Sender<Result<Bytes, Error>>;
 type TrailersSender = oneshot::Sender<HeaderMap>;
@@ -20,18 +23,7 @@ type TrailersSender = oneshot::Sender<HeaderMap>;
 /// A stream of `Bytes`, used when receiving bodies from the network.
 ///
 /// Note that Users should not instantiate this struct directly. When working with the crate::core:
-/// client, `Incoming` is returned to you in responses. Similarly, when operating with the
-/// crate::core: server, it is provided within requests.
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// async fn echo(
-///    req: Request<Incoming>,
-/// ) -> Result<Response<BoxBody<Bytes, crate::core::Error>>, crate::core::Error> {
-///    //Here, you can process `Incoming`
-/// }
-/// ```
+/// client, `Incoming` is returned to you in responses.
 #[must_use = "streams do nothing unless polled"]
 pub struct Incoming {
     kind: Kind,
@@ -258,13 +250,13 @@ impl fmt::Debug for Incoming {
 
 impl Sender {
     /// Check to see if this `Sender` can send more data.
-    pub(crate) fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<crate::core::Result<()>> {
+    pub(crate) fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<core::Result<()>> {
         // Check if the receiver end has tried polling for the body yet
         ready!(self.poll_want(cx)?);
         self.data_tx.poll_ready(cx).map_err(|_| Error::new_closed())
     }
 
-    fn poll_want(&mut self, cx: &mut Context<'_>) -> Poll<crate::core::Result<()>> {
+    fn poll_want(&mut self, cx: &mut Context<'_>) -> Poll<core::Result<()>> {
         match self.want_rx.load(cx) {
             WANT_READY => Poll::Ready(Ok(())),
             WANT_PENDING => Poll::Pending,
@@ -274,7 +266,7 @@ impl Sender {
     }
 
     #[cfg(test)]
-    async fn ready(&mut self) -> crate::core::Result<()> {
+    async fn ready(&mut self) -> core::Result<()> {
         std::future::poll_fn(|cx| self.poll_ready(cx)).await
     }
 
