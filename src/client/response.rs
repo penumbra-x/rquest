@@ -16,6 +16,7 @@ use crate::{
     Error, Upgraded,
     core::{client::connect::HttpInfo, ext::ReasonPhrase},
     ext::RequestUri,
+    redirect::{self, History},
 };
 
 /// A Response to a submitted `Request`.
@@ -111,6 +112,16 @@ impl Response {
             .extensions()
             .get::<HttpInfo>()
             .map(HttpInfo::remote_addr)
+    }
+
+    /// Get the redirect history of this `Response`.
+    #[inline]
+    pub fn history(&self) -> impl Iterator<Item = &History> {
+        self.res
+            .extensions()
+            .get::<redirect::RedirectHistory>()
+            .map(|h| h.0.iter())
+            .unwrap_or_else(|| [].iter())
     }
 
     /// Returns a reference to the associated extensions.

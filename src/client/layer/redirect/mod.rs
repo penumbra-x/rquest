@@ -9,7 +9,7 @@ use std::{
 };
 
 use futures_util::future::Either;
-use http::{Request, Response, Uri};
+use http::{Request, Response};
 use http_body::Body;
 use tower::{Layer, Service};
 
@@ -103,14 +103,6 @@ where
         }
     }
 }
-
-/// Response [`http::Extensions`] value that represents the effective request URI of
-/// a response returned by a [`FollowRedirect`] middleware.
-///
-/// The value differs from the original request's effective URI if the middleware has followed
-/// redirections.
-#[derive(Clone)]
-pub struct RequestUri(pub Uri);
 
 #[derive(Debug)]
 enum BodyRepr<B> {

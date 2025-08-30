@@ -455,3 +455,62 @@ async fn test_redirect_301_302_303_empty_payload_headers() {
         );
     }
 }
+
+#[tokio::test]
+async fn test_redirect_history() {
+    let redirect = server::http(move |req| async move {
+        if req.uri() == "/first" {
+            http::Response::builder()
+                .status(302)
+                .header("location", "/second")
+                .body(Body::default())
+                .unwrap()
+        } else if req.uri() == "/second" {
+            http::Response::builder()
+                .status(302)
+                .header("location", "/dst")
+                .body(Body::default())
+                .unwrap()
+        } else {
+            assert_eq!(req.uri(), "/dst");
+
+            http::Response::builder()
+                .header("server", "test-dst")
+                .body(Body::default())
+                .unwrap()
+        }
+    });
+
+    let url = format!("http://{}/first", redirect.addr());
+    let dst = format!("http://{}/{}", redirect.addr(), "dst");
+
+    let client = wreq::ClientBuilder::new()
+        .redirect(Policy::default())
+        .history(true)
+        .build()
+        .unwrap();
+
+    let res = client.get(&url).send().await.unwrap();
+    assert_eq!(res.uri().to_string(), dst);
+    assert_eq!(res.status(), wreq::StatusCode::OK);
+    assert_eq!(
+        res.headers().get(wreq::header::SERVER).unwrap(),
+        &"test-dst"
+    );
+
+    let mut history = res.history();
+
+    let next1 = history.next().unwrap();
+    assert_eq!(next1.status(), 302);
+    assert_eq!(next1.previous().path(), "/first");
+    assert_eq!(next1.uri().path(), "/second");
+    assert_eq!(next1.headers()["location"], "/second");
+
+    let next2 = history.next().unwrap();
+    assert_eq!(next2.status(), 302);
+    assert_eq!(next2.previous().path(), "/second");
+    assert_eq!(next2.uri().path(), "/dst");
+    assert_eq!(next2.headers()["location"], "/dst");
+
+    assert!(history.next().is_none());
+}

@@ -257,7 +257,6 @@ required-features = ["webpki-roots", "tracing"]
 [[example]]
 name = "request_with_redirect"
 path = "examples/request_with_redirect.rs"
-required-features = ["tracing"]
 
 [[example]]
 name = "request_with_version"
