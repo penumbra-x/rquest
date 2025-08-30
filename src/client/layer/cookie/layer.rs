@@ -3,7 +3,7 @@ use std::{
     task::{Context, Poll},
 };
 
-use http::{Request, Response, header::COOKIE};
+use http::{Request, Response, Uri, header::COOKIE};
 use tower::{Layer, Service};
 
 use super::future::ResponseFuture;
@@ -46,22 +46,21 @@ impl<S> CookieService<S> {
         &self,
         req: &mut Request<B>,
         cookie_store: &Arc<dyn CookieStore>,
-    ) -> Option<url::Url> {
-        // Parse URL first - we need it for both injection and response processing
-        let url = url::Url::parse(&req.uri().to_string()).ok()?;
+    ) -> Option<Uri> {
+        let uri = req.uri().clone();
 
         // // Skip if request already has cookies
         if req.headers().get(COOKIE).is_some() {
-            return Some(url);
+            return Some(uri);
         }
 
         // Only inject cookies if request doesn't already have them
         let headers = req.headers_mut();
-        for header in cookie_store.cookies(&url) {
+        for header in cookie_store.cookies(&uri) {
             headers.append(COOKIE, header);
         }
 
-        Some(url)
+        Some(uri)
     }
 }
 
@@ -86,12 +85,12 @@ where
             };
         };
 
-        // Try to inject cookies and get URL for response processing
+        // Try to inject cookies and get URI for response processing
         match self.inject_cookies_if_needed(&mut req, cookie_store) {
-            Some(url) => ResponseFuture::Managed {
+            Some(uri) => ResponseFuture::Managed {
                 future: self.inner.call(req),
                 cookie_store: cookie_store.clone(),
-                url,
+                uri,
             },
             None => ResponseFuture::Direct {
                 future: self.inner.call(req),

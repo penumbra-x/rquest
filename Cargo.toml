@@ -25,7 +25,7 @@ default = ["webpki-roots"]
 charset = ["dep:encoding_rs", "dep:mime"]
 
 # Enable cookies store support.
-cookies = ["dep:cookie_crate", "dep:cookie_store"]
+cookies = ["dep:cookie"]
 
 # Enable gzip compression support.
 gzip = ["tower-http/decompression-gzip"]
@@ -67,10 +67,10 @@ system-proxy = ["dep:system-configuration", "dep:windows-registry"]
 tracing = ["http2/tracing", "dep:tracing"]
 
 [dependencies]
-url = "2.5.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_urlencoded = "0.7.1"
-percent-encoding = "2.3.1"
+percent-encoding = "2.3.2"
+iri-string = "0.7.0"
 tower = { version = "0.5.2", default-features = false, features = [
     "timeout",
     "util",
@@ -93,7 +93,7 @@ schnellru = { version = "0.2.4", default-features = false }
 ahash = { version = "0.8.12", default-features = false }
 boring2 = { version = "5.0.0-alpha.4", features = ["pq-experimental"] }
 tokio-boring2 = { version = "5.0.0-alpha.4", features = ["pq-experimental"] }
-brotli = "8.0.1"
+brotli = "8.0.2"
 flate2 = "1.1.2"
 zstd = "0.13.3"
 tokio = { version = "1.47.1", default-features = false, features = [
@@ -101,7 +101,6 @@ tokio = { version = "1.47.1", default-features = false, features = [
     "time",
     "rt",
 ] }
-
 
 # Optional deps...
 
@@ -122,8 +121,7 @@ sync_wrapper = { version = "1.0.2", features = ["futures"], optional = true }
 webpki-root-certs = { version = "1.0.2", optional = true }
 
 ## cookies
-cookie_crate = { version = "0.18", package = "cookie", optional = true }
-cookie_store = { version = "0.22", optional = true }
+cookie = { version = "0.18", optional = true }
 
 ## tower http
 tower-http = { version = "0.6.6", default-features = false, optional = true }
@@ -181,14 +179,11 @@ futures = { version = "0.3.0", default-features = false, features = ["std"] }
 tower = { version = "0.5.2", default-features = false, features = ["limit"] }
 tokio-test = "0.4"
 tracing = "0.1"
-tracing-subscriber = "0.3.19"
+tracing-subscriber = "0.3.20"
 pretty_env_logger = "0.5"
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 libc = "0.2.173"
-
-[lib]
-doctest = false
 
 [[test]]
 name = "cookie"
