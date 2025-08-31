@@ -70,8 +70,8 @@ use crate::{
     proxy::Matcher as ProxyMatcher,
     redirect::{self, FollowRedirectPolicy, Policy as RedirectPolicy},
     tls::{
-        AlpnProtocol, CertStore, Identity, KeyLogPolicy, TlsConnectorBuilder, TlsOptions,
-        TlsVersion,
+        AlpnProtocol, CertStore, Identity, KeyLogPolicy, TlsOptions, TlsVersion,
+        conn::TlsConnectorBuilder,
     },
 };
 

@@ -16,7 +16,7 @@ use tokio_boring2::SslStream;
 use super::{AsyncConnWithInfo, TlsInfoFactory};
 use crate::{
     core::client::connect::{Connected, Connection},
-    tls::{MaybeHttpsStream, TlsInfo},
+    tls::{TlsInfo, conn::MaybeHttpsStream},
 };
 
 pin_project! {

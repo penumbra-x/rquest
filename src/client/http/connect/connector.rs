@@ -33,8 +33,10 @@ use crate::{
     error::{BoxError, TimedOut, map_timeout_to_connector_error},
     proxy::{Intercepted, Matcher as ProxyMatcher},
     tls::{
-        EstablishedConn, HttpsConnector, MaybeHttpsStream, TlsConnector, TlsConnectorBuilder,
         TlsOptions,
+        conn::{
+            EstablishedConn, HttpsConnector, MaybeHttpsStream, TlsConnector, TlsConnectorBuilder,
+        },
     },
 };
 
