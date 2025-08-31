@@ -283,6 +283,8 @@ pub mod redirect;
 pub mod tls;
 
 pub use http::{Method, StatusCode, Uri, Version};
+#[cfg(unix)]
+use libc as _;
 
 #[cfg(feature = "multipart")]
 pub use self::client::multipart;
