@@ -61,7 +61,7 @@ pub struct History {
 
 /// A list of redirect history entries.
 #[derive(Clone, Debug)]
-pub(crate) struct RedirectHistory(pub Vec<History>);
+pub(crate) struct RedirectEntries(pub Vec<History>);
 
 // ===== impl Policy =====
 
@@ -240,25 +240,21 @@ impl<'a> Attempt<'a> {
 
 impl History {
     /// Get the status code of the redirect response.
-    #[inline(always)]
     pub fn status(&self) -> StatusCode {
         self.status
     }
 
     /// Get the URI of the redirect response.
-    #[inline(always)]
     pub fn uri(&self) -> &Uri {
         &self.uri
     }
 
     /// Get the previous URI before the redirect response.
-    #[inline(always)]
     pub fn previous(&self) -> &Uri {
         &self.previous
     }
 
     /// Get the headers of the redirect response.
-    #[inline(always)]
     pub fn headers(&self) -> &HeaderMap {
         &self.headers
     }
@@ -431,7 +427,7 @@ impl policy::Policy<Body, BoxError> for FollowRedirectPolicy {
             if let Some(history_entries) = self.history_entries.take() {
                 response
                     .extensions_mut()
-                    .insert(RedirectHistory(history_entries));
+                    .insert(RedirectEntries(history_entries));
             }
         }
     }

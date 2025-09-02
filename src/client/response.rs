@@ -119,9 +119,9 @@ impl Response {
     pub fn history(&self) -> impl Iterator<Item = &History> {
         self.res
             .extensions()
-            .get::<redirect::RedirectHistory>()
-            .map(|h| h.0.iter())
-            .unwrap_or_else(|| [].iter())
+            .get::<redirect::RedirectEntries>()
+            .map(|entries| entries.0.iter())
+            .unwrap_or_default()
     }
 
     /// Returns a reference to the associated extensions.
