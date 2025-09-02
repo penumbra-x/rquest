@@ -29,7 +29,7 @@ The following example uses the [Tokio](https://tokio.rs) runtime with optional f
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-wreq = "6.0.0-rc.12"
+wreq = "6.0.0-rc.13"
 wreq-util = "3.0.0-rc.1"
 ```
 
