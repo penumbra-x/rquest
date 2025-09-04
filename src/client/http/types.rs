@@ -7,15 +7,17 @@ use tower::{
 use super::{
     Body,
     connect::{Conn, Unnameable},
-    service::ClientService,
 };
 use crate::{
-    client::layer::{
-        redirect::FollowRedirect,
-        retry::Http2RetryPolicy,
-        timeout::{ResponseBodyTimeout, Timeout, TimeoutBody},
+    client::{
+        http::{Connector, service::ConfigService},
+        layer::{
+            redirect::FollowRedirect,
+            retry::Http2RetryPolicy,
+            timeout::{ResponseBodyTimeout, Timeout, TimeoutBody},
+        },
     },
-    core::client::{body::Incoming, connect},
+    core::client::{Error, HttpClient, body::Incoming, connect},
     dns::DynResolver,
     error::BoxError,
     redirect::FollowRedirectPolicy,
@@ -62,17 +64,20 @@ pub type ResponseBody = TimeoutBody<tower_http::decompression::DecompressionBody
 pub type ResponseBody = TimeoutBody<Incoming>;
 
 /// HTTP client service with retry, timeout, redirect, and error mapping for HTTP/2.
-pub type GenericClientService = MapErr<
-    Timeout<
-        Retry<
-            Http2RetryPolicy,
-            FollowRedirect<
-                ResponseBodyTimeout<Decompression<CookieLayer<ClientService>>>,
-                FollowRedirectPolicy,
+pub type GenericClientService = Timeout<
+    Retry<
+        Http2RetryPolicy,
+        FollowRedirect<
+            ResponseBodyTimeout<
+                ConfigService<
+                    Decompression<
+                        CookieLayer<MapErr<HttpClient<Connector, Body>, fn(Error) -> BoxError>>,
+                    >,
+                >,
             >,
+            FollowRedirectPolicy,
         >,
     >,
-    fn(BoxError) -> BoxError,
 >;
 
 /// Boxed HTTP client service object-safe type for requests and responses.

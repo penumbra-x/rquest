@@ -1,4 +1,4 @@
-pub(crate) mod connect;
+mod connect;
 mod future;
 mod service;
 mod types;
@@ -18,7 +18,6 @@ use http::{
     Request as HttpRequest, Response as HttpResponse,
     header::{HeaderMap, HeaderValue, USER_AGENT},
 };
-use service::ClientService;
 use tower::{
     Layer, Service, ServiceBuilder, ServiceExt,
     retry::RetryLayer,
@@ -55,7 +54,10 @@ use crate::dns::hickory::HickoryDnsResolver;
 use crate::{
     IntoUri, Method, Proxy,
     client::{
-        http::connect::{Conn, Connector, Unnameable},
+        http::{
+            connect::{Conn, Connector, Unnameable},
+            service::ConfigServiceLayer,
+        },
         layer::timeout::TimeoutOptions,
     },
     core::{
@@ -252,10 +254,10 @@ impl ClientBuilder {
         }
         let proxies = Arc::new(proxies);
 
-        let (tls_options, http1_options, http2_options) = config.transport_options.into_parts();
+        // Create base client service
+        let service = {
+            let (tls_options, http1_options, http2_options) = config.transport_options.into_parts();
 
-        // create the TLS connector with the provided options.
-        let connector = {
             let resolver = {
                 let mut resolver: Arc<dyn Resolve> = match config.dns_resolver {
                     Some(dns_resolver) => dns_resolver,
@@ -308,50 +310,39 @@ impl ClientBuilder {
                     .keylog(config.keylog_policy)
             };
 
-            Connector::builder(proxies.clone(), resolver)
+            // build connector
+            let connector = Connector::builder(proxies.clone(), resolver)
                 .timeout(config.connect_timeout)
                 .tls_info(config.tls_info)
                 .tls_options(tls_options)
                 .verbose(config.connection_verbose)
                 .with_tls(tls)
                 .with_http(http)
-                .build(config.connector_layers)?
-        };
+                .build(config.connector_layers)?;
 
-        // create client with the configured connector
-        let client = {
-            let http2_only = matches!(config.http_version_pref, HttpVersionPref::Http2);
-            let mut builder = HttpClient::builder(TokioExecutor::new());
-            builder
+            // build client
+            HttpClient::builder(TokioExecutor::new())
                 .http1_options(http1_options)
                 .http2_options(http2_options)
-                .http2_only(http2_only)
+                .http2_only(matches!(config.http_version_pref, HttpVersionPref::Http2))
                 .http2_timer(TokioTimer::new())
                 .pool_timer(TokioTimer::new())
                 .pool_idle_timeout(config.pool_idle_timeout)
                 .pool_max_idle_per_host(config.pool_max_idle_per_host)
-                .pool_max_size(config.pool_max_size);
-            builder.build(connector)
+                .pool_max_size(config.pool_max_size)
+                .build(connector)
+                .map_err(BoxError::from as _)
         };
 
-        // create the client with the configured service layers
+        // configured client service with layers
         let client = {
-            // configured client service layer
-            let service = ClientService::new(
-                client,
-                config.headers,
-                config.orig_headers,
-                config.https_only,
-                proxies,
-            );
-
             // configured cookie service layer if cookies are enabled.
             #[cfg(feature = "cookies")]
             let service = ServiceBuilder::new()
                 .layer(CookieServiceLayer::new(config.cookie_store))
                 .service(service);
 
-            // configured response decompression support (gzip, zstd, brotli, deflate) if enabled.
+            // configured response decompression layer.
             #[cfg(any(
                 feature = "gzip",
                 feature = "zstd",
@@ -362,12 +353,22 @@ impl ClientBuilder {
                 .layer(DecompressionLayer::new(config.accept_encoding))
                 .service(service);
 
-            // configured timeout layer for the response body.
+            // configured default config layer.
+            let service = ServiceBuilder::new()
+                .layer(ConfigServiceLayer::new(
+                    config.https_only,
+                    config.headers,
+                    config.orig_headers,
+                    proxies,
+                ))
+                .service(service);
+
+            // configured timeout layer.
             let service = ServiceBuilder::new()
                 .layer(ResponseBodyTimeoutLayer::new(config.timeout_options))
                 .service(service);
 
-            // configured redirect following logic with the configured policy.
+            // configured redirect layer.
             let service = {
                 let policy = FollowRedirectPolicy::new(config.redirect_policy)
                     .with_referer(config.referer)
@@ -379,7 +380,7 @@ impl ClientBuilder {
                     .service(service)
             };
 
-            // configured HTTP/2 retry logic.
+            // configured HTTP/2 safety retry layer.
             let service = ServiceBuilder::new()
                 .layer(RetryLayer::new(Http2RetryPolicy::new(
                     config.http2_max_retry,
@@ -390,8 +391,7 @@ impl ClientBuilder {
             if config.layers.is_empty() {
                 let service = ServiceBuilder::new()
                     .layer(TimeoutLayer::new(config.timeout_options))
-                    .service(service)
-                    .map_err(error::map_timeout_to_request_error as _);
+                    .service(service);
 
                 ClientRef::Left(service)
             } else {
