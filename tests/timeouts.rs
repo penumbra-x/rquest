@@ -23,10 +23,7 @@ async fn client_timeout() {
         .unwrap();
 
     let url = format!("http://{}/slow", server.addr());
-
-    let res = client.get(&url).send().await;
-
-    let err = res.unwrap_err();
+    let err = client.get(&url).send().await.unwrap_err();
 
     assert!(err.is_timeout());
     assert_eq!(err.uri().map(|u| u.to_string()), Some(url));
@@ -48,19 +45,14 @@ async fn request_timeout() {
 
     let url = format!("http://{}/slow", server.addr());
 
-    let res = client
+    let err = client
         .get(&url)
         .timeout(Duration::from_millis(100))
         .send()
-        .await;
+        .await
+        .unwrap_err();
 
-    let err = res.unwrap_err();
-
-    if cfg!(not(target_arch = "wasm32")) {
-        assert!(err.is_timeout() && !err.is_connect());
-    } else {
-        assert!(err.is_timeout());
-    }
+    assert!(err.is_timeout() && !err.is_connect());
     assert_eq!(err.uri().map(|u| u.to_string()), Some(url));
 }
 
@@ -76,13 +68,12 @@ async fn connect_timeout() {
 
     let url = "http://192.0.2.1:81/slow";
 
-    let res = client
+    let err = client
         .get(url)
         .timeout(Duration::from_millis(1000))
         .send()
-        .await;
-
-    let err = res.unwrap_err();
+        .await
+        .unwrap_err();
 
     assert!(err.is_timeout());
 }
@@ -106,7 +97,7 @@ async fn connect_many_timeout_succeeds() {
 
     let url = format!("http://many_addrs:{port}/eventual");
 
-    let _res = client
+    let _ = client
         .get(url)
         .timeout(Duration::from_millis(1000))
         .send()
@@ -133,13 +124,12 @@ async fn connect_many_timeout() {
 
     let url = "http://many_addrs:81/slow".to_string();
 
-    let res = client
+    let err = client
         .get(url)
         .timeout(Duration::from_millis(1000))
         .send()
-        .await;
-
-    let err = res.unwrap_err();
+        .await
+        .unwrap_err();
 
     assert!(err.is_connect() && err.is_timeout());
 }
@@ -169,9 +159,7 @@ async fn response_timeout() {
 
     let url = format!("http://{}/slow", server.addr());
     let res = client.get(&url).send().await.expect("Failed to get");
-    let body = res.text().await;
-
-    let err = body.unwrap_err();
+    let err = res.text().await.unwrap_err();
 
     assert!(err.is_timeout());
 }
@@ -196,9 +184,7 @@ async fn read_timeout_applies_to_headers() {
 
     let url = format!("http://{}/slow", server.addr());
 
-    let res = client.get(&url).send().await;
-
-    let err = res.unwrap_err();
+    let err = client.get(&url).send().await.unwrap_err();
 
     assert!(err.is_timeout());
     assert_eq!(err.uri().map(|u| u.to_string()), Some(url));
@@ -229,9 +215,7 @@ async fn read_timeout_applies_to_body() {
 
     let url = format!("http://{}/slow", server.addr());
     let res = client.get(&url).send().await.expect("Failed to get");
-    let body = res.text().await;
-
-    let err = body.unwrap_err();
+    let err = res.text().await.unwrap_err();
 
     assert!(err.is_timeout());
 }
@@ -244,7 +228,6 @@ async fn read_timeout_allows_slow_response_body() {
     let server = server::http(move |_req| {
         async {
             // immediate response, but body that has slow chunks
-
             let slow = futures_util::stream::unfold(0, |state| async move {
                 if state < 3 {
                     tokio::time::sleep(Duration::from_millis(100)).await;
