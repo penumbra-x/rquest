@@ -318,7 +318,7 @@ async fn test_redirect_302_with_set_cookies() {
     let url = format!("http://{}/{}", server.addr(), code);
     let dst = format!("http://{}/{}", server.addr(), "dst");
 
-    let client = wreq::ClientBuilder::new()
+    let client = wreq::Client::builder()
         .cookie_store(true)
         .redirect(Policy::default())
         .build()
@@ -484,7 +484,7 @@ async fn test_redirect_history() {
     let url = format!("http://{}/first", redirect.addr());
     let dst = format!("http://{}/{}", redirect.addr(), "dst");
 
-    let client = wreq::ClientBuilder::new()
+    let client = wreq::Client::builder()
         .redirect(Policy::default())
         .history(true)
         .build()
