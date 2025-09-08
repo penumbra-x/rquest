@@ -1,7 +1,6 @@
 mod connect;
 mod future;
 mod service;
-mod types;
 
 use std::{
     collections::HashMap,
@@ -13,19 +12,16 @@ use std::{
     time::Duration,
 };
 
-pub use future::Pending;
-use http::{
-    Request as HttpRequest, Response as HttpResponse,
-    header::{HeaderMap, HeaderValue, USER_AGENT},
+use connect::{
+    BoxedConnectorLayer, BoxedConnectorService, Conn, Connector, HttpConnector, Unnameable,
 };
+pub use future::Pending;
+use http::header::{HeaderMap, HeaderValue, USER_AGENT};
+use service::{ConfigService, ConfigServiceLayer};
 use tower::{
     Layer, Service, ServiceBuilder, ServiceExt,
-    retry::RetryLayer,
-    util::{BoxCloneSyncService, BoxCloneSyncServiceLayer},
-};
-use types::{
-    BoxedClientLayer, BoxedClientService, BoxedConnectorLayer, BoxedConnectorService, ClientRef,
-    HttpConnector, ResponseBody,
+    retry::{Retry, RetryLayer},
+    util::{BoxCloneSyncService, BoxCloneSyncServiceLayer, Either, MapErr, Oneshot},
 };
 #[cfg(feature = "cookies")]
 use {super::layer::cookie::CookieServiceLayer, crate::cookie};
@@ -42,9 +38,12 @@ use super::ws::WebSocketRequestBuilder;
 use super::{
     Body, EmulationFactory,
     layer::{
-        redirect::FollowRedirectLayer,
-        retry::Http2RetryPolicy,
-        timeout::{ResponseBodyTimeoutLayer, TimeoutLayer},
+        redirect::{FollowRedirect, FollowRedirectLayer},
+        retry::RetryPolicy,
+        timeout::{
+            ResponseBodyTimeout, ResponseBodyTimeoutLayer, Timeout, TimeoutBody, TimeoutLayer,
+            TimeoutOptions,
+        },
     },
     request::{Request, RequestBuilder},
     response::Response,
@@ -53,15 +52,10 @@ use super::{
 use crate::dns::hickory::HickoryDnsResolver;
 use crate::{
     IntoUri, Method, Proxy,
-    client::{
-        http::{
-            connect::{Conn, Connector, Unnameable},
-            service::ConfigServiceLayer,
-        },
-        layer::timeout::TimeoutOptions,
-    },
     core::{
-        client::{HttpClient, connect::TcpConnectOptions, options::TransportOptions},
+        client::{
+            HttpClient, body::Incoming, connect::TcpConnectOptions, options::TransportOptions,
+        },
         rt::{TokioExecutor, TokioTimer},
     },
     dns::{DnsResolverWithOverrides, DynResolver, GaiResolver, IntoResolve, Resolve},
@@ -70,12 +64,94 @@ use crate::{
     http1::Http1Options,
     http2::Http2Options,
     proxy::Matcher as ProxyMatcher,
-    redirect::{self, FollowRedirectPolicy, Policy as RedirectPolicy},
+    redirect::{self, FollowRedirectPolicy},
+    retry,
     tls::{
         AlpnProtocol, CertStore, Identity, KeyLogPolicy, TlsOptions, TlsVersion,
         conn::TlsConnectorBuilder,
     },
 };
+
+/// Service type for cookie handling. Identity type when cookies feature is disabled.
+#[cfg(not(feature = "cookies"))]
+type CookieService<T> = T;
+
+/// Service wrapper that handles cookie storage and injection.
+#[cfg(feature = "cookies")]
+type CookieService<T> = super::layer::cookie::CookieService<T>;
+
+/// Decompression service type. Identity type when compression features are disabled.
+#[cfg(not(any(
+    feature = "gzip",
+    feature = "zstd",
+    feature = "brotli",
+    feature = "deflate"
+)))]
+type Decompression<T> = T;
+
+/// Service wrapper that handles response body decompression.
+#[cfg(any(
+    feature = "gzip",
+    feature = "zstd",
+    feature = "brotli",
+    feature = "deflate"
+))]
+type Decompression<T> = super::layer::decoder::Decompression<T>;
+
+/// Response body type with timeout and optional decompression.
+#[cfg(any(
+    feature = "gzip",
+    feature = "zstd",
+    feature = "brotli",
+    feature = "deflate"
+))]
+type ResponseBody = TimeoutBody<tower_http::decompression::DecompressionBody<Incoming>>;
+
+/// Response body type with timeout only (no compression features).
+#[cfg(not(any(
+    feature = "gzip",
+    feature = "zstd",
+    feature = "brotli",
+    feature = "deflate"
+)))]
+type ResponseBody = TimeoutBody<Incoming>;
+
+/// The complete HTTP client service stack with all middleware layers.
+type GenericClientService = Timeout<
+    ConfigService<
+        Retry<
+            RetryPolicy,
+            FollowRedirect<
+                ResponseBodyTimeout<
+                    Decompression<
+                        CookieService<
+                            MapErr<
+                                HttpClient<Connector, Body>,
+                                fn(crate::core::client::Error) -> BoxError,
+                            >,
+                        >,
+                    >,
+                >,
+                FollowRedirectPolicy,
+            >,
+        >,
+    >,
+>;
+
+/// Type-erased client service for dynamic middleware composition.
+type BoxedClientService =
+    BoxCloneSyncService<http::Request<Body>, http::Response<ResponseBody>, BoxError>;
+
+/// Layer type for wrapping boxed client services with additional middleware.
+type BoxedClientLayer = BoxCloneSyncServiceLayer<
+    BoxedClientService,
+    http::Request<Body>,
+    http::Response<ResponseBody>,
+    BoxError,
+>;
+
+/// Client reference type that can be either the generic service or a boxed service.
+type ClientRef = Either<GenericClientService, BoxedClientService>;
 
 /// An [`Client`] to make Requests with.
 ///
@@ -138,7 +214,8 @@ struct Config {
     tcp_connect_options: TcpConnectOptions,
     proxies: Vec<ProxyMatcher>,
     auto_sys_proxy: bool,
-    redirect_policy: RedirectPolicy,
+    retry_policy: retry::Policy,
+    redirect_policy: redirect::Policy,
     redirect_history: bool,
     referer: bool,
     timeout_options: TimeoutOptions,
@@ -150,7 +227,6 @@ struct Config {
     dns_resolver: Option<Arc<dyn Resolve>>,
     http_version_pref: HttpVersionPref,
     https_only: bool,
-    http2_max_retry: usize,
     layers: Vec<BoxedClientLayer>,
     connector_layers: Vec<BoxedConnectorLayer>,
     keylog_policy: Option<KeyLogPolicy>,
@@ -224,7 +300,8 @@ impl Client {
                 tcp_happy_eyeballs_timeout: Some(Duration::from_millis(300)),
                 proxies: Vec::new(),
                 auto_sys_proxy: true,
-                redirect_policy: RedirectPolicy::none(),
+                retry_policy: retry::Policy::default(),
+                redirect_policy: redirect::Policy::none(),
                 redirect_history: false,
                 referer: true,
                 timeout_options: TimeoutOptions::default(),
@@ -236,7 +313,6 @@ impl Client {
                 dns_resolver: None,
                 http_version_pref: HttpVersionPref::All,
                 https_only: false,
-                http2_max_retry: 2,
                 layers: Vec::new(),
                 connector_layers: Vec::new(),
                 keylog_policy: None,
@@ -364,7 +440,7 @@ impl Client {
         // Prepare the future request by ensuring we use the exact same Service instance
         // for both poll_ready and call.
         let uri = req.uri().clone();
-        let fut = self.inner.as_ref().clone().oneshot(req);
+        let fut = Oneshot::new(self.inner.as_ref().clone(), req);
         Pending::request(fut, uri)
     }
 }
@@ -444,7 +520,7 @@ impl ClientBuilder {
                 DynResolver::new(resolver)
             };
 
-            // configured http connector options
+            // Configured http connector options
             let http = |http: &mut HttpConnector| {
                 http.enforce_http(false);
                 http.set_keepalive(config.tcp_keepalive);
@@ -461,7 +537,7 @@ impl ClientBuilder {
                 http.set_tcp_user_timeout(config.tcp_user_timeout);
             };
 
-            // configured tls connector options
+            // Configured tls connector options
             let tls = |tls: TlsConnectorBuilder| {
                 let alpn_protocol = match config.http_version_pref {
                     HttpVersionPref::Http1 => Some(AlpnProtocol::HTTP1),
@@ -479,7 +555,7 @@ impl ClientBuilder {
                     .keylog(config.keylog_policy)
             };
 
-            // build connector
+            // Build connector
             let connector = Connector::builder(proxies.clone(), resolver)
                 .timeout(config.connect_timeout)
                 .tls_info(config.tls_info)
@@ -489,7 +565,7 @@ impl ClientBuilder {
                 .with_http(http)
                 .build(config.connector_layers)?;
 
-            // build client
+            // Build client
             HttpClient::builder(TokioExecutor::new())
                 .http1_options(http1_options)
                 .http2_options(http2_options)
@@ -500,18 +576,16 @@ impl ClientBuilder {
                 .pool_max_idle_per_host(config.pool_max_idle_per_host)
                 .pool_max_size(config.pool_max_size)
                 .build(connector)
-                .map_err(BoxError::from as _)
+                .map_err(Into::into as _)
         };
 
-        // configured client service with layers
+        // Configured client service with layers
         let client = {
-            // configured cookie service layer.
             #[cfg(feature = "cookies")]
             let service = ServiceBuilder::new()
                 .layer(CookieServiceLayer::new(config.cookie_store))
                 .service(service);
 
-            // configured decompression layer.
             #[cfg(any(
                 feature = "gzip",
                 feature = "zstd",
@@ -522,7 +596,6 @@ impl ClientBuilder {
                 .layer(DecompressionLayer::new(config.accept_encoding))
                 .service(service);
 
-            // configured config layer.
             let service = ServiceBuilder::new()
                 .layer(ConfigServiceLayer::new(
                     config.https_only,
@@ -530,11 +603,7 @@ impl ClientBuilder {
                     config.orig_headers,
                     proxies,
                 ))
-                // configured HTTP/2 safety retry layer.
-                .layer(RetryLayer::new(Http2RetryPolicy::new(
-                    config.http2_max_retry,
-                )))
-                // configured redirect layer.
+                .layer(RetryLayer::new(RetryPolicy::new(config.retry_policy)))
                 .layer({
                     let policy = FollowRedirectPolicy::new(config.redirect_policy)
                         .with_referer(config.referer)
@@ -542,11 +611,9 @@ impl ClientBuilder {
                         .with_history(config.redirect_history);
                     FollowRedirectLayer::with_policy(policy)
                 })
-                // configured timeout layer.
                 .layer(ResponseBodyTimeoutLayer::new(config.timeout_options))
                 .service(service);
 
-            // configured layers to the service.
             if config.layers.is_empty() {
                 let service = ServiceBuilder::new()
                     .layer(TimeoutLayer::new(config.timeout_options))
@@ -900,6 +967,14 @@ impl ClientBuilder {
         self
     }
 
+    // Retry options
+
+    /// Set a request retry policy.
+    pub fn retry(mut self, policy: retry::Policy) -> ClientBuilder {
+        self.config.retry_policy = policy;
+        self
+    }
+
     // Proxy options
 
     /// Add a `Proxy` to the list of proxies the `Client` will use.
@@ -1049,15 +1124,6 @@ impl ClientBuilder {
     #[inline]
     pub fn http2_options(mut self, options: Http2Options) -> ClientBuilder {
         *self.config.transport_options.http2_options_mut() = Some(options);
-        self
-    }
-
-    /// Sets the maximum number of safe retries for HTTP/2 connections.
-    ///
-    /// Default is 2.
-    #[inline]
-    pub fn http2_max_retry(mut self, max: usize) -> ClientBuilder {
-        self.config.http2_max_retry = max;
         self
     }
 
@@ -1489,12 +1555,12 @@ impl ClientBuilder {
     pub fn layer<L>(mut self, layer: L) -> ClientBuilder
     where
         L: Layer<BoxedClientService> + Clone + Send + Sync + 'static,
-        L::Service: Service<HttpRequest<Body>, Response = HttpResponse<ResponseBody>, Error = BoxError>
+        L::Service: Service<http::Request<Body>, Response = http::Response<ResponseBody>, Error = BoxError>
             + Clone
             + Send
             + Sync
             + 'static,
-        <L::Service as Service<HttpRequest<Body>>>::Future: Send + 'static,
+        <L::Service as Service<http::Request<Body>>>::Future: Send + 'static,
     {
         let layer = BoxCloneSyncServiceLayer::new(layer);
         self.config.layers.push(layer);
