@@ -67,7 +67,7 @@ use crate::{
     redirect::{self, FollowRedirectPolicy},
     retry,
     tls::{
-        AlpnProtocol, CertStore, Identity, KeyLogPolicy, TlsOptions, TlsVersion,
+        AlpnProtocol, CertStore, Identity, KeyLog, TlsOptions, TlsVersion,
         conn::TlsConnectorBuilder,
     },
 };
@@ -229,7 +229,7 @@ struct Config {
     https_only: bool,
     layers: Vec<BoxedClientLayer>,
     connector_layers: Vec<BoxedConnectorLayer>,
-    keylog_policy: Option<KeyLogPolicy>,
+    keylog: Option<KeyLog>,
     tls_info: bool,
     tls_sni: bool,
     verify_hostname: bool,
@@ -257,17 +257,14 @@ impl Client {
     /// This method panics if a TLS backend cannot be initialized, or the resolver
     /// cannot load the system configuration.
     ///
-    /// Use [`Client::builder()`] if you wish to handle the failure as an `Error`
+    /// Use [`Client::builder()`] if you wish to handle the failure as an [`Error`]
     /// instead of panicking.
     #[inline]
     pub fn new() -> Client {
         Client::builder().build().expect("Client::new()")
     }
 
-    /// Create a [`ClientBuilder`] specifically configured for WebSocket connections.
-    ///
-    /// This method configures the [`ClientBuilder`] to use HTTP/1.0 only, which is required for
-    /// certain WebSocket connections.
+    /// Creates a [`ClientBuilder`] to configure a [`Client`].
     #[inline]
     pub fn builder() -> ClientBuilder {
         ClientBuilder {
@@ -315,7 +312,7 @@ impl Client {
                 https_only: false,
                 layers: Vec::new(),
                 connector_layers: Vec::new(),
-                keylog_policy: None,
+                keylog: None,
                 tls_info: false,
                 tls_sni: true,
                 verify_hostname: true,
@@ -552,7 +549,7 @@ impl ClientBuilder {
                     .cert_verification(config.cert_verification)
                     .cert_store(config.cert_store)
                     .identity(config.identity)
-                    .keylog(config.keylog_policy)
+                    .keylog(config.keylog)
             };
 
             // Build connector
@@ -1430,10 +1427,10 @@ impl ClientBuilder {
         self
     }
 
-    /// Configures TLS key logging policy for the client.
+    /// Configures TLS key logging for the client.
     #[inline]
-    pub fn keylog(mut self, policy: KeyLogPolicy) -> ClientBuilder {
-        self.config.keylog_policy = Some(policy);
+    pub fn keylog(mut self, keylog: KeyLog) -> ClientBuilder {
+        self.config.keylog = Some(keylog);
         self
     }
 
