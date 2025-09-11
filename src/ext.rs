@@ -1,32 +1,14 @@
 //! Extension utilities.
 
 use bytes::Bytes;
-use http::{
-    Uri,
-    uri::{Authority, PathAndQuery, Scheme},
-};
+use http::uri::{Authority, PathAndQuery, Scheme, Uri};
 use percent_encoding::{AsciiSet, CONTROLS};
 
 use crate::Body;
 
-/// https://url.spec.whatwg.org/#fragment-percent-encode-set
-const FRAGMENT: &AsciiSet = &CONTROLS.add(b' ').add(b'"').add(b'<').add(b'>').add(b'`');
-
-/// https://url.spec.whatwg.org/#path-percent-encode-set
-const PATH: &AsciiSet = &FRAGMENT.add(b'#').add(b'?').add(b'{').add(b'}');
-
-/// https://url.spec.whatwg.org/#userinfo-percent-encode-set
-const USERINFO: &AsciiSet = &PATH
-    .add(b'/')
-    .add(b':')
-    .add(b';')
-    .add(b'=')
-    .add(b'@')
-    .add(b'[')
-    .add(b'\\')
-    .add(b']')
-    .add(b'^')
-    .add(b'|');
+/// Extractor and response for extensions.
+#[derive(Clone, Copy)]
+pub struct Extension<T>(pub T);
 
 /// Extension trait for `Uri` helpers.
 pub(crate) trait UriExt {
@@ -36,8 +18,8 @@ pub(crate) trait UriExt {
     /// Returns true if the URI scheme is HTTP.
     fn is_http(&self) -> bool;
 
-    #[cfg(feature = "ws")]
     /// Sets the scheme of the URI.
+    #[cfg(feature = "ws")]
     fn set_scheme(&mut self, scheme: Scheme);
 
     /// Sets the query component of the URI, replacing any existing query.
@@ -52,6 +34,14 @@ pub(crate) trait UriExt {
     fn set_userinfo(&mut self, username: &str, password: Option<&str>);
 }
 
+/// Extension trait for http::Response objects
+///
+/// Provides methods to extract URI information from HTTP responses
+pub trait ResponseExt {
+    /// Returns a reference to the `Uri` associated with this response, if available.
+    fn uri(&self) -> Option<&Uri>;
+}
+
 /// Extension trait for http::response::Builder objects
 ///
 /// Allows the user to add a `Uri` to the http::Response
@@ -61,17 +51,11 @@ pub trait ResponseBuilderExt {
     fn uri(self, uri: Uri) -> Self;
 }
 
-/// Extension trait for http::Response objects
-///
-/// Provides methods to extract URI information from HTTP responses
-pub trait ResponseExt {
-    /// Returns a reference to the `Uri` associated with this response, if available.
-    fn uri(&self) -> Option<&Uri>;
-}
-
 /// Extension type to store the request URI in a response's extensions.
 #[derive(Clone)]
 pub(crate) struct RequestUri(pub Uri);
+
+// ===== impl UriExt =====
 
 impl UriExt for Uri {
     #[inline]
@@ -85,7 +69,6 @@ impl UriExt for Uri {
     }
 
     #[cfg(feature = "ws")]
-    #[doc(hidden)]
     fn set_scheme(&mut self, scheme: Scheme) {
         let mut parts = self.clone().into_parts();
         parts.scheme = Some(scheme);
@@ -120,6 +103,25 @@ impl UriExt for Uri {
     }
 
     fn set_userinfo(&mut self, username: &str, password: Option<&str>) {
+        /// https://url.spec.whatwg.org/#fragment-percent-encode-set
+        const FRAGMENT: &AsciiSet = &CONTROLS.add(b' ').add(b'"').add(b'<').add(b'>').add(b'`');
+
+        /// https://url.spec.whatwg.org/#path-percent-encode-set
+        const PATH: &AsciiSet = &FRAGMENT.add(b'#').add(b'?').add(b'{').add(b'}');
+
+        /// https://url.spec.whatwg.org/#userinfo-percent-encode-set
+        const USERINFO: &AsciiSet = &PATH
+            .add(b'/')
+            .add(b':')
+            .add(b';')
+            .add(b'=')
+            .add(b'@')
+            .add(b'[')
+            .add(b'\\')
+            .add(b']')
+            .add(b'^')
+            .add(b'|');
+
         let mut parts = self.clone().into_parts();
 
         let authority = match self.authority() {
@@ -166,15 +168,19 @@ impl UriExt for Uri {
     }
 }
 
-impl ResponseBuilderExt for http::response::Builder {
-    fn uri(self, uri: Uri) -> Self {
-        self.extension(RequestUri(uri))
-    }
-}
+// ===== impl ResponseExt =====
 
 impl ResponseExt for http::Response<Body> {
     fn uri(&self) -> Option<&Uri> {
         self.extensions().get::<RequestUri>().map(|r| &r.0)
+    }
+}
+
+// ===== impl ResponseBuilderExt =====
+
+impl ResponseBuilderExt for http::response::Builder {
+    fn uri(self, uri: Uri) -> Self {
+        self.extension(RequestUri(uri))
     }
 }
 

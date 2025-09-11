@@ -13,10 +13,9 @@ use super::body::{Body, ResponseBody};
 #[cfg(feature = "cookies")]
 use crate::cookie;
 use crate::{
-    Error, Upgraded,
+    Error, Extension, Upgraded,
     core::{client::connect::HttpInfo, ext::ReasonPhrase},
     ext::RequestUri,
-    redirect::{self, History},
 };
 
 /// A Response to a submitted `Request`.
@@ -30,6 +29,12 @@ impl Response {
         let (parts, body) = res.into_parts();
         let res = http::Response::from_parts(parts, Body::wrap(body));
         Response { res, uri }
+    }
+
+    /// Get the final `Uri` of this `Response`.
+    #[inline]
+    pub fn uri(&self) -> &Uri {
+        &self.uri
     }
 
     /// Get the `StatusCode` of this `Response`.
@@ -90,12 +95,6 @@ impl Response {
             .filter_map(Result::ok)
     }
 
-    /// Get the final `Uri` of this `Response`.
-    #[inline]
-    pub fn uri(&self) -> &Uri {
-        &self.uri
-    }
-
     /// Get the local address used to get this `Response`.
     #[inline]
     pub fn local_addr(&self) -> Option<SocketAddr> {
@@ -112,28 +111,6 @@ impl Response {
             .extensions()
             .get::<HttpInfo>()
             .map(HttpInfo::remote_addr)
-    }
-
-    /// Get the redirect history of this `Response`.
-    #[inline]
-    pub fn history(&self) -> impl Iterator<Item = &History> {
-        self.res
-            .extensions()
-            .get::<redirect::RedirectEntries>()
-            .map(|entries| entries.0.iter())
-            .unwrap_or_default()
-    }
-
-    /// Returns a reference to the associated extensions.
-    #[inline]
-    pub fn extensions(&self) -> &http::Extensions {
-        self.res.extensions()
-    }
-
-    /// Returns a mutable reference to the associated extensions.
-    #[inline]
-    pub fn extensions_mut(&mut self) -> &mut http::Extensions {
-        self.res.extensions_mut()
     }
 
     // body methods
@@ -376,7 +353,38 @@ impl Response {
         super::body::DataStream(self.res.into_body())
     }
 
-    // util methods
+    /// Get a reference to the associated extension of type `T`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use wreq::{Client, Extension};
+    /// # use wreq::tls::TlsInfo;
+    /// # async fn run() -> wreq::Result<()> {
+    /// // Build a client that records TLS information.
+    /// let client = Client::builder()
+    ///     .tls_info(true)
+    ///     .build()?;
+    ///
+    /// // Make a request.
+    /// let resp = client.get("https://www.google.com").send().await?;
+    ///
+    /// // Take the TlsInfo extension to inspect it.
+    /// if let Some(Extension(tls_info)) = resp.extension::<TlsInfo>() {
+    ///     // Now you own the TlsInfo and can process it.
+    ///     println!("Peer certificate: {:?}", tls_info.peer_certificate());
+    /// }
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    pub fn extension<T>(&self) -> Option<&Extension<T>>
+    where
+        T: Send + Sync + 'static,
+    {
+        self.res.extensions().get::<Extension<T>>()
+    }
 
     /// Turn a response into an error if the server returned an error.
     ///
@@ -396,10 +404,14 @@ impl Response {
     /// }
     /// # fn main() {}
     /// ```
-    pub fn error_for_status(self) -> crate::Result<Self> {
+    pub fn error_for_status(mut self) -> crate::Result<Self> {
         let status = self.status();
-        let reason = self.extensions().get::<ReasonPhrase>().cloned();
         if status.is_client_error() || status.is_server_error() {
+            let reason = self
+                .res
+                .extensions_mut()
+                .remove::<Extension<ReasonPhrase>>()
+                .map(|Extension(reason)| reason);
             Err(Error::status_code(self.uri, status, reason))
         } else {
             Ok(self)
@@ -426,8 +438,13 @@ impl Response {
     /// ```
     pub fn error_for_status_ref(&self) -> crate::Result<&Self> {
         let status = self.status();
-        let reason = self.extensions().get::<ReasonPhrase>().cloned();
         if status.is_client_error() || status.is_server_error() {
+            let reason = self
+                .res
+                .extensions()
+                .get::<Extension<ReasonPhrase>>()
+                .map(|Extension(reason)| reason)
+                .cloned();
             Err(Error::status_code(self.uri.clone(), status, reason))
         } else {
             Ok(self)
