@@ -478,7 +478,7 @@ impl<T: Into<Body>> From<http::Response<T>> for Response {
         let uri = parts
             .extensions
             .remove::<RequestUri>()
-            .unwrap_or_else(|| RequestUri(Uri::try_from("http://no.url.provided.local").unwrap()));
+            .unwrap_or_else(|| RequestUri(Uri::from_static("http://no.url.provided.local")));
         Response {
             res: http::Response::from_parts(parts, body),
             uri: uri.0,
