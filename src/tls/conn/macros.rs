@@ -36,9 +36,4 @@ macro_rules! set_option_inner_try {
     ($field:ident, $conn:expr, $setter:ident) => {
         $conn.$setter($field.map(|v| v.0)).map_err(Error::tls)?;
     };
-    ($cfg:expr, $field:ident, $conn:expr, $setter:ident) => {
-        $conn
-            .$setter($cfg.$field.map(|v| v.0))
-            .map_err(Error::tls)?;
-    };
 }
