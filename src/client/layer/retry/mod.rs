@@ -3,7 +3,7 @@
 mod classify;
 mod scope;
 
-use std::{error::Error as StdError, sync::Arc};
+use std::{error::Error as StdError, sync::Arc, time::Duration};
 
 use http::{Request, Response};
 use tower::retry::{
@@ -19,7 +19,7 @@ use tower::retry::{
 use tower_http::decompression::DecompressionBody;
 
 pub(crate) use self::{
-    classify::{Action, Classifier, Classify, ClassifyFn, ReqRep},
+    classify::{Action, Classifier, ClassifyFn, ReqRep},
     scope::{ScopeFn, Scoped},
 };
 use super::timeout::TimeoutBody;
@@ -39,13 +39,14 @@ impl RetryPolicy {
     /// Create a new `RetryPolicy`.
     #[inline]
     pub fn new(policy: retry::Policy) -> Self {
-        let parts = policy.into_parts();
         Self {
-            budget: parts.0,
-            classifier: parts.1,
-            max_retries_per_request: parts.2,
-            retry_cnt: parts.3,
-            scope: parts.4,
+            budget: policy
+                .budget
+                .map(|budget| Arc::new(TpsBudget::new(Duration::from_secs(10), 10, budget))),
+            classifier: policy.classifier,
+            max_retries_per_request: policy.max_retries_per_request,
+            retry_cnt: 0,
+            scope: policy.scope,
         }
     }
 }

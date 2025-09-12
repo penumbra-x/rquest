@@ -36,22 +36,21 @@
 //! Some common properties to check include if the request method is
 //! idempotent, or if the response status code indicates a transient error.
 
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use http::Request;
-use tower::retry::budget::TpsBudget;
 
 use crate::{
     Body,
-    client::layer::retry::{Action, Classifier, Classify, ClassifyFn, ReqRep, ScopeFn, Scoped},
+    client::layer::retry::{Action, Classifier, ClassifyFn, ReqRep, ScopeFn, Scoped},
 };
 
 /// A retry policy.
 pub struct Policy {
-    budget: Option<f32>,
-    classifier: Classifier,
-    max_retries_per_request: u32,
-    scope: Scoped,
+    pub(crate) budget: Option<f32>,
+    pub(crate) classifier: Classifier,
+    pub(crate) max_retries_per_request: u32,
+    pub(crate) scope: Scoped,
 }
 
 impl Policy {
@@ -171,30 +170,12 @@ impl Policy {
     /// })
     /// # }
     /// ```
-    pub fn classify_fn<F>(self, func: F) -> Self
+    pub fn classify_fn<F>(mut self, func: F) -> Self
     where
         F: Fn(ReqRep<'_>) -> Action + Send + Sync + 'static,
     {
-        self.classify(ClassifyFn(func))
-    }
-
-    /// Provide a classifier to determine if a request should be retried.
-    pub fn classify(mut self, classifier: impl Classify) -> Self {
-        self.classifier = Classifier::Dyn(Arc::new(classifier));
+        self.classifier = Classifier::Dyn(Arc::new(ClassifyFn(func)));
         self
-    }
-
-    pub(crate) fn into_parts(self) -> (Option<Arc<TpsBudget>>, Classifier, u32, u32, Scoped) {
-        let budget = self
-            .budget
-            .map(|p| Arc::new(TpsBudget::new(Duration::from_secs(10), 10, p)));
-        (
-            budget,
-            self.classifier,
-            self.max_retries_per_request,
-            0,
-            self.scope,
-        )
     }
 }
 
