@@ -3,7 +3,7 @@
 mod config;
 mod h1_reason_phrase;
 
-pub(crate) use config::{
-    RequestConfig, RequestConfigValue, RequestLevelOptions, RequestOrigHeaderMap,
+pub(crate) use self::{
+    config::{RequestConfig, RequestConfigValue, RequestLevelOptions, RequestOrigHeaderMap},
+    h1_reason_phrase::ReasonPhrase,
 };
-pub(crate) use h1_reason_phrase::ReasonPhrase;

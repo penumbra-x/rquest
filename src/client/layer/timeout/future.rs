@@ -14,7 +14,6 @@ use crate::error::{BoxError, Error, TimedOut};
 
 pin_project! {
     /// [`Timeout`] response future
-    #[derive(Debug)]
     pub struct ResponseFuture<F> {
         #[pin]
         pub(crate) response: F,

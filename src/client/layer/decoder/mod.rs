@@ -9,7 +9,7 @@ pub use layer::{Decompression, DecompressionLayer};
 /// `AcceptEncoding` controls which compression formats are enabled for decoding
 /// response bodies. Each field corresponds to a specific algorithm and is only
 /// available if the corresponding feature is enabled.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct AcceptEncoding {
     #[cfg(feature = "gzip")]
     gzip: bool,

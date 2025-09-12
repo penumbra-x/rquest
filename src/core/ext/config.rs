@@ -26,17 +26,16 @@
 //! specifying the associated value type. Then use [`RequestConfig<T>`] in [`Extensions`]
 //! to set or retrieve config values for each key type in a uniform way.
 
-use std::fmt::Debug;
-
 use http::Extensions;
 
-/// This trait is empty and is only used to associate a configuration key type with its
-/// corresponding value type.
+/// Associate a marker key type with its associated value type stored in [`http::Extensions`].
+/// Implement this trait for unit/marker types to declare the concrete `Value` used for that key.
 pub(crate) trait RequestConfigValue: Copy + Clone + 'static {
-    type Value: Clone + Debug + Send + Sync + 'static;
+    type Value: Clone + Send + Sync + 'static;
 }
 
-/// RequestConfig carries a request-scoped configuration value.
+/// Typed wrapper that holds an optional configuration value for a given marker key `T`.
+/// Instances of [`RequestConfig<T>`] are intended to be inserted into [`http::Extensions`].
 #[derive(Clone, Copy)]
 pub(crate) struct RequestConfig<T: RequestConfigValue>(Option<T::Value>);
 
@@ -73,10 +72,10 @@ where
             .or(self.0.as_ref())
     }
 
-    /// Loads the internal value from the provided `Extensions`, if present.
+    /// Loads the internal value from the provided [`http::Extensions`], if present.
     ///
-    /// This method attempts to retrieve a value of type `RequestConfig<T>` from the provided
-    /// `Extensions`. If such a value exists, the current internal value is replaced with a
+    /// This method attempts to retrieve a value of type [`RequestConfig<T>`] from the provided
+    /// [`http::Extensions`]. If such a value exists, the current internal value is replaced with a
     /// clone of that value. If not, the internal value remains unchanged.
     #[inline]
     pub(crate) fn load(&mut self, ext: &Extensions) {
@@ -85,12 +84,12 @@ where
         }
     }
 
-    /// Stores this value into the given `Extensions`, if a value of the same type is not already
-    /// present.
+    /// Stores this value into the given [`http::Extensions`], if a value of the same type is not
+    /// already present.
     ///
-    /// This method checks whether the provided `Extensions` contains a `RequestConfig<T>`.
-    /// If not, it clones the current value and inserts it into the extensions. If a value already
-    /// exists, the method does nothing.
+    /// This method checks whether the provided [`http::Extensions`] contains a
+    /// [`RequestConfig<T>`]. If not, it clones the current value and inserts it into the
+    /// extensions. If a value already exists, the method does nothing.
     #[inline]
     pub(crate) fn store(&self, ext: &mut Extensions) {
         let option_value = ext.get_mut::<RequestConfig<T>>();
@@ -99,18 +98,19 @@ where
         }
     }
 
-    /// Returns an immutable reference to the stored value from the given `Extensions`, if present.
+    /// Returns an immutable reference to the stored value from the given [`http::Extensions`], if
+    /// present.
     ///
-    /// Internally fetches `RequestConfig<T>` and returns a reference to its inner value, if set.
+    /// Internally fetches [`RequestConfig<T>`] and returns a reference to its inner value, if set.
     #[inline]
     pub(crate) fn get(ext: &Extensions) -> Option<&T::Value> {
         ext.get::<RequestConfig<T>>()?.0.as_ref()
     }
 
-    /// Returns a mutable reference to the inner value in `Extensions`, inserting a default if
-    /// missing.
+    /// Returns a mutable reference to the inner value in [`http::Extensions`], inserting a default
+    /// if missing.
     ///
-    /// This ensures a `RequestConfig<T>` exists and returns a mutable reference to its inner
+    /// This ensures a [`RequestConfig<T>`] exists and returns a mutable reference to its inner
     /// `Option<T::Value>`.
     #[inline]
     pub(crate) fn get_mut(ext: &mut Extensions) -> &mut Option<T::Value> {
@@ -119,9 +119,9 @@ where
             .0
     }
 
-    /// Removes and returns the stored value from the given `Extensions`, if present.
+    /// Removes and returns the stored value from the given [`http::Extensions`], if present.
     ///
-    /// This consumes the `RequestConfig<T>` entry and extracts its inner value.
+    /// This consumes the [`RequestConfig<T>`] entry and extracts its inner value.
     #[inline]
     pub(crate) fn remove(ext: &mut Extensions) -> Option<T::Value> {
         ext.remove::<RequestConfig<T>>()?.0

@@ -104,7 +104,6 @@ where
     }
 }
 
-#[derive(Debug)]
 enum BodyRepr<B> {
     Some(B),
     Empty,

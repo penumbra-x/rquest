@@ -19,13 +19,12 @@ use super::layer::config::RequestAcceptEncoding;
 #[cfg(feature = "multipart")]
 use super::multipart;
 use super::{
-    body::Body,
+    Body, EmulationFactory, Response,
     http::{Client, Pending},
     layer::config::{RequestDefaultHeaders, RequestRedirectPolicy, RequestTimeoutOptions},
-    response::Response,
 };
 use crate::{
-    EmulationFactory, Error, Method, Proxy,
+    Error, Method, Proxy,
     core::{
         client::options::RequestOptions,
         ext::{RequestConfig, RequestConfigValue, RequestLevelOptions, RequestOrigHeaderMap},
@@ -165,8 +164,6 @@ impl Request {
     pub(crate) fn extensions_mut(&mut self) -> &mut Extensions {
         &mut self.extensions
     }
-
-    // Private
 
     #[inline]
     fn config<T>(&self) -> Option<&T::Value>

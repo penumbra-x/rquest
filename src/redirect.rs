@@ -51,7 +51,7 @@ pub struct Action {
 }
 
 /// An entry in the redirect history.
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub struct History {
     status: StatusCode,
     uri: Uri,
