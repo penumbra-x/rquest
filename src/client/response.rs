@@ -353,6 +353,8 @@ impl Response {
         super::body::DataStream(self.res.into_body())
     }
 
+    // extension methods
+
     /// Get a reference to the associated extension of type `T`.
     ///
     /// # Example
@@ -385,6 +387,20 @@ impl Response {
     {
         self.res.extensions().get::<Extension<T>>()
     }
+
+    /// Returns a reference to the associated extensions.
+    #[inline]
+    pub fn extensions(&self) -> &http::Extensions {
+        self.res.extensions()
+    }
+
+    /// Returns a mutable reference to the associated extensions.
+    #[inline]
+    pub fn extensions_mut(&mut self) -> &mut http::Extensions {
+        self.res.extensions_mut()
+    }
+
+    // util methods
 
     /// Turn a response into an error if the server returned an error.
     ///
