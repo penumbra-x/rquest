@@ -9,7 +9,7 @@ async fn main() -> wreq::Result<()> {
         .build()?;
 
     // Use the API you're already familiar with
-    let resp = client.get("https://www.google.com").send().await?;
+    let resp = client.get("https://yande.re/post.json").send().await?;
     println!("{}", resp.text().await?);
 
     Ok(())

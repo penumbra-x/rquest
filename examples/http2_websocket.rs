@@ -10,10 +10,6 @@ use wreq::{header, ws::message::Message};
 
 #[tokio::main]
 async fn main() -> wreq::Result<()> {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::TRACE)
-        .init();
-
     // Use the API you're already familiar with
     let resp = wreq::websocket("wss://127.0.0.1:3000/ws")
         .force_http2()

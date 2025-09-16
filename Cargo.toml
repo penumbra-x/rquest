@@ -251,7 +251,7 @@ required-features = ["gzip", "brotli", "zstd", "deflate", "tracing"]
 [[example]]
 name = "cert_store"
 path = "examples/cert_store.rs"
-required-features = ["webpki-roots", "tracing"]
+required-features = ["webpki-roots"]
 
 [[example]]
 name = "request_with_redirect"
@@ -260,12 +260,11 @@ path = "examples/request_with_redirect.rs"
 [[example]]
 name = "request_with_version"
 path = "examples/request_with_version.rs"
-required-features = ["tracing"]
 
 [[example]]
 name = "request_with_proxy"
 path = "examples/request_with_proxy.rs"
-required-features = ["socks", "tracing"]
+required-features = ["socks"]
 
 [[example]]
 name = "request_with_emulation"
@@ -275,22 +274,20 @@ required-features = ["gzip", "brotli", "zstd", "deflate", "tracing"]
 [[example]]
 name = "request_with_local_address"
 path = "examples/request_with_local_address.rs"
-required-features = ["tracing"]
 
 [[example]]
 name = "request_with_interface"
 path = "examples/request_with_interface.rs"
-required-features = ["tracing"]
 
 [[example]]
 name = "http1_websocket"
 path = "examples/http1_websocket.rs"
-required-features = ["ws", "futures-util/std", "tracing"]
+required-features = ["ws", "futures-util/std"]
 
 [[example]]
 name = "http2_websocket"
 path = "examples/http2_websocket.rs"
-required-features = ["ws", "futures-util/std", "tracing"]
+required-features = ["ws", "futures-util/std"]
 
 [[example]]
 name = "keylog"

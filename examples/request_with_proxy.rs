@@ -1,11 +1,7 @@
-use wreq::{Client, Proxy};
+use wreq::Proxy;
 
 #[tokio::main]
 async fn main() -> wreq::Result<()> {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::TRACE)
-        .init();
-
     // Use the API you're already familiar with
     let resp = wreq::get("https://api.ip.sb/ip")
         .proxy(Proxy::all("socks5h://localhost:6153")?)

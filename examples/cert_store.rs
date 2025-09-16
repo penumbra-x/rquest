@@ -37,10 +37,6 @@ use wreq::{
 /// - Include only necessary root certificates
 #[tokio::main]
 async fn main() -> wreq::Result<()> {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::TRACE)
-        .init();
-
     // Create a client with a custom certificate store using webpki-roots
     let client = Client::builder()
         .cert_store(CertStore::from_der_certs(

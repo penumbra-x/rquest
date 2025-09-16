@@ -3,10 +3,6 @@ use wreq::{header, ws::message::Message};
 
 #[tokio::main]
 async fn main() -> wreq::Result<()> {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::TRACE)
-        .init();
-
     // Use the API you're already familiar with
     let resp = wreq::websocket("wss://echo.websocket.org")
         .header(header::USER_AGENT, env!("CARGO_PKG_NAME"))
