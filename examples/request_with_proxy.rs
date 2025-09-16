@@ -7,8 +7,7 @@ async fn main() -> wreq::Result<()> {
         .init();
 
     // Use the API you're already familiar with
-    let resp = Client::new()
-        .get("https://api.ip.sb/ip")
+    let resp = wreq::get("https://api.ip.sb/ip")
         .proxy(Proxy::all("socks5h://localhost:6153")?)
         .send()
         .await?;
