@@ -19,8 +19,8 @@ pin_project! {
     #[project = PendingProj]
     pub enum Pending {
         Request {
-            fut: Pin<Box<ResponseFuture>>,
             uri: Uri,
+            fut: Pin<Box<ResponseFuture>>,
         },
         Error {
             error: Option<Error>,
@@ -31,10 +31,10 @@ pin_project! {
 impl Pending {
     /// Creates a new [`Pending`] with a request future and its associated URI.
     #[inline]
-    pub(crate) fn request(fut: ResponseFuture, uri: Uri) -> Self {
+    pub(crate) fn request(uri: Uri, fut: ResponseFuture) -> Self {
         Pending::Request {
-            fut: Box::pin(fut),
             uri,
+            fut: Box::pin(fut),
         }
     }
 

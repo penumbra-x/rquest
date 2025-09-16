@@ -438,7 +438,7 @@ impl Client {
         // for both poll_ready and call.
         let uri = req.uri().clone();
         let fut = Oneshot::new(self.inner.as_ref().clone(), req);
-        Pending::request(fut, uri)
+        Pending::request(uri, fut)
     }
 }
 
@@ -484,17 +484,19 @@ impl ClientBuilder {
     /// This method fails if a TLS backend cannot be initialized, or the resolver
     /// cannot load the system configuration.
     pub fn build(self) -> crate::Result<Client> {
-        let config = self.config;
+        let mut config = self.config;
 
         if let Some(err) = config.error {
             return Err(err);
         }
 
-        let mut proxies = config.proxies;
-        if config.auto_sys_proxy {
-            proxies.push(ProxyMatcher::system());
-        }
-        let proxies = Arc::new(proxies);
+        // Prepare proxies
+        let proxies = {
+            if config.auto_sys_proxy {
+                config.proxies.push(ProxyMatcher::system());
+            }
+            Arc::new(config.proxies)
+        };
 
         // Create base client service
         let service = {
