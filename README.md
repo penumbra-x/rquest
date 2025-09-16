@@ -36,7 +36,7 @@ wreq-util = "3.0.0-rc.1"
 
 And then the code:
 
-```rust,no_run
+```rust
 use wreq::Client;
 use wreq_util::Emulation;
 
@@ -44,7 +44,7 @@ use wreq_util::Emulation;
 async fn main() -> wreq::Result<()> {
     // Build a client
     let client = Client::builder()
-        .emulation(Emulation::Firefox136)
+        .emulation(Emulation::Firefox139)
         .build()?;
 
     // Use the API you're already familiar with
