@@ -30,8 +30,8 @@ The following example uses the [Tokio](https://tokio.rs) runtime with optional f
 ```toml
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-wreq = "6.0.0-rc.16"
-wreq-util = "3.0.0-rc.2"
+wreq = "6.0.0-rc.20"
+wreq-util = "3.0.0-rc.3"
 ```
 
 And then the code:
@@ -44,7 +44,7 @@ use wreq_util::Emulation;
 async fn main() -> wreq::Result<()> {
     // Build a client
     let client = Client::builder()
-        .emulation(Emulation::Firefox139)
+        .emulation(Emulation::Safari26)
         .build()?;
 
     // Use the API you're already familiar with
