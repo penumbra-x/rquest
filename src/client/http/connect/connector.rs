@@ -8,7 +8,7 @@ use std::{
     time::Duration,
 };
 
-use http::{Uri, uri::Scheme};
+use http::Uri;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tower::{
     Service, ServiceBuilder, ServiceExt,
@@ -31,6 +31,7 @@ use crate::{
     },
     dns::DynResolver,
     error::{BoxError, TimedOut, map_timeout_to_connector_error},
+    ext::UriExt,
     proxy::{Intercepted, Matcher as ProxyMatcher},
     tls::{
         TlsOptions,
@@ -295,7 +296,7 @@ impl ConnectorService {
         // Disable Nagle's algorithm for TLS handshake
         //
         // https://www.openssl.org/docs/man1.1.1/man3/SSL_connect.html#NOTES
-        if !self.config.tcp_nodelay && (uri.scheme() == Some(&Scheme::HTTPS)) {
+        if !self.config.tcp_nodelay && uri.is_https() {
             http.set_nodelay(true);
         }
 
@@ -362,8 +363,7 @@ impl ConnectorService {
                         socks
                     };
 
-                    // Establish a connection to the target through the SOCKS proxy.
-                    let is_https = uri.scheme() == Some(&Scheme::HTTPS);
+                    let is_https = uri.is_https();
                     let conn = socks.call(uri).await?;
 
                     let conn = if is_https {
@@ -391,7 +391,7 @@ impl ConnectorService {
                 }
 
                 // Handle HTTPS proxy tunneling connection
-                if uri.scheme() == Some(&Scheme::HTTPS) {
+                if uri.is_https() {
                     trace!("tunneling HTTPS over HTTP proxy: {:?}", proxy_uri);
 
                     // Create a tunnel connector that establishes a CONNECT tunnel through the HTTP
@@ -438,7 +438,7 @@ impl ConnectorService {
 
                 // If the target URI is HTTPS, establish a CONNECT tunnel over the Unix socket,
                 // then upgrade the tunneled stream to TLS.
-                if uri.scheme() == Some(&Scheme::HTTPS) {
+                if uri.is_https() {
                     // Use a dummy HTTP URI so the HTTPS connector works over the Unix socket.
                     let proxy_uri = Uri::from_static("http://localhost");
 
