@@ -69,6 +69,10 @@ HTTP/3 over QUIC is a work in progress. Due to the complexity of QUIC and the ev
 
 Most browser device models share identical TLS and HTTP/2 configurations, differing only in the `User-Agent` string. Common browser device emulation templates are maintained in [`wreq-util`](https://github.com/0x676e67/wreq-util), a companion utility crate.
 
+## Services
+
+Help sustain the ongoing development of this open-source project by reaching out for [commercial support](mailto:gngppz@gmail.com). Receive private guidance, expert reviews, or direct access to the maintainer, with personalized technical assistance tailored to your needs.
+
 ## Building
 
 Avoid compiling with packages that depend on `openssl-sys`, as it shares the same prefix symbol with `boring-sys`, potentially leading to [link failures](https://github.com/cloudflare/boring/issues/197) and other issues. Even if compilation succeeds, using both `openssl-sys` and `boring-sys` together can result in memory segmentation faults. Until the upstream Boring resolves these linking conflicts, using `rustls` is the best workaround.
