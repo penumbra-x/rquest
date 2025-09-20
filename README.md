@@ -61,10 +61,6 @@ async fn main() -> wreq::Result<()> {
 
 Due to the complexity of TLS encryption and the widespread adoption of HTTP/2, browser fingerprints such as **JA3**, **JA4**, and **Akamai** cannot be reliably emulated using simple fingerprint strings. Instead of parsing and emulating these string-based fingerprints, `wreq` provides fine-grained control over TLS and HTTP/2 extensions and settings for precise browser behavior emulation.
 
-- **HTTP/3 over QUIC**
-
-HTTP/3 over QUIC is a work in progress. Due to the complexity of QUIC and the evolving ecosystem, full HTTP/3 emulation is not yet available in `wreq`. If you'd like to accelerate development, please consider sponsoring the project. Progress is tracked at [issue #840](https://github.com/0x676e67/wreq/issues/840).
-
 - **Device Emulation**
 
 Most browser device models share identical TLS and HTTP/2 configurations, differing only in the `User-Agent` string. Common browser device emulation templates are maintained in [`wreq-util`](https://github.com/0x676e67/wreq-util), a companion utility crate.
