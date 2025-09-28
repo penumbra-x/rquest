@@ -57,6 +57,10 @@ async fn main() -> wreq::Result<()> {
 
 ## Emulation
 
+- **HTTP/1 over TLS**
+
+In the Rust ecosystem, almost all HTTP client implementations rely on the [http](https://github.com/hyperium/http) library. While this library offers good performance, it does not preserve case sensitivity for header names. As a result, many **WAF** firewalls may reject HTTP/1 requests that use lowercase headers (see [discussion](https://github.com/seanmonstar/reqwest/discussions/2227)). This limitation, however, is resolved in `wreq` — through an extended implementation, we ensure proper support for HTTP/1 header case sensitivity.
+
 - **HTTP/2 over TLS**
 
 Due to the complexity of TLS encryption and the widespread adoption of HTTP/2, browser fingerprints such as **JA3**, **JA4**, and **Akamai** cannot be reliably emulated using simple fingerprint strings. Instead of parsing and emulating these string-based fingerprints, `wreq` provides fine-grained control over TLS and HTTP/2 extensions and settings for precise browser behavior emulation.
