@@ -653,6 +653,7 @@ where
 // ===== impl EstablishedConn =====
 
 impl<IO> EstablishedConn<IO> {
+    /// Creates a new [`EstablishedConn`].
     #[inline]
     pub fn new(req: ConnectRequest, inner: IO) -> Self {
         Self { req, inner }

@@ -49,9 +49,10 @@ impl<S> CookieService<S> {
         cookie_store: &Arc<dyn CookieStore>,
     ) -> Option<Uri> {
         let uri = req.uri().clone();
+        let headers = req.headers_mut();
 
-        // // Skip if request already has cookies
-        if req.headers().get(COOKIE).is_some() {
+        // Skip if request already has cookies
+        if headers.contains_key(COOKIE) {
             return Some(uri);
         }
 
