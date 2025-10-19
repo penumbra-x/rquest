@@ -55,11 +55,11 @@ async fn main() -> wreq::Result<()> {
 }
 ```
 
-## Emulation
+## Behavior
 
 - **HTTP/1 over TLS**
 
-In the Rust ecosystem, almost all HTTP client implementations rely on the [http](https://github.com/hyperium/http) library. While this library offers good performance, it does not preserve case sensitivity for header names. As a result, many **WAF** firewalls may reject HTTP/1 requests that use lowercase headers (see [discussion](https://github.com/seanmonstar/reqwest/discussions/2227)). This limitation, however, is resolved in `wreq` — through an extended implementation, we ensure proper support for HTTP/1 header case sensitivity.
+In the Rust ecosystem, most HTTP clients rely on the [http](https://github.com/hyperium/http) library, which performs well but does not preserve header case. This causes some **WAFs** to reject HTTP/1 requests with lowercase headers (see [discussion](https://github.com/seanmonstar/reqwest/discussions/2227)). `wreq` addresses this by fully supporting HTTP/1 header case sensitivity.
 
 - **HTTP/2 over TLS**
 
