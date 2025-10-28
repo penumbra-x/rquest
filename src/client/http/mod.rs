@@ -3,6 +3,7 @@ mod future;
 mod service;
 
 use std::{
+    borrow::Cow,
     collections::HashMap,
     convert::TryInto,
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
@@ -223,7 +224,7 @@ struct Config {
     cookie_store: Option<Arc<dyn cookie::CookieStore>>,
     #[cfg(feature = "hickory-dns")]
     hickory_dns: bool,
-    dns_overrides: HashMap<String, Vec<SocketAddr>>,
+    dns_overrides: HashMap<Cow<'static, str>, Vec<SocketAddr>>,
     dns_resolver: Option<Arc<dyn Resolve>>,
     http_version_pref: HttpVersionPref,
     https_only: bool,
@@ -1496,8 +1497,11 @@ impl ClientBuilder {
     /// itself, any port in the overridden addr will be ignored and traffic sent
     /// to the conventional port for the given scheme (e.g. 80 for http).
     #[inline]
-    pub fn resolve(self, domain: &str, addr: SocketAddr) -> ClientBuilder {
-        self.resolve_to_addrs(domain, &[addr])
+    pub fn resolve<D>(self, domain: D, addr: SocketAddr) -> ClientBuilder
+    where
+        D: Into<Cow<'static, str>>,
+    {
+        self.resolve_to_addrs(domain, std::iter::once(addr))
     }
 
     /// Override DNS resolution for specific domains to particular IP addresses.
@@ -1509,10 +1513,14 @@ impl ClientBuilder {
     /// itself, any port in the overridden addresses will be ignored and traffic sent
     /// to the conventional port for the given scheme (e.g. 80 for http).
     #[inline]
-    pub fn resolve_to_addrs(mut self, domain: &str, addrs: &[SocketAddr]) -> ClientBuilder {
+    pub fn resolve_to_addrs<D, A>(mut self, domain: D, addrs: A) -> ClientBuilder
+    where
+        D: Into<Cow<'static, str>>,
+        A: IntoIterator<Item = SocketAddr>,
+    {
         self.config
             .dns_overrides
-            .insert(domain.to_string(), addrs.to_vec());
+            .insert(domain.into(), addrs.into_iter().collect());
         self
     }
 
