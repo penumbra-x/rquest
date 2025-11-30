@@ -31,7 +31,7 @@ use crate::{
         body::Incoming,
         common::{Exec, Lazy, lazy},
         conn::{self, TrySendError as ConnTrySendError},
-        connect::{Alpn, Connected, Connection},
+        connect::{Connected, Connection},
         ext::{RequestConfig, RequestLayerOptions},
         options::{RequestOptions, http1::Http1Options, http2::Http2Options},
         rt::{ArcTimer, Executor, Timer},
@@ -455,7 +455,7 @@ where
                         // If ALPN is h2 and we aren't http2_only already,
                         // then we need to convert our pool checkout into
                         // a single HTTP2 one.
-                        let connecting = if connected.alpn == Alpn::H2 && !is_ver_h2 {
+                        let connecting = if connected.is_negotiated_h2() && !is_ver_h2 {
                             match connecting.alpn_h2(&pool) {
                                 Some(lock) => {
                                     trace!("ALPN negotiated h2, updating pool");
@@ -472,7 +472,7 @@ where
                             connecting
                         };
 
-                        let is_h2 = is_ver_h2 || connected.alpn == Alpn::H2;
+                        let is_h2 = is_ver_h2 || connected.is_negotiated_h2();
 
                         Either::Left(Box::pin(async move {
                             let tx = if is_h2 {
