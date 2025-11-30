@@ -1,4 +1,7 @@
-use crate::{core::ext::RequestConfigValue, redirect::Policy};
+mod layer;
+
+pub use self::layer::{ConfigService, ConfigServiceLayer};
+use crate::{client::core::ext::RequestConfigValue, redirect::Policy};
 
 // ================================
 //

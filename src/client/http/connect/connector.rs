@@ -19,16 +19,16 @@ use tower::{
 
 use super::{
     super::{BoxedConnectorLayer, BoxedConnectorService, HttpConnector},
-    AsyncConnWithInfo, TlsInfoFactory, Unnameable,
+    AsyncConnWithInfo, Connection, TlsInfoFactory, Unnameable,
     conn::{Conn, TlsConn},
     verbose::Verbose,
 };
 #[cfg(unix)]
-use crate::core::client::connect::UnixConnector;
+use crate::client::core::connect::UnixConnector;
 use crate::{
-    core::client::{
-        ConnectExtra, ConnectRequest,
-        connect::{Connection, proxy},
+    client::{
+        core::connect::proxy,
+        http::{ConnectExtra, ConnectRequest},
     },
     dns::DynResolver,
     error::{BoxError, TimedOut, map_timeout_to_connector_error},
