@@ -11,12 +11,15 @@ use tower::{
 
 pub(super) use self::{conn::Conn, connector::Connector, tls_info::TlsInfoFactory};
 use crate::{
-    client::{core::connect::Connection, http::ConnectRequest},
+    client::{
+        ConnectRequest,
+        connect::{self, Connection},
+    },
     dns::DynResolver,
 };
 
 /// HTTP connector with dynamic DNS resolver.
-pub type HttpConnector = crate::client::core::connect::HttpConnector<DynResolver>;
+pub type HttpConnector = connect::HttpConnector<DynResolver>;
 
 /// Boxed connector service for establishing connections.
 pub type BoxedConnectorService = BoxCloneSyncService<Unnameable, Conn, BoxError>;
