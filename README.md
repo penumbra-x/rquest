@@ -50,7 +50,6 @@ async fn main() -> wreq::Result<()> {
     // Use the API you're already familiar with
     let resp = client.get("https://tls.peet.ws/api/all").send().await?;
     println!("{}", resp.text().await?);
-
     Ok(())
 }
 ```
