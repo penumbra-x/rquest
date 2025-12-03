@@ -8,6 +8,8 @@ use std::{
 
 use http::{Extensions, Request as HttpRequest, Uri, Version, request::Parts};
 use serde::Serialize;
+#[cfg(feature = "multipart")]
+use {super::multipart, bytes::Bytes, http::header::CONTENT_LENGTH};
 
 #[cfg(any(
     feature = "gzip",
@@ -16,8 +18,6 @@ use serde::Serialize;
     feature = "deflate",
 ))]
 use super::layer::config::RequestAcceptEncoding;
-#[cfg(feature = "multipart")]
-use super::multipart;
 use super::{
     Body, EmulationFactory, Response,
     core::{
@@ -297,7 +297,6 @@ impl RequestBuilder {
     /// # Ok(())
     /// # }
     /// ```
-    #[inline]
     pub fn auth<V>(self, token: V) -> RequestBuilder
     where
         HeaderValue: TryFrom<V>,
@@ -406,9 +405,6 @@ impl RequestBuilder {
     #[cfg_attr(docsrs, doc(cfg(feature = "multipart")))]
     pub fn multipart(mut self, mut multipart: multipart::Form) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
-            use bytes::Bytes;
-            use http::header::CONTENT_LENGTH;
-
             match HeaderValue::from_maybe_shared(Bytes::from(format!(
                 "multipart/form-data; boundary={}",
                 multipart.boundary()
