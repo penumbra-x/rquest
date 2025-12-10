@@ -30,28 +30,6 @@ pub trait IntoOrigHeaderName: Sealed {
 /// in the request or response, but also maintains the insertion order of headers. This makes
 /// it suitable for use cases where the order of headers matters, such as HTTP/1.x message
 /// serialization, proxying, or reproducing requests/responses exactly as received.
-///
-/// If an HTTP/1 response `res` is parsed on a connection whose option
-/// `preserve_header_case` was set to true and the response included
-/// the following headers:
-///
-/// ```ignore
-/// x-Bread: Baguette
-/// X-BREAD: Pain
-/// x-bread: Ficelle
-/// ```
-///
-/// Then `res.extensions().get::<OrigHeaderMap>()` will return a map with:
-///
-/// ```ignore
-/// OrigHeaderMap({
-///     "x-bread": ["x-Bread", "X-BREAD", "x-bread"],
-/// })
-/// ```
-///
-/// # Note
-/// [`OrigHeaderMap`] can also be used as a header ordering map, preserving the order in which
-/// headers were added. This is useful for scenarios where header order must be retained.
 #[derive(Debug, Clone, Default)]
 pub struct OrigHeaderMap(HeaderMap<OrigHeaderName>);
 
