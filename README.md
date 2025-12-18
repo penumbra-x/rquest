@@ -58,19 +58,19 @@ async fn main() -> wreq::Result<()> {
 
 - **HTTP/1 over TLS**
 
-In the Rust ecosystem, most HTTP clients rely on the [http](https://github.com/hyperium/http) library, which performs well but does not preserve header case. This causes some **WAFs** to reject HTTP/1 requests with lowercase headers (see [discussion](https://github.com/seanmonstar/reqwest/discussions/2227)). `wreq` addresses this by fully supporting HTTP/1 header case sensitivity.
+In the Rust ecosystem, most HTTP clients rely on the [http](https://github.com/hyperium/http) library, which performs well but does not preserve header case. This causes some **WAFs** to reject **HTTP/1** requests with lowercase headers (see [discussion](https://github.com/seanmonstar/reqwest/discussions/2227)). **wreq** addresses this by fully supporting **HTTP/1** header case sensitivity.
 
 - **HTTP/2 over TLS**
 
-Due to the complexity of TLS encryption and the widespread adoption of HTTP/2, browser fingerprints such as **JA3**, **JA4**, and **Akamai** cannot be reliably emulated using simple fingerprint strings. Instead of parsing and emulating these string-based fingerprints, `wreq` provides fine-grained control over TLS and HTTP/2 extensions and settings for precise browser behavior emulation.
+Due to the complexity of **TLS** encryption and the widespread adoption of **HTTP/2**, browser fingerprints such as **JA3**, **JA4**, and **Akamai** cannot be reliably emulated using simple fingerprint strings. Instead of parsing and emulating these string-based fingerprints, **wreq** provides fine-grained control over **TLS** and **HTTP/2** extensions and settings for precise browser behavior emulation.
 
 - **Device Emulation**
 
-Most browser device models share identical TLS and HTTP/2 configurations, differing only in the `User-Agent` string. Common browser device emulation templates are maintained in [`wreq-util`](https://github.com/0x676e67/wreq-util), a companion utility crate.
+Most browser device models share identical **TLS** and **HTTP/2** configurations, differing only in the **User-Agent** string. Common browser device emulation templates are maintained in [wreq-util](https://github.com/0x676e67/wreq-util), a companion utility crate.
 
 ## Building
 
-Avoid compiling with packages that depend on `openssl-sys`, as it shares the same prefix symbol with `boring-sys`, potentially leading to [link failures](https://github.com/cloudflare/boring/issues/197) and other issues. Even if compilation succeeds, using both `openssl-sys` and `boring-sys` together can result in memory segmentation faults. Until the upstream Boring resolves these linking conflicts, using `rustls` is the best workaround.
+Avoid compiling with packages that depend on **openssl-sys**, as it shares the same prefix symbol with **boring-sys**, potentially leading to [link failures](https://github.com/cloudflare/boring/issues/197) and other issues. Even if compilation succeeds, using both **openssl-sys** and **boring-sys** together can result in memory segmentation faults. Until the upstream Boring resolves these linking conflicts, using **rustls** is the best workaround.
 
 Install the dependencies required to build [BoringSSL](https://github.com/google/boringssl/blob/master/BUILDING.md#build-prerequisites)
 
