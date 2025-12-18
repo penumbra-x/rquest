@@ -118,9 +118,6 @@ jobs:
       - name: Install NASM (Windows)
         if: matrix.os == 'windows-latest'
         run: choco install nasm -y
-      - name: Pin cmake (Windows)
-        if: matrix.os == 'windows-latest'
-        run: cargo update --package cmake --precise 0.1.54
       - name: Build
         run: cargo build --all-features
 
