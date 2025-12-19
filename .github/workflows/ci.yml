@@ -64,6 +64,36 @@ jobs:
       - name: Run hack script
         run: cargo hack check --each-feature
 
+  msrv:
+    name: MSRV
+    needs: [style]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Resolve MSRV aware dependencies
+        run: cargo update
+        env:
+          CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS: fallback
+
+      - name: Get MSRV package metadata
+        id: metadata
+        run: cargo metadata --no-deps --format-version 1 | jq -r '"msrv=" + .packages[0].rust_version' >> $GITHUB_OUTPUT
+
+      - name: Install rust (${{ steps.metadata.outputs.msrv }})
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.metadata.outputs.msrv }}
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Check
+        run: cargo check
+
   tests:
     name: Tests
     runs-on: ubuntu-latest
@@ -148,7 +178,7 @@ jobs:
 
   release:
     name: Release
-    needs: [style, tests, docs, hack, build, android-ndk]
+    needs: [style, tests, docs, hack, msrv, build, android-ndk]
     runs-on: ubuntu-latest
     environment: Release
     if: startsWith(github.ref, 'refs/tags/')
