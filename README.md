@@ -1,7 +1,7 @@
 # wreq
 
 [![CI](https://github.com/0x676e67/wreq/actions/workflows/ci.yml/badge.svg)](https://github.com/0x676e67/wreq/actions/workflows/ci.yml)
-[![Crates.io License](https://img.shields.io/crates/l/wreq)](./LICENSE)
+[![Crates.io License](https://img.shields.io/crates/l/wreq)](https://github.com/0x676e67/wreq/blob/main/LICENSE)
 [![Crates.io MSRV](https://img.shields.io/crates/msrv/wreq?logo=rust)](https://crates.io/crates/wreq)
 [![crates.io](https://img.shields.io/crates/v/wreq.svg?logo=rust)](https://crates.io/crates/wreq)
 [![docs.rs](https://img.shields.io/docsrs/wreq?logo=rust)](https://docs.rs/wreq)
@@ -13,8 +13,8 @@ An ergonomic and modular Rust HTTP client for advanced and low-level emulation, 
 ## Features
 
 - Plain bodies, JSON, urlencoded, multipart
+- HTTP Trailer
 - Cookie Store
-- HTTP Trailers
 - Redirect Policy
 - Original Header
 - Rotating Proxies
