@@ -1,6 +1,6 @@
 //! multipart/form-data
 
-use std::{borrow::Cow, fmt, pin::Pin};
+use std::{borrow::Cow, pin::Pin};
 
 use bytes::Bytes;
 use futures_util::{Stream, StreamExt, future, stream};
@@ -14,17 +14,20 @@ use super::Body;
 use crate::header::HeaderMap;
 
 /// An async multipart/form-data request.
+#[derive(Debug)]
 pub struct Form {
     inner: FormParts<Part>,
 }
 
 /// A field in a multipart form.
+#[derive(Debug)]
 pub struct Part {
     meta: PartMetadata,
     value: Body,
     body_length: Option<u64>,
 }
 
+#[derive(Debug)]
 pub(crate) struct FormParts<P> {
     pub(crate) boundary: String,
     pub(crate) computed_headers: Vec<Vec<u8>>,
@@ -32,6 +35,7 @@ pub(crate) struct FormParts<P> {
     pub(crate) percent_encoding: PercentEncoding,
 }
 
+#[derive(Debug)]
 pub(crate) struct PartMetadata {
     mime: Option<Mime>,
     file_name: Option<Cow<'static, str>>,
@@ -213,12 +217,6 @@ impl Form {
     }
 }
 
-impl fmt::Debug for Form {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.inner.fmt_fields("Form", f)
-    }
-}
-
 // ===== impl Part =====
 
 impl Part {
@@ -329,15 +327,6 @@ impl Part {
     }
 }
 
-impl fmt::Debug for Part {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut dbg = f.debug_struct("Part");
-        dbg.field("value", &self.value);
-        self.meta.fmt_fields(&mut dbg);
-        dbg.finish()
-    }
-}
-
 impl PartProps for Part {
     fn value_len(&self) -> Option<u64> {
         if self.body_length.is_some() {
@@ -436,15 +425,6 @@ impl<P: PartProps> FormParts<P> {
     }
 }
 
-impl<P: fmt::Debug> FormParts<P> {
-    pub(crate) fn fmt_fields(&self, ty_name: &'static str, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct(ty_name)
-            .field("boundary", &self.boundary)
-            .field("parts", &self.fields)
-            .finish()
-    }
-}
-
 // ===== impl PartMetadata =====
 
 impl PartMetadata {
@@ -478,18 +458,6 @@ impl PartMetadata {
     }
 }
 
-impl PartMetadata {
-    pub(crate) fn fmt_fields<'f, 'fa, 'fb>(
-        &self,
-        debug_struct: &'f mut fmt::DebugStruct<'fa, 'fb>,
-    ) -> &'f mut fmt::DebugStruct<'fa, 'fb> {
-        debug_struct
-            .field("mime", &self.mime)
-            .field("file_name", &self.file_name)
-            .field("headers", &self.headers)
-    }
-}
-
 // https://url.spec.whatwg.org/#fragment-percent-encode-set
 const FRAGMENT_ENCODE_SET: &AsciiSet = &percent_encoding::CONTROLS
     .add(b' ')
@@ -518,6 +486,7 @@ const ATTR_CHAR_ENCODE_SET: &AsciiSet = &NON_ALPHANUMERIC
     .remove(b'|')
     .remove(b'~');
 
+#[derive(Debug)]
 pub(crate) enum PercentEncoding {
     PathSegment,
     AttrChar,
