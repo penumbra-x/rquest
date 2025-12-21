@@ -1,5 +1,4 @@
 use std::{
-    fmt,
     pin::Pin,
     task::{Context, Poll, ready},
 };
@@ -14,6 +13,7 @@ use {tokio::fs::File, tokio_util::io::ReaderStream};
 use crate::error::{BoxError, Error};
 
 /// An request body.
+#[derive(Debug)]
 pub struct Body(Either<Bytes, BoxBody<Bytes, BoxError>>);
 
 pin_project! {
@@ -193,12 +193,6 @@ impl From<File> for Body {
     #[inline]
     fn from(file: File) -> Body {
         Body::wrap_stream(ReaderStream::new(file))
-    }
-}
-
-impl fmt::Debug for Body {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("Body").finish()
     }
 }
 
