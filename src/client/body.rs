@@ -38,6 +38,30 @@ impl Body {
         }
     }
 
+    /// Wrap a [`HttpBody`] in a box inside `Body`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use wreq::Body;
+    /// # use futures_util;
+    /// # fn main() {
+    /// let content = "hello,world!".to_string();
+    ///
+    /// let body = Body::wrap(content);
+    /// # }
+    /// ```
+    pub fn wrap<B>(inner: B) -> Body
+    where
+        B: HttpBody + Send + Sync + 'static,
+        B::Data: Into<Bytes>,
+        B::Error: Into<BoxError>,
+    {
+        Body(Either::Right(
+            IntoBytesBody { inner }.map_err(Into::into).boxed(),
+        ))
+    }
+
     /// Wrap a futures `Stream` in a box inside `Body`.
     ///
     /// # Example
@@ -87,30 +111,6 @@ impl Body {
                 .map_err(Into::into),
         ));
         Body(Either::Right(body.boxed()))
-    }
-
-    /// Wrap a [`HttpBody`] in a box inside `Body`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use wreq::Body;
-    /// # use futures_util;
-    /// # fn main() {
-    /// let content = "hello,world!".to_string();
-    ///
-    /// let body = Body::wrap(content);
-    /// # }
-    /// ```
-    pub fn wrap<B>(inner: B) -> Body
-    where
-        B: HttpBody + Send + Sync + 'static,
-        B::Data: Into<Bytes>,
-        B::Error: Into<BoxError>,
-    {
-        Body(Either::Right(
-            IntoBytesBody { inner }.map_err(Into::into).boxed(),
-        ))
     }
 
     #[inline]
@@ -189,7 +189,6 @@ impl From<&'static str> for Body {
 }
 
 #[cfg(feature = "stream")]
-#[cfg_attr(docsrs, doc(cfg(feature = "stream")))]
 impl From<File> for Body {
     #[inline]
     fn from(file: File) -> Body {
