@@ -11,7 +11,7 @@ readme = "README.md"
 license = "Apache-2.0"
 edition = "2024"
 rust-version = "1.85"
-include = ["README.md", "Cargo.toml", "LICENSE", "src/**/*.rs"]
+include = ["README.md", "LICENSE", "src/**/*.rs"]
 
 [package.metadata.docs.rs]
 all-features = true
