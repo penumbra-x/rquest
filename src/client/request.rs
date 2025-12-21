@@ -39,13 +39,13 @@ use crate::{
     redirect,
 };
 
-/// A request which can be executed with `Client::execute()`.
+/// A request which can be executed with [`Client::execute()`].
 #[derive(Debug)]
 pub struct Request(http::Request<Option<Body>>);
 
-/// A builder to construct the properties of a `Request`.
+/// A builder to construct the properties of a [`Request`].
 ///
-/// To construct a `RequestBuilder`, refer to the `Client` documentation.
+/// To construct a [`RequestBuilder`], refer to the [`Client`] documentation.
 #[must_use = "RequestBuilder does nothing until you 'send' it"]
 pub struct RequestBuilder {
     client: Client,
@@ -151,7 +151,7 @@ impl Request {
     }
 
     #[inline]
-    fn config<T>(&self) -> Option<&T::Value>
+    pub(crate) fn config<T>(&self) -> Option<&T::Value>
     where
         T: RequestConfigValue,
     {
@@ -159,7 +159,7 @@ impl Request {
     }
 
     #[inline]
-    fn config_mut<T>(&mut self) -> &mut Option<T::Value>
+    pub(crate) fn config_mut<T>(&mut self) -> &mut Option<T::Value>
     where
         T: RequestConfigValue,
     {
