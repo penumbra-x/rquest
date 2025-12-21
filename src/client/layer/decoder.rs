@@ -126,12 +126,12 @@ where
     }
 
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
-        // Update decoder if accept encoding is set.
         if let Some(accept) = RequestConfig::<AcceptEncoding>::get(req.extensions()) {
             if let Some(decoder) = self.0.take() {
                 self.0
                     .replace(Decompression::accept_in_place(decoder, accept));
             }
+            debug_assert!(self.0.is_some());
         }
 
         self.0.as_mut().expect(Self::BUG_MSG).call(req)
