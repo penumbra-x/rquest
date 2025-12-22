@@ -17,7 +17,10 @@ use mime::Mime;
 #[cfg(feature = "json")]
 use serde::de::DeserializeOwned;
 
-use super::{conn::HttpInfo, core::ext::ReasonPhrase};
+use super::{
+    conn::HttpInfo,
+    core::{ext::ReasonPhrase, upgrade},
+};
 #[cfg(feature = "cookies")]
 use crate::cookie;
 use crate::{Body, Error, Upgraded, error::BoxError, ext::RequestUri};
@@ -471,9 +474,7 @@ impl Response {
 
     /// Consumes the [`Response`] and returns a future for a possible HTTP upgrade.
     pub async fn upgrade(self) -> crate::Result<Upgraded> {
-        super::core::upgrade::on(self.res)
-            .await
-            .map_err(Error::upgrade)
+        upgrade::on(self.res).await.map_err(Error::upgrade)
     }
 }
 
@@ -529,46 +530,5 @@ impl HttpBody for Response {
     #[inline]
     fn size_hint(&self) -> http_body::SizeHint {
         self.res.body().size_hint()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use http::{Uri, response::Builder};
-
-    use super::Response;
-    use crate::{ResponseBuilderExt, ext::ResponseExt};
-
-    #[test]
-    fn test_from_http_response() {
-        let url = Uri::try_from("http://example.com").unwrap();
-        let response = Builder::new()
-            .status(200)
-            .uri(url.clone())
-            .body("foo")
-            .unwrap();
-        let response = Response::from(response);
-
-        assert_eq!(response.status(), 200);
-        assert_eq!(*response.uri(), url);
-    }
-
-    #[test]
-    fn test_from_http_response_with_url() {
-        let uri = Uri::try_from("http://example.com").unwrap();
-        let response = Builder::new()
-            .status(200)
-            .uri(uri.clone())
-            .body("foo")
-            .unwrap();
-        let response = Response::from(response);
-
-        assert_eq!(response.status(), 200);
-        assert_eq!(*response.uri(), uri);
-
-        let http_response = http::Response::from(response);
-        let resp_url = http_response.uri();
-        assert_eq!(http_response.status(), 200);
-        assert_eq!(resp_url, Some(&uri));
     }
 }

@@ -1,11 +1,11 @@
-//! HTTP Clientt protocol implementation and low level utilities.
+//! HTTP Client protocol implementation and low level utilities.
 
+mod common;
 mod dispatch;
 mod error;
 mod proto;
 
 pub mod body;
-pub mod common;
 pub mod conn;
 pub mod ext;
 pub mod http1;
