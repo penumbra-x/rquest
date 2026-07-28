@@ -964,7 +964,11 @@ impl ClientBuilder {
         self
     }
 
-    /// Enable or disable automatic setting of the `Referer` header.
+    /// Enable or disable automatic `Referer` management during redirects.
+    ///
+    /// When enabled, redirect responses can control how an existing `Referer`
+    /// is forwarded through `Referrer-Policy`. No header is added when the
+    /// request has none.
     ///
     /// Default is `true`.
     #[inline]

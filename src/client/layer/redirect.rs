@@ -116,16 +116,16 @@ where
 
         let mut body_repr = BodyRepr::None;
         body_repr.try_clone_from(req.body());
-        policy.on_request(&mut req);
 
+        policy.on_request(&mut req);
         let (parts, body) = req.into_parts();
-        let req = Request::from_parts(parts.clone(), body);
+        let request = Request::from_parts(parts, ());
         ResponseFuture::Redirect {
-            future: Either::Left(service.call(req)),
+            future: Either::Left(service.call(request.clone().map(|_| body))),
             pending_future: None,
             service,
             policy,
-            parts,
+            request,
             body_repr,
         }
     }
