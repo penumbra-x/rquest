@@ -441,11 +441,10 @@ impl FollowRedirectPolicy {
     }
 
     pub(crate) fn on_request<B>(&mut self, req: &mut http::Request<B>) {
-        let next = req.uri().clone();
-        remove_sensitive_headers(req.headers_mut(), &next, &self.uris);
+        remove_sensitive_headers(req, &self.uris);
         if !self.uris.is_empty() {
             if let Some(referrer) = &mut self.referrer {
-                referrer.apply(req.headers_mut(), &next);
+                referrer.apply(req);
             }
         }
     }
@@ -457,13 +456,13 @@ impl FollowRedirectPolicy {
     }
 }
 
-fn remove_sensitive_headers(headers: &mut HeaderMap, next: &Uri, previous: &[Uri]) {
+fn remove_sensitive_headers<B>(req: &mut http::Request<B>, previous: &[Uri]) {
     if let Some(previous) = previous.last() {
-        if !same_origin(next, previous) {
+        if !same_origin(req.uri(), previous) {
             /// Avoid dynamic allocation of `HeaderName` by using `from_static`.
             /// https://github.com/hyperium/http/blob/e9de46c9269f0a476b34a02a401212e20f639df2/src/header/map.rs#L3794
             const COOKIE2: HeaderName = HeaderName::from_static("cookie2");
-
+            let headers = req.headers_mut();
             headers.remove(AUTHORIZATION);
             headers.remove(COOKIE);
             headers.remove(COOKIE2);
@@ -527,43 +526,47 @@ mod referrer {
         /// Computes the referrer for the next request in the redirect chain.
         ///
         /// https://w3c.github.io/webappsec-referrer-policy/#determine-requests-referrer
-        pub(super) fn apply(&mut self, headers: &mut HeaderMap, destination: &Uri) {
+        pub(super) fn apply<B>(&mut self, req: &mut http::Request<B>) {
             let Some(mut source) = self.source.take() else {
-                headers.remove(REFERER);
+                req.headers_mut().remove(REFERER);
                 return;
             };
-            let sensitive = headers.get(REFERER).is_some_and(HeaderValue::is_sensitive);
+            let sensitive = req
+                .headers_mut()
+                .get(REFERER)
+                .is_some_and(HeaderValue::is_sensitive);
 
             let Ok(source_scheme) = source.scheme().parse::<Scheme>() else {
-                headers.remove(REFERER);
+                req.headers_mut().remove(REFERER);
                 return;
             };
 
+            let destination = req.uri();
             let same_origin = same_origin(&source, &source_scheme, destination);
             let downgrade =
                 source_scheme == Scheme::HTTPS && destination.scheme() == Some(&Scheme::HTTP);
 
             let strip_to_origin = match self.policy {
                 ReferrerPolicy::NoReferrer => {
-                    headers.remove(REFERER);
+                    req.headers_mut().remove(REFERER);
                     return;
                 }
                 ReferrerPolicy::NoReferrerWhenDowngrade if downgrade => {
-                    headers.remove(REFERER);
+                    req.headers_mut().remove(REFERER);
                     return;
                 }
                 ReferrerPolicy::SameOrigin if !same_origin => {
-                    headers.remove(REFERER);
+                    req.headers_mut().remove(REFERER);
                     return;
                 }
                 ReferrerPolicy::StrictOrigin if downgrade => {
-                    headers.remove(REFERER);
+                    req.headers_mut().remove(REFERER);
                     return;
                 }
                 ReferrerPolicy::StrictOriginWhenCrossOrigin | ReferrerPolicy::None
                     if !same_origin && downgrade =>
                 {
-                    headers.remove(REFERER);
+                    req.headers_mut().remove(REFERER);
                     return;
                 }
                 ReferrerPolicy::Origin | ReferrerPolicy::StrictOrigin => true,
@@ -582,11 +585,11 @@ mod referrer {
             match HeaderValue::try_from(source.as_str()) {
                 Ok(mut value) => {
                     value.set_sensitive(sensitive);
-                    headers.insert(REFERER, value);
+                    req.headers_mut().insert(REFERER, value);
                     self.source = Some(source);
                 }
                 Err(_) => {
-                    headers.remove(REFERER);
+                    req.headers_mut().remove(REFERER);
                 }
             }
         }
@@ -708,12 +711,19 @@ mod referrer {
             headers
         }
 
+        fn request(headers: HeaderMap, destination: &'static str) -> http::Request<()> {
+            let mut req = http::Request::new(());
+            *req.headers_mut() = headers;
+            *req.uri_mut() = Uri::from_static(destination);
+            req
+        }
+
         fn apply(
             source: &'static str,
             destination: &'static str,
             policy: Option<&'static str>,
         ) -> Option<HeaderValue> {
-            let mut headers = headers_with_referrer(source);
+            let headers = headers_with_referrer(source);
             let mut referrer = Referrer::new(&headers);
 
             if let Some(policy) = policy {
@@ -722,8 +732,9 @@ mod referrer {
                 referrer.on_redirect(&response_headers);
             }
 
-            referrer.apply(&mut headers, &Uri::from_static(destination));
-            headers.get(REFERER).cloned()
+            let mut req = request(headers, destination);
+            referrer.apply(&mut req);
+            req.headers().get(REFERER).cloned()
         }
 
         fn header_str(value: &Option<HeaderValue>) -> Option<&str> {
@@ -832,25 +843,28 @@ mod referrer {
             let mut headers = HeaderMap::new();
             headers.insert(REFERER, value);
             let mut referrer = Referrer::new(&headers);
-            referrer.apply(&mut headers, &Uri::from_static("https://other.example/"));
-            assert!(headers[REFERER].is_sensitive());
 
-            let mut headers = headers_with_referrer("https://example.com/source");
+            let mut req = request(headers, "https://other.example/");
+            referrer.apply(&mut req);
+            assert!(req.headers()[REFERER].is_sensitive());
+
+            let headers = headers_with_referrer("https://example.com/source");
             let mut referrer = Referrer::new(&headers);
+            let mut req = request(headers, "https://example.com/first");
 
             let mut response_headers = HeaderMap::new();
             response_headers.insert(REFERRER_POLICY, HeaderValue::from_static("no-referrer"));
             referrer.on_redirect(&response_headers);
-            referrer.apply(&mut headers, &Uri::from_static("https://example.com/first"));
+
+            referrer.apply(&mut req);
 
             response_headers.insert(REFERRER_POLICY, HeaderValue::from_static("unsafe-url"));
             referrer.on_redirect(&response_headers);
-            referrer.apply(
-                &mut headers,
-                &Uri::from_static("https://example.com/second"),
-            );
 
-            assert_eq!(headers.get(REFERER), None);
+            *req.uri_mut() = Uri::from_static("https://example.com/second");
+            referrer.apply(&mut req);
+
+            assert_eq!(req.headers().get(REFERER), None);
         }
     }
 }
@@ -928,15 +942,19 @@ mod tests {
         let mut prev = vec![Uri::try_from("http://initial-domain.com/new_path").unwrap()];
         let mut filtered_headers = headers.clone();
 
-        remove_sensitive_headers(&mut headers, &next, &prev);
-        assert_eq!(headers, filtered_headers);
+        let mut req = http::Request::new(());
+        *req.headers_mut() = headers;
+        *req.uri_mut() = next;
+
+        remove_sensitive_headers(&mut req, &prev);
+        assert_eq!(req.headers(), &filtered_headers);
 
         prev.push(Uri::try_from("http://new-domain.com/path").unwrap());
         filtered_headers.remove(AUTHORIZATION);
         filtered_headers.remove(COOKIE);
 
-        remove_sensitive_headers(&mut headers, &next, &prev);
-        assert_eq!(headers, filtered_headers);
+        remove_sensitive_headers(&mut req, &prev);
+        assert_eq!(req.headers(), &filtered_headers);
 
         let mut default_port_headers = HeaderMap::new();
         default_port_headers.insert(AUTHORIZATION, HeaderValue::from_static("let me in"));
@@ -944,9 +962,13 @@ mod tests {
         let next = Uri::from_static("http://EXAMPLE.com:80/next");
         let previous = vec![Uri::from_static("http://example.com/previous")];
 
-        remove_sensitive_headers(&mut default_port_headers, &next, &previous);
+        let mut req = http::Request::new(());
+        *req.headers_mut() = default_port_headers;
+        *req.uri_mut() = next;
+
+        remove_sensitive_headers(&mut req, &previous);
         assert_eq!(
-            default_port_headers.get(AUTHORIZATION),
+            req.headers().get(AUTHORIZATION),
             Some(&HeaderValue::from_static("let me in"))
         );
     }
