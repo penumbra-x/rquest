@@ -636,24 +636,32 @@ mod referrer {
 
     impl From<&str> for ReferrerPolicy {
         fn from(token: &str) -> Self {
-            let normalized;
-            let token = if token.bytes().any(|byte| byte.is_ascii_uppercase()) {
-                normalized = token.to_ascii_lowercase();
-                normalized.as_str()
-            } else {
-                token
-            };
+            const TOKENS: &[(&str, ReferrerPolicy)] = &[
+                ("no-referrer", ReferrerPolicy::NoReferrer),
+                (
+                    "no-referrer-when-downgrade",
+                    ReferrerPolicy::NoReferrerWhenDowngrade,
+                ),
+                ("same-origin", ReferrerPolicy::SameOrigin),
+                ("origin", ReferrerPolicy::Origin),
+                ("strict-origin", ReferrerPolicy::StrictOrigin),
+                (
+                    "origin-when-cross-origin",
+                    ReferrerPolicy::OriginWhenCrossOrigin,
+                ),
+                (
+                    "strict-origin-when-cross-origin",
+                    ReferrerPolicy::StrictOriginWhenCrossOrigin,
+                ),
+                ("unsafe-url", ReferrerPolicy::UnsafeUrl),
+            ];
 
-            match token {
-                "no-referrer" => Self::NoReferrer,
-                "no-referrer-when-downgrade" => Self::NoReferrerWhenDowngrade,
-                "same-origin" => Self::SameOrigin,
-                "origin" => Self::Origin,
-                "strict-origin" => Self::StrictOrigin,
-                "origin-when-cross-origin" => Self::OriginWhenCrossOrigin,
-                "strict-origin-when-cross-origin" => Self::StrictOriginWhenCrossOrigin,
-                "unsafe-url" => Self::UnsafeUrl,
-                _ => Self::None,
+            match TOKENS
+                .iter()
+                .find(|(name, _)| token.eq_ignore_ascii_case(name))
+            {
+                Some((_, policy)) => *policy,
+                None => Self::None,
             }
         }
     }
