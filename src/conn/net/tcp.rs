@@ -91,6 +91,10 @@ struct ConnectingTcpRemote<S: TcpConnector> {
     connector: S,
 }
 
+/// Schedules staggered connection attempts for a resolved address list.
+///
+/// The state owns every active future, so dropping it cancels the remaining
+/// attempts.
 struct ConnectingTcpState<S: TcpConnector> {
     preferred: ConnectingTcpRemote<S>,
     fallback: Option<ConnectingTcpRemote<S>>,
@@ -102,12 +106,14 @@ struct ConnectingTcpState<S: TcpConnector> {
     first_error: Option<(usize, ConnectError)>,
 }
 
+/// One active TCP connection attempt and its position in launch order.
 struct ConnectingTcpAttempt<S: TcpConnector> {
     addr: SocketAddr,
     order: usize,
     future: S::Future,
 }
 
+/// An event that advances the address race.
 enum TcpEvent<C> {
     Connected(C),
     AllAttemptsFailed,
@@ -162,6 +168,7 @@ where
         }
     }
 
+    /// Connects through the sequential fast path or the staggered address race.
     pub(crate) async fn connect(self, config: &TcpOptions) -> Result<S::Connection, ConnectError> {
         if self.fallback.is_none()
             && (config.happy_eyeballs_timeout.is_none() || self.preferred.addrs.len() <= 1)
@@ -187,6 +194,7 @@ where
         }
     }
 
+    /// Prepares a connection future for the next address.
     fn connect_next(
         &mut self,
         config: &TcpOptions,
@@ -196,6 +204,7 @@ where
         Some((addr, connect(&addr, config, &self.connector)))
     }
 
+    /// Tries this address list sequentially under one shared deadline.
     async fn connect(mut self, config: &TcpOptions) -> Result<S::Connection, ConnectError> {
         let timeout = self
             .connect_timeout
@@ -203,6 +212,7 @@ where
         connect_with_timeout(self.connect_inner(config), timeout).await
     }
 
+    /// Tries addresses in resolver order until one connects.
     async fn connect_inner(&mut self, config: &TcpOptions) -> Result<S::Connection, ConnectError> {
         let mut first_error = None;
 
@@ -235,6 +245,7 @@ impl<S: TcpConnector> ConnectingTcpState<S>
 where
     S::TcpStream: From<socket2::Socket>,
 {
+    /// Builds the scheduler while preserving the initial fallback delay.
     fn new(connecting: ConnectingTcp<S>, happy_eyeballs_timeout: Option<Duration>) -> Self {
         let (initial_delay, fallback) = match connecting.fallback {
             Some(fallback) => (Some(fallback.delay), Some(fallback.remote)),
@@ -253,6 +264,7 @@ where
         }
     }
 
+    /// Returns whether any resolved address has not been attempted.
     fn has_remaining_addrs(&self) -> bool {
         !self.preferred.addrs.is_empty()
             || self
@@ -261,6 +273,7 @@ where
                 .is_some_and(|fallback| !fallback.addrs.is_empty())
     }
 
+    /// Alternates address families while both still have candidates.
     fn next_remote(&mut self) -> Option<&mut ConnectingTcpRemote<S>> {
         let has_preferred = !self.preferred.addrs.is_empty();
         let has_fallback = self
@@ -282,6 +295,7 @@ where
         }
     }
 
+    /// Keeps the error from the earliest failed attempt.
     fn record_error(&mut self, order: usize, error: ConnectError) {
         match &self.first_error {
             Some((first_order, _)) if *first_order <= order => {}
@@ -289,6 +303,7 @@ where
         }
     }
 
+    /// Starts the next candidate, skipping synchronous socket setup failures.
     fn launch_next(&mut self, config: &TcpOptions) -> bool {
         while let Some(remote) = self.next_remote() {
             let Some((addr, result)) = remote.connect_next(config) else {
@@ -320,6 +335,7 @@ where
         false
     }
 
+    /// Polls every active attempt and reports failure only when none remain.
     fn poll_attempts(&mut self, cx: &mut Context<'_>) -> Poll<TcpEvent<S::Connection>> {
         let mut index = 0;
         let mut failed = false;
@@ -355,6 +371,7 @@ where
         }
     }
 
+    /// Cancels the oldest attempt when the parallel limit is reached.
     fn make_room_for_next_attempt(&mut self) {
         if self.attempts.len() < MAX_PARALLEL_CONNECT_ATTEMPTS {
             return;
@@ -366,6 +383,7 @@ where
         }
     }
 
+    /// Takes the earliest error or reports that no address was reachable.
     fn take_error(&mut self) -> ConnectError {
         self.first_error
             .take()
@@ -373,6 +391,7 @@ where
             .unwrap_or_else(ConnectError::network_unreachable)
     }
 
+    /// Runs the complete address race under one shared deadline.
     async fn connect(mut self, config: &TcpOptions) -> Result<S::Connection, ConnectError> {
         // One deadline covers the complete address race. Dividing it by the
         // number of resolved addresses can make every attempt unusably short.
@@ -383,6 +402,7 @@ where
         connect_with_timeout(self.connect_inner(config), timeout).await
     }
 
+    /// Drives staggered attempts until one connects or all addresses are exhausted.
     async fn connect_inner(&mut self, config: &TcpOptions) -> Result<S::Connection, ConnectError> {
         loop {
             if self.attempts.is_empty() && !self.launch_next(config) {
@@ -419,6 +439,7 @@ where
     }
 }
 
+/// Applies one optional deadline to a complete connection operation.
 async fn connect_with_timeout<C, F, T>(connecting: F, timeout: Option<T>) -> Result<C, ConnectError>
 where
     F: Future<Output = Result<C, ConnectError>>,
@@ -611,6 +632,7 @@ impl ConnectError {
         }
     }
 
+    /// Wraps an error produced while opening a TCP connection.
     fn tcp<E>(cause: E) -> ConnectError
     where
         E: Into<BoxError>,
@@ -618,6 +640,7 @@ impl ConnectError {
         ConnectError::new("tcp connect error", cause)
     }
 
+    /// Creates the fallback error used when no address can be attempted.
     fn network_unreachable() -> ConnectError {
         ConnectError::tcp(io::Error::new(
             io::ErrorKind::NotConnected,
@@ -639,6 +662,7 @@ impl ConnectError {
         move |cause| ConnectError::new(msg, cause)
     }
 
+    /// Attaches the address associated with this connection error.
     fn with_addr(mut self, addr: SocketAddr) -> Self {
         self.addr = Some(addr);
         self
