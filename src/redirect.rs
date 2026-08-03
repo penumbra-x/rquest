@@ -433,9 +433,7 @@ impl FollowRedirectPolicy {
             .is_some_and(|policy| !matches!(policy.inner, PolicyKind::None))
             .then(|| {
                 let mut policy = self.clone();
-                if policy.referrer.is_some() {
-                    policy.referrer = Some(Referrer::new(request.headers()));
-                }
+                policy.referrer = policy.referrer.map(|_| Referrer::new(request.headers()));
                 policy
             })
     }
