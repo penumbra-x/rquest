@@ -162,7 +162,7 @@ async fn test_redirect_removes_sensitive_headers() {
             .unwrap()
     });
 
-    Client::builder()
+    let response = Client::builder()
         .redirect(Policy::default())
         .build()
         .unwrap()
@@ -171,6 +171,8 @@ async fn test_redirect_removes_sensitive_headers() {
         .send()
         .await
         .unwrap();
+
+    assert_eq!(response.uri().path(), "/end");
 }
 
 #[tokio::test]
@@ -238,38 +240,34 @@ async fn test_redirect_referrer_policy() {
         .unwrap();
     let base = format!("http://{}", server.addr());
 
-    client
-        .get(format!("{base}/direct-start"))
-        .send()
-        .await
-        .unwrap();
-    client
-        .get(format!("{base}/no-referrer-start"))
-        .header(
-            header::REFERER,
-            header::HeaderValue::from_static("https://source.example/private?q=1"),
-        )
-        .send()
-        .await
-        .unwrap();
-    client
-        .get(format!("{base}/origin-start"))
-        .header(
-            header::REFERER,
-            header::HeaderValue::from_static("http://source.example/private?q=1"),
-        )
-        .send()
-        .await
-        .unwrap();
-    client
-        .get(format!("{base}/clear-start"))
-        .header(
-            header::REFERER,
-            header::HeaderValue::from_static("http://source.example/private"),
-        )
-        .send()
-        .await
-        .unwrap();
+    let cases = [
+        ("/direct-start", "/direct-end", None),
+        (
+            "/no-referrer-start",
+            "/no-referrer-end",
+            Some("https://source.example/private?q=1"),
+        ),
+        (
+            "/origin-start",
+            "/origin-end",
+            Some("http://source.example/private?q=1"),
+        ),
+        (
+            "/clear-start",
+            "/clear-end",
+            Some("http://source.example/private"),
+        ),
+    ];
+
+    for (start, end, referer) in cases {
+        let mut request = client.get(format!("{base}{start}"));
+        if let Some(referer) = referer {
+            request = request.header(header::REFERER, referer);
+        }
+
+        let response = request.send().await.unwrap();
+        assert_eq!(response.uri().path(), end, "case: {start}");
+    }
 }
 
 #[tokio::test]
@@ -338,7 +336,7 @@ async fn test_referer_is_preserved_if_disabled() {
         }
     });
 
-    Client::builder()
+    let response = Client::builder()
         .redirect(Policy::default())
         .referer(false)
         .build()
@@ -351,6 +349,8 @@ async fn test_referer_is_preserved_if_disabled() {
         .send()
         .await
         .unwrap();
+
+    assert_eq!(response.uri().path(), "/dst");
 }
 
 #[tokio::test]
