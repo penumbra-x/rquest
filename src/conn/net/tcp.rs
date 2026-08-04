@@ -449,12 +449,14 @@ where
         return connecting.await;
     };
 
-    match futures_util::future::select(pin!(timeout), pin!(connecting)).await {
-        Either::Left(((), _)) => Err(ConnectError::tcp(io::Error::new(
+    // Poll the connection first so a result ready at the deadline wins the
+    // tie, matching Tokio and Tower timeout semantics.
+    match futures_util::future::select(pin!(connecting), pin!(timeout)).await {
+        Either::Left((result, _)) => result,
+        Either::Right(((), _)) => Err(ConnectError::tcp(io::Error::new(
             io::ErrorKind::TimedOut,
             "connect timeout",
         ))),
-        Either::Right((result, _)) => result,
     }
 }
 
@@ -828,7 +830,10 @@ mod tests {
         time::Duration,
     };
 
-    use super::{BoxConnecting, ConnectingTcp, TcpConnector, TcpKeepaliveOptions, TcpOptions};
+    use super::{
+        BoxConnecting, ConnectingTcp, TcpConnector, TcpKeepaliveOptions, TcpOptions,
+        connect_with_timeout,
+    };
     use crate::{
         conn::{Connected, Connection, net::SocketBindOptions},
         dns,
@@ -959,6 +964,13 @@ mod tests {
 
     #[::tokio::test(start_paused = true)]
     async fn races_resolved_addresses_in_order_with_a_bounded_set() {
+        let result =
+            connect_with_timeout(std::future::ready(Ok(())), Some(std::future::ready(()))).await;
+        assert!(
+            result.is_ok(),
+            "a ready connection should win a timeout tie"
+        );
+
         let delay = Duration::from_millis(100);
         let sequential = [ipv4(1), ipv4(2)];
         let connector = TestConnector::with_outcomes([
