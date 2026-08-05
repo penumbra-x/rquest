@@ -101,9 +101,6 @@ impl ConnectorBuilder {
     }
 
     /// Set the connect timeout.
-    ///
-    /// If a domain resolves to multiple IP addresses, the timeout will be
-    /// evenly divided across them.
     #[inline]
     pub fn timeout(mut self, timeout: Option<Duration>) -> ConnectorBuilder {
         self.config.timeout = timeout;

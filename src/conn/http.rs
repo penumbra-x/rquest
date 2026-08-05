@@ -63,12 +63,12 @@ where
     #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
     fn set_tcp_user_timeout(&mut self, time: Option<Duration>);
 
-    /// Set the connect timeout.
+    /// Set the timeout for the complete TCP connection race.
     fn set_connect_timeout(&mut self, dur: Option<Duration>);
 
-    /// Set timeout for [RFC 6555 (Happy Eyeballs)][RFC 6555] algorithm.
+    /// Set the delay between connection attempts for [RFC 8305 (Happy Eyeballs v2)][RFC 8305].
     ///
-    /// [RFC 6555]: https://tools.ietf.org/html/rfc6555
+    /// [RFC 8305]: https://www.rfc-editor.org/rfc/rfc8305.html#section-5
     fn set_happy_eyeballs_timeout(&mut self, dur: Option<Duration>);
 
     /// Set that all sockets have `SO_KEEPALIVE` set with the supplied duration
@@ -237,10 +237,7 @@ where
         self.config_mut().tcp_user_timeout = time;
     }
 
-    /// Set the connect timeout.
-    ///
-    /// If a domain resolves to multiple IP addresses, the timeout will be
-    /// evenly divided across them.
+    /// Set the timeout for the complete TCP connection race.
     ///
     /// Default is `None`.
     #[inline]
@@ -248,18 +245,16 @@ where
         self.config_mut().connect_timeout = dur;
     }
 
-    /// Set timeout for [RFC 6555 (Happy Eyeballs)][RFC 6555] algorithm.
+    /// Set the delay between connection attempts for [RFC 8305 (Happy Eyeballs v2)][RFC 8305].
     ///
-    /// If hostname resolves to both IPv4 and IPv6 addresses and connection
-    /// cannot be established using preferred address family before timeout
-    /// elapses, then connector will in parallel attempt connection using other
-    /// address family.
+    /// The first address is attempted immediately. Later addresses are started
+    /// after this delay without waiting for the previous attempt to finish.
     ///
     /// If `None`, parallel connection attempts are disabled.
     ///
     /// Default is 300 milliseconds.
     ///
-    /// [RFC 6555]: https://tools.ietf.org/html/rfc6555
+    /// [RFC 8305]: https://www.rfc-editor.org/rfc/rfc8305.html#section-5
     #[inline]
     fn set_happy_eyeballs_timeout(&mut self, dur: Option<Duration>) {
         self.config_mut().happy_eyeballs_timeout = dur;

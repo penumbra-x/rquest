@@ -1,4 +1,19 @@
 //! TCP connection types and utilities.
+//!
+//! DNS resolution finishes before this module receives the candidate addresses.
+//! For that address list, Happy Eyeballs follows curl's connection strategy:
+//! address families are alternated, later attempts are staggered, and the next
+//! address starts immediately when no attempt remains active. Up to six attempts
+//! are kept in flight, and the first successful connection cancels the rest.
+//!
+//! `connect_timeout` is one deadline for the complete TCP race instead of a
+//! separate timeout for each address. When Happy Eyeballs is disabled, addresses
+//! are tried sequentially in resolver order.
+//!
+//! See [RFC 8305 section 5] and [curl's Happy Eyeballs implementation].
+//!
+//! [RFC 8305 section 5]: https://www.rfc-editor.org/rfc/rfc8305.html#section-5
+//! [curl's Happy Eyeballs implementation]: https://github.com/curl/curl/blob/master/lib/cf-ip-happy.c
 
 #[cfg(feature = "tokio-rt")]
 pub mod tokio;
@@ -7,12 +22,14 @@ pub mod tokio;
 pub mod compio;
 
 use std::{
+    collections::VecDeque,
     error::Error as StdError,
     fmt,
     future::Future,
     io,
     net::{Ipv4Addr, Ipv6Addr, SocketAddr},
     pin::{Pin, pin},
+    task::{Context, Poll},
     time::Duration,
 };
 
@@ -26,6 +43,8 @@ use crate::{
 };
 
 type BoxConnecting<T, E> = Pin<Box<dyn Future<Output = Result<T, E>> + Send>>;
+
+const MAX_PARALLEL_CONNECT_ATTEMPTS: usize = 6;
 
 /// A builder for tcp connections.
 pub trait TcpConnector: Clone + Send + Sync + 'static {
@@ -44,7 +63,7 @@ pub trait TcpConnector: Clone + Send + Sync + 'static {
     type Error: Into<Box<dyn StdError + Send + Sync>>;
 
     /// The future type returned by this builder.
-    type Future: Future<Output = Result<Self::Connection, Self::Error>> + Send + 'static;
+    type Future: Future<Output = Result<Self::Connection, Self::Error>> + Send + Unpin + 'static;
 
     /// The future type returned by this builder's sleep.
     type Sleep: Future<Output = ()> + Send + 'static;
@@ -70,6 +89,35 @@ struct ConnectingTcpRemote<S: TcpConnector> {
     addrs: dns::SocketAddrs,
     connect_timeout: Option<Duration>,
     connector: S,
+}
+
+/// Schedules staggered connection attempts for a resolved address list.
+///
+/// The state owns every active future, so dropping it cancels the remaining
+/// attempts.
+struct ConnectingTcpState<S: TcpConnector> {
+    preferred: ConnectingTcpRemote<S>,
+    fallback: Option<ConnectingTcpRemote<S>>,
+    initial_delay: Option<S::Sleep>,
+    next_fallback: bool,
+    happy_eyeballs_timeout: Option<Duration>,
+    attempts: VecDeque<ConnectingTcpAttempt<S>>,
+    next_attempt_order: usize,
+    first_error: Option<(usize, ConnectError)>,
+}
+
+/// One active TCP connection attempt and its position in launch order.
+struct ConnectingTcpAttempt<S: TcpConnector> {
+    addr: SocketAddr,
+    order: usize,
+    future: S::Future,
+}
+
+/// An event that advances the address race.
+enum TcpEvent<C> {
+    Connected(C),
+    AllAttemptsFailed,
+    DelayElapsed,
 }
 
 impl<S: TcpConnector> ConnectingTcp<S>
@@ -119,6 +167,19 @@ where
             }
         }
     }
+
+    /// Connects through the sequential fast path or the staggered address race.
+    pub(crate) async fn connect(self, config: &TcpOptions) -> Result<S::Connection, ConnectError> {
+        if self.fallback.is_none()
+            && (config.happy_eyeballs_timeout.is_none() || self.preferred.addrs.len() <= 1)
+        {
+            return self.preferred.connect(config).await;
+        }
+
+        ConnectingTcpState::new(self, config.happy_eyeballs_timeout)
+            .connect(config)
+            .await
+    }
 }
 
 impl<S: TcpConnector> ConnectingTcpRemote<S>
@@ -126,7 +187,6 @@ where
     S::TcpStream: From<socket2::Socket>,
 {
     fn new(addrs: dns::SocketAddrs, connect_timeout: Option<Duration>, connector: S) -> Self {
-        let connect_timeout = connect_timeout.and_then(|t| t.checked_div(addrs.len() as u32));
         Self {
             addrs,
             connect_timeout,
@@ -134,41 +194,269 @@ where
         }
     }
 
-    async fn connect(&mut self, config: &TcpOptions) -> Result<S::Connection, ConnectError> {
-        let mut err = None;
-        for addr in &mut self.addrs {
-            debug!("connecting to {}", addr);
-            match connect(&addr, config, self.connect_timeout, &self.connector) {
-                Ok(fut) => match fut.await {
-                    Ok(tcp) => {
-                        debug!("connected to {}", addr);
-                        return Ok(tcp);
-                    }
-                    Err(mut e) => {
-                        trace!("connect error for {}: {:?}", addr, e);
-                        e.addr = Some(addr);
-                        if err.is_none() {
-                            err = Some(e);
-                        }
-                    }
-                },
-                Err(mut e) => {
-                    trace!("connect error for {}: {:?}", addr, e);
-                    e.addr = Some(addr);
-                    if err.is_none() {
-                        err = Some(e);
+    /// Prepares a connection future for the next address.
+    fn connect_next(
+        &mut self,
+        config: &TcpOptions,
+    ) -> Option<(SocketAddr, Result<S::Future, ConnectError>)> {
+        let addr = self.addrs.next()?;
+        debug!("connecting to {}", addr);
+        Some((addr, connect(&addr, config, &self.connector)))
+    }
+
+    /// Tries this address list sequentially under one shared deadline.
+    async fn connect(mut self, config: &TcpOptions) -> Result<S::Connection, ConnectError> {
+        let timeout = self
+            .connect_timeout
+            .map(|duration| self.connector.sleep(duration));
+        connect_with_timeout(self.connect_inner(config), timeout).await
+    }
+
+    /// Tries addresses in resolver order until one connects.
+    async fn connect_inner(&mut self, config: &TcpOptions) -> Result<S::Connection, ConnectError> {
+        let mut first_error = None;
+
+        while let Some((addr, result)) = self.connect_next(config) {
+            let result = match result {
+                Ok(future) => future.await.map_err(ConnectError::tcp),
+                Err(error) => Err(error),
+            };
+
+            match result {
+                Ok(connection) => {
+                    debug!("connected to {}", addr);
+                    return Ok(connection);
+                }
+                Err(error) => {
+                    let error = error.with_addr(addr);
+                    trace!("connect error for {}: {:?}", addr, error);
+                    if first_error.is_none() {
+                        first_error = Some(error);
                     }
                 }
             }
         }
 
-        match err {
-            Some(e) => Err(e),
-            None => Err(ConnectError::new(
-                "tcp connect error",
-                std::io::Error::new(std::io::ErrorKind::NotConnected, "Network unreachable"),
-            )),
+        Err(first_error.unwrap_or_else(ConnectError::network_unreachable))
+    }
+}
+
+impl<S: TcpConnector> ConnectingTcpState<S>
+where
+    S::TcpStream: From<socket2::Socket>,
+{
+    /// Builds the scheduler while preserving the initial fallback delay.
+    fn new(connecting: ConnectingTcp<S>, happy_eyeballs_timeout: Option<Duration>) -> Self {
+        let (initial_delay, fallback) = match connecting.fallback {
+            Some(fallback) => (Some(fallback.delay), Some(fallback.remote)),
+            None => (None, None),
+        };
+
+        Self {
+            preferred: connecting.preferred,
+            fallback,
+            initial_delay,
+            next_fallback: false,
+            happy_eyeballs_timeout,
+            attempts: VecDeque::with_capacity(MAX_PARALLEL_CONNECT_ATTEMPTS),
+            next_attempt_order: 0,
+            first_error: None,
         }
+    }
+
+    /// Returns whether any resolved address has not been attempted.
+    fn has_remaining_addrs(&self) -> bool {
+        !self.preferred.addrs.is_empty()
+            || self
+                .fallback
+                .as_ref()
+                .is_some_and(|fallback| !fallback.addrs.is_empty())
+    }
+
+    /// Alternates address families while both still have candidates.
+    fn next_remote(&mut self) -> Option<&mut ConnectingTcpRemote<S>> {
+        let has_preferred = !self.preferred.addrs.is_empty();
+        let has_fallback = self
+            .fallback
+            .as_ref()
+            .is_some_and(|fallback| !fallback.addrs.is_empty());
+
+        let use_fallback = match (self.next_fallback, has_preferred, has_fallback) {
+            (_, false, false) => return None,
+            (true, _, true) | (_, false, true) => true,
+            _ => false,
+        };
+        self.next_fallback = !use_fallback;
+
+        if use_fallback {
+            self.fallback.as_mut()
+        } else {
+            Some(&mut self.preferred)
+        }
+    }
+
+    /// Keeps the error from the earliest failed attempt.
+    fn record_error(&mut self, order: usize, error: ConnectError) {
+        match &self.first_error {
+            Some((first_order, _)) if *first_order <= order => {}
+            _ => self.first_error = Some((order, error)),
+        }
+    }
+
+    /// Starts the next candidate, skipping synchronous socket setup failures.
+    fn launch_next(&mut self, config: &TcpOptions) -> bool {
+        while let Some(remote) = self.next_remote() {
+            let Some((addr, result)) = remote.connect_next(config) else {
+                continue;
+            };
+            let order = self.next_attempt_order;
+            self.next_attempt_order = self.next_attempt_order.saturating_add(1);
+
+            match result {
+                Ok(future) => {
+                    if order != 0 {
+                        self.initial_delay = None;
+                    }
+                    self.attempts.push_back(ConnectingTcpAttempt {
+                        addr,
+                        order,
+                        future,
+                    });
+                    return true;
+                }
+                Err(error) => {
+                    let error = error.with_addr(addr);
+                    trace!("connect error for {}: {:?}", addr, error);
+                    self.record_error(order, error);
+                }
+            }
+        }
+
+        false
+    }
+
+    /// Polls every active attempt and reports failure only when none remain.
+    fn poll_attempts(&mut self, cx: &mut Context<'_>) -> Poll<TcpEvent<S::Connection>> {
+        let mut index = 0;
+        let mut failed = false;
+        while let Some(attempt) = self.attempts.get_mut(index) {
+            let addr = attempt.addr;
+            let order = attempt.order;
+            let result = Pin::new(&mut attempt.future).poll(cx);
+
+            match result {
+                Poll::Pending => index += 1,
+                Poll::Ready(result) => {
+                    let _ = self.attempts.remove(index);
+                    match result {
+                        Ok(connection) => {
+                            debug!("connected to {}", addr);
+                            return Poll::Ready(TcpEvent::Connected(connection));
+                        }
+                        Err(error) => {
+                            let error = ConnectError::tcp(error).with_addr(addr);
+                            trace!("connect error for {}: {:?}", addr, error);
+                            self.record_error(order, error);
+                            failed = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if failed && self.attempts.is_empty() {
+            Poll::Ready(TcpEvent::AllAttemptsFailed)
+        } else {
+            Poll::Pending
+        }
+    }
+
+    /// Cancels the oldest attempt when the parallel limit is reached.
+    fn make_room_for_next_attempt(&mut self) {
+        if self.attempts.len() < MAX_PARALLEL_CONNECT_ATTEMPTS {
+            return;
+        }
+
+        if let Some(attempt) = self.attempts.pop_front() {
+            trace!("canceling stale connection attempt to {}", attempt.addr);
+            drop(attempt);
+        }
+    }
+
+    /// Takes the earliest error or reports that no address was reachable.
+    fn take_error(&mut self) -> ConnectError {
+        self.first_error
+            .take()
+            .map(|(_, error)| error)
+            .unwrap_or_else(ConnectError::network_unreachable)
+    }
+
+    /// Runs the complete address race under one shared deadline.
+    async fn connect(mut self, config: &TcpOptions) -> Result<S::Connection, ConnectError> {
+        // One deadline covers the complete address race. Dividing it by the
+        // number of resolved addresses can make every attempt unusably short.
+        let timeout = self
+            .preferred
+            .connect_timeout
+            .map(|duration| self.preferred.connector.sleep(duration));
+        connect_with_timeout(self.connect_inner(config), timeout).await
+    }
+
+    /// Drives staggered attempts until one connects or all addresses are exhausted.
+    async fn connect_inner(&mut self, config: &TcpOptions) -> Result<S::Connection, ConnectError> {
+        loop {
+            if self.attempts.is_empty() && !self.launch_next(config) {
+                return Err(self.take_error());
+            }
+
+            // RFC 8305 section 5 starts later addresses after a short delay
+            // while earlier attempts remain active.
+            // https://www.rfc-editor.org/rfc/rfc8305.html#section-5
+            let event = match (self.happy_eyeballs_timeout, self.has_remaining_addrs()) {
+                (Some(delay), true) => {
+                    let sleep = self
+                        .initial_delay
+                        .take()
+                        .unwrap_or_else(|| self.preferred.connector.sleep(delay));
+                    let mut sleep = pin!(sleep);
+                    std::future::poll_fn(|cx| match self.poll_attempts(cx) {
+                        Poll::Ready(event) => Poll::Ready(event),
+                        Poll::Pending => sleep.as_mut().poll(cx).map(|()| TcpEvent::DelayElapsed),
+                    })
+                    .await
+                }
+                _ => std::future::poll_fn(|cx| self.poll_attempts(cx)).await,
+            };
+
+            match event {
+                TcpEvent::Connected(connection) => return Ok(connection),
+                TcpEvent::AllAttemptsFailed => {}
+                TcpEvent::DelayElapsed => self.make_room_for_next_attempt(),
+            }
+
+            self.launch_next(config);
+        }
+    }
+}
+
+/// Applies one optional deadline to a complete connection operation.
+async fn connect_with_timeout<C, F, T>(connecting: F, timeout: Option<T>) -> Result<C, ConnectError>
+where
+    F: Future<Output = Result<C, ConnectError>>,
+    T: Future<Output = ()>,
+{
+    let Some(timeout) = timeout else {
+        return connecting.await;
+    };
+
+    // Poll the connection first so a result ready at the deadline wins the
+    // tie, matching Tokio and Tower timeout semantics.
+    match futures_util::future::select(pin!(connecting), pin!(timeout)).await {
+        Either::Left((result, _)) => result,
+        Either::Right(((), _)) => Err(ConnectError::tcp(io::Error::new(
+            io::ErrorKind::TimedOut,
+            "connect timeout",
+        ))),
     }
 }
 
@@ -203,9 +491,8 @@ fn bind_local_address(
 fn connect<S: TcpConnector>(
     addr: &SocketAddr,
     config: &TcpOptions,
-    connect_timeout: Option<Duration>,
     connector: &S,
-) -> Result<impl Future<Output = Result<S::Connection, ConnectError>>, ConnectError>
+) -> Result<S::Future, ConnectError>
 where
     S::TcpStream: From<socket2::Socket>,
 {
@@ -325,62 +612,7 @@ where
         warn!("tcp set_tcp_nodelay error: {_e}");
     }
 
-    let connect = connector.connect(socket.into(), *addr);
-    let sleep = connect_timeout.map(|dur| connector.sleep(dur));
-
-    Ok(async move {
-        match sleep {
-            Some(sleep) => match futures_util::future::select(pin!(sleep), pin!(connect)).await {
-                Either::Left(((), _)) => {
-                    Err(io::Error::new(io::ErrorKind::TimedOut, "connect timeout").into())
-                }
-                Either::Right((Ok(s), _)) => Ok(s),
-                Either::Right((Err(e), _)) => Err(e.into()),
-            },
-            None => connect.await.map_err(Into::into),
-        }
-        .map_err(ConnectError::m("tcp connect error"))
-    })
-}
-
-impl<S: TcpConnector> ConnectingTcp<S>
-where
-    S::TcpStream: From<socket2::Socket>,
-{
-    pub(crate) async fn connect(
-        mut self,
-        config: &TcpOptions,
-    ) -> Result<S::Connection, ConnectError> {
-        match self.fallback {
-            None => self.preferred.connect(config).await,
-            Some(mut fallback) => {
-                let preferred_fut = pin!(self.preferred.connect(config));
-                let fallback_fut = pin!(fallback.remote.connect(config));
-                let fallback_delay = pin!(fallback.delay);
-
-                let (result, future) =
-                    match futures_util::future::select(preferred_fut, fallback_delay).await {
-                        Either::Left((result, _fallback_delay)) => {
-                            (result, Either::Right(fallback_fut))
-                        }
-                        Either::Right(((), preferred_fut)) => {
-                            // Delay is done, start polling both the preferred and the fallback
-                            futures_util::future::select(preferred_fut, fallback_fut)
-                                .await
-                                .factor_first()
-                        }
-                    };
-
-                if result.is_err() {
-                    // Fallback to the remaining future (could be preferred or fallback)
-                    // if we get an error
-                    future.await
-                } else {
-                    result
-                }
-            }
-        }
-    }
+    Ok(connector.connect(socket.into(), *addr))
 }
 
 // Not publicly exported (so missing_docs doesn't trigger).
@@ -402,6 +634,22 @@ impl ConnectError {
         }
     }
 
+    /// Wraps an error produced while opening a TCP connection.
+    fn tcp<E>(cause: E) -> ConnectError
+    where
+        E: Into<BoxError>,
+    {
+        ConnectError::new("tcp connect error", cause)
+    }
+
+    /// Creates the fallback error used when no address can be attempted.
+    fn network_unreachable() -> ConnectError {
+        ConnectError::tcp(io::Error::new(
+            io::ErrorKind::NotConnected,
+            "Network unreachable",
+        ))
+    }
+
     pub(crate) fn dns<E>(cause: E) -> ConnectError
     where
         E: Into<BoxError>,
@@ -414,6 +662,12 @@ impl ConnectError {
         E: Into<BoxError>,
     {
         move |cause| ConnectError::new(msg, cause)
+    }
+
+    /// Attaches the address associated with this connection error.
+    fn with_addr(mut self, addr: SocketAddr) -> Self {
+        self.addr = Some(addr);
+        self
     }
 }
 
@@ -564,5 +818,238 @@ impl TcpKeepaliveOptions {
         };
 
         if dirty { Some(ka) } else { None }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        io,
+        net::{Ipv6Addr, SocketAddr},
+        sync::{Arc, Mutex},
+        time::Duration,
+    };
+
+    use super::{
+        BoxConnecting, ConnectingTcp, TcpConnector, TcpKeepaliveOptions, TcpOptions,
+        connect_with_timeout,
+    };
+    use crate::{
+        conn::{Connected, Connection, net::SocketBindOptions},
+        dns,
+    };
+
+    #[derive(Default)]
+    struct TestState {
+        launched: Vec<SocketAddr>,
+        active: usize,
+        max_active: usize,
+    }
+
+    #[derive(Clone)]
+    struct TestConnector {
+        outcomes: Arc<[(SocketAddr, TestOutcome)]>,
+        state: Arc<Mutex<TestState>>,
+    }
+
+    #[derive(Clone, Copy)]
+    enum TestOutcome {
+        Pending,
+        SuccessAfter(Duration),
+        FailAfter(Duration),
+    }
+
+    struct ActiveAttempt(Arc<Mutex<TestState>>);
+
+    impl Drop for ActiveAttempt {
+        fn drop(&mut self) {
+            let mut state = self.0.lock().unwrap();
+            state.active -= 1;
+        }
+    }
+
+    impl TestConnector {
+        fn new(success: SocketAddr) -> Self {
+            Self::with_outcomes([(success, TestOutcome::SuccessAfter(Duration::ZERO))])
+        }
+
+        fn with_outcomes(outcomes: impl IntoIterator<Item = (SocketAddr, TestOutcome)>) -> Self {
+            Self {
+                outcomes: outcomes.into_iter().collect::<Vec<_>>().into(),
+                state: Arc::new(Mutex::new(TestState::default())),
+            }
+        }
+
+        fn snapshot(&self) -> (Vec<SocketAddr>, usize, usize) {
+            let state = self.state.lock().unwrap();
+            (state.launched.clone(), state.active, state.max_active)
+        }
+    }
+
+    impl TcpConnector for TestConnector {
+        type TcpStream = std::net::TcpStream;
+        type Connection = ::tokio::io::DuplexStream;
+        type Error = io::Error;
+        type Future = BoxConnecting<Self::Connection, Self::Error>;
+        type Sleep = ::tokio::time::Sleep;
+
+        fn connect(&self, _socket: Self::TcpStream, addr: SocketAddr) -> Self::Future {
+            {
+                let mut state = self.state.lock().unwrap();
+                state.launched.push(addr);
+                state.active += 1;
+                state.max_active = state.max_active.max(state.active);
+            }
+            let outcome = self
+                .outcomes
+                .iter()
+                .find_map(|(candidate, outcome)| (*candidate == addr).then_some(*outcome))
+                .unwrap_or(TestOutcome::Pending);
+            let attempt = ActiveAttempt(self.state.clone());
+
+            Box::pin(async move {
+                let _attempt = attempt;
+                match outcome {
+                    TestOutcome::Pending => std::future::pending().await,
+                    TestOutcome::SuccessAfter(delay) => {
+                        ::tokio::time::sleep(delay).await;
+                        Ok(::tokio::io::duplex(64).0)
+                    }
+                    TestOutcome::FailAfter(delay) => {
+                        ::tokio::time::sleep(delay).await;
+                        Err(io::ErrorKind::ConnectionRefused.into())
+                    }
+                }
+            })
+        }
+
+        fn sleep(&self, duration: Duration) -> Self::Sleep {
+            ::tokio::time::sleep(duration)
+        }
+    }
+
+    impl Connection for ::tokio::io::DuplexStream {
+        fn connected(&self) -> Connected {
+            Connected::new()
+        }
+    }
+
+    fn tcp_options(
+        happy_eyeballs_timeout: Option<Duration>,
+        connect_timeout: Option<Duration>,
+    ) -> TcpOptions {
+        TcpOptions {
+            enforce_http: false,
+            connect_timeout,
+            happy_eyeballs_timeout,
+            nodelay: false,
+            reuse_address: false,
+            linger: None,
+            send_buffer_size: None,
+            recv_buffer_size: None,
+            #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
+            tcp_user_timeout: None,
+            tcp_keepalive: TcpKeepaliveOptions::default(),
+            socket_bind: SocketBindOptions::default(),
+        }
+    }
+
+    fn ipv4(last: u8) -> SocketAddr {
+        ([192, 0, 2, last], 443).into()
+    }
+
+    fn ipv6(last: u16) -> SocketAddr {
+        (Ipv6Addr::new(0x2001, 0xdb8, 0, 0, 0, 0, 0, last), 443).into()
+    }
+
+    #[::tokio::test(start_paused = true)]
+    async fn races_resolved_addresses_in_order_with_a_bounded_set() {
+        let result =
+            connect_with_timeout(std::future::ready(Ok(())), Some(std::future::ready(()))).await;
+        assert!(
+            result.is_ok(),
+            "a ready connection should win a timeout tie"
+        );
+
+        let delay = Duration::from_millis(100);
+        let sequential = [ipv4(1), ipv4(2)];
+        let connector = TestConnector::with_outcomes([
+            (sequential[0], TestOutcome::FailAfter(delay / 2)),
+            (sequential[1], TestOutcome::SuccessAfter(Duration::ZERO)),
+        ]);
+        let options = tcp_options(None, None);
+        let started = ::tokio::time::Instant::now();
+
+        ConnectingTcp::new(
+            dns::SocketAddrs::new(sequential.to_vec()),
+            &options,
+            connector.clone(),
+        )
+        .connect(&options)
+        .await
+        .unwrap();
+
+        assert_eq!(started.elapsed(), delay / 2);
+        assert_eq!(connector.snapshot(), (sequential.to_vec(), 0, 1));
+
+        let paced = [ipv4(1), ipv4(2), ipv4(3)];
+        let connector = TestConnector::with_outcomes([
+            (paced[1], TestOutcome::FailAfter(delay / 10)),
+            (paced[2], TestOutcome::SuccessAfter(Duration::ZERO)),
+        ]);
+        let options = tcp_options(Some(delay), None);
+        let started = ::tokio::time::Instant::now();
+
+        ConnectingTcp::new(
+            dns::SocketAddrs::new(paced.to_vec()),
+            &options,
+            connector.clone(),
+        )
+        .connect(&options)
+        .await
+        .unwrap();
+
+        assert_eq!(started.elapsed(), delay * 2);
+        assert_eq!(connector.snapshot(), (paced.to_vec(), 0, 2));
+
+        let v4 = [ipv4(1), ipv4(2), ipv4(3), ipv4(4), ipv4(5), ipv4(6)];
+        let v6 = [ipv6(1), ipv6(2)];
+        let addrs = [v4.as_slice(), v6.as_slice()].concat();
+        let expected = [v4[0], v6[0], v4[1], v6[1], v4[2], v4[3], v4[4], v4[5]];
+        let connector = TestConnector::new(v4[5]);
+        let started = ::tokio::time::Instant::now();
+
+        ConnectingTcp::new(dns::SocketAddrs::new(addrs), &options, connector.clone())
+            .connect(&options)
+            .await
+            .unwrap();
+
+        assert_eq!(started.elapsed(), delay * 7);
+        assert_eq!(connector.snapshot(), (expected.to_vec(), 0, 6));
+
+        let timeout = Duration::from_millis(250);
+        let options = tcp_options(Some(delay), Some(timeout));
+        let addrs = [ipv4(1), ipv4(2), ipv4(3), ipv4(4)];
+        let connector = TestConnector::new(ipv4(255));
+        let started = ::tokio::time::Instant::now();
+
+        let error = ConnectingTcp::new(
+            dns::SocketAddrs::new(addrs.to_vec()),
+            &options,
+            connector.clone(),
+        )
+        .connect(&options)
+        .await
+        .unwrap_err();
+
+        assert_eq!(started.elapsed(), timeout);
+        assert!(
+            error
+                .cause
+                .as_deref()
+                .and_then(|cause| cause.downcast_ref::<io::Error>())
+                .is_some_and(|cause| cause.kind() == io::ErrorKind::TimedOut)
+        );
+        assert_eq!(connector.snapshot(), (addrs[..3].to_vec(), 0, 3));
     }
 }
